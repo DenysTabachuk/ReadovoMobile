@@ -1,4 +1,5 @@
 import { Pressable, View } from 'react-native';
+import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
 import { ThemedText } from '@/components/themed-text';
@@ -51,6 +52,12 @@ export default function StartScreen() {
             );
           })}
         </View>
+
+        <Pressable style={styles.continueButton} onPress={() => router.push('/about')}>
+          <ThemedText type="defaultSemiBold" style={styles.continueButtonText}>
+            {t('start.continue')}
+          </ThemedText>
+        </Pressable>
       </View>
     </ThemedView>
   );

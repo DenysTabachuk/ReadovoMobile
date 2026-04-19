@@ -4,6 +4,7 @@ export const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: 24,
+    paddingBottom: 32,
   },
   content: {
     flex: 1,
@@ -52,5 +53,19 @@ export const styles = StyleSheet.create({
   },
   languageLabelSelected: {
     color: '#fff',
+  },
+  continueButton: {
+    alignItems: 'center',
+    backgroundColor: '#0a7ea4',
+    borderRadius: 8,
+    marginTop: 'auto',
+    maxWidth: 420,
+    paddingHorizontal: 18,
+    paddingVertical: 16,
+  },
+  continueButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    lineHeight: 24,
   },
 });

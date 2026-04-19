@@ -2,5 +2,12 @@
   "language": {
     "title": "Choose your language",
     "description": "Select the language you want to use in Speakly."
+  },
+  "start": {
+    "continue": "Continue"
+  },
+  "about": {
+    "title": "Speakly",
+    "description": "Speakly is an app for learning English through short educational texts. Read useful stories, discover new words, and build your understanding of English in context."
   }
 }
