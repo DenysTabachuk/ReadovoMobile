@@ -27,6 +27,8 @@ export default function LoginScreen() {
 
       router.replace('/(tabs)');
     } catch (error) {
+      console.error('[LoginScreen] Google sign-in flow failed', error);
+
       const message = error instanceof Error ? error.message : '';
       const isMissingNativeModule = message.includes('RNGoogleSignin');
 
