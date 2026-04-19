@@ -1,8 +1,8 @@
 import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
-import { ScreenContainer } from '@/components/screen-container';
-import { ThemedText } from '@/components/themed-text';
+import { ScreenContainer } from '@/components/screenContainer';
+import { ThemedText } from '@/components/themedText';
 import { styles } from './styles';
 
 export default function AboutScreen() {

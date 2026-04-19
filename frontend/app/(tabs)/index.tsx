@@ -1,7 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
+import { ThemedText } from '@/components/themedText';
+import { ThemedView } from '@/components/themedView';
 import { Spacing } from '@/constants/spacing';
 
 export default function HomeScreen() {
