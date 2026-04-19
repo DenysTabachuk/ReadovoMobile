@@ -8,6 +8,17 @@
   },
   "about": {
     "title": "Speakly",
-    "description": "Speakly is an app for learning English through short educational texts. Read useful stories, discover new words, and build your understanding of English in context."
+    "description": "Speakly is an app for learning English through short educational texts. Read useful stories, discover new words, and build your understanding of English in context.",
+    "continue": "Continue"
+  },
+  "auth": {
+    "title": "Sign in",
+    "description": "Use your Google account to continue learning with Speakly.",
+    "googleButton": "Continue with Google",
+    "signingIn": "Signing in...",
+    "errors": {
+      "default": "Could not sign in with Google",
+      "missingNativeModule": "Google Sign-In is not available in this build. Rebuild the app with a development build."
+    }
   }
 }

@@ -10,13 +10,12 @@ export const styles = StyleSheet.create({
     gap: Spacing.lg,
     maxWidth: 520,
   },
-  octopusImage: {
-    alignSelf: 'center',
-    height: 240,
+  errorText: {
+    color: '#b42318',
     marginTop: Spacing.xLg,
-    width: 240,
+    maxWidth: 420,
   },
-  continueButton: {
+  googleButton: {
     alignItems: 'center',
     backgroundColor: '#0a7ea4',
     borderRadius: 8,
@@ -25,7 +24,10 @@ export const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.lg,
   },
-  continueButtonText: {
+  googleButtonDisabled: {
+    opacity: 0.7,
+  },
+  googleButtonText: {
     color: '#fff',
   },
 });
