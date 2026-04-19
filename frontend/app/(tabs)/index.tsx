@@ -2,13 +2,14 @@ import { StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { Spacing } from '@/constants/spacing';
 
 export default function HomeScreen() {
   return (
     <ThemedView style={styles.container}>
       <View style={styles.content}>
-        <ThemedText type="title">Speakly</ThemedText>
-        <ThemedText style={styles.description}>
+        <ThemedText type="screenTitle">Speakly</ThemedText>
+        <ThemedText type="description" style={styles.description}>
           Practice conversations, build vocabulary, and keep your language learning moving every
           day.
         </ThemedText>
@@ -21,14 +22,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
-    paddingHorizontal: 24,
+    paddingHorizontal: Spacing.xLg,
   },
   content: {
-    gap: 12,
+    gap: Spacing.md,
   },
   description: {
-    fontSize: 18,
-    lineHeight: 26,
     maxWidth: 420,
   },
 });

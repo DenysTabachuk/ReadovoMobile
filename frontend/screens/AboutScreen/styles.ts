@@ -12,12 +12,4 @@ export const styles = StyleSheet.create({
     gap: Spacing.lg,
     maxWidth: 520,
   },
-  title: {
-    fontSize: 42,
-    lineHeight: 48,
-  },
-  description: {
-    fontSize: 18,
-    lineHeight: 28,
-  },
 });

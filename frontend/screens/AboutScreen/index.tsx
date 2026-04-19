@@ -11,10 +11,8 @@ export default function AboutScreen() {
   return (
     <ThemedView style={styles.container}>
       <View style={styles.content}>
-        <ThemedText type="title" style={styles.title}>
-          {t('about.title')}
-        </ThemedText>
-        <ThemedText style={styles.description}>{t('about.description')}</ThemedText>
+        <ThemedText type="heroTitle">{t('about.title')}</ThemedText>
+        <ThemedText type="paragraph">{t('about.description')}</ThemedText>
       </View>
     </ThemedView>
   );

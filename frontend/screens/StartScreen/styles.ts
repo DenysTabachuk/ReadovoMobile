@@ -17,13 +17,9 @@ export const styles = StyleSheet.create({
     marginBottom: Spacing.xLg + Spacing.xs,
   },
   title: {
-    fontSize: 42,
-    lineHeight: 48,
     marginBottom: Spacing.md,
   },
   description: {
-    fontSize: 18,
-    lineHeight: 26,
     maxWidth: 420,
   },
   languageList: {
@@ -45,14 +41,6 @@ export const styles = StyleSheet.create({
     backgroundColor: '#0a7ea4',
     borderColor: '#0a7ea4',
   },
-  flag: {
-    fontSize: 28,
-    lineHeight: 34,
-  },
-  languageLabel: {
-    fontSize: 18,
-    lineHeight: 24,
-  },
   languageLabelSelected: {
     color: '#fff',
   },
@@ -67,7 +55,5 @@ export const styles = StyleSheet.create({
   },
   continueButtonText: {
     color: '#fff',
-    fontSize: 18,
-    lineHeight: 24,
   },
 });

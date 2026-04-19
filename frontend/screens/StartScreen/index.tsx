@@ -27,10 +27,12 @@ export default function StartScreen() {
     <ThemedView style={styles.container}>
       <View style={styles.content}>
         <View style={styles.headerBlock}>
-          <ThemedText type="title" style={styles.title}>
+          <ThemedText type="heroTitle" style={styles.title}>
             {t('language.title')}
           </ThemedText>
-          <ThemedText style={styles.description}>{t('language.description')}</ThemedText>
+          <ThemedText type="description" style={styles.description}>
+            {t('language.description')}
+          </ThemedText>
         </View>
 
         <View style={styles.languageList}>
@@ -42,10 +44,10 @@ export default function StartScreen() {
                 key={language.code}
                 style={[styles.languageButton, isSelected && styles.languageButtonSelected]}
                 onPress={() => i18n.changeLanguage(language.code)}>
-                <ThemedText style={styles.flag}>{language.flag}</ThemedText>
+                <ThemedText type="emoji">{language.flag}</ThemedText>
                 <ThemedText
-                  type="defaultSemiBold"
-                  style={[styles.languageLabel, isSelected && styles.languageLabelSelected]}>
+                  type="buttonLabel"
+                  style={isSelected && styles.languageLabelSelected}>
                   {language.label}
                 </ThemedText>
               </Pressable>
@@ -54,7 +56,7 @@ export default function StartScreen() {
         </View>
 
         <Pressable style={styles.continueButton} onPress={() => router.push('/about')}>
-          <ThemedText type="defaultSemiBold" style={styles.continueButtonText}>
+          <ThemedText type="buttonLabel" style={styles.continueButtonText}>
             {t('start.continue')}
           </ThemedText>
         </Pressable>
