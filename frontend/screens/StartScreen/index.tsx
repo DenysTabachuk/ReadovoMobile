@@ -2,8 +2,8 @@ import { Pressable, View } from 'react-native';
 import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
+import { ScreenContainer } from '@/components/screen-container';
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
 
 import { styles } from './styles';
 
@@ -24,7 +24,7 @@ export default function StartScreen() {
   const { i18n, t } = useTranslation();
 
   return (
-    <ThemedView style={styles.container}>
+    <ScreenContainer>
       <View style={styles.content}>
         <View style={styles.headerBlock}>
           <ThemedText type="heroTitle" style={styles.title}>
@@ -61,6 +61,6 @@ export default function StartScreen() {
           </ThemedText>
         </Pressable>
       </View>
-    </ThemedView>
+    </ScreenContainer>
   );
 }

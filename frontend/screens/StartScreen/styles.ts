@@ -3,16 +3,11 @@ import { StyleSheet } from 'react-native';
 import { Spacing } from '@/constants/spacing';
 
 export const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingHorizontal: Spacing.xLg,
-    paddingBottom: Spacing.xxLg,
-  },
   content: {
     flex: 1,
   },
   headerBlock: {
-    minHeight: 220,
+    minHeight: 160,
     justifyContent: 'flex-end',
     marginBottom: Spacing.xLg + Spacing.xs,
   },
