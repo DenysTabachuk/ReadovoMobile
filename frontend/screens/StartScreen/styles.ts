@@ -1,10 +1,12 @@
 import { StyleSheet } from 'react-native';
 
+import { Spacing } from '@/constants/spacing';
+
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: 24,
-    paddingBottom: 32,
+    paddingHorizontal: Spacing.xLg,
+    paddingBottom: Spacing.xxLg,
   },
   content: {
     flex: 1,
@@ -12,12 +14,12 @@ export const styles = StyleSheet.create({
   headerBlock: {
     minHeight: 220,
     justifyContent: 'flex-end',
-    marginBottom: 28,
+    marginBottom: Spacing.xLg + Spacing.xs,
   },
   title: {
     fontSize: 42,
     lineHeight: 48,
-    marginBottom: 12,
+    marginBottom: Spacing.md,
   },
   description: {
     fontSize: 18,
@@ -25,7 +27,7 @@ export const styles = StyleSheet.create({
     maxWidth: 420,
   },
   languageList: {
-    gap: 12,
+    gap: Spacing.md,
     minHeight: 116,
   },
   languageButton: {
@@ -34,10 +36,10 @@ export const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     flexDirection: 'row',
-    gap: 12,
+    gap: Spacing.md,
     maxWidth: 420,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
   },
   languageButtonSelected: {
     backgroundColor: '#0a7ea4',
@@ -60,8 +62,8 @@ export const styles = StyleSheet.create({
     borderRadius: 8,
     marginTop: 'auto',
     maxWidth: 420,
-    paddingHorizontal: 18,
-    paddingVertical: 16,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.lg,
   },
   continueButtonText: {
     color: '#fff',

@@ -1,13 +1,15 @@
 import { StyleSheet } from 'react-native';
 
+import { Spacing } from '@/constants/spacing';
+
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
-    paddingHorizontal: 24,
+    paddingHorizontal: Spacing.xLg,
   },
   content: {
-    gap: 14,
+    gap: Spacing.lg,
     maxWidth: 520,
   },
   title: {
