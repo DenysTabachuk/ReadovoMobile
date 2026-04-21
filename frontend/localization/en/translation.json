@@ -24,7 +24,11 @@
     "googleButton": "Continue with Google",
     "togglePasswordVisibility": "Show or hide password",
     "signingIn": "Signing in...",
+    "success": {
+      "title": "Signed in successfully"
+    },
     "errors": {
+      "title": "Sign-in failed",
       "default": "Could not sign in with Google",
       "missingNativeModule": "Google Sign-In is not available in this build. Rebuild the app with a development build."
     }

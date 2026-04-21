@@ -5,6 +5,7 @@ import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/button';
+import { useBanner } from '@/components/banner';
 import { FormTextInput } from '@/components/formTextInput';
 import { ScreenContainer } from '@/components/screenContainer';
 import { ThemedText } from '@/components/themedText';
@@ -14,22 +15,24 @@ import { styles } from './styles';
 
 export default function LoginScreen() {
   const { t } = useTranslation();
+  const { showBanner } = useBanner();
   const inputIconColor = useThemeColor({}, 'text');
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const handleSignIn = () => {
-    setErrorMessage(null);
+    showBanner({
+      title: t('auth.success.title'),
+      variant: 'success',
+    });
     router.replace('/(tabs)');
   };
 
   const handleGoogleSignIn = async () => {
     try {
       setIsLoading(true);
-      setErrorMessage(null);
 
       const { signInWithGoogle } = await import('@/auth/googleAuth');
       const result = await signInWithGoogle();
@@ -38,18 +41,18 @@ export default function LoginScreen() {
         return;
       }
 
+      showBanner({
+        title: t('auth.success.title'),
+        variant: 'success',
+      });
       router.replace('/(tabs)');
     } catch (error) {
       console.error('[LoginScreen] Google sign-in flow failed', error);
 
-      const message = error instanceof Error ? error.message : '';
-      const isMissingNativeModule = message.includes('RNGoogleSignin');
-
-      setErrorMessage(
-        isMissingNativeModule
-          ? t('auth.errors.missingNativeModule')
-          : message || t('auth.errors.default')
-      );
+      showBanner({
+        title: t('auth.errors.title'),
+        variant: 'error',
+      });
     } finally {
       setIsLoading(false);
     }
@@ -62,12 +65,6 @@ export default function LoginScreen() {
           <ThemedText type="heroTitle">{t('auth.title')}</ThemedText>
           <ThemedText type="paragraph">{t('auth.description')}</ThemedText>
         </View>
-
-        {errorMessage ? (
-          <ThemedText type="bodyStrong" style={styles.errorText}>
-            {errorMessage}
-          </ThemedText>
-        ) : null}
 
         <View style={styles.form}>
           <FormTextInput

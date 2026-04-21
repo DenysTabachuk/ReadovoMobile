@@ -10,11 +10,6 @@ export const styles = StyleSheet.create({
     gap: Spacing.lg,
     maxWidth: 520,
   },
-  errorText: {
-    color: '#b42318',
-    marginTop: Spacing.xLg,
-    maxWidth: 420,
-  },
   form: {
     gap: Spacing.md,
     marginTop: Spacing.xxLg,
