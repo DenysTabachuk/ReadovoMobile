@@ -27,15 +27,7 @@ export const styles = StyleSheet.create({
     color: '#3357d8',
   },
   signInButton: {
-    alignItems: 'center',
-    backgroundColor: '#ef0036',
-    borderRadius: 12,
     marginTop: Spacing.sm,
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-  },
-  signInButtonText: {
-    color: '#fff',
   },
   orText: {
     alignSelf: 'center',

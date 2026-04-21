@@ -17,15 +17,6 @@ export const styles = StyleSheet.create({
     width: 240,
   },
   continueButton: {
-    alignItems: 'center',
-    backgroundColor: '#0a7ea4',
-    borderRadius: 8,
     marginTop: 'auto',
-    maxWidth: 420,
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.lg,
-  },
-  continueButtonText: {
-    color: '#fff',
   },
 });

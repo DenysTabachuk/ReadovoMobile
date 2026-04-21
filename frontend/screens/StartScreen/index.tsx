@@ -2,6 +2,7 @@ import { Pressable, View } from 'react-native';
 import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
+import { Button } from '@/components/button';
 import { ScreenContainer } from '@/components/screenContainer';
 import { ThemedText } from '@/components/themedText';
 
@@ -55,11 +56,9 @@ export default function StartScreen() {
           })}
         </View>
 
-        <Pressable style={styles.continueButton} onPress={() => router.push('/about')}>
-          <ThemedText type="buttonLabel" style={styles.continueButtonText}>
-            {t('start.continue')}
-          </ThemedText>
-        </Pressable>
+        <Button style={styles.continueButton} onPress={() => router.push('/about')}>
+          {t('start.continue')}
+        </Button>
       </View>
     </ScreenContainer>
   );

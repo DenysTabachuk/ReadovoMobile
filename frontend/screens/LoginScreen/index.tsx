@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
+import { Button } from '@/components/button';
 import { FormTextInput } from '@/components/formTextInput';
 import { ScreenContainer } from '@/components/screenContainer';
 import { ThemedText } from '@/components/themedText';
@@ -109,11 +110,9 @@ export default function LoginScreen() {
             </ThemedText>
           </Pressable>
 
-          <Pressable style={styles.signInButton} onPress={handleSignIn}>
-            <ThemedText type="buttonLabel" style={styles.signInButtonText}>
-              {t('auth.signInButton')}
-            </ThemedText>
-          </Pressable>
+          <Button style={styles.signInButton} onPress={handleSignIn}>
+            {t('auth.signInButton')}
+          </Button>
 
           <ThemedText type="bodyStrong" style={styles.orText}>
             {t('auth.orDivider')}
