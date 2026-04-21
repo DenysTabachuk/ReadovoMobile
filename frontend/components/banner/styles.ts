@@ -35,8 +35,10 @@ export const styles = StyleSheet.create({
   },
   title: {
     ...Typography.bodyStrong,
+    color: '#fff',
   },
   description: {
     ...Typography.body,
+    color: '#fff',
   },
 });

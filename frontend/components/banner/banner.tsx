@@ -16,18 +16,7 @@ type BannerProps = {
 
 export function Banner({ banner, hideBanner, opacity, translateY }: BannerProps) {
   const insets = useSafeAreaInsets();
-  const variantStyles =
-    banner.variant === 'success'
-      ? {
-          banner: styles.success,
-          description: styles.successDescription,
-          title: styles.successTitle,
-        }
-      : {
-          banner: styles.error,
-          description: styles.errorDescription,
-          title: styles.errorTitle,
-        };
+  const variantStyle = banner.variant === 'success' ? styles.success : styles.error;
 
   return (
     <Animated.View
@@ -43,12 +32,12 @@ export function Banner({ banner, hideBanner, opacity, translateY }: BannerProps)
       <Pressable
         accessibilityRole="alert"
         onPress={hideBanner}
-        style={[styles.banner, variantStyles.banner]}>
-        <ThemedText type="bodyStrong" style={[styles.title, variantStyles.title]}>
+        style={[styles.banner, variantStyle]}>
+        <ThemedText type="bodyStrong" style={styles.title}>
           {banner.title}
         </ThemedText>
         {banner.description ? (
-          <ThemedText style={[styles.description, variantStyles.description]}>
+          <ThemedText style={styles.description}>
             {banner.description}
           </ThemedText>
         ) : null}
