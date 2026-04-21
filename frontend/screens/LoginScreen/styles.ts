@@ -15,19 +15,49 @@ export const styles = StyleSheet.create({
     marginTop: Spacing.xLg,
     maxWidth: 420,
   },
+  form: {
+    gap: Spacing.md,
+    marginTop: Spacing.xxLg,
+    maxWidth: 420,
+  },
+  forgotPasswordButton: {
+    alignSelf: 'flex-start',
+  },
+  forgotPasswordText: {
+    color: '#3357d8',
+  },
+  signInButton: {
+    alignItems: 'center',
+    backgroundColor: '#ef0036',
+    borderRadius: 12,
+    marginTop: Spacing.sm,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+  },
+  signInButtonText: {
+    color: '#fff',
+  },
+  orText: {
+    alignSelf: 'center',
+    marginVertical: Spacing.sm,
+  },
   googleButton: {
     alignItems: 'center',
-    backgroundColor: '#0a7ea4',
-    borderRadius: 8,
-    marginTop: 'auto',
+    backgroundColor: '#fff',
+    borderColor: '#dedede',
+    borderRadius: 4,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: Spacing.xLg,
+    justifyContent: 'center',
     maxWidth: 420,
     paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.lg,
+    paddingVertical: Spacing.md,
   },
   googleButtonDisabled: {
     opacity: 0.7,
   },
   googleButtonText: {
-    color: '#fff',
+    color: '#33383d',
   },
 });

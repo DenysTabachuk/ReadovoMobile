@@ -13,8 +13,16 @@
   },
   "auth": {
     "title": "Sign in",
-    "description": "Use your Google account to continue learning with Speakly.",
+    "description": "Sign in to your account to continue learning with Speakly.",
+    "emailLabel": "Email address",
+    "emailPlaceholder": "Email",
+    "passwordLabel": "Password",
+    "passwordPlaceholder": "Password",
+    "forgotPassword": "Forgot password?",
+    "signInButton": "Sign in",
+    "orDivider": "OR",
     "googleButton": "Continue with Google",
+    "togglePasswordVisibility": "Show or hide password",
     "signingIn": "Signing in...",
     "errors": {
       "default": "Could not sign in with Google",
