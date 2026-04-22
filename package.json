@@ -1,4 +1,8 @@
 {
+  "scripts": {
+    "db:down": "docker compose down",
+    "db:up": "docker compose up -d postgres"
+  },
   "dependencies": {
     "i18next": "^26.0.6",
     "react-i18next": "^17.0.4"

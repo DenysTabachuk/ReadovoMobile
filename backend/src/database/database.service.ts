@@ -1,0 +1,35 @@
+import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { Pool, type QueryResult, type QueryResultRow } from 'pg';
+
+const defaultDatabaseUrl =
+  'postgres://speakly:speakly_password@localhost:5432/speakly';
+
+@Injectable()
+export class DatabaseService implements OnModuleDestroy, OnModuleInit {
+  private readonly pool = new Pool({
+    connectionString: process.env.DATABASE_URL ?? defaultDatabaseUrl,
+  });
+
+  async onModuleInit(): Promise<void> {
+    await this.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id uuid PRIMARY KEY,
+        email text NOT NULL UNIQUE,
+        password_hash text NOT NULL,
+        password_salt text NOT NULL,
+        created_at timestamptz NOT NULL DEFAULT now()
+      );
+    `);
+  }
+
+  query<T extends QueryResultRow = QueryResultRow>(
+    text: string,
+    values?: unknown[],
+  ): Promise<QueryResult<T>> {
+    return this.pool.query<T>(text, values);
+  }
+
+  async onModuleDestroy(): Promise<void> {
+    await this.pool.end();
+  }
+}
