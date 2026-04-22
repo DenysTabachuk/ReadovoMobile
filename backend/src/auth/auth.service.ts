@@ -2,12 +2,20 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  UnauthorizedException,
 } from '@nestjs/common';
-import { pbkdf2Sync, randomBytes, randomUUID } from 'node:crypto';
+import {
+  pbkdf2Sync,
+  randomBytes,
+  randomUUID,
+  timingSafeEqual,
+} from 'node:crypto';
 
+import { type LoginUserDto } from './dto/login-user.dto';
 import { type RegisterUserDto } from './dto/register-user.dto';
 import {
   type AuthUser,
+  type LoginUserResponse,
   type RegisterUserResponse,
   type StoredUser,
 } from './types';
@@ -19,6 +27,25 @@ const minPasswordLength = 8;
 @Injectable()
 export class AuthService {
   constructor(private readonly usersRepository: UsersRepository) {}
+
+  async login(loginUserDto: LoginUserDto): Promise<LoginUserResponse> {
+    const email = loginUserDto.email?.trim().toLowerCase() ?? '';
+    const password = loginUserDto.password ?? '';
+
+    if (!emailPattern.test(email) || password.length === 0) {
+      throw new BadRequestException('Email and password are required.');
+    }
+
+    const user = await this.usersRepository.findByEmail(email);
+
+    if (!user || !this.isPasswordValid(password, user)) {
+      throw new UnauthorizedException('Email or password is invalid.');
+    }
+
+    return {
+      user: this.toAuthUser(user),
+    };
+  }
 
   async register(
     registerUserDto: RegisterUserDto,
@@ -52,6 +79,23 @@ export class AuthService {
     return {
       user: this.toAuthUser(user),
     };
+  }
+
+  private isPasswordValid(password: string, user: StoredUser): boolean {
+    const passwordHash = pbkdf2Sync(
+      password,
+      user.passwordSalt,
+      100_000,
+      64,
+      'sha512',
+    ).toString('hex');
+    const expectedHash = Buffer.from(user.passwordHash, 'hex');
+    const actualHash = Buffer.from(passwordHash, 'hex');
+
+    return (
+      expectedHash.length === actualHash.length &&
+      timingSafeEqual(expectedHash, actualHash)
+    );
   }
 
   private createStoredUser(email: string, password: string): StoredUser {

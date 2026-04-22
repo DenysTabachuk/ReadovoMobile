@@ -15,3 +15,7 @@ export type AuthUser = {
 export type RegisterUserResponse = {
   user: AuthUser;
 };
+
+export type LoginUserResponse = {
+  user: AuthUser;
+};
