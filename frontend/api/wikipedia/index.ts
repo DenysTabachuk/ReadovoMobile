@@ -1,49 +1,45 @@
-export type WikipediaArticle = {
-  id: number;
-  title: string;
-  extract: string;
-  url: string;
-  thumbnailUrl?: string;
-};
+import {
+  DEFAULT_ARTICLE_LIMIT,
+  LOG_PREFIX,
+  WIKIMEDIA_USER_AGENT,
+} from './constants';
+import {
+  type WikipediaArticle,
+  type WikipediaRandomArticlesResponse,
+} from './types';
 
-type WikipediaPage = {
-  extract?: string;
-  fullurl?: string;
-  pageid: number;
-  thumbnail?: {
-    source?: string;
-  };
-  title: string;
-};
-
-type WikipediaRandomArticlesResponse = {
-  query?: {
-    pages?: Record<string, WikipediaPage>;
-  };
-};
-
-const DEFAULT_ARTICLE_LIMIT = 20;
-const LOG_PREFIX = '[Wikipedia API]';
-const WIKIMEDIA_USER_AGENT = 'SpeaklyMobile/1.0';
+export type { WikipediaArticle } from './types';
 
 export async function fetchRandomWikipediaArticles(
   languageCode: string,
   limit = DEFAULT_ARTICLE_LIMIT
 ): Promise<WikipediaArticle[]> {
   const params = new URLSearchParams({
+    // MediaWiki API operation: fetch page data.
     action: 'query',
+    // Return only the intro section and strip wiki/html markup from extracts.
     exintro: '1',
     explaintext: '1',
+    // Keep article previews short for the list UI.
     exsentences: '2',
+    // Ask for JSON instead of XML.
     format: 'json',
+    // Use random article pages as the source.
     generator: 'random',
+    // Number of random pages to request.
     grnlimit: String(limit),
+    // Namespace 0 means regular article pages, not talk/user/category pages.
     grnnamespace: '0',
+    // Include canonical/full page URLs.
     inprop: 'url',
+    // Allow browser/web requests from any origin.
     origin: '*',
+    // Include thumbnail images when Wikipedia has one.
     piprop: 'thumbnail',
     pithumbsize: '320',
+    // Page fields we need: extract text, image info, and URLs.
     prop: 'extracts|pageimages|info',
+    // Resolve redirects to the final article.
     redirects: '1',
   });
 
