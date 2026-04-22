@@ -46,6 +46,9 @@
       "passwordTooShort": "Password must be at least 8 characters",
       "passwordsDoNotMatch": "Passwords do not match",
       "emailAlreadyExists": "A user with this email already exists",
+      "passwordRequired": "Enter your password",
+      "invalidCredentials": "Email or password is incorrect",
+      "loginFailed": "Could not sign in",
       "registrationFailed": "Could not create account"
     }
   },

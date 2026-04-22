@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
+import { loginUser } from '@/api/auth';
 import { Button } from '@/components/button';
 import { useBanner } from '@/components/banner';
 import { FormTextInput } from '@/components/formTextInput';
@@ -13,6 +14,8 @@ import { ThemedText } from '@/components/themedText';
 
 import { styles } from './styles';
 
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export default function LoginScreen() {
   const { t } = useTranslation();
   const { showBanner } = useBanner();
@@ -20,12 +23,49 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const handleSignIn = () => {
-    showBanner({
-      title: t('auth.success.title'),
-      variant: 'success',
-    });
-    router.replace('/(tabs)');
+  const handleSignIn = async () => {
+    const normalizedEmail = email.trim().toLowerCase();
+
+    if (!emailPattern.test(normalizedEmail)) {
+      showBanner({
+        title: t('auth.errors.invalidEmail'),
+        variant: 'error',
+      });
+      return;
+    }
+
+    if (password.length === 0) {
+      showBanner({
+        title: t('auth.errors.passwordRequired'),
+        variant: 'error',
+      });
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+
+      await loginUser({
+        email: normalizedEmail,
+        password,
+      });
+
+      showBanner({
+        title: t('auth.success.title'),
+        variant: 'success',
+      });
+      router.replace('/(tabs)');
+    } catch (error) {
+      const messageKey =
+        error instanceof Error ? error.message : 'auth.errors.loginFailed';
+
+      showBanner({
+        title: t(messageKey),
+        variant: 'error',
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleGoogleSignIn = async () => {
@@ -90,8 +130,12 @@ export default function LoginScreen() {
             </ThemedText>
           </Pressable>
 
-          <Button style={styles.signInButton} onPress={handleSignIn}>
-            {t('auth.signInButton')}
+          <Button
+            disabled={isLoading}
+            style={styles.signInButton}
+            onPress={handleSignIn}
+          >
+            {isLoading ? t('auth.signingIn') : t('auth.signInButton')}
           </Button>
 
           <ThemedText type="bodyStrong" style={styles.orText}>
@@ -101,8 +145,12 @@ export default function LoginScreen() {
 
         <Pressable
           disabled={isLoading}
-          style={[styles.googleButton, isLoading && styles.googleButtonDisabled]}
-          onPress={handleGoogleSignIn}>
+          style={[
+            styles.googleButton,
+            isLoading && styles.googleButtonDisabled,
+          ]}
+          onPress={handleGoogleSignIn}
+        >
           <Ionicons name="logo-google" size={32} color="#4285F4" />
           <ThemedText type="buttonLabel" style={styles.googleButtonText}>
             {isLoading ? t('auth.signingIn') : t('auth.googleButton')}
@@ -112,7 +160,8 @@ export default function LoginScreen() {
         <Pressable
           hitSlop={8}
           style={styles.createAccountButton}
-          onPress={() => router.push('/register')}>
+          onPress={() => router.push('/register')}
+        >
           <ThemedText type="bodyStrong" style={styles.createAccountText}>
             {t('auth.createAccount')}
           </ThemedText>

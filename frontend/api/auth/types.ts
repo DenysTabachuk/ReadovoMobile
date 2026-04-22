@@ -4,6 +4,11 @@ export type RegisterUserRequest = {
   passwordConfirmation: string;
 };
 
+export type LoginUserRequest = {
+  email: string;
+  password: string;
+};
+
 export type AuthUser = {
   createdAt: string;
   email: string;
@@ -11,5 +16,9 @@ export type AuthUser = {
 };
 
 export type RegisterUserResponse = {
+  user: AuthUser;
+};
+
+export type LoginUserResponse = {
   user: AuthUser;
 };

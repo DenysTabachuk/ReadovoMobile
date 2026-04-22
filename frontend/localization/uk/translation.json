@@ -46,6 +46,9 @@
       "passwordTooShort": "Пароль має містити щонайменше 8 символів",
       "passwordsDoNotMatch": "Паролі не збігаються",
       "emailAlreadyExists": "Користувач із такою поштою вже існує",
+      "passwordRequired": "Введіть пароль",
+      "invalidCredentials": "Пошта або пароль неправильні",
+      "loginFailed": "Не вдалося увійти",
       "registrationFailed": "Не вдалося створити акаунт"
     }
   },
