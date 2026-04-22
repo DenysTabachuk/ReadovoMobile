@@ -11,13 +11,13 @@ import { styles } from './styles';
 const languages = [
   {
     code: 'en',
-    flag: '\u{1F1FA}\u{1F1F8}',
+    flag: '🇺🇸',
     label: 'English',
   },
   {
     code: 'uk',
-    flag: '\u{1F1FA}\u{1F1E6}',
-    label: '\u0423\u043A\u0440\u0430\u0457\u043D\u0441\u044C\u043A\u0430',
+    flag: '🇺🇦',
+    label: 'Українська',
   },
 ];
 

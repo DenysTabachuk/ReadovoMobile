@@ -14,23 +14,39 @@
   "auth": {
     "title": "Увійти",
     "description": "Увійдіть у свій акаунт, щоб продовжити навчання в Speakly.",
+    "registerTitle": "Створити акаунт",
+    "registerDescription": "Вкажіть пошту та пароль, щоб почати користуватися Speakly.",
     "emailLabel": "Електронна адреса",
     "emailPlaceholder": "Електронна пошта",
     "passwordLabel": "Пароль",
     "passwordPlaceholder": "Пароль",
+    "passwordConfirmationLabel": "Повторіть пароль",
+    "passwordConfirmationPlaceholder": "Повторіть пароль",
     "forgotPassword": "Забули пароль?",
     "signInButton": "Увійти",
+    "registerButton": "Зареєструватися",
+    "createAccount": "Створити акаунт",
+    "haveAccount": "Уже маєте акаунт? Увійти",
     "orDivider": "АБО",
     "googleButton": "Продовжити з Google",
     "togglePasswordVisibility": "Показати або сховати пароль",
     "signingIn": "Вхід...",
+    "creatingAccount": "Створюємо акаунт...",
     "success": {
       "title": "Вхід успішний"
+    },
+    "registrationSuccess": {
+      "title": "Акаунт створено"
     },
     "errors": {
       "title": "Не вдалося увійти",
       "default": "Не вдалося увійти через Google",
-      "missingNativeModule": "Google Sign-In недоступний у цій збірці. Перезберіть додаток через development build."
+      "missingNativeModule": "Google Sign-In недоступний у цій збірці. Перезберіть додаток через development build.",
+      "invalidEmail": "Введіть коректну електронну адресу",
+      "passwordTooShort": "Пароль має містити щонайменше 8 символів",
+      "passwordsDoNotMatch": "Паролі не збігаються",
+      "emailAlreadyExists": "Користувач із такою поштою вже існує",
+      "registrationFailed": "Не вдалося створити акаунт"
     }
   },
   "articles": {

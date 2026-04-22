@@ -14,23 +14,39 @@
   "auth": {
     "title": "Sign in",
     "description": "Sign in to your account to continue learning with Speakly.",
+    "registerTitle": "Create account",
+    "registerDescription": "Enter your email and password to start using Speakly.",
     "emailLabel": "Email address",
     "emailPlaceholder": "Email",
     "passwordLabel": "Password",
     "passwordPlaceholder": "Password",
+    "passwordConfirmationLabel": "Repeat password",
+    "passwordConfirmationPlaceholder": "Repeat password",
     "forgotPassword": "Forgot password?",
     "signInButton": "Sign in",
+    "registerButton": "Create account",
+    "createAccount": "Create account",
+    "haveAccount": "Already have an account? Sign in",
     "orDivider": "OR",
     "googleButton": "Continue with Google",
     "togglePasswordVisibility": "Show or hide password",
     "signingIn": "Signing in...",
+    "creatingAccount": "Creating account...",
     "success": {
       "title": "Signed in successfully"
+    },
+    "registrationSuccess": {
+      "title": "Account created"
     },
     "errors": {
       "title": "Sign-in failed",
       "default": "Could not sign in with Google",
-      "missingNativeModule": "Google Sign-In is not available in this build. Rebuild the app with a development build."
+      "missingNativeModule": "Google Sign-In is not available in this build. Rebuild the app with a development build.",
+      "invalidEmail": "Enter a valid email address",
+      "passwordTooShort": "Password must be at least 8 characters",
+      "passwordsDoNotMatch": "Passwords do not match",
+      "emailAlreadyExists": "A user with this email already exists",
+      "registrationFailed": "Could not create account"
     }
   },
   "articles": {

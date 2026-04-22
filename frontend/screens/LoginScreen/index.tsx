@@ -7,20 +7,18 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/button';
 import { useBanner } from '@/components/banner';
 import { FormTextInput } from '@/components/formTextInput';
+import { PasswordTextInput } from '@/components/passwordTextInput';
 import { ScreenContainer } from '@/components/screenContainer';
 import { ThemedText } from '@/components/themedText';
-import { useThemeColor } from '@/hooks/use-theme-color';
 
 import { styles } from './styles';
 
 export default function LoginScreen() {
   const { t } = useTranslation();
   const { showBanner } = useBanner();
-  const inputIconColor = useThemeColor({}, 'text');
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
   const handleSignIn = () => {
     showBanner({
@@ -78,25 +76,10 @@ export default function LoginScreen() {
             value={email}
           />
 
-          <FormTextInput
-            autoCapitalize="none"
-            autoComplete="password"
+          <PasswordTextInput
             label={t('auth.passwordLabel')}
             onChangeText={setPassword}
             placeholder={t('auth.passwordPlaceholder')}
-            rightAccessory={
-              <Pressable
-                accessibilityLabel={t('auth.togglePasswordVisibility')}
-                hitSlop={12}
-                onPress={() => setIsPasswordVisible((current) => !current)}>
-                <Ionicons
-                  color={inputIconColor}
-                  name={isPasswordVisible ? 'eye-off-outline' : 'eye-outline'}
-                  size={22}
-                />
-              </Pressable>
-            }
-            secureTextEntry={!isPasswordVisible}
             textContentType="password"
             value={password}
           />
@@ -123,6 +106,15 @@ export default function LoginScreen() {
           <Ionicons name="logo-google" size={32} color="#4285F4" />
           <ThemedText type="buttonLabel" style={styles.googleButtonText}>
             {isLoading ? t('auth.signingIn') : t('auth.googleButton')}
+          </ThemedText>
+        </Pressable>
+
+        <Pressable
+          hitSlop={8}
+          style={styles.createAccountButton}
+          onPress={() => router.push('/register')}>
+          <ThemedText type="bodyStrong" style={styles.createAccountText}>
+            {t('auth.createAccount')}
           </ThemedText>
         </Pressable>
       </View>

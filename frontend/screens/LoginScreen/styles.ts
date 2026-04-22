@@ -47,4 +47,12 @@ export const styles = StyleSheet.create({
   googleButtonText: {
     color: '#33383d',
   },
+  createAccountButton: {
+    alignSelf: 'center',
+    marginTop: Spacing.lg,
+  },
+  createAccountText: {
+    color: '#3357d8',
+    textAlign: 'center',
+  },
 });
