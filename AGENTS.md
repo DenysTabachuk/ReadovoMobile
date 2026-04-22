@@ -12,3 +12,7 @@
 ## Components
 - Extract repeated UI patterns into shared components when the pattern appears more than once or is likely to be reused.
 - Keep screen files focused on composition and behavior, not low-level styling details.
+
+## Localization
+- Keep translation values human-readable in their target language.
+- Do not write normal text as Unicode escape sequences like `\u0421\u0442...` unless the escape is technically required.

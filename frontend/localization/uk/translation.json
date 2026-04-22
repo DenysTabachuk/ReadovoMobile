@@ -32,5 +32,13 @@
       "default": "Не вдалося увійти через Google",
       "missingNativeModule": "Google Sign-In недоступний у цій збірці. Перезберіть додаток через development build."
     }
+  },
+  "articles": {
+    "title": "Статті з Wikipedia",
+    "description": "Свіжа добірка випадкових статей для практики читання.",
+    "loading": "Завантажуємо статті...",
+    "errorTitle": "Статті недоступні",
+    "errorDescription": "Перевірте інтернет-з'єднання та спробуйте ще раз.",
+    "retry": "Спробувати ще"
   }
 }

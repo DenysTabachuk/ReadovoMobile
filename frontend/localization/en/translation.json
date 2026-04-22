@@ -32,5 +32,13 @@
       "default": "Could not sign in with Google",
       "missingNativeModule": "Google Sign-In is not available in this build. Rebuild the app with a development build."
     }
+  },
+  "articles": {
+    "title": "Wikipedia articles",
+    "description": "A fresh set of random articles for reading practice.",
+    "loading": "Loading articles...",
+    "errorTitle": "Articles are unavailable",
+    "errorDescription": "Check your internet connection and try again.",
+    "retry": "Try again"
   }
 }
