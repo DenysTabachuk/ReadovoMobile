@@ -67,7 +67,14 @@
     "errorDescription": "Зараз не вдалося завантажити цю статтю.",
     "invalidId": "Посилання на статтю некоректне.",
     "retry": "Спробувати ще",
-    "openOriginal": "Відкрити оригінал у Wikipedia"
+    "openOriginal": "Відкрити оригінал у Wikipedia",
+    "adaptText": "Адаптувати текст",
+    "adapting": "Адаптуємо текст...",
+    "showOriginalText": "Показати оригінал",
+    "showAdaptedText": "Показати адаптований текст",
+    "adaptError": "Не вдалося адаптувати текст. Спробуйте ще раз.",
+    "adaptedState": "Текст адаптовано для рівня {{level}}. Довжина: {{adaptedLength}} символів замість {{originalLength}}.",
+    "originalState": "Показано оригінальний текст. Адаптована версія для рівня {{level}} з довжиною {{targetLength}} вже готова."
   },
   "translation": {
     "titleFallback": "Переклад",

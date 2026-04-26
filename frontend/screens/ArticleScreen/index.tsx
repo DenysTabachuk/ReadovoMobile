@@ -1,13 +1,17 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { Image } from 'expo-image';
 import * as Linking from 'expo-linking';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { translateWord } from '@/api/translations';
-import { fetchWikipediaArticleDetail } from '@/api/wikipedia';
+import {
+  fetchWikipediaArticleDetail,
+  simplifyWikipediaArticle,
+  type SimplifyArticleResponse,
+} from '@/api/wikipedia';
 import { useBanner } from '@/components/banner';
 import { Button } from '@/components/button';
 import { ScreenContainer } from '@/components/screenContainer';
@@ -25,6 +29,9 @@ type SelectedWord = {
   word: string;
 };
 
+const DEFAULT_SIMPLIFICATION_LEVEL = 'A2';
+const DEFAULT_TARGET_LENGTH = 'short';
+
 export default function ArticleScreen() {
   const { t } = useTranslation();
   const colorScheme = useColorScheme();
@@ -33,6 +40,8 @@ export default function ArticleScreen() {
     id?: string | string[];
   }>();
   const [selectedWord, setSelectedWord] = useState<SelectedWord | null>(null);
+  const [adaptedArticle, setAdaptedArticle] = useState<SimplifyArticleResponse | null>(null);
+  const [showAdaptedText, setShowAdaptedText] = useState(false);
 
   const rawArticleId = Array.isArray(params.id) ? params.id[0] : params.id;
   const parsedArticleId = Number(rawArticleId);
@@ -80,6 +89,37 @@ export default function ArticleScreen() {
       'uk',
     ],
   });
+  const simplifyMutation = useMutation({
+    mutationFn: async () => {
+      if (!article) {
+        throw new Error('Article is unavailable.');
+      }
+
+      return simplifyWikipediaArticle({
+        level: DEFAULT_SIMPLIFICATION_LEVEL,
+        targetLength: DEFAULT_TARGET_LENGTH,
+        text: article.content,
+        title: article.title,
+      });
+    },
+    onError: (mutationError) => {
+      const fallbackMessage = t('article.adaptError');
+      const message =
+        mutationError instanceof Error
+          ? mutationError.message.replace(/^article\.adaptError:\s*/, '')
+          : fallbackMessage;
+
+      showBanner({
+        title: message === 'article.adaptError' ? fallbackMessage : message,
+        variant: 'error',
+      });
+    },
+    onSuccess: (response) => {
+      setAdaptedArticle(response);
+      setShowAdaptedText(true);
+      setSelectedWord(null);
+    },
+  });
 
   const handleWordPress = useCallback((selection: SelectedWord) => {
     setSelectedWord(selection);
@@ -95,6 +135,28 @@ export default function ArticleScreen() {
       variant: 'success',
     });
   }, [showBanner, t]);
+
+  const handleAdaptPress = useCallback(() => {
+    simplifyMutation.mutate();
+  }, [simplifyMutation]);
+
+  const handleShowOriginalPress = useCallback(() => {
+    setSelectedWord(null);
+    setShowAdaptedText(false);
+  }, []);
+
+  const handleShowAdaptedPress = useCallback(() => {
+    setSelectedWord(null);
+    setShowAdaptedText(true);
+  }, []);
+
+  const displayedText = useMemo(() => {
+    if (showAdaptedText && adaptedArticle) {
+      return adaptedArticle.adaptedText;
+    }
+
+    return article?.content ?? '';
+  }, [adaptedArticle, article?.content, showAdaptedText]);
 
   if (articleId === null) {
     return (
@@ -160,11 +222,51 @@ export default function ArticleScreen() {
           </Pressable>
         </View>
 
+        <View style={styles.actionRow}>
+          <Button
+            disabled={simplifyMutation.isPending}
+            onPress={handleAdaptPress}
+            variant="primary">
+            {simplifyMutation.isPending
+              ? t('article.adapting')
+              : t('article.adaptText')}
+          </Button>
+          {adaptedArticle ? (
+            <Button
+              onPress={
+                showAdaptedText ? handleShowOriginalPress : handleShowAdaptedPress
+              }
+              variant="secondary">
+              {showAdaptedText
+                ? t('article.showOriginalText')
+                : t('article.showAdaptedText')}
+            </Button>
+          ) : null}
+        </View>
+
+        {adaptedArticle ? (
+          <View style={styles.articleMeta}>
+            <ThemedText type="description" style={styles.infoText}>
+              {showAdaptedText
+                ? t('article.adaptedState', {
+                    adaptedLength: adaptedArticle.adaptedLength,
+                    level: adaptedArticle.level,
+                    originalLength: adaptedArticle.originalLength,
+                  })
+                : t('article.originalState', {
+                    level: adaptedArticle.level,
+                    originalLength: adaptedArticle.originalLength,
+                    targetLength: adaptedArticle.targetLength,
+                  })}
+            </ThemedText>
+          </View>
+        ) : null}
+
         <View style={styles.articleContent}>
           <InteractiveArticleText
             onWordPress={handleWordPress}
             selectedTokenKey={selectedWord?.tokenKey}
-            text={article.content}
+            text={displayedText}
           />
         </View>
       </ScrollView>

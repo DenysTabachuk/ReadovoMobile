@@ -3,8 +3,16 @@ import { StyleSheet } from 'react-native';
 import { Spacing } from '@/constants/spacing';
 
 export const styles = StyleSheet.create({
+  actionRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.md,
+  },
   articleContent: {
     paddingBottom: Spacing.xxLg,
+  },
+  articleMeta: {
+    gap: Spacing.xs,
   },
   centerDescription: {
     maxWidth: 420,
@@ -36,6 +44,9 @@ export const styles = StyleSheet.create({
     borderRadius: 12,
     height: 220,
     width: '100%',
+  },
+  infoText: {
+    opacity: 0.8,
   },
   wikipediaLink: {
     textDecorationLine: 'underline',

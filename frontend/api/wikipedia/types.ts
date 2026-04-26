@@ -13,3 +13,23 @@ export type WikipediaArticleDetail = {
   url: string;
   thumbnailUrl?: string;
 };
+
+export type SimplifyArticleLevel = 'A1' | 'A2' | 'B1' | 'B2';
+
+export type SimplifyArticleTargetLength = 'short' | 'medium';
+
+export type SimplifyArticleRequest = {
+  level?: SimplifyArticleLevel;
+  targetLength?: SimplifyArticleTargetLength;
+  text: string;
+  title: string;
+};
+
+export type SimplifyArticleResponse = {
+  adaptedLength: number;
+  adaptedText: string;
+  level: SimplifyArticleLevel;
+  originalLength: number;
+  targetLength: SimplifyArticleTargetLength;
+  title: string;
+};

@@ -67,7 +67,14 @@
     "errorDescription": "We could not load this article right now.",
     "invalidId": "This article link is invalid.",
     "retry": "Try again",
-    "openOriginal": "Open original on Wikipedia"
+    "openOriginal": "Open original on Wikipedia",
+    "adaptText": "Adapt text",
+    "adapting": "Adapting text...",
+    "showOriginalText": "Show original text",
+    "showAdaptedText": "Show adapted text",
+    "adaptError": "Could not adapt the text. Try again.",
+    "adaptedState": "Adapted for level {{level}}. Length: {{adaptedLength}} characters instead of {{originalLength}}.",
+    "originalState": "Showing original text. Adapted version is ready for level {{level}} with {{targetLength}} length."
   },
   "translation": {
     "titleFallback": "Translation",
