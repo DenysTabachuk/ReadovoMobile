@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { Image } from 'expo-image';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -31,6 +31,8 @@ import {
   type ArticlePreviewLengthFilter,
 } from './components/articlesToolbar';
 
+const ARTICLE_SEARCH_DEBOUNCE_MS = 1200;
+
 export default function ArticlesScreen() {
   const { t } = useTranslation();
   const colorScheme = useColorScheme();
@@ -42,22 +44,24 @@ export default function ArticlesScreen() {
     useState<ArticlePreviewLengthFilter>('all');
   const [categoryFilter, setCategoryFilter] =
     useState<ArticleCategoryFilter>('all');
+  const [isManualRefresh, setIsManualRefresh] = useState(false);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       setDebouncedSearchValue(searchValue.trim());
-    }, 350);
+    }, ARTICLE_SEARCH_DEBOUNCE_MS);
 
     return () => clearTimeout(timeoutId);
   }, [searchValue]);
 
   const {
-    data: articles = [],
+    data,
     error,
     isFetching,
     isLoading,
     refetch,
   } = useQuery({
+    placeholderData: keepPreviousData,
     queryFn: () =>
       fetchWikipediaArticles({
         category: categoryFilter as WikipediaArticleCategory,
@@ -65,6 +69,10 @@ export default function ArticlesScreen() {
       }),
     queryKey: ['wikipedia', 'articles', debouncedSearchValue, categoryFilter],
   });
+  const articles = data ?? [];
+  const shouldShowInitialLoader = isLoading && articles.length === 0;
+  const shouldShowErrorState = Boolean(error) && articles.length === 0;
+  const isUpdatingResults = isFetching && !shouldShowInitialLoader;
 
   const filteredArticles = useMemo(() => {
     return articles.filter((article) => {
@@ -92,6 +100,16 @@ export default function ArticlesScreen() {
     setPreviewLengthFilter('all');
     setCategoryFilter('all');
   }, []);
+
+  const handleRefresh = useCallback(async () => {
+    setIsManualRefresh(true);
+
+    try {
+      await refetch();
+    } finally {
+      setIsManualRefresh(false);
+    }
+  }, [refetch]);
 
   const openArticle = useCallback(
     (article: WikipediaArticle) => {
@@ -141,7 +159,7 @@ export default function ArticlesScreen() {
     [borderColor, iconColor, openArticle]
   );
 
-  if (isLoading) {
+  if (shouldShowInitialLoader) {
     return (
       <ScreenContainer>
         <View style={styles.centerState}>
@@ -152,7 +170,7 @@ export default function ArticlesScreen() {
     );
   }
 
-  if (error) {
+  if (shouldShowErrorState) {
     return (
       <ScreenContainer>
         <View style={styles.centerState}>
@@ -182,6 +200,7 @@ export default function ArticlesScreen() {
             </ThemedText>
             <ArticlesToolbar
               categoryFilter={categoryFilter}
+              isRefreshingResults={isUpdatingResults}
               isSearchActive={debouncedSearchValue.length > 0}
               onChangeCategoryFilter={setCategoryFilter}
               onChangePreviewLengthFilter={setPreviewLengthFilter}
@@ -207,9 +226,9 @@ export default function ArticlesScreen() {
         }
         refreshControl={
           <RefreshControl
-            refreshing={isFetching && !isLoading}
+            refreshing={isManualRefresh}
             tintColor={Colors[colorScheme ?? 'light'].tint}
-            onRefresh={refetch}
+            onRefresh={handleRefresh}
           />
         }
         renderItem={renderArticle}

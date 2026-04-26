@@ -1,4 +1,4 @@
-import { Pressable, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, TextInput, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { OptionPickerField } from '@/components/optionPickerField';
@@ -18,6 +18,7 @@ export type ArticleCategoryFilter =
 
 type ArticlesToolbarProps = {
   categoryFilter: ArticleCategoryFilter;
+  isRefreshingResults: boolean;
   isSearchActive: boolean;
   previewLengthFilter: ArticlePreviewLengthFilter;
   resultCount: number;
@@ -30,6 +31,7 @@ type ArticlesToolbarProps = {
 
 export function ArticlesToolbar({
   categoryFilter,
+  isRefreshingResults,
   isSearchActive,
   previewLengthFilter,
   resultCount,
@@ -109,11 +111,16 @@ export function ArticlesToolbar({
       </View>
 
       <View style={styles.resultsRow}>
-        <ThemedText type="body" style={{ color: mutedTextColor }}>
-          {isSearchActive
-            ? t('articles.searchResults', { count: resultCount })
-            : t('articles.randomResults', { count: resultCount })}
-        </ThemedText>
+        <View style={styles.resultsStatus}>
+          <ThemedText type="body" style={{ color: mutedTextColor }}>
+            {isSearchActive
+              ? t('articles.searchResults', { count: resultCount })
+              : t('articles.randomResults', { count: resultCount })}
+          </ThemedText>
+          {isRefreshingResults ? (
+            <ActivityIndicator color={tintColor} size="small" />
+          ) : null}
+        </View>
 
         {hasActiveFilters ? (
           <Pressable

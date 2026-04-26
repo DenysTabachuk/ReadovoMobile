@@ -42,6 +42,12 @@ export const styles = StyleSheet.create({
     gap: Spacing.sm,
     justifyContent: 'space-between',
   },
+  resultsStatus: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+  },
   clearButton: {
     borderRadius: 999,
     minHeight: 32,
