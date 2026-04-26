@@ -7,6 +7,7 @@ import { useEffect } from 'react';
 import { Platform, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import '@/localization';
+import '@/devtools/reactotron';
 import 'react-native-reanimated';
 
 import { BannerProvider } from '@/components/banner';
