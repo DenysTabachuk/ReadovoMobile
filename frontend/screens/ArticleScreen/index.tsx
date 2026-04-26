@@ -2,24 +2,37 @@ import { useQuery } from '@tanstack/react-query';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { Image } from 'expo-image';
 import * as Linking from 'expo-linking';
+import { useCallback, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
+import { translateWord } from '@/api/translations';
 import { fetchWikipediaArticleDetail } from '@/api/wikipedia';
+import { useBanner } from '@/components/banner';
 import { Button } from '@/components/button';
 import { ScreenContainer } from '@/components/screenContainer';
 import { ThemedText } from '@/components/themedText';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
+import { InteractiveArticleText } from './components/interactiveArticleText';
+import { WordTranslationSheet } from './components/wordTranslationSheet';
 import { styles } from './styles';
+
+type SelectedWord = {
+  context: string;
+  tokenKey: string;
+  word: string;
+};
 
 export default function ArticleScreen() {
   const { t } = useTranslation();
   const colorScheme = useColorScheme();
+  const { showBanner } = useBanner();
   const params = useLocalSearchParams<{
     id?: string | string[];
   }>();
+  const [selectedWord, setSelectedWord] = useState<SelectedWord | null>(null);
 
   const rawArticleId = Array.isArray(params.id) ? params.id[0] : params.id;
   const parsedArticleId = Number(rawArticleId);
@@ -41,6 +54,47 @@ export default function ArticleScreen() {
     },
     queryKey: ['wikipedia', 'article', articleId],
   });
+  const {
+    data: translation,
+    error: translationError,
+    isFetching: isTranslationLoading,
+  } = useQuery({
+    enabled: selectedWord !== null,
+    queryFn: async () => {
+      if (!selectedWord) {
+        throw new Error('No word selected.');
+      }
+
+      return translateWord({
+        context: selectedWord.context,
+        sourceLanguage: 'en',
+        targetLanguage: 'uk',
+        word: selectedWord.word,
+      });
+    },
+    queryKey: [
+      'translation',
+      selectedWord?.word ?? '',
+      selectedWord?.context ?? '',
+      'en',
+      'uk',
+    ],
+  });
+
+  const handleWordPress = useCallback((selection: SelectedWord) => {
+    setSelectedWord(selection);
+  }, []);
+
+  const handleCloseTranslation = useCallback(() => {
+    setSelectedWord(null);
+  }, []);
+
+  const handleAddToDictionary = useCallback(() => {
+    showBanner({
+      title: t('translation.dictionaryComingSoon'),
+      variant: 'success',
+    });
+  }, [showBanner, t]);
 
   if (articleId === null) {
     return (
@@ -106,10 +160,24 @@ export default function ArticleScreen() {
           </Pressable>
         </View>
 
-        <ThemedText selectable type="paragraph" style={styles.articleContent}>
-          {article.content}
-        </ThemedText>
+        <View style={styles.articleContent}>
+          <InteractiveArticleText
+            onWordPress={handleWordPress}
+            selectedTokenKey={selectedWord?.tokenKey}
+            text={article.content}
+          />
+        </View>
       </ScrollView>
+      <WordTranslationSheet
+        context={selectedWord?.context}
+        error={Boolean(translationError)}
+        loading={isTranslationLoading}
+        onAddToDictionary={handleAddToDictionary}
+        onClose={handleCloseTranslation}
+        open={selectedWord !== null}
+        translation={translation?.translation}
+        word={selectedWord?.word}
+      />
     </ScreenContainer>
   );
 }

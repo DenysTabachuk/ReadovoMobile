@@ -68,5 +68,13 @@
     "invalidId": "This article link is invalid.",
     "retry": "Try again",
     "openOriginal": "Open original on Wikipedia"
+  },
+  "translation": {
+    "titleFallback": "Translation",
+    "loading": "Loading translation...",
+    "error": "Could not get the translation. Try again.",
+    "addToDictionary": "Add to dictionary",
+    "close": "Close",
+    "dictionaryComingSoon": "Dictionary will be added next."
   }
 }
