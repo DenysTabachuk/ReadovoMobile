@@ -87,6 +87,17 @@ export const styles = StyleSheet.create({
     borderBottomWidth: 1,
     flexDirection: 'row',
   },
+  tableViewport: {
+    marginHorizontal: -Spacing.xs,
+  },
+  tableViewportContent: {
+    paddingHorizontal: Spacing.xs,
+  },
+  tableWideCell: {
+    flexGrow: 0,
+    flexShrink: 0,
+    width: 140,
+  },
 });
 
 export function getThemeStyles(themeName: ThemeName) {

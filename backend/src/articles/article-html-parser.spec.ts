@@ -239,4 +239,70 @@ describe('articleHtmlParser', () => {
       type: 'table',
     });
   });
+
+  it('skips unsupported interactive map blocks', () => {
+    const blocks = parseHtmlToBlocks(`
+      <section>
+        <p>Intro paragraph.</p>
+        <div class="mw-kartographer-container thumb tright">
+          <mapframe latitude="48.8566" longitude="2.3522" zoom="10"></mapframe>
+        </div>
+        <div class="kartographer-map">Map preview</div>
+        <maplink latitude="48.8566" longitude="2.3522"></maplink>
+        <p>Outro paragraph.</p>
+      </section>
+    `);
+
+    expect(blocks).toEqual([
+      {
+        children: [
+          { text: 'Intro', type: 'word' },
+          { text: ' ', type: 'text' },
+          { text: 'paragraph', type: 'word' },
+          { text: '.', type: 'text' },
+        ],
+        type: 'paragraph',
+      },
+      {
+        children: [
+          { text: 'Outro', type: 'word' },
+          { text: ' ', type: 'text' },
+          { text: 'paragraph', type: 'word' },
+          { text: '.', type: 'text' },
+        ],
+        type: 'paragraph',
+      },
+    ]);
+  });
+
+  it('parses common wikipedia thumb wrappers and falls back to srcset', () => {
+    const blocks = parseHtmlToBlocks(`
+      <section>
+        <div class="thumb tright">
+          <div class="thumbinner">
+            <span typeof="mw:File/Thumb">
+              <a href="./File:Example.jpg">
+                <img
+                  alt="Example thumb"
+                  data-file-height="900"
+                  data-file-width="1200"
+                  srcset="//upload.wikimedia.org/example-320.jpg 1x, //upload.wikimedia.org/example-640.jpg 2x"
+                />
+              </a>
+            </span>
+            <div class="thumbcaption">Example thumbnail caption</div>
+          </div>
+        </div>
+      </section>
+    `);
+
+    expect(blocks).toEqual([
+      {
+        alt: 'Example thumb',
+        caption: 'Example thumbnail caption',
+        src: 'https://upload.wikimedia.org/example-320.jpg',
+        type: 'image',
+      },
+    ]);
+  });
 });

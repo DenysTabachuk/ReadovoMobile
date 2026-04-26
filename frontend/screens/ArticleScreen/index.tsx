@@ -192,6 +192,23 @@ export default function ArticleScreen() {
 
     return stripDuplicateTitleHeading(article.blocks, article.title);
   }, [article, showAdaptedText]);
+  const shouldRenderHeroImage = useMemo(() => {
+    if (!article?.thumbnailUrl || hasImageLoadError) {
+      return false;
+    }
+
+    if (showAdaptedText) {
+      return true;
+    }
+
+    return !hasDuplicateArticleImage(article.thumbnailUrl, displayedBlocks ?? article.blocks);
+  }, [
+    article?.blocks,
+    article?.thumbnailUrl,
+    displayedBlocks,
+    hasImageLoadError,
+    showAdaptedText,
+  ]);
 
   useEffect(() => {
     setHasImageLoadError(false);
@@ -248,7 +265,7 @@ export default function ArticleScreen() {
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}>
-        {article.thumbnailUrl && !hasImageLoadError ? (
+        {shouldRenderHeroImage ? (
           <Image
             contentFit="cover"
             onError={() => setHasImageLoadError(true)}
@@ -363,4 +380,50 @@ function stripDuplicateTitleHeading(
   }
 
   return blocks;
+}
+
+function hasDuplicateArticleImage(
+  thumbnailUrl: string,
+  blocks: ArticleBlock[],
+): boolean {
+  const normalizedThumbnailIdentity = getWikipediaImageIdentity(thumbnailUrl);
+
+  if (!normalizedThumbnailIdentity) {
+    return false;
+  }
+
+  return blocks.some((block) => {
+    return (
+      block.type === 'image' &&
+      getWikipediaImageIdentity(block.src) === normalizedThumbnailIdentity
+    );
+  });
+}
+
+function getWikipediaImageIdentity(imageUrl: string): string | null {
+  try {
+    const { pathname } = new URL(imageUrl);
+    const pathSegments = pathname.split('/').filter(Boolean);
+
+    if (pathSegments.length === 0) {
+      return null;
+    }
+
+    const thumbIndex = pathSegments.findIndex((segment) => segment === 'thumb');
+    const rawFileName =
+      thumbIndex >= 0 && thumbIndex + 3 < pathSegments.length
+        ? pathSegments[pathSegments.length - 2]
+        : pathSegments[pathSegments.length - 1];
+
+    if (!rawFileName) {
+      return null;
+    }
+
+    return decodeURIComponent(rawFileName)
+      .replace(/^\d+px-/, '')
+      .trim()
+      .toLowerCase();
+  } catch {
+    return imageUrl.trim().toLowerCase() || null;
+  }
 }

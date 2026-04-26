@@ -37,6 +37,19 @@ const BLOCK_TAGS = new Set([
 const FORMATTING_BOLD_TAGS = new Set(['b', 'strong']);
 const FORMATTING_ITALIC_TAGS = new Set(['cite', 'dfn', 'em', 'i']);
 const IMAGE_CONTAINER_TAGS = new Set(['figure']);
+const IMAGE_CAPTION_CLASS_PATTERNS = [
+  'gallerytext',
+  'infobox-caption',
+  'thumbcaption',
+];
+const IMAGE_WRAPPER_CLASS_PATTERNS = [
+  'gallerybox',
+  'image',
+  'infobox-image',
+  'thumb',
+  'thumbinner',
+];
+const IMAGE_WRAPPER_TYPEOF_PATTERNS = ['mw:file'];
 const INLINE_BREAK_TAGS = new Set(['br', 'hr']);
 const INLINE_WRAPPER_TAGS = new Set([
   'a',
@@ -78,12 +91,20 @@ const IGNORED_ID_PATTERNS = ['cite_note', 'mw-toc-heading'];
 const IGNORED_TAGS = new Set([
   'audio',
   'link',
+  'mapframe',
+  'maplink',
   'meta',
   'noscript',
   'script',
   'style',
   'template',
 ]);
+const IGNORED_MAP_CLASS_PATTERNS = [
+  'kartographer',
+  'mapframe',
+  'maplink',
+  'mw-kartographer',
+];
 const IGNORED_SECTION_TITLES = new Set([
   'bibliography',
   'citations',
@@ -209,10 +230,10 @@ function parseNodesToBlocks(nodes: HtmlChildNode[]): ArticleBlock[] {
     }
 
     if (node.tagName === 'table') {
-      const infoboxImageBlock = parseInfoboxImageBlock(node);
+      const tableImageBlock = parseTableImageBlock(node);
 
-      if (infoboxImageBlock) {
-        blocks.push(infoboxImageBlock);
+      if (tableImageBlock) {
+        blocks.push(tableImageBlock);
       }
 
       const rows = parseTableRows(node);
@@ -318,17 +339,18 @@ function parseTableRows(tableNode: HtmlElement): TableCell[][] {
 }
 
 function parseImageBlock(node: HtmlElement): Extract<ArticleBlock, { type: 'image' }> | null {
-  if (!IMAGE_CONTAINER_TAGS.has(node.tagName) && node.tagName !== 'img') {
+  if (!isImageContainerElement(node) && node.tagName !== 'img') {
     return null;
   }
 
-  const imageNode = node.tagName === 'img' ? node : findFirstDescendant(node, 'img');
+  const imageNode =
+    node.tagName === 'img' ? node : extractPrimaryImageNode(node);
 
   if (!imageNode || shouldIgnoreElement(imageNode)) {
     return null;
   }
 
-  const src = normalizeImageSource(getAttribute(imageNode, 'src'));
+  const src = getBestImageSource(imageNode);
 
   if (!src) {
     return null;
@@ -338,7 +360,7 @@ function parseImageBlock(node: HtmlElement): Extract<ArticleBlock, { type: 'imag
   const caption =
     node.tagName === 'img'
       ? undefined
-      : normalizeWhitespace(extractFigureCaption(node) ?? '');
+      : normalizeWhitespace(extractImageCaption(node) ?? '');
 
   return {
     alt: alt || undefined,
@@ -351,24 +373,36 @@ function parseImageBlock(node: HtmlElement): Extract<ArticleBlock, { type: 'imag
 function parseInfoboxImageBlock(
   node: HtmlElement,
 ): Extract<ArticleBlock, { type: 'image' }> | null {
+  return parseTableImageBlock(node);
+}
+
+function parseTableImageBlock(
+  node: HtmlElement,
+): Extract<ArticleBlock, { type: 'image' }> | null {
   if (node.tagName !== 'table' || !isInfoboxElement(node)) {
-    return null;
+    if (node.tagName !== 'table') {
+      return null;
+    }
   }
 
-  const imageNode = findFirstDescendant(node, 'img');
+  const imageNode = extractPrimaryImageNode(node, {
+    requireMeaningfulSize: !isInfoboxElement(node),
+  });
 
   if (!imageNode || shouldIgnoreElement(imageNode)) {
     return null;
   }
 
-  const src = normalizeImageSource(getAttribute(imageNode, 'src'));
+  const src = getBestImageSource(imageNode);
 
   if (!src) {
     return null;
   }
 
   const alt = normalizeWhitespace(getAttribute(imageNode, 'alt') ?? '');
-  const caption = normalizeWhitespace(extractInfoboxImageCaption(node) ?? '');
+  const caption = normalizeWhitespace(
+    extractInfoboxImageCaption(node) ?? extractImageCaption(node) ?? '',
+  );
 
   return {
     alt: alt || undefined,
@@ -560,6 +594,28 @@ function extractFigureCaption(node: HtmlElement): string | null {
   return null;
 }
 
+function extractImageCaption(node: HtmlElement): string | null {
+  const figureCaption = extractFigureCaption(node);
+
+  if (figureCaption) {
+    return figureCaption;
+  }
+
+  for (const classNamePattern of IMAGE_CAPTION_CLASS_PATTERNS) {
+    const captionNode = findDescendantByClassName(node, classNamePattern);
+
+    if (captionNode) {
+      const caption = extractElementText(captionNode);
+
+      if (caption) {
+        return caption;
+      }
+    }
+  }
+
+  return null;
+}
+
 function extractTableCaption(node: HtmlElement): string | null {
   const caption = findFirstDescendant(node, 'caption');
 
@@ -706,6 +762,10 @@ function shouldIgnoreElement(node: HtmlElement): boolean {
     return true;
   }
 
+  if (IGNORED_MAP_CLASS_PATTERNS.some((pattern) => className.includes(pattern))) {
+    return true;
+  }
+
   if (IGNORED_ID_PATTERNS.some((pattern) => elementId.includes(pattern))) {
     return true;
   }
@@ -721,6 +781,25 @@ function isInfoboxElement(node: HtmlElement): boolean {
   const className = getAttribute(node, 'class')?.toLowerCase() ?? '';
 
   return className.includes('infobox');
+}
+
+function isImageContainerElement(node: HtmlElement): boolean {
+  if (IMAGE_CONTAINER_TAGS.has(node.tagName)) {
+    return true;
+  }
+
+  const className = getAttribute(node, 'class')?.toLowerCase() ?? '';
+  const typeOf = getAttribute(node, 'typeof')?.toLowerCase() ?? '';
+
+  if (IMAGE_WRAPPER_CLASS_PATTERNS.some((pattern) => className.includes(pattern))) {
+    return true;
+  }
+
+  if (IMAGE_WRAPPER_TYPEOF_PATTERNS.some((pattern) => typeOf.includes(pattern))) {
+    return true;
+  }
+
+  return false;
 }
 
 function getAttribute(node: HtmlElement, attributeName: string): string | undefined {
@@ -760,6 +839,37 @@ function extractInfoboxImageCaption(node: HtmlElement): string | null {
   return null;
 }
 
+function extractPrimaryImageNode(
+  parentNode: HtmlElement,
+  options: { requireMeaningfulSize?: boolean } = {},
+): HtmlElement | null {
+  const imageNodes = findDescendantsByTagName(parentNode, 'img').filter((imageNode) => {
+    return !shouldIgnoreElement(imageNode);
+  });
+
+  if (imageNodes.length === 0) {
+    return null;
+  }
+
+  const sortedImageNodes = [...imageNodes].sort((leftNode, rightNode) => {
+    return getImageNodeScore(rightNode) - getImageNodeScore(leftNode);
+  });
+  const selectedImageNode = sortedImageNodes[0];
+
+  if (!selectedImageNode) {
+    return null;
+  }
+
+  if (
+    options.requireMeaningfulSize &&
+    !hasMeaningfulImageSize(selectedImageNode)
+  ) {
+    return null;
+  }
+
+  return selectedImageNode;
+}
+
 function findDescendantByClassName(
   parentNode: HtmlElement,
   classNamePattern: string,
@@ -783,6 +893,27 @@ function findDescendantByClassName(
   }
 
   return null;
+}
+
+function findDescendantsByTagName(
+  parentNode: HtmlElement,
+  tagName: string,
+): HtmlElement[] {
+  const matches: HtmlElement[] = [];
+
+  for (const childNode of parentNode.childNodes) {
+    if (!isElementNode(childNode) || shouldIgnoreElement(childNode)) {
+      continue;
+    }
+
+    if (childNode.tagName === tagName) {
+      matches.push(childNode);
+    }
+
+    matches.push(...findDescendantsByTagName(childNode, tagName));
+  }
+
+  return matches;
 }
 
 function walkElementChildren(
@@ -813,6 +944,75 @@ function normalizeImageSource(src?: string): string | undefined {
   }
 
   return src;
+}
+
+function getBestImageSource(node: HtmlElement): string | undefined {
+  const src =
+    getAttribute(node, 'src') ??
+    getFirstUrlFromSrcset(getAttribute(node, 'srcset')) ??
+    getAttribute(node, 'data-src');
+
+  return normalizeImageSource(src);
+}
+
+function getFirstUrlFromSrcset(srcset?: string): string | undefined {
+  if (!srcset) {
+    return undefined;
+  }
+
+  const firstCandidate = srcset
+    .split(',')
+    .map((candidate) => candidate.trim())
+    .find(Boolean);
+
+  if (!firstCandidate) {
+    return undefined;
+  }
+
+  return firstCandidate.split(/\s+/)[0];
+}
+
+function getImageNodeScore(node: HtmlElement): number {
+  const width = getImageDimension(node, ['data-file-width', 'width']);
+  const height = getImageDimension(node, ['data-file-height', 'height']);
+
+  if (width && height) {
+    return width * height;
+  }
+
+  return Math.max(width ?? 0, height ?? 0, 1);
+}
+
+function hasMeaningfulImageSize(node: HtmlElement): boolean {
+  const width = getImageDimension(node, ['data-file-width', 'width']) ?? 0;
+  const height = getImageDimension(node, ['data-file-height', 'height']) ?? 0;
+
+  if (width >= 48 || height >= 48) {
+    return true;
+  }
+
+  return width * height >= 2304;
+}
+
+function getImageDimension(
+  node: HtmlElement,
+  attributeNames: string[],
+): number | undefined {
+  for (const attributeName of attributeNames) {
+    const value = getAttribute(node, attributeName);
+
+    if (!value) {
+      continue;
+    }
+
+    const parsedValue = Number.parseInt(value, 10);
+
+    if (Number.isFinite(parsedValue) && parsedValue > 0) {
+      return parsedValue;
+    }
+  }
+
+  return undefined;
 }
 
 function normalizeWhitespace(

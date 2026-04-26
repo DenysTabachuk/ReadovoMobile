@@ -1,4 +1,3 @@
-import { Image } from 'expo-image';
 import { useMemo } from 'react';
 import { View } from 'react-native';
 
@@ -8,10 +7,11 @@ import {
   type TableCell,
 } from '@/api/wikipedia';
 import { ThemedText } from '@/components/themedText';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 
+import { ArticleImageBlock } from '../articleImageBlock';
+import { ArticleTableBlock } from '../articleTableBlock';
 import { TouchableWord } from '../touchableWord';
-import { getThemeStyles, styles } from './styles';
+import { styles } from './styles';
 
 type InteractiveArticleTextProps = {
   blocks?: ArticleBlock[];
@@ -57,8 +57,6 @@ export function InteractiveArticleText({
   selectedTokenKey,
   text,
 }: InteractiveArticleTextProps) {
-  const colorScheme = useColorScheme() ?? 'light';
-  const themeStyles = useMemo(() => getThemeStyles(colorScheme), [colorScheme]);
   const resolvedBlocks = useMemo(() => {
     if (blocks && blocks.length > 0) {
       return blocks;
@@ -125,51 +123,29 @@ export function InteractiveArticleText({
 
         if (block.type === 'table') {
           return (
-            <View key={blockKey} style={[styles.table, themeStyles.table]}>
-              {block.rows.map((row, rowIndex) => (
-                <View
-                  key={`${blockKey}-row-${rowIndex}`}
-                  style={[styles.tableRow, themeStyles.tableRow]}>
-                  {row.map((cell, cellIndex) => (
-                    <View
-                      key={`${blockKey}-cell-${rowIndex}-${cellIndex}`}
-                      style={[
-                        styles.tableCell,
-                        themeStyles.tableCell,
-                        cell.header ? styles.tableHeaderCell : null,
-                        cell.header ? themeStyles.tableHeaderCell : null,
-                      ]}>
-                      <ThemedText
-                        style={[styles.tableCellText, cell.header ? styles.tableHeaderText : null]}
-                        type={cell.header ? 'bodyStrong' : 'body'}>
-                        {renderTableCellText({
-                          cell,
-                          onWordPress,
-                          prefix: `${blockKey}-cell-${rowIndex}-${cellIndex}`,
-                          selectedTokenKey,
-                        })}
-                      </ThemedText>
-                    </View>
-                  ))}
-                </View>
-              ))}
-            </View>
+            <ArticleTableBlock
+              key={blockKey}
+              renderCellContent={({ cell, prefix, selectedTokenKey: currentSelectedTokenKey }) =>
+                renderTableCellText({
+                  cell,
+                  onWordPress,
+                  prefix,
+                  selectedTokenKey: currentSelectedTokenKey,
+                })
+              }
+              rows={block.rows}
+              selectedTokenKey={selectedTokenKey}
+            />
           );
         }
 
         return (
-          <View key={blockKey} style={styles.imageBlock}>
-            <Image
-              contentFit="contain"
-              source={{ uri: block.src }}
-              style={[styles.inlineImage, themeStyles.inlineImage]}
-            />
-            {block.caption ? (
-              <ThemedText style={styles.imageCaption} type="body">
-                {block.caption}
-              </ThemedText>
-            ) : null}
-          </View>
+          <ArticleImageBlock
+            alt={block.alt}
+            caption={block.caption}
+            key={blockKey}
+            src={block.src}
+          />
         );
       })}
     </View>
