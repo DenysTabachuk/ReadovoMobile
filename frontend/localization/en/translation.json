@@ -72,9 +72,23 @@
     "adapting": "Adapting text...",
     "showOriginalText": "Show original text",
     "showAdaptedText": "Show adapted text",
+    "levelLabel": "English level",
+    "lengthLabel": "Text length",
+    "levelPickerTitle": "Choose English level",
+    "lengthPickerTitle": "Choose text length",
     "adaptError": "Could not adapt the text. Try again.",
-    "adaptedState": "Adapted for level {{level}}. Length: {{adaptedLength}} characters instead of {{originalLength}}.",
-    "originalState": "Showing original text. Adapted version is ready for level {{level}} with {{targetLength}} length."
+    "adaptedState": "Adapted for level {{level}} with {{targetLength}} length. Size: {{adaptedLength}} characters instead of {{originalLength}}.",
+    "originalState": "Showing original text. Adapted version is ready for level {{level}} with {{targetLength}} length.",
+    "levels": {
+      "A1": "A1 - very simple",
+      "A2": "A2 - simple",
+      "B1": "B1 - intermediate",
+      "B2": "B2 - upper-intermediate"
+    },
+    "lengths": {
+      "short": "Short",
+      "medium": "Medium"
+    }
   },
   "translation": {
     "titleFallback": "Translation",

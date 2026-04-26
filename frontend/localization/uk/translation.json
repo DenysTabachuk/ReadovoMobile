@@ -72,9 +72,23 @@
     "adapting": "Адаптуємо текст...",
     "showOriginalText": "Показати оригінал",
     "showAdaptedText": "Показати адаптований текст",
+    "levelLabel": "Рівень англійської",
+    "lengthLabel": "Довжина тексту",
+    "levelPickerTitle": "Оберіть рівень англійської",
+    "lengthPickerTitle": "Оберіть довжину тексту",
     "adaptError": "Не вдалося адаптувати текст. Спробуйте ще раз.",
-    "adaptedState": "Текст адаптовано для рівня {{level}}. Довжина: {{adaptedLength}} символів замість {{originalLength}}.",
-    "originalState": "Показано оригінальний текст. Адаптована версія для рівня {{level}} з довжиною {{targetLength}} вже готова."
+    "adaptedState": "Текст адаптовано для рівня {{level}} з довжиною {{targetLength}}. Обсяг: {{adaptedLength}} символів замість {{originalLength}}.",
+    "originalState": "Показано оригінальний текст. Адаптована версія для рівня {{level}} з довжиною {{targetLength}} вже готова.",
+    "levels": {
+      "A1": "A1 - дуже просто",
+      "A2": "A2 - просто",
+      "B1": "B1 - середній",
+      "B2": "B2 - вище середнього"
+    },
+    "lengths": {
+      "short": "Короткий",
+      "medium": "Середній"
+    }
   },
   "translation": {
     "titleFallback": "Переклад",

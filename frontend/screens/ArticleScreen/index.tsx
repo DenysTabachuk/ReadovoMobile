@@ -9,11 +9,14 @@ import { useTranslation } from 'react-i18next';
 import { translateWord } from '@/api/translations';
 import {
   fetchWikipediaArticleDetail,
+  type SimplifyArticleLevel,
   simplifyWikipediaArticle,
   type SimplifyArticleResponse,
+  type SimplifyArticleTargetLength,
 } from '@/api/wikipedia';
 import { useBanner } from '@/components/banner';
 import { Button } from '@/components/button';
+import { OptionPickerField } from '@/components/optionPickerField';
 import { ScreenContainer } from '@/components/screenContainer';
 import { ThemedText } from '@/components/themedText';
 import { Colors } from '@/constants/theme';
@@ -29,8 +32,8 @@ type SelectedWord = {
   word: string;
 };
 
-const DEFAULT_SIMPLIFICATION_LEVEL = 'A2';
-const DEFAULT_TARGET_LENGTH = 'short';
+const DEFAULT_SIMPLIFICATION_LEVEL: SimplifyArticleLevel = 'A2';
+const DEFAULT_TARGET_LENGTH: SimplifyArticleTargetLength = 'short';
 
 export default function ArticleScreen() {
   const { t } = useTranslation();
@@ -42,6 +45,11 @@ export default function ArticleScreen() {
   const [selectedWord, setSelectedWord] = useState<SelectedWord | null>(null);
   const [adaptedArticle, setAdaptedArticle] = useState<SimplifyArticleResponse | null>(null);
   const [showAdaptedText, setShowAdaptedText] = useState(false);
+  const [selectedLevel, setSelectedLevel] = useState<SimplifyArticleLevel>(
+    DEFAULT_SIMPLIFICATION_LEVEL,
+  );
+  const [selectedTargetLength, setSelectedTargetLength] =
+    useState<SimplifyArticleTargetLength>(DEFAULT_TARGET_LENGTH);
 
   const rawArticleId = Array.isArray(params.id) ? params.id[0] : params.id;
   const parsedArticleId = Number(rawArticleId);
@@ -96,8 +104,8 @@ export default function ArticleScreen() {
       }
 
       return simplifyWikipediaArticle({
-        level: DEFAULT_SIMPLIFICATION_LEVEL,
-        targetLength: DEFAULT_TARGET_LENGTH,
+        level: selectedLevel,
+        targetLength: selectedTargetLength,
         text: article.content,
         title: article.title,
       });
@@ -120,6 +128,24 @@ export default function ArticleScreen() {
       setSelectedWord(null);
     },
   });
+
+  const levelOptions = useMemo(
+    () => [
+      { label: t('article.levels.A1'), value: 'A1' as const },
+      { label: t('article.levels.A2'), value: 'A2' as const },
+      { label: t('article.levels.B1'), value: 'B1' as const },
+      { label: t('article.levels.B2'), value: 'B2' as const },
+    ],
+    [t],
+  );
+
+  const targetLengthOptions = useMemo(
+    () => [
+      { label: t('article.lengths.short'), value: 'short' as const },
+      { label: t('article.lengths.medium'), value: 'medium' as const },
+    ],
+    [t],
+  );
 
   const handleWordPress = useCallback((selection: SelectedWord) => {
     setSelectedWord(selection);
@@ -223,6 +249,23 @@ export default function ArticleScreen() {
         </View>
 
         <View style={styles.actionRow}>
+          <OptionPickerField
+            label={t('article.levelLabel')}
+            onSelect={setSelectedLevel}
+            options={levelOptions}
+            selectedValue={selectedLevel}
+            title={t('article.levelPickerTitle')}
+          />
+          <OptionPickerField
+            label={t('article.lengthLabel')}
+            onSelect={setSelectedTargetLength}
+            options={targetLengthOptions}
+            selectedValue={selectedTargetLength}
+            title={t('article.lengthPickerTitle')}
+          />
+        </View>
+
+        <View style={styles.actionRow}>
           <Button
             disabled={simplifyMutation.isPending}
             onPress={handleAdaptPress}
@@ -252,11 +295,12 @@ export default function ArticleScreen() {
                     adaptedLength: adaptedArticle.adaptedLength,
                     level: adaptedArticle.level,
                     originalLength: adaptedArticle.originalLength,
+                    targetLength: t(`article.lengths.${adaptedArticle.targetLength}`),
                   })
                 : t('article.originalState', {
                     level: adaptedArticle.level,
                     originalLength: adaptedArticle.originalLength,
-                    targetLength: adaptedArticle.targetLength,
+                    targetLength: t(`article.lengths.${adaptedArticle.targetLength}`),
                   })}
             </ThemedText>
           </View>
