@@ -7,6 +7,7 @@ export const styles = StyleSheet.create({
     paddingBottom: 0,
   },
   listContent: {
+    flexGrow: 1,
     gap: Spacing.md,
     paddingBottom: Spacing.xxLg,
   },
@@ -63,5 +64,13 @@ export const styles = StyleSheet.create({
   centerDescription: {
     maxWidth: 420,
     textAlign: 'center',
+  },
+  emptyState: {
+    alignItems: 'center',
+    flex: 1,
+    gap: Spacing.sm,
+    justifyContent: 'center',
+    paddingHorizontal: Spacing.xLg,
+    paddingVertical: Spacing.xxLg,
   },
 });

@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { Image } from 'expo-image';
-import { useCallback } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -13,8 +13,9 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import {
-  fetchRandomWikipediaArticles,
+  fetchWikipediaArticles,
   type WikipediaArticle,
+  type WikipediaArticleCategory,
 } from '@/api/wikipedia';
 import { Button } from '@/components/button';
 import { ScreenContainer } from '@/components/screenContainer';
@@ -24,12 +25,31 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 
 import { styles } from './styles';
+import {
+  ArticlesToolbar,
+  type ArticleCategoryFilter,
+  type ArticlePreviewLengthFilter,
+} from './components/articlesToolbar';
 
 export default function ArticlesScreen() {
   const { t } = useTranslation();
   const colorScheme = useColorScheme();
   const iconColor = useThemeColor({}, 'icon');
   const borderColor = colorScheme === 'dark' ? '#2d3336' : '#d0d7de';
+  const [searchValue, setSearchValue] = useState('');
+  const [debouncedSearchValue, setDebouncedSearchValue] = useState('');
+  const [previewLengthFilter, setPreviewLengthFilter] =
+    useState<ArticlePreviewLengthFilter>('all');
+  const [categoryFilter, setCategoryFilter] =
+    useState<ArticleCategoryFilter>('all');
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      setDebouncedSearchValue(searchValue.trim());
+    }, 350);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchValue]);
 
   const {
     data: articles = [],
@@ -38,9 +58,40 @@ export default function ArticlesScreen() {
     isLoading,
     refetch,
   } = useQuery({
-    queryFn: () => fetchRandomWikipediaArticles(),
-    queryKey: ['wikipedia', 'randomArticles'],
+    queryFn: () =>
+      fetchWikipediaArticles({
+        category: categoryFilter as WikipediaArticleCategory,
+        search: debouncedSearchValue,
+      }),
+    queryKey: ['wikipedia', 'articles', debouncedSearchValue, categoryFilter],
   });
+
+  const filteredArticles = useMemo(() => {
+    return articles.filter((article) => {
+      if (previewLengthFilter === 'all') {
+        return true;
+      }
+
+      const extractLength = article.extract.trim().length;
+
+      if (previewLengthFilter === 'short') {
+        return extractLength > 0 && extractLength <= 120;
+      }
+
+      if (previewLengthFilter === 'medium') {
+        return extractLength >= 121 && extractLength <= 220;
+      }
+
+      return extractLength >= 221;
+    });
+  }, [articles, previewLengthFilter]);
+
+  const clearFilters = useCallback(() => {
+    setSearchValue('');
+    setDebouncedSearchValue('');
+    setPreviewLengthFilter('all');
+    setCategoryFilter('all');
+  }, []);
 
   const openArticle = useCallback(
     (article: WikipediaArticle) => {
@@ -120,13 +171,37 @@ export default function ArticlesScreen() {
   return (
     <ScreenContainer style={styles.container}>
       <FlatList
-        data={articles}
+        data={filteredArticles}
         keyExtractor={(item) => String(item.id)}
+        keyboardShouldPersistTaps="handled"
         ListHeaderComponent={
           <View style={styles.header}>
             <ThemedText type="screenTitle">{t('articles.title')}</ThemedText>
             <ThemedText type="description" style={styles.description}>
               {t('articles.description')}
+            </ThemedText>
+            <ArticlesToolbar
+              categoryFilter={categoryFilter}
+              isSearchActive={debouncedSearchValue.length > 0}
+              onChangeCategoryFilter={setCategoryFilter}
+              onChangePreviewLengthFilter={setPreviewLengthFilter}
+              onChangeSearchValue={setSearchValue}
+              onClearFilters={clearFilters}
+              previewLengthFilter={previewLengthFilter}
+              resultCount={filteredArticles.length}
+              searchValue={searchValue}
+            />
+          </View>
+        }
+        ListEmptyComponent={
+          <View style={styles.emptyState}>
+            <ThemedText type="sectionTitle" style={styles.centerTitle}>
+              {t('articles.emptyTitle')}
+            </ThemedText>
+            <ThemedText type="body" style={styles.centerDescription}>
+              {debouncedSearchValue.length > 0
+                ? t('articles.emptySearchDescription')
+                : t('articles.emptyFilterDescription')}
             </ThemedText>
           </View>
         }
@@ -138,6 +213,7 @@ export default function ArticlesScreen() {
           />
         }
         renderItem={renderArticle}
+        removeClippedSubviews={false}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
       />

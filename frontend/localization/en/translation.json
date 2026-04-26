@@ -55,6 +55,33 @@
   "articles": {
     "title": "Wikipedia articles",
     "description": "A fresh set of random articles for reading practice.",
+    "searchPlaceholder": "Search for a topic, person, place, or event",
+    "searchResults": "{{count}} articles found",
+    "randomResults": "{{count}} articles in this set",
+    "clearFilters": "Clear",
+    "previewLengthLabel": "Description length",
+    "previewLengthTitle": "Choose description length",
+    "categoryLabel": "Category",
+    "categoryTitle": "Choose a category",
+    "emptyTitle": "No articles found",
+    "emptySearchDescription": "Try a shorter query or different keywords.",
+    "emptyFilterDescription": "Change or clear the filters to see more articles.",
+    "filters": {
+      "previewLength": {
+        "all": "Any length",
+        "short": "Short preview",
+        "medium": "Medium preview",
+        "long": "Long preview"
+      },
+      "category": {
+        "all": "All topics",
+        "history": "History",
+        "science": "Science",
+        "technology": "Technology",
+        "nature": "Nature",
+        "culture": "Culture"
+      }
+    },
     "loading": "Loading articles...",
     "errorTitle": "Articles are unavailable",
     "errorDescription": "Check your internet connection and try again.",

@@ -2,7 +2,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { Image } from 'expo-image';
 import * as Linking from 'expo-linking';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
@@ -45,6 +45,7 @@ export default function ArticleScreen() {
   const [selectedWord, setSelectedWord] = useState<SelectedWord | null>(null);
   const [adaptedArticle, setAdaptedArticle] = useState<SimplifyArticleResponse | null>(null);
   const [showAdaptedText, setShowAdaptedText] = useState(false);
+  const [hasImageLoadError, setHasImageLoadError] = useState(false);
   const [selectedLevel, setSelectedLevel] = useState<SimplifyArticleLevel>(
     DEFAULT_SIMPLIFICATION_LEVEL,
   );
@@ -184,6 +185,10 @@ export default function ArticleScreen() {
     return article?.content ?? '';
   }, [adaptedArticle, article?.content, showAdaptedText]);
 
+  useEffect(() => {
+    setHasImageLoadError(false);
+  }, [article?.thumbnailUrl]);
+
   if (articleId === null) {
     return (
       <ScreenContainer>
@@ -235,8 +240,13 @@ export default function ArticleScreen() {
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}>
-        {article.thumbnailUrl ? (
-          <Image source={{ uri: article.thumbnailUrl }} style={styles.heroImage} />
+        {article.thumbnailUrl && !hasImageLoadError ? (
+          <Image
+            contentFit="cover"
+            onError={() => setHasImageLoadError(true)}
+            source={{ uri: article.thumbnailUrl }}
+            style={styles.heroImage}
+          />
         ) : null}
 
         <View style={styles.header}>

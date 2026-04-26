@@ -2,6 +2,7 @@ import { API_BASE_URL } from '@/api/auth/constants';
 
 import { DEFAULT_ARTICLE_LIMIT } from './constants';
 import {
+  type FetchWikipediaArticlesParams,
   type SimplifyArticleRequest,
   type SimplifyArticleResponse,
   type WikipediaArticle,
@@ -9,27 +10,44 @@ import {
 } from './types';
 
 export type {
+  FetchWikipediaArticlesParams,
   SimplifyArticleLevel,
   SimplifyArticleRequest,
   SimplifyArticleResponse,
   SimplifyArticleTargetLength,
   WikipediaArticle,
+  WikipediaArticleCategory,
   WikipediaArticleDetail,
 } from './types';
 
-export async function fetchRandomWikipediaArticles(
-  limit = DEFAULT_ARTICLE_LIMIT
+export async function fetchWikipediaArticles(
+  params: FetchWikipediaArticlesParams = {},
 ): Promise<WikipediaArticle[]> {
-  const params = new URLSearchParams({
-    limit: String(limit),
+  const searchParams = new URLSearchParams({
+    limit: String(params.limit ?? DEFAULT_ARTICLE_LIMIT),
   });
-  const response = await fetch(`${API_BASE_URL}/articles/random?${params.toString()}`);
+
+  if (params.search?.trim()) {
+    searchParams.set('search', params.search.trim());
+  }
+
+  if (params.category && params.category !== 'all') {
+    searchParams.set('category', params.category);
+  }
+
+  const response = await fetch(`${API_BASE_URL}/articles?${searchParams.toString()}`);
 
   if (!response.ok) {
     throw new Error('Failed to fetch Wikipedia articles.');
   }
 
   return response.json() as Promise<WikipediaArticle[]>;
+}
+
+export async function fetchRandomWikipediaArticles(
+  limit = DEFAULT_ARTICLE_LIMIT
+): Promise<WikipediaArticle[]> {
+  return fetchWikipediaArticles({ limit });
 }
 
 export async function fetchWikipediaArticleDetail(
