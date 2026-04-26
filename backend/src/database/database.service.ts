@@ -20,6 +20,19 @@ export class DatabaseService implements OnModuleDestroy, OnModuleInit {
         created_at timestamptz NOT NULL DEFAULT now()
       );
     `);
+
+    await this.query(`
+      CREATE TABLE IF NOT EXISTS article_simplifications (
+        cache_key text PRIMARY KEY,
+        title text NOT NULL,
+        level text NOT NULL,
+        target_length text NOT NULL,
+        original_length integer NOT NULL,
+        adapted_text text NOT NULL,
+        adapted_length integer NOT NULL,
+        created_at timestamptz NOT NULL DEFAULT now()
+      );
+    `);
   }
 
   query<T extends QueryResultRow = QueryResultRow>(

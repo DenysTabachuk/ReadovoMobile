@@ -1,15 +1,7 @@
-import {
-  BadRequestException,
-  Body,
-  Controller,
-  Post,
-} from '@nestjs/common';
+import { BadRequestException, Body, Controller, Post } from '@nestjs/common';
 
 import { TranslationsService } from './translations.service';
-import {
-  type TranslateWordRequest,
-  type TranslateWordResponse,
-} from './types';
+import { type TranslateWordRequest, type TranslateWordResponse } from './types';
 
 const LANGUAGE_CODE_PATTERN = /^[a-z]{2,10}$/i;
 

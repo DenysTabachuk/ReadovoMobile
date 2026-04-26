@@ -22,15 +22,16 @@ describe('TranslationsService', () => {
 
   it('translates a word and returns the provided context', async () => {
     fetchMock.mockResolvedValue({
-      json: async () => ({
-        data: {
-          translations: [
-            {
-              translatedText: 'правильний',
-            },
-          ],
-        },
-      }),
+      json: () =>
+        Promise.resolve({
+          data: {
+            translations: [
+              {
+                translatedText: 'правильний',
+              },
+            ],
+          },
+        }),
       ok: true,
     });
 
@@ -58,15 +59,16 @@ describe('TranslationsService', () => {
 
   it('returns a cached translation without calling Google twice', async () => {
     fetchMock.mockResolvedValue({
-      json: async () => ({
-        data: {
-          translations: [
-            {
-              translatedText: 'книга',
-            },
-          ],
-        },
-      }),
+      json: () =>
+        Promise.resolve({
+          data: {
+            translations: [
+              {
+                translatedText: 'книга',
+              },
+            ],
+          },
+        }),
       ok: true,
     });
 
