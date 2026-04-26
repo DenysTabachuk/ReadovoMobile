@@ -86,27 +86,65 @@ describe('ArticlesService', () => {
   });
 
   it('returns article detail text for a page id', async () => {
-    fetchMock.mockResolvedValue({
-      json: () =>
-        Promise.resolve({
-          query: {
-            pages: {
-              '42': {
-                extract: 'Full article text',
-                fullurl: 'https://en.wikipedia.org/wiki/Answer',
-                pageid: 42,
-                title: 'Answer',
+    fetchMock
+      .mockResolvedValueOnce({
+        json: () =>
+          Promise.resolve({
+            query: {
+              pages: {
+                '42': {
+                  fullurl: 'https://en.wikipedia.org/wiki/Answer',
+                  pageid: 42,
+                  title: 'Answer',
+                },
               },
             },
-          },
-        }),
-      ok: true,
-    });
+          }),
+        ok: true,
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        text: () =>
+          Promise.resolve(
+            '<html><body><section><p>Full article text.</p></section></body></html>',
+          ),
+      });
 
     const article = await service.getArticleDetail(42);
 
     expect(article).toEqual({
-      content: 'Full article text',
+      blocks: [
+        {
+          children: [
+            {
+              text: 'Full',
+              type: 'word',
+            },
+            {
+              text: ' ',
+              type: 'text',
+            },
+            {
+              text: 'article',
+              type: 'word',
+            },
+            {
+              text: ' ',
+              type: 'text',
+            },
+            {
+              text: 'text',
+              type: 'word',
+            },
+            {
+              text: '.',
+              type: 'text',
+            },
+          ],
+          type: 'paragraph',
+        },
+      ],
+      content: 'Full article text.',
       id: 42,
       thumbnailUrl: undefined,
       title: 'Answer',

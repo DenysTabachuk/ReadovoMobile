@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 
 import { translateWord } from '@/api/translations';
 import {
+  type ArticleBlock,
   fetchWikipediaArticleDetail,
   type SimplifyArticleLevel,
   simplifyWikipediaArticle,
@@ -184,6 +185,13 @@ export default function ArticleScreen() {
 
     return article?.content ?? '';
   }, [adaptedArticle, article?.content, showAdaptedText]);
+  const displayedBlocks = useMemo(() => {
+    if (!article || showAdaptedText) {
+      return undefined;
+    }
+
+    return stripDuplicateTitleHeading(article.blocks, article.title);
+  }, [article, showAdaptedText]);
 
   useEffect(() => {
     setHasImageLoadError(false);
@@ -318,6 +326,7 @@ export default function ArticleScreen() {
 
         <View style={styles.articleContent}>
           <InteractiveArticleText
+            blocks={displayedBlocks}
             onWordPress={handleWordPress}
             selectedTokenKey={selectedWord?.tokenKey}
             text={displayedText}
@@ -336,4 +345,22 @@ export default function ArticleScreen() {
       />
     </ScreenContainer>
   );
+}
+
+function stripDuplicateTitleHeading(
+  blocks: ArticleBlock[],
+  articleTitle: string,
+): ArticleBlock[] {
+  const normalizedTitle = articleTitle.trim().toLowerCase();
+  const firstBlock = blocks[0];
+
+  if (
+    firstBlock?.type === 'heading' &&
+    firstBlock.level === 1 &&
+    firstBlock.text.trim().toLowerCase() === normalizedTitle
+  ) {
+    return blocks.slice(1);
+  }
+
+  return blocks;
 }

@@ -1,18 +1,27 @@
-import { Fragment, useMemo } from 'react';
+import { Image } from 'expo-image';
+import { useMemo } from 'react';
 import { View } from 'react-native';
 
+import {
+  type ArticleBlock,
+  type InlineNode,
+  type TableCell,
+} from '@/api/wikipedia';
 import { ThemedText } from '@/components/themedText';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 
-import { styles } from './styles';
+import { TouchableWord } from '../touchableWord';
+import { getThemeStyles, styles } from './styles';
 
 type InteractiveArticleTextProps = {
+  blocks?: ArticleBlock[];
   onWordPress: (selection: {
     context: string;
     tokenKey: string;
     word: string;
   }) => void;
   selectedTokenKey?: string;
-  text: string;
+  text?: string;
 };
 
 type SentenceRange = {
@@ -20,93 +29,93 @@ type SentenceRange = {
   text: string;
 };
 
-type ArticleBlock =
+type TouchableTextPart =
   | {
-      key: string;
-      level: number;
-      text: string;
-      type: 'heading';
-    }
-  | {
-      items: ArticleListItem[];
-      key: string;
-      type: 'list';
-    }
-  | {
-      key: string;
-      tokens: ArticleToken[];
-      type: 'paragraph';
-    };
-
-type ArticleListItem = {
-  key: string;
-  marker: string;
-  tokens: ArticleToken[];
-};
-
-type ArticleToken =
-  | {
+      bold?: boolean;
+      italic?: boolean;
       key: string;
       text: string;
-      type: 'separator';
+      type: 'text';
     }
   | {
-      context: string;
+      bold?: boolean;
+      contextSentence?: string;
+      italic?: boolean;
       key: string;
       text: string;
       type: 'word';
       word: string;
     };
 
-const WORD_PATTERN = /[A-Za-z]+(?:['\u2019-][A-Za-z]+)*/g;
-const SENTENCE_PATTERN = /[^.!?\n]+(?:[.!?]+(?=\s|$)|$)|\n+/g;
+const LIST_ITEM_PATTERN = /^([*#-]+|[\u2022\u25cf\u25aa\u25e6]+|[A-Za-z0-9]+[.)])\s*(.*)$/;
 const SECTION_HEADING_PATTERN = /^(={2,})\s*(.*?)\s*\1$/;
-const LIST_ITEM_PATTERN = /^([*#-]+|[•●▪◦]+|[A-Za-z0-9]+[.)])\s*(.*)$/;
-const IGNORED_SECTION_TITLES = new Set([
-  'bibliography',
-  'external links',
-  'further reading',
-  'gallery',
-  'notes',
-  'references',
-  'see also',
-  'sources',
-]);
+const SENTENCE_PATTERN = /[^.!?\n]+(?:[.!?]+(?=\s|$)|$)|\n+/g;
 
 export function InteractiveArticleText({
+  blocks,
   onWordPress,
   selectedTokenKey,
   text,
 }: InteractiveArticleTextProps) {
-  const blocks = useMemo(() => parseArticleBlocks(text), [text]);
+  const colorScheme = useColorScheme() ?? 'light';
+  const themeStyles = useMemo(() => getThemeStyles(colorScheme), [colorScheme]);
+  const resolvedBlocks = useMemo(() => {
+    if (blocks && blocks.length > 0) {
+      return blocks;
+    }
+
+    return parsePlainTextToBlocks(text ?? '');
+  }, [blocks, text]);
 
   return (
     <View style={styles.container}>
-      {blocks.map((block) => {
+      {resolvedBlocks.map((block, index) => {
+        const blockKey = `block-${index}`;
+
         if (block.type === 'heading') {
           return (
             <ThemedText
-              key={block.key}
+              key={blockKey}
               style={[
                 styles.heading,
-                block.level >= 3 ? styles.subheading : null,
+                block.level === 1 ? styles.headingLevel1 : null,
+                block.level === 2 ? styles.headingLevel2 : null,
+                block.level === 3 ? styles.headingLevel3 : null,
               ]}
-              type={block.level >= 3 ? 'bodyStrong' : 'sectionTitle'}>
+              type={getHeadingTypographyType(block.level)}>
               {block.text}
+            </ThemedText>
+          );
+        }
+
+        if (block.type === 'paragraph') {
+          return (
+            <ThemedText key={blockKey} style={styles.paragraph} type="paragraph">
+              {renderTouchableParts({
+                nodes: block.children,
+                onWordPress,
+                prefix: blockKey,
+                selectedTokenKey,
+              })}
             </ThemedText>
           );
         }
 
         if (block.type === 'list') {
           return (
-            <View key={block.key} style={styles.list}>
-              {block.items.map((item) => (
-                <View key={item.key} style={styles.listItem}>
+            <View key={blockKey} style={styles.list}>
+              {block.items.map((item, itemIndex) => (
+                <View key={`${blockKey}-item-${itemIndex}`} style={styles.listItem}>
                   <ThemedText style={styles.listBullet} type="paragraph">
-                    {getListMarkerLabel(item.marker)}
+                    {block.ordered ? `${itemIndex + 1}.` : '\u2022'}
                   </ThemedText>
                   <ThemedText style={styles.listItemText} type="paragraph">
-                    {renderTokens(item.tokens, onWordPress, selectedTokenKey)}
+                    {renderTouchableParts({
+                      nodes: item,
+                      onWordPress,
+                      prefix: `${blockKey}-item-${itemIndex}`,
+                      selectedTokenKey,
+                    })}
                   </ThemedText>
                 </View>
               ))}
@@ -114,22 +123,155 @@ export function InteractiveArticleText({
           );
         }
 
+        if (block.type === 'table') {
+          return (
+            <View key={blockKey} style={[styles.table, themeStyles.table]}>
+              {block.rows.map((row, rowIndex) => (
+                <View
+                  key={`${blockKey}-row-${rowIndex}`}
+                  style={[styles.tableRow, themeStyles.tableRow]}>
+                  {row.map((cell, cellIndex) => (
+                    <View
+                      key={`${blockKey}-cell-${rowIndex}-${cellIndex}`}
+                      style={[
+                        styles.tableCell,
+                        themeStyles.tableCell,
+                        cell.header ? styles.tableHeaderCell : null,
+                        cell.header ? themeStyles.tableHeaderCell : null,
+                      ]}>
+                      <ThemedText
+                        style={[styles.tableCellText, cell.header ? styles.tableHeaderText : null]}
+                        type={cell.header ? 'bodyStrong' : 'body'}>
+                        {renderTableCellText({
+                          cell,
+                          onWordPress,
+                          prefix: `${blockKey}-cell-${rowIndex}-${cellIndex}`,
+                          selectedTokenKey,
+                        })}
+                      </ThemedText>
+                    </View>
+                  ))}
+                </View>
+              ))}
+            </View>
+          );
+        }
+
         return (
-          <ThemedText key={block.key} type="paragraph" style={styles.paragraph}>
-            {renderTokens(block.tokens, onWordPress, selectedTokenKey)}
-          </ThemedText>
+          <View key={blockKey} style={styles.imageBlock}>
+            <Image
+              contentFit="contain"
+              source={{ uri: block.src }}
+              style={[styles.inlineImage, themeStyles.inlineImage]}
+            />
+            {block.caption ? (
+              <ThemedText style={styles.imageCaption} type="body">
+                {block.caption}
+              </ThemedText>
+            ) : null}
+          </View>
         );
       })}
     </View>
   );
 }
 
-function parseArticleBlocks(text: string): ArticleBlock[] {
+export function splitTextToTouchableParts(
+  nodes: InlineNode[],
+  prefix: string,
+): TouchableTextPart[] {
+  const text = nodes.map((node) => node.text).join('');
+  const sentenceRanges = getSentenceRanges(text);
+  const parts: TouchableTextPart[] = [];
+  let cursor = 0;
+
+  nodes.forEach((node, index) => {
+    const start = cursor;
+    const end = start + node.text.length;
+
+    if (node.type === 'word') {
+      parts.push({
+        bold: node.bold,
+        contextSentence: getSentenceForRange(sentenceRanges, start, end),
+        italic: node.italic,
+        key: `${prefix}-word-${index}-${start}`,
+        text: node.text,
+        type: 'word',
+        word: normalizeWord(node.text),
+      });
+    } else {
+      parts.push({
+        bold: node.bold,
+        italic: node.italic,
+        key: `${prefix}-text-${index}-${start}`,
+        text: node.text,
+        type: 'text',
+      });
+    }
+
+    cursor = end;
+  });
+
+  return parts;
+}
+
+function renderTouchableParts(params: {
+  nodes: InlineNode[];
+  onWordPress: InteractiveArticleTextProps['onWordPress'];
+  prefix: string;
+  selectedTokenKey?: string;
+}) {
+  return splitTextToTouchableParts(params.nodes, params.prefix).map((part) => {
+    if (part.type === 'text') {
+      return (
+        <ThemedText
+          key={part.key}
+          style={[
+            part.bold ? styles.inlineBold : null,
+            part.italic ? styles.inlineItalic : null,
+          ]}
+          type="paragraph">
+          {part.text}
+        </ThemedText>
+      );
+    }
+
+    return (
+      <TouchableWord
+        key={part.key}
+        bold={part.bold}
+        contextSentence={part.contextSentence}
+        italic={part.italic}
+        onPress={params.onWordPress}
+        selected={params.selectedTokenKey === part.key}
+        text={part.text}
+        tokenKey={part.key}
+        word={part.word}
+      />
+    );
+  });
+}
+
+function renderTableCellText(params: {
+  cell: TableCell;
+  onWordPress: InteractiveArticleTextProps['onWordPress'];
+  prefix: string;
+  selectedTokenKey?: string;
+}) {
+  return renderTouchableParts({
+    nodes: createInlineNodesFromPlainText(params.cell.text),
+    onWordPress: params.onWordPress,
+    prefix: params.prefix,
+    selectedTokenKey: params.selectedTokenKey,
+  });
+}
+
+function parsePlainTextToBlocks(text: string): ArticleBlock[] {
   const blocks: ArticleBlock[] = [];
   const lines = text.split(/\r?\n/);
   let paragraphLines: string[] = [];
-  let listItems: ArticleListItem[] = [];
-  let shouldSkipSection = false;
+  let listItems: InlineNode[][] = [];
+  let listOrdered = false;
 
   const flushParagraph = () => {
     const paragraphText = paragraphLines.join(' ').trim();
@@ -140,8 +282,7 @@ function parseArticleBlocks(text: string): ArticleBlock[] {
     }
 
     blocks.push({
-      key: `paragraph-${blocks.length}`,
-      tokens: tokenizeArticleText(paragraphText),
+      children: createInlineNodesFromPlainText(paragraphText),
       type: 'paragraph',
     });
     paragraphLines = [];
@@ -154,10 +295,11 @@ function parseArticleBlocks(text: string): ArticleBlock[] {
 
     blocks.push({
       items: listItems,
-      key: `list-${blocks.length}`,
+      ordered: listOrdered,
       type: 'list',
     });
     listItems = [];
+    listOrdered = false;
   };
 
   for (const rawLine of lines) {
@@ -174,25 +316,20 @@ function parseArticleBlocks(text: string): ArticleBlock[] {
     if (headingMatch) {
       flushParagraph();
       flushList();
-      const level = headingMatch[1]?.length ?? 2;
+      const headingLevel = Math.min((headingMatch[1]?.length ?? 2) - 1, 3) as
+        | 1
+        | 2
+        | 3;
       const headingText = headingMatch[2]?.trim() ?? line;
-      const normalizedHeading = normalizeSectionTitle(headingText);
 
-      shouldSkipSection = IGNORED_SECTION_TITLES.has(normalizedHeading);
-
-      if (!shouldSkipSection) {
+      if (headingText) {
         blocks.push({
-          key: `heading-${blocks.length}`,
-          level,
+          level: headingLevel,
           text: headingText,
           type: 'heading',
         });
       }
 
-      continue;
-    }
-
-    if (shouldSkipSection) {
       continue;
     }
 
@@ -204,11 +341,8 @@ function parseArticleBlocks(text: string): ArticleBlock[] {
       const itemText = listItemMatch[2]?.trim() ?? '';
 
       if (itemText) {
-        listItems.push({
-          key: `list-item-${blocks.length}-${listItems.length}`,
-          marker,
-          tokens: tokenizeArticleText(itemText),
-        });
+        listOrdered = marker.startsWith('#') || /^\d+[.)]$/.test(marker);
+        listItems.push(createInlineNodesFromPlainText(itemText));
       }
 
       continue;
@@ -221,80 +355,39 @@ function parseArticleBlocks(text: string): ArticleBlock[] {
   flushParagraph();
   flushList();
 
-  return removeEmptyHeadings(blocks);
+  return blocks;
 }
 
-function renderTokens(
-  tokens: ArticleToken[],
-  onWordPress: InteractiveArticleTextProps['onWordPress'],
-  selectedTokenKey?: string,
-) {
-  return tokens.map((token) => {
-    if (token.type === 'separator') {
-      return <Fragment key={token.key}>{token.text}</Fragment>;
-    }
-
-    return (
-      <ThemedText
-        key={token.key}
-        onPress={() =>
-          onWordPress({
-            context: token.context,
-            tokenKey: token.key,
-            word: token.word,
-          })
-        }
-        style={[
-          styles.tappableWord,
-          selectedTokenKey === token.key ? styles.selectedWord : null,
-          selectedTokenKey === token.key ? styles.selectedWordText : null,
-        ]}>
-        {token.text}
-      </ThemedText>
-    );
-  });
-}
-
-function tokenizeArticleText(text: string): ArticleToken[] {
-  const sentenceRanges = getSentenceRanges(text);
-  const tokens: ArticleToken[] = [];
+function createInlineNodesFromPlainText(text: string): InlineNode[] {
+  const nodes: InlineNode[] = [];
   let cursor = 0;
-  let tokenIndex = 0;
 
-  for (const match of text.matchAll(WORD_PATTERN)) {
-    const word = match[0];
+  for (const match of text.matchAll(/[A-Za-z]+(?:['\u2019-][A-Za-z]+)*/g)) {
+    const matchedWord = match[0];
     const start = match.index ?? 0;
-    const end = start + word.length;
 
     if (cursor < start) {
-      tokens.push({
-        key: `separator-${tokenIndex}`,
+      nodes.push({
         text: text.slice(cursor, start),
-        type: 'separator',
+        type: 'text',
       });
-      tokenIndex += 1;
     }
 
-    tokens.push({
-      context: getSentenceForRange(sentenceRanges, start, end),
-      key: `word-${tokenIndex}`,
-      text: word,
+    nodes.push({
+      text: matchedWord,
       type: 'word',
-      word: normalizeWord(word),
     });
-    tokenIndex += 1;
-    cursor = end;
+    cursor = start + matchedWord.length;
   }
 
   if (cursor < text.length) {
-    tokens.push({
-      key: `separator-${tokenIndex}`,
+    nodes.push({
       text: text.slice(cursor),
-      type: 'separator',
+      type: 'text',
     });
   }
 
-  return tokens;
+  return nodes;
 }
 
 function getSentenceRanges(text: string): SentenceRange[] {
@@ -330,46 +423,14 @@ function normalizeWord(word: string): string {
   return word.replaceAll('\u2019', "'").toLowerCase();
 }
 
-function normalizeSectionTitle(title: string): string {
-  return title.replace(/\s+/g, ' ').trim().toLowerCase();
-}
-
-function removeEmptyHeadings(blocks: ArticleBlock[]): ArticleBlock[] {
-  return blocks.filter((block, index) => {
-    if (block.type !== 'heading') {
-      return true;
-    }
-
-    return hasContentInSection(blocks, index);
-  });
-}
-
-function hasContentInSection(blocks: ArticleBlock[], headingIndex: number): boolean {
-  const heading = blocks[headingIndex];
-
-  if (!heading || heading.type !== 'heading') {
-    return false;
+function getHeadingTypographyType(level: 1 | 2 | 3) {
+  if (level === 1) {
+    return 'screenTitle' as const;
   }
 
-  for (let index = headingIndex + 1; index < blocks.length; index += 1) {
-    const nextBlock = blocks[index];
-
-    if (nextBlock.type === 'paragraph' || nextBlock.type === 'list') {
-      return true;
-    }
-
-    if (nextBlock.level <= heading.level) {
-      return false;
-    }
+  if (level === 2) {
+    return 'sectionTitle' as const;
   }
 
-  return false;
-}
-
-function getListMarkerLabel(marker: string): string {
-  if (marker.startsWith('#')) {
-    return `${marker.length}.`;
-  }
-
-  return '\u2022';
+  return 'bodyStrong' as const;
 }

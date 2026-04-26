@@ -9,6 +9,10 @@ import Groq from 'groq-sdk';
 
 import { DatabaseService } from '../database/database.service';
 import {
+  extractPlainTextFromBlocks,
+  parseHtmlToBlocks,
+} from './article-html-parser';
+import {
   type ArticleSimplificationLevel,
   type ArticleSimplificationTargetLength,
   type GetWikipediaArticlesParams,
@@ -100,14 +104,13 @@ export class ArticlesService {
   async getArticleDetail(pageId: number): Promise<WikipediaArticleDetail> {
     const params = new URLSearchParams({
       action: 'query',
-      explaintext: '1',
       format: 'json',
       inprop: 'url',
       origin: '*',
       pageids: String(pageId),
       piprop: 'thumbnail',
       pithumbsize: '640',
-      prop: 'extracts|pageimages|info',
+      prop: 'pageimages|info',
       redirects: '1',
     });
     const data = await this.fetchWikipediaResponse(params);
@@ -115,12 +118,21 @@ export class ArticlesService {
       (currentPage) => currentPage.pageid === pageId,
     );
 
-    if (!page?.extract || !page.fullurl) {
+    if (!page?.title || !page.fullurl) {
       throw new BadGatewayException('Wikipedia article is unavailable.');
     }
 
+    const html = await this.fetchWikipediaHtml(page.title);
+    const blocks = parseHtmlToBlocks(html);
+    const content = extractPlainTextFromBlocks(blocks);
+
+    if (!content) {
+      throw new BadGatewayException('Wikipedia article content is unavailable.');
+    }
+
     return {
-      content: page.extract,
+      blocks,
+      content,
       id: page.pageid,
       title: page.title,
       url: page.fullurl,
@@ -267,6 +279,12 @@ export class ArticlesService {
     return `https://${WIKIPEDIA_LANGUAGE_CODE}.wikipedia.org/w/api.php?${params.toString()}`;
   }
 
+  private createWikipediaHtmlRequestUrl(pageTitle: string): string {
+    return `https://${WIKIPEDIA_LANGUAGE_CODE}.wikipedia.org/w/rest.php/v1/page/${encodeURIComponent(
+      pageTitle.replaceAll(' ', '_'),
+    )}/html`;
+  }
+
   private getPagesFromResponse(data: WikipediaApiResponse): WikipediaPage[] {
     return Object.values(data.query?.pages ?? {});
   }
@@ -285,10 +303,7 @@ export class ArticlesService {
     params: URLSearchParams,
   ): Promise<WikipediaApiResponse> {
     const response = await fetch(this.createWikipediaRequestUrl(params), {
-      headers: {
-        'Api-User-Agent': WIKIMEDIA_USER_AGENT,
-        'User-Agent': WIKIMEDIA_USER_AGENT,
-      },
+      headers: this.createWikipediaHeaders(),
     });
 
     if (!response.ok) {
@@ -296,6 +311,28 @@ export class ArticlesService {
     }
 
     return response.json() as Promise<WikipediaApiResponse>;
+  }
+
+  private async fetchWikipediaHtml(pageTitle: string): Promise<string> {
+    const response = await fetch(this.createWikipediaHtmlRequestUrl(pageTitle), {
+      headers: {
+        ...this.createWikipediaHeaders(),
+        Accept: 'text/html; charset=utf-8',
+      },
+    });
+
+    if (!response.ok) {
+      throw new BadGatewayException('Failed to fetch Wikipedia article HTML.');
+    }
+
+    return response.text();
+  }
+
+  private createWikipediaHeaders(): Record<string, string> {
+    return {
+      'Api-User-Agent': WIKIMEDIA_USER_AGENT,
+      'User-Agent': WIKIMEDIA_USER_AGENT,
+    };
   }
 
   private createSimplificationPrompt(params: {

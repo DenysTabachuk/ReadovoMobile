@@ -1,7 +1,10 @@
 import { StyleSheet } from 'react-native';
 
 import { Spacing } from '@/constants/spacing';
+import { Colors } from '@/constants/theme';
 import { Typography } from '@/constants/typography';
+
+type ThemeName = keyof typeof Colors;
 
 export const styles = StyleSheet.create({
   container: {
@@ -9,6 +12,32 @@ export const styles = StyleSheet.create({
   },
   heading: {
     includeFontPadding: false,
+  },
+  headingLevel1: {
+    marginTop: Spacing.sm,
+  },
+  headingLevel2: {
+    marginTop: Spacing.xs,
+  },
+  headingLevel3: {
+    marginTop: Spacing.xs,
+  },
+  imageBlock: {
+    gap: Spacing.sm,
+  },
+  imageCaption: {
+    opacity: 0.75,
+  },
+  inlineBold: {
+    fontWeight: '700',
+  },
+  inlineImage: {
+    borderRadius: 12,
+    height: 220,
+    width: '100%',
+  },
+  inlineItalic: {
+    fontStyle: 'italic',
   },
   list: {
     gap: Spacing.sm,
@@ -34,20 +63,51 @@ export const styles = StyleSheet.create({
     includeFontPadding: false,
     lineHeight: Typography.paragraph.lineHeight,
   },
-  selectedWord: {
-    backgroundColor: '#0a7ea4',
-    borderRadius: 8,
-    paddingHorizontal: 6,
+  table: {
+    borderRadius: 12,
+    borderWidth: 1,
+    overflow: 'hidden',
   },
-  selectedWordText: {
-    color: '#ffffff',
-    includeFontPadding: false,
-    lineHeight: Typography.paragraph.lineHeight,
+  tableCell: {
+    borderRightWidth: 1,
+    flex: 1,
+    minWidth: 0,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.sm,
   },
-  tappableWord: {
-    borderRadius: 6,
-    paddingHorizontal: 1,
+  tableCellText: {
     includeFontPadding: false,
-    lineHeight: Typography.paragraph.lineHeight,
+    lineHeight: Typography.body.lineHeight,
+  },
+  tableHeaderCell: {},
+  tableHeaderText: {
+    fontWeight: '700',
+  },
+  tableRow: {
+    borderBottomWidth: 1,
+    flexDirection: 'row',
   },
 });
+
+export function getThemeStyles(themeName: ThemeName) {
+  const palette = Colors[themeName];
+
+  return {
+    inlineImage: {
+      backgroundColor: palette.background,
+    },
+    table: {
+      borderColor: palette.icon,
+    },
+    tableCell: {
+      borderColor: palette.icon,
+    },
+    tableHeaderCell: {
+      backgroundColor:
+        themeName === 'dark' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(17, 24, 28, 0.06)',
+    },
+    tableRow: {
+      borderBottomColor: palette.icon,
+    },
+  } as const;
+}

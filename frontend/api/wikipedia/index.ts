@@ -10,11 +10,14 @@ import {
 } from './types';
 
 export type {
+  ArticleBlock,
   FetchWikipediaArticlesParams,
+  InlineNode,
   SimplifyArticleLevel,
   SimplifyArticleRequest,
   SimplifyArticleResponse,
   SimplifyArticleTargetLength,
+  TableCell,
   WikipediaArticle,
   WikipediaArticleCategory,
   WikipediaArticleDetail,

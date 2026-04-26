@@ -21,11 +21,57 @@ export type WikipediaArticleCategory =
   | 'culture';
 
 export type WikipediaArticleDetail = {
+  blocks: ArticleBlock[];
   content: string;
   id: number;
   title: string;
   url: string;
   thumbnailUrl?: string;
+};
+
+export type ArticleBlock =
+  | {
+      level: 1 | 2 | 3;
+      text: string;
+      type: 'heading';
+    }
+  | {
+      children: InlineNode[];
+      type: 'paragraph';
+    }
+  | {
+      items: InlineNode[][];
+      ordered: boolean;
+      type: 'list';
+    }
+  | {
+      rows: TableCell[][];
+      type: 'table';
+    }
+  | {
+      alt?: string;
+      caption?: string;
+      src: string;
+      type: 'image';
+    };
+
+export type InlineNode =
+  | {
+      bold?: boolean;
+      italic?: boolean;
+      text: string;
+      type: 'text';
+    }
+  | {
+      bold?: boolean;
+      italic?: boolean;
+      text: string;
+      type: 'word';
+    };
+
+export type TableCell = {
+  header?: boolean;
+  text: string;
 };
 
 export type ArticleSimplificationLevel = 'A1' | 'A2' | 'B1' | 'B2';
