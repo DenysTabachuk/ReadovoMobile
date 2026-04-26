@@ -11,10 +11,12 @@ import { DatabaseService } from '../database/database.service';
 import {
   type ArticleSimplificationLevel,
   type ArticleSimplificationTargetLength,
+  type GetWikipediaArticlesParams,
   type SimplifiedArticleCacheRow,
   type SimplifyArticleResponse,
   type WikipediaApiResponse,
   type WikipediaArticle,
+  type WikipediaArticleCategory,
   type WikipediaArticleDetail,
   type WikipediaPage,
 } from './types';
@@ -26,6 +28,16 @@ const GROQ_MODEL = 'llama-3.3-70b-versatile';
 const MAX_ARTICLE_LIMIT = 50;
 const WIKIMEDIA_USER_AGENT = 'SpeaklyMobile/1.0';
 const WIKIPEDIA_LANGUAGE_CODE = 'en';
+const WIKIPEDIA_CATEGORY_TITLES: Record<
+  Exclude<WikipediaArticleCategory, 'all'>,
+  string
+> = {
+  culture: 'Culture',
+  history: 'History',
+  nature: 'Nature',
+  science: 'Science',
+  technology: 'Technology',
+};
 
 @Injectable()
 export class ArticlesService {
@@ -33,18 +45,20 @@ export class ArticlesService {
 
   constructor(private readonly databaseService: DatabaseService) {}
 
-  async getRandomArticles(
-    limit = DEFAULT_ARTICLE_LIMIT,
+  async getArticles(
+    articleParams: GetWikipediaArticlesParams = {},
   ): Promise<WikipediaArticle[]> {
-    const params = new URLSearchParams({
+    const normalizedLimit = this.normalizeLimit(
+      articleParams.limit ?? DEFAULT_ARTICLE_LIMIT,
+    );
+    const category = articleParams.category ?? 'all';
+    const search = articleParams.search?.trim();
+    const queryParams = new URLSearchParams({
       action: 'query',
       exintro: '1',
       explaintext: '1',
       exsentences: '2',
       format: 'json',
-      generator: 'random',
-      grnlimit: String(this.normalizeLimit(limit)),
-      grnnamespace: '0',
       inprop: 'url',
       origin: '*',
       piprop: 'thumbnail',
@@ -52,11 +66,35 @@ export class ArticlesService {
       prop: 'extracts|pageimages|info',
       redirects: '1',
     });
-    const data = await this.fetchWikipediaResponse(params);
+
+    if (search) {
+      queryParams.set('generator', 'search');
+      queryParams.set('gsrsearch', this.buildSearchQuery(search, category));
+      queryParams.set('gsrlimit', String(normalizedLimit));
+      queryParams.set('gsrnamespace', '0');
+    } else if (category !== 'all') {
+      queryParams.set('generator', 'categorymembers');
+      queryParams.set('gcmtitle', `Category:${WIKIPEDIA_CATEGORY_TITLES[category]}`);
+      queryParams.set('gcmlimit', String(normalizedLimit));
+      queryParams.set('gcmnamespace', '0');
+      queryParams.set('gcmtype', 'page');
+    } else {
+      queryParams.set('generator', 'random');
+      queryParams.set('grnlimit', String(normalizedLimit));
+      queryParams.set('grnnamespace', '0');
+    }
+
+    const data = await this.fetchWikipediaResponse(queryParams);
 
     return this.getPagesFromResponse(data)
       .filter((page) => Boolean(page.extract && page.fullurl))
       .map((page) => this.mapPageToArticle(page));
+  }
+
+  async getRandomArticles(
+    limit = DEFAULT_ARTICLE_LIMIT,
+  ): Promise<WikipediaArticle[]> {
+    return this.getArticles({ limit });
   }
 
   async getArticleDetail(pageId: number): Promise<WikipediaArticleDetail> {
@@ -212,6 +250,17 @@ export class ArticlesService {
     }
 
     return Math.min(Math.floor(limit), MAX_ARTICLE_LIMIT);
+  }
+
+  private buildSearchQuery(
+    search: string,
+    category: WikipediaArticleCategory,
+  ): string {
+    if (category === 'all') {
+      return search;
+    }
+
+    return `${search} incategory:"${WIKIPEDIA_CATEGORY_TITLES[category]}"`;
   }
 
   private createWikipediaRequestUrl(params: URLSearchParams): string {

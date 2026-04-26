@@ -15,6 +15,7 @@ import {
   type SimplifyArticleRequest,
   type SimplifyArticleResponse,
   type WikipediaArticle,
+  type WikipediaArticleCategory,
   type WikipediaArticleDetail,
 } from './types';
 
@@ -24,6 +25,14 @@ const SIMPLIFICATION_LEVELS: ArticleSimplificationLevel[] = [
   'A2',
   'B1',
   'B2',
+];
+const ARTICLE_CATEGORIES: WikipediaArticleCategory[] = [
+  'all',
+  'history',
+  'science',
+  'technology',
+  'nature',
+  'culture',
 ];
 const TARGET_LENGTHS: ArticleSimplificationTargetLength[] = ['short', 'medium'];
 
@@ -46,6 +55,35 @@ export class ArticlesController {
     }
 
     return this.articlesService.getRandomArticles(parsedLimit);
+  }
+
+  @Get('articles')
+  async getArticles(
+    @Query('category') category?: string,
+    @Query('limit') limit?: string,
+    @Query('search') search?: string,
+  ): Promise<WikipediaArticle[]> {
+    const parsedLimit = limit === undefined ? undefined : Number(limit);
+    const normalizedCategory = category?.trim().toLowerCase() as
+      | WikipediaArticleCategory
+      | undefined;
+
+    if (limit !== undefined && !Number.isFinite(parsedLimit)) {
+      throw new BadRequestException('Article limit must be a number.');
+    }
+
+    if (
+      normalizedCategory !== undefined &&
+      !ARTICLE_CATEGORIES.includes(normalizedCategory)
+    ) {
+      throw new BadRequestException('Article category is invalid.');
+    }
+
+    return this.articlesService.getArticles({
+      category: normalizedCategory,
+      limit: parsedLimit,
+      search,
+    });
   }
 
   @Get('articles/:id')

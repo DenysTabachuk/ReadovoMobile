@@ -6,6 +6,20 @@ export type WikipediaArticle = {
   thumbnailUrl?: string;
 };
 
+export type GetWikipediaArticlesParams = {
+  category?: WikipediaArticleCategory;
+  limit?: number;
+  search?: string;
+};
+
+export type WikipediaArticleCategory =
+  | 'all'
+  | 'history'
+  | 'science'
+  | 'technology'
+  | 'nature'
+  | 'culture';
+
 export type WikipediaArticleDetail = {
   content: string;
   id: number;
