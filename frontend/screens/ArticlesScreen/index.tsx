@@ -1,10 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
+import { router } from 'expo-router';
 import { Image } from 'expo-image';
 import { useCallback } from 'react';
 import {
   ActivityIndicator,
   FlatList,
-  Linking,
   Pressable,
   RefreshControl,
   View,
@@ -25,16 +25,11 @@ import { useThemeColor } from '@/hooks/use-theme-color';
 
 import { styles } from './styles';
 
-function getWikipediaLanguageCode(language: string) {
-  return language.toLowerCase().startsWith('uk') ? 'uk' : 'en';
-}
-
 export default function ArticlesScreen() {
-  const { i18n, t } = useTranslation();
+  const { t } = useTranslation();
   const colorScheme = useColorScheme();
   const iconColor = useThemeColor({}, 'icon');
   const borderColor = colorScheme === 'dark' ? '#2d3336' : '#d0d7de';
-  const languageCode = getWikipediaLanguageCode(i18n.language);
 
   const {
     data: articles = [],
@@ -43,13 +38,21 @@ export default function ArticlesScreen() {
     isLoading,
     refetch,
   } = useQuery({
-    queryFn: () => fetchRandomWikipediaArticles(languageCode),
-    queryKey: ['wikipedia', 'randomArticles', languageCode],
+    queryFn: () => fetchRandomWikipediaArticles(),
+    queryKey: ['wikipedia', 'randomArticles'],
   });
 
-  const openArticle = useCallback((url: string) => {
-    Linking.openURL(url);
-  }, []);
+  const openArticle = useCallback(
+    (article: WikipediaArticle) => {
+      router.push({
+        pathname: '/article/[id]',
+        params: {
+          id: String(article.id),
+        },
+      });
+    },
+    []
+  );
 
   const renderArticle = useCallback<ListRenderItem<WikipediaArticle>>(
     ({ item }) => (
@@ -59,7 +62,7 @@ export default function ArticlesScreen() {
           { borderColor },
           pressed ? styles.articleCardPressed : null,
         ]}
-        onPress={() => openArticle(item.url)}>
+        onPress={() => openArticle(item)}>
         {item.thumbnailUrl ? (
           <Image
             accessibilityIgnoresInvertColors

@@ -59,5 +59,14 @@
     "errorTitle": "Articles are unavailable",
     "errorDescription": "Check your internet connection and try again.",
     "retry": "Try again"
+  },
+  "article": {
+    "titleFallback": "Article",
+    "loading": "Loading article...",
+    "errorTitle": "Article is unavailable",
+    "errorDescription": "We could not load this article right now.",
+    "invalidId": "This article link is invalid.",
+    "retry": "Try again",
+    "openOriginal": "Open original on Wikipedia"
   }
 }

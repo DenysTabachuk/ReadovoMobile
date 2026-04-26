@@ -13,3 +13,19 @@ export type WikipediaArticleDetail = {
   url: string;
   thumbnailUrl?: string;
 };
+
+export type WikipediaPage = {
+  extract?: string;
+  fullurl?: string;
+  pageid: number;
+  thumbnail?: {
+    source?: string;
+  };
+  title: string;
+};
+
+export type WikipediaApiResponse = {
+  query?: {
+    pages?: Record<string, WikipediaPage>;
+  };
+};
