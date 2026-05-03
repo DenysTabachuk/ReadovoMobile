@@ -4,6 +4,7 @@ export type DictionaryWord = {
   context: string;
   createdAt: string;
   id: string;
+  lastReviewedAt?: string;
   progress: DictionaryWordProgress;
   translation: string;
   word: string;
@@ -13,4 +14,31 @@ export type CreateDictionaryWordRequest = {
   context: string;
   translation: string;
   word: string;
+};
+
+export type DictionaryTestQuestionOption = {
+  id: string;
+  translation: string;
+};
+
+export type DictionaryTestQuestion = {
+  options: DictionaryTestQuestionOption[];
+  word: string;
+  wordId: string;
+};
+
+export type DictionaryTest = {
+  questions: DictionaryTestQuestion[];
+};
+
+export type SubmitDictionaryTestAnswerRequest = {
+  selectedOptionId: string;
+  wordId: string;
+};
+
+export type DictionaryTestAnswerResult = {
+  correctOptionId: string;
+  correctTranslation: string;
+  isCorrect: boolean;
+  word: DictionaryWord;
 };

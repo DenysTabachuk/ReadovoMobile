@@ -50,7 +50,7 @@ export const styles = StyleSheet.create({
     paddingVertical: Spacing.xs,
   },
   progressText: {
-    color: '#0a7ea4',
+    textAlign: 'center',
   },
   centerState: {
     alignItems: 'center',
@@ -72,5 +72,55 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: Spacing.xLg,
     paddingVertical: Spacing.xxLg,
+  },
+  startTestButton: {
+    alignSelf: 'flex-start',
+    marginTop: Spacing.sm,
+  },
+  testContainer: {
+    flex: 1,
+    gap: Spacing.lg,
+    paddingTop: Spacing.lg,
+  },
+  testHeader: {
+    alignItems: 'flex-start',
+    flexDirection: 'row',
+    gap: Spacing.md,
+    justifyContent: 'space-between',
+  },
+  testCard: {
+    borderRadius: 8,
+    borderWidth: 1,
+    gap: Spacing.lg,
+    padding: Spacing.lg,
+  },
+  questionWord: {
+    textAlign: 'center',
+  },
+  optionsList: {
+    gap: Spacing.sm,
+  },
+  optionButton: {
+    maxWidth: '100%',
+  },
+  optionText: {
+    flexShrink: 1,
+  },
+  correctOption: {
+    backgroundColor: '#1f8a4c',
+    borderColor: '#1f8a4c',
+  },
+  wrongOption: {
+    backgroundColor: '#c2410c',
+    borderColor: '#c2410c',
+  },
+  answeredOptionText: {
+    color: '#fff',
+  },
+  answerResult: {
+    gap: Spacing.md,
+  },
+  testError: {
+    color: '#c2410c',
   },
 });

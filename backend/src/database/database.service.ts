@@ -42,8 +42,14 @@ export class DatabaseService implements OnModuleDestroy, OnModuleInit {
         translation text NOT NULL,
         context text NOT NULL,
         progress text NOT NULL DEFAULT 'new',
+        last_reviewed_at timestamptz,
         created_at timestamptz NOT NULL DEFAULT now()
       );
+    `);
+
+    await this.query(`
+      ALTER TABLE dictionary_words
+      ADD COLUMN IF NOT EXISTS last_reviewed_at timestamptz;
     `);
   }
 

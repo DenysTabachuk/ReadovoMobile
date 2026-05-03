@@ -107,6 +107,20 @@
       "new": "New",
       "in_progress": "In progress",
       "learned": "Learned"
+    },
+    "test": {
+      "title": "Dictionary test",
+      "start": "Review",
+      "loading": "Preparing test...",
+      "progress": "Question {{current}} of {{total}}",
+      "questionLabel": "Choose the correct translation",
+      "correct": "Correct",
+      "incorrect": "Incorrect. Correct answer: {{translation}}",
+      "next": "Next",
+      "finish": "Finish",
+      "close": "Close",
+      "error": "Could not prepare the test. Add at least 4 words and try again.",
+      "answerError": "Could not save the answer."
     }
   },
   "article": {

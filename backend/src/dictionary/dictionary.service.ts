@@ -1,17 +1,36 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { randomUUID } from 'crypto';
 
 import { DictionaryRepository } from './dictionary.repository';
 import {
   type CreateDictionaryWordRequest,
+  type DictionaryTest,
+  type DictionaryTestAnswerResult,
+  type DictionaryTestQuestion,
   type DictionaryWord,
+  type QuizOptionsRequest,
+  type SimilarWordsRequest,
+  type SubmitDictionaryTestAnswerRequest,
 } from './types';
+import { DictionaryEmbeddingService } from './dictionary-embedding.service';
+
+const DEFAULT_DICTIONARY_TEST_LIMIT = 10;
+const DICTIONARY_TEST_OPTION_COUNT = 4;
 
 @Injectable()
 export class DictionaryService {
-  constructor(private readonly dictionaryRepository: DictionaryRepository) {}
+  constructor(
+    private readonly dictionaryEmbeddingService: DictionaryEmbeddingService,
+    private readonly dictionaryRepository: DictionaryRepository,
+  ) {}
 
-  async createWord(request: CreateDictionaryWordRequest): Promise<DictionaryWord> {
+  async createWord(
+    request: CreateDictionaryWordRequest,
+  ): Promise<DictionaryWord> {
     const word = request.word?.trim();
     const translation = request.translation?.trim();
     const context = request.context?.trim();
@@ -40,5 +59,165 @@ export class DictionaryService {
 
   findAll(): Promise<DictionaryWord[]> {
     return this.dictionaryRepository.findAll();
+  }
+
+  generateEmbedding(text: string): Promise<number[]> {
+    return this.dictionaryEmbeddingService.generateEmbedding(text);
+  }
+
+  async getSimilarWords(request: SimilarWordsRequest): Promise<string[]> {
+    const wordList = await this.resolveWordList(request.wordList);
+
+    return this.dictionaryEmbeddingService.getSimilarWords(
+      request.word ?? '',
+      wordList,
+    );
+  }
+
+  async generateQuizOptions(request: QuizOptionsRequest): Promise<string[]> {
+    const wordList = await this.resolveWordList(request.wordList);
+
+    return this.dictionaryEmbeddingService.generateQuizOptions(
+      request.correctWord ?? '',
+      wordList,
+    );
+  }
+
+  async createTest(
+    limit = DEFAULT_DICTIONARY_TEST_LIMIT,
+  ): Promise<DictionaryTest> {
+    const normalizedLimit = Number.isFinite(limit)
+      ? Math.max(1, Math.min(DEFAULT_DICTIONARY_TEST_LIMIT, Math.floor(limit)))
+      : DEFAULT_DICTIONARY_TEST_LIMIT;
+    const words = await this.dictionaryRepository.findAll();
+
+    if (words.length < DICTIONARY_TEST_OPTION_COUNT) {
+      throw new BadRequestException(
+        'At least 4 dictionary words are required to create a test.',
+      );
+    }
+
+    const reviewCandidates =
+      await this.dictionaryRepository.findReviewCandidates(normalizedLimit);
+    const questions = await Promise.all(
+      reviewCandidates.map((word) => this.createTestQuestion(word, words)),
+    );
+
+    return { questions };
+  }
+
+  async submitTestAnswer(
+    request: SubmitDictionaryTestAnswerRequest,
+  ): Promise<DictionaryTestAnswerResult> {
+    const wordId = request.wordId?.trim();
+    const selectedOptionId = request.selectedOptionId?.trim();
+
+    if (!wordId) {
+      throw new BadRequestException('Word id is required.');
+    }
+
+    if (!selectedOptionId) {
+      throw new BadRequestException('Selected option id is required.');
+    }
+
+    const word = await this.dictionaryRepository.findById(wordId);
+
+    if (!word) {
+      throw new NotFoundException('Dictionary word was not found.');
+    }
+
+    const isCorrect = selectedOptionId === word.id;
+    const reviewedWord = await this.dictionaryRepository.updateReviewResult(
+      word.id,
+      this.getNextProgress(word.progress, isCorrect),
+      new Date().toISOString(),
+    );
+
+    if (!reviewedWord) {
+      throw new NotFoundException('Dictionary word was not found.');
+    }
+
+    return {
+      correctOptionId: word.id,
+      correctTranslation: word.translation,
+      isCorrect,
+      word: reviewedWord,
+    };
+  }
+
+  private async resolveWordList(wordList?: string[]): Promise<string[]> {
+    if (wordList?.length) {
+      return wordList;
+    }
+
+    const dictionaryWords = await this.dictionaryRepository.findAll();
+
+    return dictionaryWords.map((dictionaryWord) => dictionaryWord.word);
+  }
+
+  private async createTestQuestion(
+    word: DictionaryWord,
+    words: DictionaryWord[],
+  ): Promise<DictionaryTestQuestion> {
+    const wordByNormalizedText = new Map(
+      words.map((dictionaryWord) => [
+        this.normalizeWord(dictionaryWord.word),
+        dictionaryWord,
+      ]),
+    );
+    const candidateWords = words.filter(
+      (candidateWord) => candidateWord.id !== word.id,
+    );
+    const similarWords = await this.dictionaryEmbeddingService.getSimilarWords(
+      word.word,
+      candidateWords.map((candidateWord) => candidateWord.word),
+    );
+    const distractors = similarWords
+      .map((similarWord) => wordByNormalizedText.get(similarWord))
+      .filter((candidateWord): candidateWord is DictionaryWord =>
+        Boolean(candidateWord),
+      );
+    const distractorIds = new Set(
+      distractors.map((distractor) => distractor.id),
+    );
+    const fallbackDistractors = candidateWords.filter(
+      (candidateWord) => !distractorIds.has(candidateWord.id),
+    );
+    const selectedDistractors = [...distractors, ...fallbackDistractors].slice(
+      0,
+      DICTIONARY_TEST_OPTION_COUNT - 1,
+    );
+
+    return {
+      options: this.shuffleWords([word, ...selectedDistractors]).map(
+        (option) => ({
+          id: option.id,
+          translation: option.translation,
+        }),
+      ),
+      word: word.word,
+      wordId: word.id,
+    };
+  }
+
+  private getNextProgress(
+    currentProgress: DictionaryWord['progress'],
+    isCorrect: boolean,
+  ): DictionaryWord['progress'] {
+    if (!isCorrect) {
+      return 'in_progress';
+    }
+
+    return currentProgress === 'in_progress' || currentProgress === 'learned'
+      ? 'learned'
+      : 'in_progress';
+  }
+
+  private normalizeWord(word: string): string {
+    return word.trim().toLowerCase();
+  }
+
+  private shuffleWords<T>(words: T[]): T[] {
+    return [...words].sort(() => Math.random() - 0.5);
   }
 }
