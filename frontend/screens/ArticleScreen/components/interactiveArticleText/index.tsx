@@ -8,6 +8,7 @@ import {
 } from '@/api/wikipedia';
 import { ThemedText } from '@/components/themedText';
 
+import { ArticleFormulaBlock } from '../articleFormulaBlock';
 import { ArticleImageBlock } from '../articleImageBlock';
 import { ArticleTableBlock } from '../articleTableBlock';
 import { TouchableWord } from '../touchableWord';
@@ -135,6 +136,18 @@ export function InteractiveArticleText({
               }
               rows={block.rows}
               selectedTokenKey={selectedTokenKey}
+            />
+          );
+        }
+
+        if (block.type === 'formula') {
+          return (
+            <ArticleFormulaBlock
+              altText={block.altText}
+              heightEx={block.heightEx}
+              key={blockKey}
+              svg={block.svg}
+              widthEx={block.widthEx}
             />
           );
         }
