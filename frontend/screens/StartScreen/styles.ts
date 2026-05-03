@@ -7,9 +7,9 @@ export const styles = StyleSheet.create({
     flex: 1,
   },
   headerBlock: {
-    minHeight: 160,
     justifyContent: 'flex-end',
-    marginBottom: Spacing.xLg + Spacing.xs,
+    marginBottom: Spacing.xxLg,
+    minHeight: 190,
   },
   title: {
     marginBottom: Spacing.md,
@@ -17,27 +17,8 @@ export const styles = StyleSheet.create({
   description: {
     maxWidth: 420,
   },
-  languageList: {
-    gap: Spacing.md,
+  languageSelector: {
     minHeight: 116,
-  },
-  languageButton: {
-    alignItems: 'center',
-    borderColor: '#d0d7de',
-    borderRadius: 8,
-    borderWidth: 1,
-    flexDirection: 'row',
-    gap: Spacing.md,
-    maxWidth: 420,
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-  },
-  languageButtonSelected: {
-    backgroundColor: '#0a7ea4',
-    borderColor: '#0a7ea4',
-  },
-  languageLabelSelected: {
-    color: '#fff',
   },
   continueButton: {
     marginTop: 'auto',

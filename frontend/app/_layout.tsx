@@ -13,6 +13,7 @@ import 'react-native-reanimated';
 import { BannerProvider } from '@/components/banner';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { PreferencesProvider } from '@/providers/preferencesProvider';
 import { QueryProvider } from '@/providers/queryProvider';
 
 export const unstable_settings = {
@@ -20,6 +21,14 @@ export const unstable_settings = {
 };
 
 export default function RootLayout() {
+  return (
+    <PreferencesProvider>
+      <RootLayoutContent />
+    </PreferencesProvider>
+  );
+}
+
+function RootLayoutContent() {
   const colorScheme = useColorScheme() ?? 'light';
   const backgroundColor = Colors[colorScheme].background;
 

@@ -9,7 +9,7 @@
   "tabs": {
     "articles": "Articles",
     "dictionary": "Dictionary",
-    "explore": "Explore"
+    "settings": "Settings"
   },
   "about": {
     "title": "Speakly",
@@ -121,6 +121,18 @@
       "close": "Close",
       "error": "Could not prepare the test. Add at least 4 words and try again.",
       "answerError": "Could not save the answer."
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "description": "Adjust the app appearance and language.",
+    "theme": {
+      "title": "Theme",
+      "light": "Light",
+      "dark": "Dark"
+    },
+    "language": {
+      "title": "Language"
     }
   },
   "article": {
