@@ -5,16 +5,20 @@ import {
   Logger,
 } from '@nestjs/common';
 import { createHash } from 'node:crypto';
+import { createRequire } from 'node:module';
 import Groq from 'groq-sdk';
 
 import { DatabaseService } from '../database/database.service';
 import {
   extractPlainTextFromBlocks,
   parseHtmlToBlocks,
+  sanitizeWikipediaText,
 } from './article-html-parser';
 import {
+  type ArticleBlock,
   type ArticleSimplificationLevel,
   type ArticleSimplificationTargetLength,
+  type FormulaBlock,
   type GetWikipediaArticlesParams,
   type SimplifiedArticleCacheRow,
   type SimplifyArticleResponse,
@@ -42,10 +46,32 @@ const WIKIPEDIA_CATEGORY_TITLES: Record<
   science: 'Science',
   technology: 'Technology',
 };
+const nodeRequire = createRequire(__filename);
+
+type MathJaxModule = {
+  init: (config: Record<string, unknown>) => Promise<MathJaxModule>;
+  mathml2svgPromise: (
+    mathml: string,
+    options: { display: boolean },
+  ) => Promise<unknown>;
+  startup: {
+    adaptor: {
+      firstChild: (node: unknown) => unknown;
+      getAttribute: (node: unknown, name: string) => string | undefined;
+      serializeXML: (node: unknown) => string;
+    };
+  };
+  tex2svgPromise: (
+    latex: string,
+    options: { display: boolean },
+  ) => Promise<unknown>;
+};
 
 @Injectable()
 export class ArticlesService {
   private readonly logger = new Logger(ArticlesService.name);
+  private readonly formulaRenderCache = new Map<string, FormulaBlock>();
+  private mathJaxPromise: Promise<MathJaxModule> | null = null;
 
   constructor(private readonly databaseService: DatabaseService) {}
 
@@ -78,7 +104,10 @@ export class ArticlesService {
       queryParams.set('gsrnamespace', '0');
     } else if (category !== 'all') {
       queryParams.set('generator', 'categorymembers');
-      queryParams.set('gcmtitle', `Category:${WIKIPEDIA_CATEGORY_TITLES[category]}`);
+      queryParams.set(
+        'gcmtitle',
+        `Category:${WIKIPEDIA_CATEGORY_TITLES[category]}`,
+      );
       queryParams.set('gcmlimit', String(normalizedLimit));
       queryParams.set('gcmnamespace', '0');
       queryParams.set('gcmtype', 'page');
@@ -123,11 +152,13 @@ export class ArticlesService {
     }
 
     const html = await this.fetchWikipediaHtml(page.title);
-    const blocks = parseHtmlToBlocks(html);
+    const blocks = await this.renderFormulaBlocks(parseHtmlToBlocks(html));
     const content = extractPlainTextFromBlocks(blocks);
 
     if (!content) {
-      throw new BadGatewayException('Wikipedia article content is unavailable.');
+      throw new BadGatewayException(
+        'Wikipedia article content is unavailable.',
+      );
     }
 
     return {
@@ -256,6 +287,138 @@ export class ArticlesService {
     }
   }
 
+  private async renderFormulaBlocks(
+    blocks: ArticleBlock[],
+  ): Promise<ArticleBlock[]> {
+    return Promise.all(
+      blocks.map(async (block) => {
+        if (block.type !== 'formula') {
+          return block;
+        }
+
+        return this.renderFormulaBlock(block);
+      }),
+    );
+  }
+
+  private async renderFormulaBlock(block: FormulaBlock): Promise<FormulaBlock> {
+    if (block.svg || (!block.latex && !block.mathml)) {
+      return block;
+    }
+
+    const cacheKey = this.createFormulaRenderCacheKey(block);
+    const cachedBlock = this.formulaRenderCache.get(cacheKey);
+
+    if (cachedBlock) {
+      return cachedBlock;
+    }
+
+    try {
+      const mathJax = await this.getMathJax();
+      const renderedNode = block.mathml
+        ? await mathJax.mathml2svgPromise(block.mathml, {
+            display: block.display,
+          })
+        : await mathJax.tex2svgPromise(block.latex ?? '', {
+            display: block.display,
+          });
+      const adaptor = mathJax.startup.adaptor;
+      const svgNode = adaptor.firstChild(renderedNode);
+
+      if (!svgNode) {
+        return block;
+      }
+
+      const svg = adaptor.serializeXML(svgNode);
+      const widthEx = this.parseMathJaxExLength(
+        adaptor.getAttribute(svgNode, 'width'),
+      );
+      const heightEx = this.parseMathJaxExLength(
+        adaptor.getAttribute(svgNode, 'height'),
+      );
+      const renderedBlock: FormulaBlock = {
+        ...block,
+        heightEx: heightEx ?? block.heightEx,
+        svg,
+        widthEx: widthEx ?? block.widthEx,
+      };
+
+      this.formulaRenderCache.set(cacheKey, renderedBlock);
+
+      return renderedBlock;
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : `Unknown formula render error: ${String(error)}`;
+
+      this.logger.warn(
+        `Failed to render math formula to SVG: reason="${errorMessage}"`,
+      );
+
+      return block;
+    }
+  }
+
+  private createFormulaRenderCacheKey(block: FormulaBlock): string {
+    return createHash('sha256')
+      .update(
+        `${block.display ? 'display' : 'inline'}::${block.latex ?? ''}::${block.mathml ?? ''}`,
+      )
+      .digest('hex');
+  }
+
+  private parseMathJaxExLength(value?: string): number | undefined {
+    if (!value) {
+      return undefined;
+    }
+
+    const match = value.match(/^([0-9]+(?:\.[0-9]+)?)ex$/i);
+
+    if (!match) {
+      return undefined;
+    }
+
+    const parsedValue = Number.parseFloat(match[1] ?? '');
+
+    if (!Number.isFinite(parsedValue) || parsedValue <= 0) {
+      return undefined;
+    }
+
+    return parsedValue;
+  }
+
+  private async getMathJax(): Promise<MathJaxModule> {
+    if (!this.mathJaxPromise) {
+      this.mathJaxPromise = this.initializeMathJax();
+    }
+
+    return this.mathJaxPromise;
+  }
+
+  private async initializeMathJax(): Promise<MathJaxModule> {
+    (
+      globalThis as {
+        MathJax?: {
+          config: Record<string, unknown>;
+        };
+      }
+    ).MathJax = { config: {} };
+
+    const mathJax = nodeRequire('mathjax/node-main.cjs') as MathJaxModule;
+
+    await mathJax.init({
+      loader: {
+        load: ['input/tex', 'input/mathml', 'output/svg'],
+      },
+      svg: {
+        fontCache: 'none',
+      },
+    });
+
+    return mathJax;
+  }
+
   private normalizeLimit(limit: number): number {
     if (!Number.isFinite(limit) || limit <= 0) {
       return DEFAULT_ARTICLE_LIMIT;
@@ -291,11 +454,11 @@ export class ArticlesService {
 
   private mapPageToArticle(page: WikipediaPage): WikipediaArticle {
     return {
+      extract: sanitizeWikipediaText(page.extract ?? ''),
       id: page.pageid,
-      title: page.title,
-      extract: page.extract ?? '',
-      url: page.fullurl ?? '',
       thumbnailUrl: page.thumbnail?.source,
+      title: sanitizeWikipediaText(page.title),
+      url: page.fullurl ?? '',
     };
   }
 
@@ -314,12 +477,15 @@ export class ArticlesService {
   }
 
   private async fetchWikipediaHtml(pageTitle: string): Promise<string> {
-    const response = await fetch(this.createWikipediaHtmlRequestUrl(pageTitle), {
-      headers: {
-        ...this.createWikipediaHeaders(),
-        Accept: 'text/html; charset=utf-8',
+    const response = await fetch(
+      this.createWikipediaHtmlRequestUrl(pageTitle),
+      {
+        headers: {
+          ...this.createWikipediaHeaders(),
+          Accept: 'text/html; charset=utf-8',
+        },
       },
-    });
+    );
 
     if (!response.ok) {
       throw new BadGatewayException('Failed to fetch Wikipedia article HTML.');

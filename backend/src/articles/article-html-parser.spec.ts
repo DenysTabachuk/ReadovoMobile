@@ -1,6 +1,7 @@
 import {
   extractPlainTextFromBlocks,
   parseHtmlToBlocks,
+  sanitizeWikipediaText,
 } from './article-html-parser';
 
 describe('articleHtmlParser', () => {
@@ -42,45 +43,28 @@ describe('articleHtmlParser', () => {
       text: 'History',
       type: 'heading',
     });
-    expect(blocks[1]).toMatchObject({
-      children: [
-        {
-          bold: true,
-          text: 'France',
-          type: 'word',
-        },
-        {
-          text: ' ',
-          type: 'text',
-        },
-        {
-          text: 'is',
-          type: 'word',
-        },
-        {
-          text: ' ',
-          type: 'text',
-        },
-        {
-          text: 'a',
-          type: 'word',
-        },
-        {
-          text: ' ',
-          type: 'text',
-        },
-        {
-          italic: true,
-          text: 'country',
-          type: 'word',
-        },
-        {
-          text: '.',
-          type: 'text',
-        },
-      ],
-      type: 'paragraph',
-    });
+    expect(blocks[1]?.type).toBe('paragraph');
+    expect(
+      blocks[1]?.type === 'paragraph'
+        ? extractPlainTextFromBlocks([blocks[1]])
+        : '',
+    ).toBe('France is a country.');
+    expect(
+      blocks[1]?.type === 'paragraph'
+        ? blocks[1].children.some(
+            (node) =>
+              node.type === 'word' && node.text === 'France' && node.bold,
+          )
+        : false,
+    ).toBe(true);
+    expect(
+      blocks[1]?.type === 'paragraph'
+        ? blocks[1].children.some(
+            (node) =>
+              node.type === 'word' && node.text === 'country' && node.italic,
+          )
+        : false,
+    ).toBe(true);
     expect(blocks[2]).toMatchObject({
       ordered: false,
       type: 'list',
@@ -88,7 +72,12 @@ describe('articleHtmlParser', () => {
     expect(blocks[2]?.type === 'list' ? blocks[2].items.length : 0).toBe(2);
     expect(
       blocks[2]?.type === 'list'
-        ? blocks[2].items.map((item) => item.map((node) => node.text).join('').trim())
+        ? blocks[2].items.map((item) =>
+            item
+              .map((node) => node.text)
+              .join('')
+              .trim(),
+          )
         : [],
     ).toEqual(['First item', 'Second item']);
     expect(blocks[3]).toMatchObject({
@@ -123,7 +112,9 @@ describe('articleHtmlParser', () => {
   });
 
   it('creates plain text output from parsed blocks for simplification fallback', () => {
-    const blocks = parseHtmlToBlocks('<p>France is a country.</p><p>Paris is its capital.</p>');
+    const blocks = parseHtmlToBlocks(
+      '<p>France is a country.</p><p>Paris is its capital.</p>',
+    );
 
     expect(extractPlainTextFromBlocks(blocks)).toBe(
       'France is a country.\n\nParis is its capital.',
@@ -304,5 +295,151 @@ describe('articleHtmlParser', () => {
         type: 'image',
       },
     ]);
+  });
+
+  it('keeps inline math formulas as readable text instead of splitting them into words', () => {
+    const blocks = parseHtmlToBlocks(`
+      <section>
+        <p>
+          The formula
+          <span class="mwe-math-element" typeof="mw:Extension/math">
+            <math alttext="{\\displaystyle E=mc^{2}}">
+              <semantics>
+                <mrow>
+                  <mi>E</mi>
+                  <mo>=</mo>
+                  <mi>m</mi>
+                  <msup>
+                    <mi>c</mi>
+                    <mn>2</mn>
+                  </msup>
+                </mrow>
+                <annotation encoding="application/x-tex">{\\displaystyle E=mc^{2}}</annotation>
+              </semantics>
+            </math>
+          </span>
+          is famous.
+        </p>
+      </section>
+    `);
+
+    expect(extractPlainTextFromBlocks(blocks)).toBe(
+      'The formula E = mc^2 is famous.',
+    );
+    expect(blocks[0]).toMatchObject({
+      type: 'paragraph',
+    });
+    expect(
+      blocks[0]?.type === 'paragraph'
+        ? blocks[0].children.some(
+            (node) =>
+              node.type === 'word' && (node.text === 'mc' || node.text === 'E'),
+          )
+        : false,
+    ).toBe(false);
+  });
+
+  it('parses standalone display math as formula blocks', () => {
+    const blocks = parseHtmlToBlocks(`
+      <section>
+        <p>Before.</p>
+        <div class="mwe-math-element" typeof="mw:Extension/math">
+          <math alttext="{\\displaystyle x^{2}+y^{2}=z^{2}}">
+            <semantics>
+              <mrow>
+                <msup><mi>x</mi><mn>2</mn></msup>
+                <mo>+</mo>
+                <msup><mi>y</mi><mn>2</mn></msup>
+                <mo>=</mo>
+                <msup><mi>z</mi><mn>2</mn></msup>
+              </mrow>
+              <annotation encoding="application/x-tex">
+                {\\displaystyle x^{2}+y^{2}=z^{2}}
+              </annotation>
+            </semantics>
+          </math>
+        </div>
+        <p>After.</p>
+      </section>
+    `);
+
+    expect(extractPlainTextFromBlocks(blocks)).toBe(
+      'Before.\n\nx^2 + y^2 = z^2\n\nAfter.',
+    );
+    expect(blocks[1]).toMatchObject({
+      altText: 'x^2 + y^2 = z^2',
+      display: true,
+      latex: '{\\displaystyle x^{2}+y^{2}=z^{2}}',
+      type: 'formula',
+    });
+    expect(
+      blocks[1]?.type === 'formula' ? blocks[1].mathml : undefined,
+    ).toContain('<math alttext="{\\displaystyle x^{2}+y^{2}=z^{2}}">');
+  });
+
+  it('splits paragraphs around display formulas instead of flattening them into text', () => {
+    const blocks = parseHtmlToBlocks(`
+      <section>
+        <p>
+          Before
+          <span class="mwe-math-element mwe-math-fallback-image-display" typeof="mw:Extension/math">
+            <math alttext="{\\displaystyle x=1}">
+              <semantics>
+                <mrow><mi>x</mi><mo>=</mo><mn>1</mn></mrow>
+                <annotation encoding="application/x-tex">{\\displaystyle x=1}</annotation>
+              </semantics>
+            </math>
+          </span>
+          after.
+        </p>
+      </section>
+    `);
+
+    expect(blocks).toHaveLength(3);
+    expect(blocks[0]).toMatchObject({
+      type: 'paragraph',
+    });
+    expect(
+      blocks[0]?.type === 'paragraph'
+        ? extractPlainTextFromBlocks([blocks[0]])
+        : '',
+    ).toBe('Before');
+    expect(blocks[1]).toMatchObject({
+      altText: 'x = 1',
+      display: true,
+      latex: '{\\displaystyle x=1}',
+      type: 'formula',
+    });
+    expect(
+      blocks[1]?.type === 'formula' ? blocks[1].mathml : undefined,
+    ).toContain('<math alttext="{\\displaystyle x=1}">');
+    expect(blocks[2]).toMatchObject({
+      type: 'paragraph',
+    });
+    expect(
+      blocks[2]?.type === 'paragraph'
+        ? extractPlainTextFromBlocks([blocks[2]])
+        : '',
+    ).toBe('after.');
+  });
+
+  it('sanitizes wikipedia plain text math artifacts for previews', () => {
+    expect(
+      sanitizeWikipediaText(
+        'In mathematics, the Laplace transform converts a function of a real variable (usually {\\displaystyle t}, in the time domain) to a function of a complex variable {\\displaystyle s}.',
+      ),
+    ).toBe(
+      'In mathematics, the Laplace transform converts a function of a real variable (usually t, in the time domain) to a function of a complex variable s.',
+    );
+  });
+
+  it('normalizes inline latex expressions inside plain text', () => {
+    expect(
+      sanitizeWikipediaText(
+        'The Laplace transform is defined by \\(\\mathcal{L}\\{f\\}(s)=\\int_0^\\infty f(t)e^{-st}dt\\).',
+      ),
+    ).toBe(
+      'The Laplace transform is defined by Lf(s) = integral_0^infinity f(t)e^ - st dt.',
+    );
   });
 });

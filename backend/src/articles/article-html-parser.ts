@@ -1,6 +1,11 @@
-import { parse, type DefaultTreeAdapterMap } from 'parse5';
+import { parse, serializeOuter, type DefaultTreeAdapterMap } from 'parse5';
 
-import { type ArticleBlock, type InlineNode, type TableCell } from './types';
+import {
+  type ArticleBlock,
+  type FormulaBlock,
+  type InlineNode,
+  type TableCell,
+} from './types';
 
 type HtmlChildNode = DefaultTreeAdapterMap['childNode'];
 type HtmlElement = DefaultTreeAdapterMap['element'];
@@ -13,6 +18,7 @@ type InlineFormatting = {
 };
 
 type RawInlineSegment = InlineFormatting & {
+  preserveText?: boolean;
   text: string;
 };
 
@@ -65,6 +71,12 @@ const INLINE_WRAPPER_TAGS = new Set([
   'time',
   'u',
 ]);
+const MATH_CLASS_PATTERNS = [
+  'mwe-math-element',
+  'mwe-math-fallback-image-display',
+  'mwe-math-fallback-image-inline',
+];
+const MATH_TYPEOF_PATTERNS = ['mw:extension/chem', 'mw:extension/math'];
 const IGNORED_CLASS_PATTERNS = [
   'ambox',
   'authority-control',
@@ -117,6 +129,39 @@ const IGNORED_SECTION_TITLES = new Set([
   'works cited',
 ]);
 const WORD_PATTERN = /[A-Za-z]+(?:['\u2019-][A-Za-z]+)*/g;
+const LATEX_COMMAND_SYMBOLS: Record<string, string> = {
+  alpha: 'alpha',
+  approx: '~',
+  beta: 'beta',
+  cdot: '*',
+  delta: 'delta',
+  epsilon: 'epsilon',
+  eta: 'eta',
+  gamma: 'gamma',
+  ge: '>=',
+  infty: 'infinity',
+  int: 'integral',
+  lambda: 'lambda',
+  le: '<=',
+  mu: 'mu',
+  nabla: 'nabla',
+  ne: '!=',
+  neq: '!=',
+  omega: 'omega',
+  partial: 'partial',
+  phi: 'phi',
+  pi: 'pi',
+  pm: '+/-',
+  prod: 'product',
+  sigma: 'sigma',
+  sqrt: 'sqrt',
+  sum: 'sum',
+  tau: 'tau',
+  theta: 'theta',
+  times: '*',
+  to: '->',
+  varphi: 'phi',
+};
 
 export function parseHtmlToBlocks(html: string): ArticleBlock[] {
   const normalizedHtml = html.trim();
@@ -137,9 +182,51 @@ export function parseHtmlToBlocks(html: string): ArticleBlock[] {
   }
 }
 
-export function parseInlineNodes(parentNode: HtmlParentNode | HtmlChildNode): InlineNode[] {
+export function sanitizeWikipediaText(text: string): string {
+  const normalizedText = text.replace(/\u00a0/g, ' ');
+
+  if (!normalizedText.trim()) {
+    return '';
+  }
+
+  const withDisplayMathNormalized =
+    replaceDisplayMathExpressions(normalizedText);
+  const withInlineMathNormalized = withDisplayMathNormalized.replace(
+    /\\([()[\]])([\s\S]*?)\\([()[\]])/g,
+    (
+      match: string,
+      openingDelimiter: string,
+      innerText: string,
+      closingDelimiter: string,
+    ) => {
+      if (
+        (openingDelimiter === '(' && closingDelimiter !== ')') ||
+        (openingDelimiter === '[' && closingDelimiter !== ']')
+      ) {
+        return match;
+      }
+
+      const normalizedMath = normalizeMathText(innerText);
+
+      return normalizedMath || '';
+    },
+  );
+
+  return normalizeWhitespace(
+    withInlineMathNormalized
+      .replace(/\(\s*\)/g, '')
+      .replace(/\[\s*\]/g, '')
+      .replace(/\s+([,.;:!?])/g, '$1'),
+  );
+}
+
+export function parseInlineNodes(
+  parentNode: HtmlParentNode | HtmlChildNode,
+): InlineNode[] {
   const segments = collectInlineSegments(parentNode, {});
-  const inlineNodes = convertSegmentsToInlineNodes(segments);
+  const inlineNodes = convertSegmentsToInlineNodes(segments, {
+    trimEdges: true,
+  });
 
   return mergeAdjacentInlineNodes(inlineNodes);
 }
@@ -164,9 +251,18 @@ export function extractPlainTextFromBlocks(blocks: ArticleBlock[]): string {
 
       if (block.type === 'table') {
         return block.rows
-          .map((row) => row.map((cell) => cell.text.trim()).filter(Boolean).join(' | '))
+          .map((row) =>
+            row
+              .map((cell) => cell.text.trim())
+              .filter(Boolean)
+              .join(' | '),
+          )
           .filter(Boolean)
           .join('\n');
+      }
+
+      if (block.type === 'formula') {
+        return block.altText.trim();
       }
 
       return [block.alt, block.caption].filter(Boolean).join(' ').trim();
@@ -188,6 +284,13 @@ function parseNodesToBlocks(nodes: HtmlChildNode[]): ArticleBlock[] {
       continue;
     }
 
+    const formulaBlock = parseFormulaBlock(node);
+
+    if (formulaBlock) {
+      blocks.push(formulaBlock);
+      continue;
+    }
+
     if (isHeadingTag(node.tagName)) {
       const text = normalizeWhitespace(extractElementText(node));
 
@@ -203,14 +306,7 @@ function parseNodesToBlocks(nodes: HtmlChildNode[]): ArticleBlock[] {
     }
 
     if (node.tagName === 'p') {
-      const children = parseInlineNodes(node);
-
-      if (hasVisibleInlineContent(children)) {
-        blocks.push({
-          children,
-          type: 'paragraph',
-        });
-      }
+      blocks.push(...parseParagraphBlocks(node));
 
       continue;
     }
@@ -261,6 +357,50 @@ function parseNodesToBlocks(nodes: HtmlChildNode[]): ArticleBlock[] {
   return blocks;
 }
 
+function parseParagraphBlocks(paragraphNode: HtmlElement): ArticleBlock[] {
+  const blocks: ArticleBlock[] = [];
+  let paragraphChildren: InlineNode[] = [];
+
+  const flushParagraph = () => {
+    const trimmedChildren = trimWhitespaceInlineNodes(paragraphChildren);
+
+    if (hasVisibleInlineContent(trimmedChildren)) {
+      blocks.push({
+        children: mergeAdjacentInlineNodes(trimmedChildren),
+        type: 'paragraph',
+      });
+    }
+
+    paragraphChildren = [];
+  };
+
+  for (const childNode of paragraphNode.childNodes) {
+    if (isElementNode(childNode) && shouldIgnoreElement(childNode)) {
+      continue;
+    }
+
+    const formulaBlock = isElementNode(childNode)
+      ? parseFormulaBlock(childNode)
+      : null;
+
+    if (formulaBlock) {
+      flushParagraph();
+      blocks.push(formulaBlock);
+      continue;
+    }
+
+    paragraphChildren.push(
+      ...convertSegmentsToInlineNodes(collectInlineSegments(childNode, {}), {
+        trimEdges: false,
+      }),
+    );
+  }
+
+  flushParagraph();
+
+  return blocks;
+}
+
 function parseListItems(listNode: HtmlElement): InlineNode[][] {
   const items: InlineNode[][] = [];
 
@@ -283,9 +423,19 @@ function parseListItems(listNode: HtmlElement): InlineNode[][] {
   return items;
 }
 
+function parseFormulaBlock(node: HtmlElement): FormulaBlock | null {
+  if (!isMathElement(node) || !isDisplayMathElement(node)) {
+    return null;
+  }
+
+  return createFormulaBlock(node, true);
+}
+
 function parseTableRows(tableNode: HtmlElement): TableCell[][] {
   const rows: TableCell[][] = [];
-  const tableCaption = normalizeWhitespace(extractTableCaption(tableNode) ?? '');
+  const tableCaption = normalizeWhitespace(
+    extractTableCaption(tableNode) ?? '',
+  );
   const infoboxImageCaption = isInfoboxElement(tableNode)
     ? normalizeWhitespace(extractInfoboxImageCaption(tableNode) ?? '')
     : '';
@@ -338,7 +488,9 @@ function parseTableRows(tableNode: HtmlElement): TableCell[][] {
   return rows;
 }
 
-function parseImageBlock(node: HtmlElement): Extract<ArticleBlock, { type: 'image' }> | null {
+function parseImageBlock(
+  node: HtmlElement,
+): Extract<ArticleBlock, { type: 'image' }> | null {
   if (!isImageContainerElement(node) && node.tagName !== 'img') {
     return null;
   }
@@ -368,12 +520,6 @@ function parseImageBlock(node: HtmlElement): Extract<ArticleBlock, { type: 'imag
     src,
     type: 'image',
   };
-}
-
-function parseInfoboxImageBlock(
-  node: HtmlElement,
-): Extract<ArticleBlock, { type: 'image' }> | null {
-  return parseTableImageBlock(node);
 }
 
 function parseTableImageBlock(
@@ -432,17 +578,36 @@ function collectInlineSegments(
     return [{ ...formatting, text: ' ' }];
   }
 
+  const mathText = extractMathText(node);
+
+  if (mathText) {
+    return [
+      {
+        ...formatting,
+        preserveText: true,
+        text: isDisplayMathElement(node) ? mathText : ` ${mathText} `,
+      },
+    ];
+  }
+
   const nextFormatting: InlineFormatting = {
-    bold: formatting.bold || FORMATTING_BOLD_TAGS.has(node.tagName) || undefined,
+    bold:
+      formatting.bold || FORMATTING_BOLD_TAGS.has(node.tagName) || undefined,
     italic:
-      formatting.italic || FORMATTING_ITALIC_TAGS.has(node.tagName) || undefined,
+      formatting.italic ||
+      FORMATTING_ITALIC_TAGS.has(node.tagName) ||
+      undefined,
   };
   const segments = node.childNodes.flatMap((childNode) =>
     collectInlineSegments(childNode, nextFormatting),
   );
 
   if (BLOCK_TAGS.has(node.tagName) && segments.length > 0) {
-    return [{ ...formatting, text: ' ' }, ...segments, { ...formatting, text: ' ' }];
+    return [
+      { ...formatting, text: ' ' },
+      ...segments,
+      { ...formatting, text: ' ' },
+    ];
   }
 
   if (INLINE_WRAPPER_TAGS.has(node.tagName) || node.tagName === 'img') {
@@ -452,11 +617,20 @@ function collectInlineSegments(
   return segments;
 }
 
-function convertSegmentsToInlineNodes(segments: RawInlineSegment[]): InlineNode[] {
+function convertSegmentsToInlineNodes(
+  segments: RawInlineSegment[],
+  options: { trimEdges?: boolean } = {},
+): InlineNode[] {
   const nodes: InlineNode[] = [];
 
   for (const segment of segments) {
     const text = segment.text.replaceAll('\u00a0', ' ');
+
+    if (segment.preserveText) {
+      appendTextNode(nodes, text, segment);
+      continue;
+    }
+
     let cursor = 0;
 
     while (cursor < text.length) {
@@ -480,6 +654,10 @@ function convertSegmentsToInlineNodes(segments: RawInlineSegment[]): InlineNode[
       appendChunkNodes(nodes, text.slice(cursor, chunkEnd), segment);
       cursor = chunkEnd;
     }
+  }
+
+  if (options.trimEdges === false) {
+    return nodes;
   }
 
   return trimWhitespaceInlineNodes(nodes);
@@ -522,14 +700,19 @@ function appendTextNode(
     return;
   }
 
-  const normalizedText = normalizeWhitespace(text, { preserveInnerSpacing: true });
+  const normalizedText = normalizeWhitespace(text, {
+    preserveInnerSpacing: true,
+  });
 
   if (!normalizedText) {
     return;
   }
 
+  const { bold, italic } = formatting;
+
   nodes.push({
-    ...formatting,
+    bold,
+    italic,
     text: normalizedText,
     type: 'text',
   });
@@ -582,6 +765,101 @@ function extractElementText(node: HtmlElement): string {
       .map((segment) => segment.text)
       .join(''),
   );
+}
+
+function createFormulaBlock(
+  node: HtmlElement,
+  display: boolean,
+): FormulaBlock | null {
+  const altText = extractMathText(node);
+
+  if (!altText) {
+    return null;
+  }
+
+  const mathNode =
+    node.tagName === 'math' ? node : findFirstDescendant(node, 'math');
+  const latex =
+    getAttribute(node, 'alttext') ??
+    (mathNode ? getAttribute(mathNode, 'alttext') : undefined) ??
+    (mathNode ? extractMathAnnotationText(mathNode) : undefined);
+  const mathml = mathNode ? serializeOuter(mathNode) : undefined;
+
+  return {
+    altText,
+    display,
+    latex: latex?.trim() || undefined,
+    mathml: mathml?.trim() || undefined,
+    type: 'formula',
+  };
+}
+
+function extractMathText(node: HtmlElement): string | null {
+  if (!isMathElement(node)) {
+    return null;
+  }
+
+  const mathNode =
+    node.tagName === 'math' ? node : findFirstDescendant(node, 'math');
+  const candidates = [
+    getAttribute(node, 'alttext'),
+    mathNode ? getAttribute(mathNode, 'alttext') : undefined,
+    mathNode ? extractMathAnnotationText(mathNode) : undefined,
+    extractMathFallbackText(node),
+    extractRawTextContent(mathNode ?? node),
+  ];
+
+  for (const candidate of candidates) {
+    const normalizedCandidate = normalizeMathText(candidate ?? '');
+
+    if (normalizedCandidate) {
+      return normalizedCandidate;
+    }
+  }
+
+  return null;
+}
+
+function extractMathAnnotationText(node: HtmlElement): string | null {
+  const annotationNodes = findDescendantsByTagName(node, 'annotation');
+
+  for (const annotationNode of annotationNodes) {
+    const encoding =
+      getAttribute(annotationNode, 'encoding')?.toLowerCase() ?? '';
+    const rawText = extractRawTextContent(annotationNode);
+
+    if (encoding.includes('tex') && rawText.trim()) {
+      return rawText;
+    }
+  }
+
+  for (const annotationNode of annotationNodes) {
+    const rawText = extractRawTextContent(annotationNode);
+
+    if (rawText.trim()) {
+      return rawText;
+    }
+  }
+
+  return null;
+}
+
+function extractMathFallbackText(node: HtmlElement): string | null {
+  for (const classNamePattern of MATH_CLASS_PATTERNS) {
+    const fallbackNode = findDescendantByClassName(node, classNamePattern);
+
+    if (!fallbackNode || fallbackNode === node) {
+      continue;
+    }
+
+    const rawText = extractRawTextContent(fallbackNode);
+
+    if (rawText.trim()) {
+      return rawText;
+    }
+  }
+
+  return null;
 }
 
 function extractFigureCaption(node: HtmlElement): string | null {
@@ -690,18 +968,27 @@ function removeEmptyTextBlocks(blocks: ArticleBlock[]): ArticleBlock[] {
     }
 
     if (block.type === 'table') {
-      return block.rows.some((row) => row.some((cell) => Boolean(cell.text.trim())));
+      return block.rows.some((row) =>
+        row.some((cell) => Boolean(cell.text.trim())),
+      );
     }
 
     if (block.type === 'image') {
       return Boolean(block.src);
     }
 
+    if (block.type === 'formula') {
+      return Boolean(block.altText.trim());
+    }
+
     return Boolean(block.text.trim());
   });
 }
 
-function hasContentAfterHeading(blocks: ArticleBlock[], headingIndex: number): boolean {
+function hasContentAfterHeading(
+  blocks: ArticleBlock[],
+  headingIndex: number,
+): boolean {
   const headingBlock = blocks[headingIndex];
 
   if (!headingBlock || headingBlock.type !== 'heading') {
@@ -762,7 +1049,9 @@ function shouldIgnoreElement(node: HtmlElement): boolean {
     return true;
   }
 
-  if (IGNORED_MAP_CLASS_PATTERNS.some((pattern) => className.includes(pattern))) {
+  if (
+    IGNORED_MAP_CLASS_PATTERNS.some((pattern) => className.includes(pattern))
+  ) {
     return true;
   }
 
@@ -783,6 +1072,58 @@ function isInfoboxElement(node: HtmlElement): boolean {
   return className.includes('infobox');
 }
 
+function isDisplayMathElement(node: HtmlElement): boolean {
+  const mathNode =
+    node.tagName === 'math' ? node : findFirstDescendant(node, 'math');
+  const className = getAttribute(node, 'class')?.toLowerCase() ?? '';
+  const style = getAttribute(node, 'style')?.toLowerCase() ?? '';
+  const display =
+    getAttribute(node, 'display')?.toLowerCase() ??
+    getAttribute(mathNode ?? node, 'display')?.toLowerCase() ??
+    '';
+
+  if (display === 'block') {
+    return true;
+  }
+
+  if (className.includes('mwe-math-fallback-image-display')) {
+    return true;
+  }
+
+  if (style.includes('display:block')) {
+    return true;
+  }
+
+  if (
+    node.tagName === 'div' ||
+    node.tagName === 'figure' ||
+    node.tagName === 'table'
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
+function isMathElement(node: HtmlElement): boolean {
+  if (node.tagName === 'math') {
+    return true;
+  }
+
+  const className = getAttribute(node, 'class')?.toLowerCase() ?? '';
+  const typeOf = getAttribute(node, 'typeof')?.toLowerCase() ?? '';
+
+  if (MATH_CLASS_PATTERNS.some((pattern) => className.includes(pattern))) {
+    return true;
+  }
+
+  if (MATH_TYPEOF_PATTERNS.some((pattern) => typeOf.includes(pattern))) {
+    return true;
+  }
+
+  return false;
+}
+
 function isImageContainerElement(node: HtmlElement): boolean {
   if (IMAGE_CONTAINER_TAGS.has(node.tagName)) {
     return true;
@@ -791,19 +1132,27 @@ function isImageContainerElement(node: HtmlElement): boolean {
   const className = getAttribute(node, 'class')?.toLowerCase() ?? '';
   const typeOf = getAttribute(node, 'typeof')?.toLowerCase() ?? '';
 
-  if (IMAGE_WRAPPER_CLASS_PATTERNS.some((pattern) => className.includes(pattern))) {
+  if (
+    IMAGE_WRAPPER_CLASS_PATTERNS.some((pattern) => className.includes(pattern))
+  ) {
     return true;
   }
 
-  if (IMAGE_WRAPPER_TYPEOF_PATTERNS.some((pattern) => typeOf.includes(pattern))) {
+  if (
+    IMAGE_WRAPPER_TYPEOF_PATTERNS.some((pattern) => typeOf.includes(pattern))
+  ) {
     return true;
   }
 
   return false;
 }
 
-function getAttribute(node: HtmlElement, attributeName: string): string | undefined {
-  return node.attrs.find((attribute) => attribute.name === attributeName)?.value;
+function getAttribute(
+  node: HtmlElement,
+  attributeName: string,
+): string | undefined {
+  return node.attrs.find((attribute) => attribute.name === attributeName)
+    ?.value;
 }
 
 function findFirstDescendant(
@@ -843,9 +1192,11 @@ function extractPrimaryImageNode(
   parentNode: HtmlElement,
   options: { requireMeaningfulSize?: boolean } = {},
 ): HtmlElement | null {
-  const imageNodes = findDescendantsByTagName(parentNode, 'img').filter((imageNode) => {
-    return !shouldIgnoreElement(imageNode);
-  });
+  const imageNodes = findDescendantsByTagName(parentNode, 'img').filter(
+    (imageNode) => {
+      return !shouldIgnoreElement(imageNode);
+    },
+  );
 
   if (imageNodes.length === 0) {
     return null;
@@ -1013,6 +1364,188 @@ function getImageDimension(
   }
 
   return undefined;
+}
+
+function extractRawTextContent(node: HtmlParentNode | HtmlChildNode): string {
+  if (isTextNode(node)) {
+    return node.value;
+  }
+
+  if (!isElementNode(node)) {
+    return '';
+  }
+
+  return node.childNodes
+    .map((childNode) => extractRawTextContent(childNode))
+    .join('');
+}
+
+function normalizeMathText(text: string): string {
+  let normalizedText = normalizeWhitespace(text, {
+    preserveInnerSpacing: true,
+  });
+
+  if (!normalizedText) {
+    return '';
+  }
+
+  normalizedText = stripWrappingBraces(
+    normalizedText.replace(
+      /^\{\s*\\(?:display|text|script|scriptscript)style\s*/,
+      '',
+    ),
+  );
+  normalizedText = normalizedText.replace(
+    /\\(?:display|text|script|scriptscript)style\b/g,
+    '',
+  );
+  normalizedText = normalizedText.replace(/\\(?:left|right)\b/g, '');
+  normalizedText = normalizedText.replace(/\\([{}()[\]])/g, '$1');
+  normalizedText = normalizedText.replace(/\\(?:!|,|;|:|quad|qquad)\b/g, ' ');
+  normalizedText = replaceRepeatedly(
+    normalizedText,
+    /\\(?:d|t)?frac\s*\{([^{}]*)\}\s*\{([^{}]*)\}/g,
+    '($1)/($2)',
+  );
+  normalizedText = replaceRepeatedly(
+    normalizedText,
+    /\\sqrt\s*\{([^{}]*)\}/g,
+    'sqrt($1)',
+  );
+  normalizedText = replaceRepeatedly(
+    normalizedText,
+    /\\(?:mathbb|mathcal|mathfrak|mathit|mathrm|mathsf|mathtt|mathbf|boldsymbol|operatorname|text)\s*\{([^{}]*)\}/g,
+    '$1',
+  );
+  normalizedText = normalizedText.replace(
+    /\\(?:mathbb|mathcal|mathfrak|mathit|mathrm|mathsf|mathtt|mathbf|boldsymbol)\s+([A-Za-z0-9])/g,
+    '$1',
+  );
+  normalizedText = normalizedText.replace(/\^\{([^{}]+)\}/g, '^$1');
+  normalizedText = normalizedText.replace(/_\{([^{}]+)\}/g, '_$1');
+  normalizedText = normalizedText.replace(
+    /\\([A-Za-z]+)(?![A-Za-z])/g,
+    (match: string, command: string) => {
+      return LATEX_COMMAND_SYMBOLS[command] ?? match;
+    },
+  );
+  normalizedText = stripWrappingBraces(normalizedText);
+  normalizedText = normalizedText.replace(/[{}]/g, '');
+  normalizedText = normalizedText.replace(/\s*([=+\-*/<>~,;:])\s*/g, ' $1 ');
+  normalizedText = normalizedText.replace(/([A-Za-z0-9)])dt\b/g, '$1 dt');
+  normalizedText = normalizedText.replace(/\(\s+/g, '(');
+  normalizedText = normalizedText.replace(/\s+\)/g, ')');
+  normalizedText = normalizedText.replace(/\[\s+/g, '[');
+  normalizedText = normalizedText.replace(/\s+\]/g, ']');
+  normalizedText = normalizeWhitespace(normalizedText, {
+    preserveInnerSpacing: true,
+  });
+
+  return normalizedText.trim();
+}
+
+function replaceDisplayMathExpressions(text: string): string {
+  let nextText = text;
+  let expressionStart = nextText.indexOf('{\\displaystyle');
+
+  while (expressionStart !== -1) {
+    const expressionEnd = findMatchingBraceIndex(nextText, expressionStart);
+
+    if (expressionEnd === -1) {
+      break;
+    }
+
+    const rawExpression = nextText.slice(expressionStart, expressionEnd + 1);
+    const normalizedExpression = normalizeMathText(rawExpression);
+    nextText =
+      nextText.slice(0, expressionStart) +
+      normalizedExpression +
+      nextText.slice(expressionEnd + 1);
+    expressionStart = nextText.indexOf('{\\displaystyle');
+  }
+
+  return nextText;
+}
+
+function findMatchingBraceIndex(text: string, startIndex: number): number {
+  let depth = 0;
+
+  for (let index = startIndex; index < text.length; index += 1) {
+    const currentCharacter = text[index];
+    const previousCharacter = index > 0 ? text[index - 1] : '';
+
+    if (currentCharacter === '{' && previousCharacter !== '\\') {
+      depth += 1;
+      continue;
+    }
+
+    if (currentCharacter === '}' && previousCharacter !== '\\') {
+      depth -= 1;
+
+      if (depth === 0) {
+        return index;
+      }
+    }
+  }
+
+  return -1;
+}
+
+function stripWrappingBraces(text: string): string {
+  let normalizedText = text.trim();
+
+  while (
+    normalizedText.startsWith('{') &&
+    normalizedText.endsWith('}') &&
+    hasWrappingOuterBraces(normalizedText)
+  ) {
+    normalizedText = normalizedText.slice(1, -1).trim();
+  }
+
+  return normalizedText;
+}
+
+function hasWrappingOuterBraces(text: string): boolean {
+  let depth = 0;
+
+  for (let index = 0; index < text.length; index += 1) {
+    const currentCharacter = text[index];
+
+    if (currentCharacter === '{') {
+      depth += 1;
+      continue;
+    }
+
+    if (currentCharacter === '}') {
+      depth -= 1;
+
+      if (depth === 0 && index < text.length - 1) {
+        return false;
+      }
+    }
+  }
+
+  return depth === 0;
+}
+
+function replaceRepeatedly(
+  text: string,
+  pattern: RegExp,
+  replacement: string,
+): string {
+  let nextText = text;
+
+  while (true) {
+    pattern.lastIndex = 0;
+
+    if (!pattern.test(nextText)) {
+      break;
+    }
+
+    nextText = nextText.replace(pattern, replacement);
+  }
+
+  return nextText;
 }
 
 function normalizeWhitespace(

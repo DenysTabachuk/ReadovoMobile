@@ -48,12 +48,24 @@ export type ArticleBlock =
       rows: TableCell[][];
       type: 'table';
     }
+  | FormulaBlock
   | {
       alt?: string;
       caption?: string;
       src: string;
       type: 'image';
     };
+
+export type FormulaBlock = {
+  altText: string;
+  display: boolean;
+  heightEx?: number;
+  latex?: string;
+  mathml?: string;
+  svg?: string;
+  type: 'formula';
+  widthEx?: number;
+};
 
 export type InlineNode =
   | {
