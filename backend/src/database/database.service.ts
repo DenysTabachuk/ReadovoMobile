@@ -33,6 +33,18 @@ export class DatabaseService implements OnModuleDestroy, OnModuleInit {
         created_at timestamptz NOT NULL DEFAULT now()
       );
     `);
+
+    await this.query(`
+      CREATE TABLE IF NOT EXISTS dictionary_words (
+        id uuid PRIMARY KEY,
+        word text NOT NULL,
+        normalized_word text NOT NULL UNIQUE,
+        translation text NOT NULL,
+        context text NOT NULL,
+        progress text NOT NULL DEFAULT 'new',
+        created_at timestamptz NOT NULL DEFAULT now()
+      );
+    `);
   }
 
   query<T extends QueryResultRow = QueryResultRow>(
