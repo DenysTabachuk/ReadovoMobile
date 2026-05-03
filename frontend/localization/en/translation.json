@@ -6,6 +6,11 @@
   "start": {
     "continue": "Continue"
   },
+  "tabs": {
+    "articles": "Articles",
+    "dictionary": "Dictionary",
+    "explore": "Explore"
+  },
   "about": {
     "title": "Speakly",
     "description": "Speakly is an app for learning English through short educational texts. Read useful stories, discover new words, and build your understanding of English in context.",
@@ -86,6 +91,23 @@
     "errorTitle": "Articles are unavailable",
     "errorDescription": "Check your internet connection and try again.",
     "retry": "Try again"
+  },
+  "dictionary": {
+    "title": "My dictionary",
+    "description": "Words saved from articles with their translations and reading context.",
+    "loading": "Loading dictionary...",
+    "emptyTitle": "No saved words yet",
+    "emptyDescription": "Tap a word in an article and add it to the dictionary after translation.",
+    "errorTitle": "Dictionary is unavailable",
+    "errorDescription": "We could not load saved words right now.",
+    "retry": "Try again",
+    "saved": "Word saved to dictionary",
+    "saveError": "Could not save the word. Try again.",
+    "progress": {
+      "new": "New",
+      "in_progress": "In progress",
+      "learned": "Learned"
+    }
   },
   "article": {
     "titleFallback": "Article",

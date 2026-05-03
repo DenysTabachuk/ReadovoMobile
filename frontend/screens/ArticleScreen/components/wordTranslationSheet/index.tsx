@@ -12,6 +12,7 @@ import { styles } from './styles';
 type WordTranslationSheetProps = {
   context?: string;
   error: boolean;
+  isAddToDictionaryDisabled?: boolean;
   loading: boolean;
   onAddToDictionary: () => void;
   onClose: () => void;
@@ -23,6 +24,7 @@ type WordTranslationSheetProps = {
 export function WordTranslationSheet({
   context,
   error,
+  isAddToDictionaryDisabled,
   loading,
   onAddToDictionary,
   onClose,
@@ -37,7 +39,10 @@ export function WordTranslationSheet({
     <ModalSheet
       footer={
         <View style={styles.actions}>
-          <Button onPress={onAddToDictionary} variant="secondary">
+          <Button
+            disabled={isAddToDictionaryDisabled}
+            onPress={onAddToDictionary}
+            variant="secondary">
             {t('translation.addToDictionary')}
           </Button>
         </View>

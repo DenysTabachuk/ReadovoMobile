@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { Image } from 'expo-image';
 import * as Linking from 'expo-linking';
@@ -7,6 +7,7 @@ import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { translateWord } from '@/api/translations';
+import { createDictionaryWord } from '@/api/dictionary';
 import {
   type ArticleBlock,
   fetchWikipediaArticleDetail,
@@ -38,6 +39,7 @@ const DEFAULT_TARGET_LENGTH: SimplifyArticleTargetLength = 'short';
 
 export default function ArticleScreen() {
   const { t } = useTranslation();
+  const queryClient = useQueryClient();
   const colorScheme = useColorScheme();
   const { showBanner } = useBanner();
   const params = useLocalSearchParams<{
@@ -130,6 +132,22 @@ export default function ArticleScreen() {
       setSelectedWord(null);
     },
   });
+  const dictionaryMutation = useMutation({
+    mutationFn: createDictionaryWord,
+    onError: () => {
+      showBanner({
+        title: t('dictionary.saveError'),
+        variant: 'error',
+      });
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['dictionary', 'words'] });
+      showBanner({
+        title: t('dictionary.saved'),
+        variant: 'success',
+      });
+    },
+  });
 
   const levelOptions = useMemo(
     () => [
@@ -158,11 +176,16 @@ export default function ArticleScreen() {
   }, []);
 
   const handleAddToDictionary = useCallback(() => {
-    showBanner({
-      title: t('translation.dictionaryComingSoon'),
-      variant: 'success',
+    if (!selectedWord || !translation?.translation) {
+      return;
+    }
+
+    dictionaryMutation.mutate({
+      context: selectedWord.context,
+      translation: translation.translation,
+      word: selectedWord.word,
     });
-  }, [showBanner, t]);
+  }, [dictionaryMutation, selectedWord, translation?.translation]);
 
   const handleAdaptPress = useCallback(() => {
     simplifyMutation.mutate();
@@ -353,6 +376,12 @@ export default function ArticleScreen() {
       <WordTranslationSheet
         context={selectedWord?.context}
         error={Boolean(translationError)}
+        isAddToDictionaryDisabled={
+          isTranslationLoading ||
+          Boolean(translationError) ||
+          !translation?.translation ||
+          dictionaryMutation.isPending
+        }
         loading={isTranslationLoading}
         onAddToDictionary={handleAddToDictionary}
         onClose={handleCloseTranslation}
