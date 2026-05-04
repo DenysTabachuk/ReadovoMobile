@@ -1,8 +1,11 @@
 import { Pressable, type StyleProp, type ViewStyle, View } from 'react-native';
-import { useTranslation } from 'react-i18next';
 
 import { ThemedText } from '@/components/themedText';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import {
+  type LanguagePreference,
+  usePreferences,
+} from '@/providers/preferencesProvider';
 
 import { styles } from './styles';
 
@@ -17,27 +20,32 @@ const languages = [
     flag: '🇺🇦',
     label: 'Українська',
   },
-];
+] satisfies {
+  code: LanguagePreference;
+  flag: string;
+  label: string;
+}[];
 
 type LanguageSelectorProps = {
   style?: StyleProp<ViewStyle>;
 };
 
 export function LanguageSelector({ style }: LanguageSelectorProps) {
-  const { i18n } = useTranslation();
   const colorScheme = useColorScheme();
+  const { languagePreference, setLanguagePreference } = usePreferences();
   const borderColor = colorScheme === 'dark' ? '#2d3336' : '#d0d7de';
-  const selectedLanguageCode = i18n.language.split('-')[0];
 
   return (
     <View style={[styles.languageList, style]}>
       {languages.map((language) => {
-        const isSelected = selectedLanguageCode === language.code;
+        const isSelected = languagePreference === language.code;
 
         return (
           <Pressable
             key={language.code}
-            onPress={() => i18n.changeLanguage(language.code)}
+            onPress={() => {
+              void setLanguagePreference(language.code);
+            }}
             style={[
               styles.languageButton,
               { borderColor },

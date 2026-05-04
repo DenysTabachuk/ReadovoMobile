@@ -6,10 +6,17 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/button';
 import { ScreenContainer } from '@/components/screenContainer';
 import { ThemedText } from '@/components/themedText';
+import { usePreferences } from '@/providers/preferencesProvider';
 import { styles } from './styles';
 
 export default function AboutScreen() {
   const { t } = useTranslation();
+  const { completeOnboarding } = usePreferences();
+
+  const handleContinue = async () => {
+    await completeOnboarding();
+    router.replace('/login');
+  };
 
   return (
     <ScreenContainer>
@@ -25,7 +32,7 @@ export default function AboutScreen() {
           contentFit="contain"
         />
 
-        <Button style={styles.continueButton} onPress={() => router.push('/login')}>
+        <Button style={styles.continueButton} onPress={handleContinue}>
           {t('about.continue')}
         </Button>
       </View>
