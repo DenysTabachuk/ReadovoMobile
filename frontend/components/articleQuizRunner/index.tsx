@@ -217,7 +217,7 @@ export function ArticleQuizRunner({
             ? isLastQuestion
               ? t('dictionary.test.finish')
               : t('dictionary.test.next')
-            : t('article.quiz.check', { defaultValue: 'Check answer' })}
+            : t('dictionary.test.check', { defaultValue: 'Check answer' })}
         </Button>
       </View>
     </View>

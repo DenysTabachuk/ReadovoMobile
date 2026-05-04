@@ -76,6 +76,9 @@ export function TestResult({
             <ThemedText type="sectionTitle" style={styles.messageTitle}>
               {message.title}
             </ThemedText>
+            <ThemedText type="body" style={styles.messageSubtitle}>
+              {message.subtitle}
+            </ThemedText>
           </View>
         </View>
 
@@ -87,10 +90,10 @@ export function TestResult({
           { paddingBottom: shouldUseSafeAreaBottom ? Math.max(insets.bottom, 8) : 8 },
         ]}>
         <Button onPress={onDone} style={styles.actionButton}>
-          {t('dictionary.test.done', { defaultValue: 'Все, завершили' })}
+          {t('dictionary.test.done', { defaultValue: 'Done' })}
         </Button>
         <Button onPress={onRetry} style={styles.actionButton} variant="secondary">
-          {t('dictionary.test.retry', { defaultValue: 'Пройти тест ще раз' })}
+          {t('dictionary.test.retry', { defaultValue: 'Try the test again' })}
         </Button>
       </View>
     </View>
@@ -139,10 +142,10 @@ function resolveResultMessage(
   if (tier === 'good') {
     return {
       subtitle: t('dictionary.test.resultGoodSubtitle', {
-        defaultValue: 'Ви добре впоралися із тестом',
+        defaultValue: 'You handled the test really well',
       }),
       title: t('dictionary.test.resultGoodTitle', {
-        defaultValue: 'Чудова робота!',
+        defaultValue: 'Great job!',
       }),
     };
   }
@@ -150,20 +153,20 @@ function resolveResultMessage(
   if (tier === 'normal') {
     return {
       subtitle: t('dictionary.test.resultNormalSubtitle', {
-        defaultValue: 'Непогано, ще трохи практики і буде супер',
+        defaultValue: 'Nice work, a bit more practice and you will do even better',
       }),
       title: t('dictionary.test.resultNormalTitle', {
-        defaultValue: 'Хороший результат',
+        defaultValue: 'Good result',
       }),
     };
   }
 
   return {
     subtitle: t('dictionary.test.resultPoorSubtitle', {
-      defaultValue: 'Спробуйте ще раз, щоб покращити результат',
+      defaultValue: 'Try again to improve your result',
     }),
     title: t('dictionary.test.resultPoorTitle', {
-      defaultValue: 'Потрібно ще потренуватись',
+      defaultValue: 'More practice needed',
     }),
   };
 }

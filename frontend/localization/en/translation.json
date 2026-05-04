@@ -116,13 +116,22 @@
       "loading": "Preparing test...",
       "progress": "Question {{current}} of {{total}}",
       "questionLabel": "Choose the correct translation",
+      "check": "Check answer",
       "correct": "Correct",
       "incorrect": "Incorrect. Correct answer: {{translation}}",
       "next": "Next",
       "finish": "Finish",
       "close": "Close",
       "error": "Could not prepare the test. Add at least 4 words and try again.",
-      "answerError": "Could not save the answer."
+      "answerError": "Could not save the answer.",
+      "done": "Done",
+      "retry": "Try the test again",
+      "resultGoodTitle": "Great job!",
+      "resultGoodSubtitle": "You handled the test really well",
+      "resultNormalTitle": "Good result",
+      "resultNormalSubtitle": "Nice work, a bit more practice and you will do even better",
+      "resultPoorTitle": "More practice needed",
+      "resultPoorSubtitle": "Try again to improve your result"
     }
   },
   "settings": {
