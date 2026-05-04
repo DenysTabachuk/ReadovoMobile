@@ -1,15 +1,11 @@
-import { type ReactNode } from 'react';
-import { type PressableProps, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { type PressableProps } from 'react-native';
 
-import { Button } from '@/components/button';
-
-import { styles } from './styles';
+import { Cta } from '@/components/cta';
 
 type FloatingActionButtonVariant = 'primary' | 'secondary';
 
 type FloatingActionButtonProps = Omit<PressableProps, 'children' | 'style'> & {
-  children: ReactNode;
+  children: string;
   variant?: FloatingActionButtonVariant;
 };
 
@@ -19,20 +15,14 @@ export function FloatingActionButton({
   variant = 'primary',
   ...props
 }: FloatingActionButtonProps) {
-  const insets = useSafeAreaInsets();
-
   return (
-    <View
-      pointerEvents="box-none"
-      style={[styles.wrapper, { bottom: insets.bottom + 16 }]}>
-      <Button
-        disabled={disabled}
-        style={styles.button}
-        textStyle={styles.label}
-        variant={variant}
-        {...props}>
-        {children}
-      </Button>
-    </View>
+    <Cta
+      primaryAction={{
+        ...props,
+        disabled,
+        label: children,
+        variant,
+      }}
+    />
   );
 }

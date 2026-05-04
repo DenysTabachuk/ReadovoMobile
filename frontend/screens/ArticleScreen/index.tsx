@@ -18,7 +18,8 @@ import {
 } from '@/api/wikipedia';
 import { useBanner } from '@/components/banner';
 import { Button } from '@/components/button';
-import { FloatingActionButton } from '@/components/floatingActionButton';
+import { Cta } from '@/components/cta';
+import { ModalSheet } from '@/components/modalSheet';
 import { OptionPickerField } from '@/components/optionPickerField';
 import { ScreenContainer } from '@/components/screenContainer';
 import { SegmentedToggle } from '@/components/segmentedToggle';
@@ -62,6 +63,7 @@ export default function ArticleScreen() {
   );
   const [selectedTargetLength, setSelectedTargetLength] =
     useState<ArticleTextLengthOption>(DEFAULT_TARGET_LENGTH);
+  const [isAdaptSettingsOpen, setIsAdaptSettingsOpen] = useState(false);
 
   const rawArticleId = Array.isArray(params.id) ? params.id[0] : params.id;
   const parsedArticleId = Number(rawArticleId);
@@ -228,8 +230,17 @@ export default function ArticleScreen() {
     });
   }, [dictionaryMutation, selectedWord, translation?.translation]);
 
-  const handleAdaptPress = useCallback(() => {
+  const handleOpenAdaptSettings = useCallback(() => {
+    setIsAdaptSettingsOpen(true);
+  }, []);
+
+  const handleCloseAdaptSettings = useCallback(() => {
+    setIsAdaptSettingsOpen(false);
+  }, []);
+
+  const handleAdaptFromModal = useCallback(() => {
     simplifyMutation.mutate();
+    setIsAdaptSettingsOpen(false);
   }, [simplifyMutation]);
 
   const handleShowOriginalPress = useCallback(() => {
@@ -359,58 +370,6 @@ export default function ArticleScreen() {
           </Pressable>
         </View>
 
-        <View style={styles.actionRow}>
-          <View style={styles.pickerField}>
-            <OptionPickerField
-              containerStyle={styles.pickerFieldContent}
-              label={t('article.levelLabel')}
-              onSelect={setSelectedLevel}
-              options={levelOptions}
-              selectedValue={selectedLevel}
-              title={t('article.levelPickerTitle')}
-            />
-          </View>
-          <View style={styles.pickerField}>
-            <OptionPickerField
-              containerStyle={styles.pickerFieldContent}
-              label={t('article.lengthLabel')}
-              onSelect={setSelectedTargetLength}
-              options={targetLengthOptions}
-              selectedValue={selectedTargetLength}
-              title={t('article.lengthPickerTitle')}
-            />
-          </View>
-        </View>
-
-        <View style={styles.actionRow}>
-          <Button
-            disabled={simplifyMutation.isPending || isSelectedTargetLengthDisabled}
-            onPress={handleAdaptPress}
-            variant="primary">
-            {simplifyMutation.isPending
-              ? t('article.adapting')
-              : t('article.adaptText')}
-          </Button>
-        </View>
-
-        {adaptedArticle ? (
-          <SegmentedToggle
-            onChange={(value) => {
-              if (value === 'adapted') {
-                handleShowAdaptedPress();
-                return;
-              }
-
-              handleShowOriginalPress();
-            }}
-            options={[
-              { label: t('article.textMode.adapted'), value: 'adapted' },
-              { label: t('article.textMode.original'), value: 'original' },
-            ]}
-            selectedValue={showAdaptedText ? 'adapted' : 'original'}
-          />
-        ) : null}
-
         {adaptedArticle ? (
           <View style={styles.articleMeta}>
             <ThemedText type="description" style={styles.infoText}>
@@ -459,9 +418,70 @@ export default function ArticleScreen() {
         translation={translation?.translation}
         word={selectedWord?.word}
       />
-      <FloatingActionButton onPress={() => {}}>
-        {t('article.reinforceKnowledge')}
-      </FloatingActionButton>
+      <ModalSheet
+        contentStyle={styles.adaptModalContent}
+        onClose={handleCloseAdaptSettings}
+        open={isAdaptSettingsOpen}
+        title={t('article.adaptText')}>
+        {adaptedArticle ? (
+          <SegmentedToggle
+            onChange={(value) => {
+              if (value === 'adapted') {
+                handleShowAdaptedPress();
+                return;
+              }
+
+              handleShowOriginalPress();
+            }}
+            options={[
+              { label: t('article.textMode.adapted'), value: 'adapted' },
+              { label: t('article.textMode.original'), value: 'original' },
+            ]}
+            selectedValue={showAdaptedText ? 'adapted' : 'original'}
+          />
+        ) : null}
+        <View style={styles.adaptModalFields}>
+          <View style={styles.adaptModalPickerField}>
+            <OptionPickerField
+              label={t('article.levelLabel')}
+              onSelect={setSelectedLevel}
+              options={levelOptions}
+              selectedValue={selectedLevel}
+              title={t('article.levelPickerTitle')}
+            />
+          </View>
+          <View style={styles.adaptModalPickerField}>
+            <OptionPickerField
+              label={t('article.lengthLabel')}
+              onSelect={setSelectedTargetLength}
+              options={targetLengthOptions}
+              selectedValue={selectedTargetLength}
+              title={t('article.lengthPickerTitle')}
+            />
+          </View>
+        </View>
+        <Button
+          disabled={simplifyMutation.isPending || isSelectedTargetLengthDisabled}
+          onPress={handleAdaptFromModal}
+          variant="primary">
+          {simplifyMutation.isPending ? t('article.adapting') : t('article.adaptText')}
+        </Button>
+      </ModalSheet>
+      {!isAdaptSettingsOpen ? (
+        <Cta
+          layout="vertical"
+          primaryAction={{
+            label: t('article.reinforceKnowledge'),
+            onPress: () => {},
+          }}
+          secondaryAction={{
+            label: t('article.configureText'),
+            onPress: handleOpenAdaptSettings,
+            variant: 'secondary',
+          }}
+          withBackground
+        />
+      ) : null}
     </ScreenContainer>
   );
 }
@@ -540,3 +560,4 @@ function countSentences(text: string): number {
   const matches = normalizedText.match(/[.!?]+(?=\s|$)/g);
   return matches?.length ?? 1;
 }
+

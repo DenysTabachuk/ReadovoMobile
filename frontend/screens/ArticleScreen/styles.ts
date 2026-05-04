@@ -9,6 +9,15 @@ export const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: Spacing.md,
   },
+  adaptModalContent: {
+    gap: Spacing.lg,
+  },
+  adaptModalFields: {
+    gap: Spacing.md,
+  },
+  adaptModalPickerField: {
+    minWidth: 0,
+  },
   pickerField: {
     flex: 1,
     minWidth: 150,
@@ -41,7 +50,7 @@ export const styles = StyleSheet.create({
   },
   content: {
     gap: Spacing.lg,
-    paddingBottom: 104,
+    paddingBottom: 168,
     paddingHorizontal: Spacing.xLg,
     paddingTop: Spacing.lg,
   },

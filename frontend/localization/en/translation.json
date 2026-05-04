@@ -181,7 +181,8 @@
       "short": "Short",
       "medium": "Medium",
       "long": "Long"
-    }
+    },
+    "configureText": "Configure text"
   },
   "translation": {
     "titleFallback": "Translation",
