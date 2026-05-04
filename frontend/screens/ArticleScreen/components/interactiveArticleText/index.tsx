@@ -1,5 +1,6 @@
-import { useMemo } from 'react';
-import { View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useMemo, useState } from 'react';
+import { Pressable, View } from 'react-native';
 
 import {
   type ArticleBlock,
@@ -7,6 +8,7 @@ import {
   type TableCell,
 } from '@/api/wikipedia';
 import { ThemedText } from '@/components/themedText';
+import { useThemeColor } from '@/hooks/use-theme-color';
 
 import { ArticleFormulaBlock } from '../articleFormulaBlock';
 import { ArticleImageBlock } from '../articleImageBlock';
@@ -58,6 +60,8 @@ export function InteractiveArticleText({
   selectedTokenKey,
   text,
 }: InteractiveArticleTextProps) {
+  const [collapsedHeadings, setCollapsedHeadings] = useState<Record<string, boolean>>({});
+  const chevronColor = useThemeColor({ dark: '#9ba1a6', light: '#687076' }, 'icon');
   const resolvedBlocks = useMemo(() => {
     if (blocks && blocks.length > 0) {
       return blocks;
@@ -66,101 +70,146 @@ export function InteractiveArticleText({
     return parsePlainTextToBlocks(text ?? '');
   }, [blocks, text]);
 
+  const renderBlock = (block: ArticleBlock, blockKey: string) => {
+    if (block.type === 'paragraph') {
+      return (
+        <ThemedText key={blockKey} style={styles.paragraph} type="paragraph">
+          {renderTouchableParts({
+            nodes: block.children,
+            onWordPress,
+            prefix: blockKey,
+            selectedTokenKey,
+          })}
+        </ThemedText>
+      );
+    }
+
+    if (block.type === 'list') {
+      return (
+        <View key={blockKey} style={styles.list}>
+          {block.items.map((item, itemIndex) => (
+            <View key={`${blockKey}-item-${itemIndex}`} style={styles.listItem}>
+              <ThemedText style={styles.listBullet} type="paragraph">
+                {block.ordered ? `${itemIndex + 1}.` : '\u2022'}
+              </ThemedText>
+              <ThemedText style={styles.listItemText} type="paragraph">
+                {renderTouchableParts({
+                  nodes: item,
+                  onWordPress,
+                  prefix: `${blockKey}-item-${itemIndex}`,
+                  selectedTokenKey,
+                })}
+              </ThemedText>
+            </View>
+          ))}
+        </View>
+      );
+    }
+
+    if (block.type === 'table') {
+      return (
+        <ArticleTableBlock
+          key={blockKey}
+          renderCellContent={({ cell, prefix, selectedTokenKey: currentSelectedTokenKey }) =>
+            renderTableCellText({
+              cell,
+              onWordPress,
+              prefix,
+              selectedTokenKey: currentSelectedTokenKey,
+            })
+          }
+          rows={block.rows}
+          selectedTokenKey={selectedTokenKey}
+        />
+      );
+    }
+
+    if (block.type === 'formula') {
+      return (
+        <ArticleFormulaBlock
+          altText={block.altText}
+          heightEx={block.heightEx}
+          key={blockKey}
+          svg={block.svg}
+          widthEx={block.widthEx}
+        />
+      );
+    }
+
+    return (
+      <ArticleImageBlock
+        alt={block.alt}
+        caption={block.caption}
+        key={blockKey}
+        src={block.src}
+      />
+    );
+  };
+
   return (
     <View style={styles.container}>
-      {resolvedBlocks.map((block, index) => {
-        const blockKey = `block-${index}`;
+      {(() => {
+        const activeCollapsedLevels: number[] = [];
 
-        if (block.type === 'heading') {
-          return (
-            <ThemedText
-              key={blockKey}
-              style={[
-                styles.heading,
-                block.level === 1 ? styles.headingLevel1 : null,
-                block.level === 2 ? styles.headingLevel2 : null,
-                block.level === 3 ? styles.headingLevel3 : null,
-              ]}
-              type={getHeadingTypographyType(block.level)}>
-              {block.text}
-            </ThemedText>
-          );
-        }
+        return resolvedBlocks.map((block, index) => {
+          const blockKey = `block-${index}`;
 
-        if (block.type === 'paragraph') {
-          return (
-            <ThemedText key={blockKey} style={styles.paragraph} type="paragraph">
-              {renderTouchableParts({
-                nodes: block.children,
-                onWordPress,
-                prefix: blockKey,
-                selectedTokenKey,
-              })}
-            </ThemedText>
-          );
-        }
-
-        if (block.type === 'list') {
-          return (
-            <View key={blockKey} style={styles.list}>
-              {block.items.map((item, itemIndex) => (
-                <View key={`${blockKey}-item-${itemIndex}`} style={styles.listItem}>
-                  <ThemedText style={styles.listBullet} type="paragraph">
-                    {block.ordered ? `${itemIndex + 1}.` : '\u2022'}
-                  </ThemedText>
-                  <ThemedText style={styles.listItemText} type="paragraph">
-                    {renderTouchableParts({
-                      nodes: item,
-                      onWordPress,
-                      prefix: `${blockKey}-item-${itemIndex}`,
-                      selectedTokenKey,
-                    })}
-                  </ThemedText>
-                </View>
-              ))}
-            </View>
-          );
-        }
-
-        if (block.type === 'table') {
-          return (
-            <ArticleTableBlock
-              key={blockKey}
-              renderCellContent={({ cell, prefix, selectedTokenKey: currentSelectedTokenKey }) =>
-                renderTableCellText({
-                  cell,
-                  onWordPress,
-                  prefix,
-                  selectedTokenKey: currentSelectedTokenKey,
-                })
+          if (block.type === 'heading') {
+            for (let levelIndex = activeCollapsedLevels.length - 1; levelIndex >= 0; levelIndex -= 1) {
+              if (activeCollapsedLevels[levelIndex] >= block.level) {
+                activeCollapsedLevels.splice(levelIndex, 1);
               }
-              rows={block.rows}
-              selectedTokenKey={selectedTokenKey}
-            />
-          );
-        }
+            }
 
-        if (block.type === 'formula') {
-          return (
-            <ArticleFormulaBlock
-              altText={block.altText}
-              heightEx={block.heightEx}
-              key={blockKey}
-              svg={block.svg}
-              widthEx={block.widthEx}
-            />
-          );
-        }
+            const isHiddenByAncestor = activeCollapsedLevels.length > 0;
+            const headingKey = `heading-${index}-${block.text}`;
+            const isCollapsed = Boolean(collapsedHeadings[headingKey]);
 
-        return (
-          <ArticleImageBlock
-            alt={block.alt}
-            caption={block.caption}
-            key={blockKey}
-            src={block.src}
-          />
-        );
-      })}
+            if (isCollapsed) {
+              activeCollapsedLevels.push(block.level);
+            }
+
+            if (isHiddenByAncestor) {
+              return null;
+            }
+
+            return (
+              <Pressable
+                key={headingKey}
+                onPress={() =>
+                  setCollapsedHeadings((current) => ({
+                    ...current,
+                    [headingKey]: !current[headingKey],
+                  }))
+                }
+                style={styles.collapsibleHeading}>
+                <ThemedText
+                  style={[
+                    styles.heading,
+                    block.level === 1 ? styles.headingLevel1 : null,
+                    block.level === 2 ? styles.headingLevel2 : null,
+                    block.level === 3 ? styles.headingLevel3 : null,
+                  ]}
+                  type={getHeadingTypographyType(block.level)}>
+                  {block.text}
+                </ThemedText>
+                <Ionicons
+                  color={chevronColor}
+                  name="chevron-down"
+                  size={18}
+                  style={isCollapsed ? null : styles.collapsibleArrowExpanded}
+                />
+              </Pressable>
+            );
+          }
+
+          if (activeCollapsedLevels.length > 0) {
+            return null;
+          }
+
+          return renderBlock(block, blockKey);
+        });
+      })()}
     </View>
   );
 }

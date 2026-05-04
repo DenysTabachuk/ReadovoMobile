@@ -10,8 +10,17 @@ export const styles = StyleSheet.create({
   container: {
     gap: Spacing.lg,
   },
+  collapsibleArrowExpanded: {
+    transform: [{ rotate: '180deg' }],
+  },
+  collapsibleHeading: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
   heading: {
     includeFontPadding: false,
+    flex: 1,
   },
   headingLevel1: {
     marginTop: Spacing.sm,
