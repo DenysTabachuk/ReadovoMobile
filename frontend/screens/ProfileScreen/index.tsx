@@ -1,26 +1,23 @@
 import { ScrollView, View, useWindowDimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
+import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 
 import { ScreenContainer } from '@/components/screenContainer';
 import { ThemedText } from '@/components/themedText';
+import {
+  getAchievementsProfile,
+  type AchievementId,
+} from '@/features/achievements';
 import { useAuth } from '@/providers/authProvider';
 
 import { styles } from './styles';
 
-type ProfileStats = {
-  lessonsCompleted: number;
-  testsCompleted: number;
-  streakDays: number;
-  balance: number;
-};
-
 type AchievementDefinition = {
-  id: string;
   badge: number;
   coinsReward: number;
-  isUnlocked: (stats: ProfileStats) => boolean;
+  id: AchievementId;
 };
 
 const achievementDefinitions: AchievementDefinition[] = [
@@ -28,15 +25,29 @@ const achievementDefinitions: AchievementDefinition[] = [
     id: 'first_test_completed',
     badge: require('@/assets/images/first-test-completed-badge.png'),
     coinsReward: 50,
-    isUnlocked: (stats) => stats.testsCompleted >= 1,
+  },
+  {
+    id: 'ten_lessons_completed',
+    badge: require('@/assets/images/first-test-completed-badge.png'),
+    coinsReward: 100,
+  },
+  {
+    id: 'ten_words_learned',
+    badge: require('@/assets/images/first-test-completed-badge.png'),
+    coinsReward: 100,
+  },
+  {
+    id: 'first_thousand_coins',
+    badge: require('@/assets/images/first-test-completed-badge.png'),
+    coinsReward: 200,
   },
 ];
 
-const defaultStats: ProfileStats = {
-  lessonsCompleted: 0,
-  testsCompleted: 0,
-  streakDays: 0,
+const defaultStats = {
   balance: 0,
+  lessonsCompleted: 0,
+  streakDays: 0,
+  testsCompleted: 0,
 };
 
 export default function ProfileScreen() {
@@ -44,9 +55,23 @@ export default function ProfileScreen() {
   const { currentUser } = useAuth();
   const { width } = useWindowDimensions();
   const shouldUseTwoRows = width < 390;
-  const unlockedAchievements = achievementDefinitions.filter((achievement) =>
-    achievement.isUnlocked(defaultStats),
+
+  const achievementsQuery = useQuery({
+    enabled: Boolean(currentUser?.id),
+    queryFn: () => getAchievementsProfile(currentUser?.id ?? ''),
+    queryKey: ['achievements-profile', currentUser?.id],
+  });
+
+  const progress = achievementsQuery.data?.progress ?? defaultStats;
+  const achievementStatusById = new Map<AchievementId, boolean>(
+    (achievementsQuery.data?.achievements ?? []).map((achievement) => [
+      achievement.id,
+      achievement.isUnlocked,
+    ]),
   );
+  const unlockedAchievementsCount = (achievementsQuery.data?.achievements ?? []).filter(
+    (achievement) => achievement.isUnlocked,
+  ).length;
   const fallbackName = currentUser?.email?.split('@')[0] ?? t('profile.defaultName');
   const displayName = currentUser?.displayName ?? fallbackName;
 
@@ -74,7 +99,7 @@ export default function ProfileScreen() {
                   style={styles.walletIcon}
                 />
                 <ThemedText style={styles.walletText}>
-                  {t('profile.balance')}: {defaultStats.balance}
+                  {t('profile.balance')}: {progress.balance}
                 </ThemedText>
               </View>
             </View>
@@ -84,7 +109,7 @@ export default function ProfileScreen() {
         <View style={[styles.statsCard, shouldUseTwoRows && styles.statsCardTwoRows]}>
           <View style={[styles.statItem, shouldUseTwoRows && styles.statItemTwoRows]}>
             <View style={styles.statValueRow}>
-              <ThemedText style={styles.statValue}>{defaultStats.lessonsCompleted}</ThemedText>
+              <ThemedText style={styles.statValue}>{progress.lessonsCompleted}</ThemedText>
               <Ionicons color="#7d4ef6" name="book-outline" size={18} />
             </View>
             <View style={styles.statMetaRow}>
@@ -93,7 +118,7 @@ export default function ProfileScreen() {
           </View>
           <View style={[styles.statItem, shouldUseTwoRows && styles.statItemTwoRows]}>
             <View style={styles.statValueRow}>
-              <ThemedText style={styles.statValue}>{defaultStats.testsCompleted}</ThemedText>
+              <ThemedText style={styles.statValue}>{progress.testsCompleted}</ThemedText>
               <Ionicons color="#2c9d49" name="checkmark-circle-outline" size={18} />
             </View>
             <View style={styles.statMetaRow}>
@@ -102,7 +127,7 @@ export default function ProfileScreen() {
           </View>
           <View style={[styles.statItem, shouldUseTwoRows && styles.statItemTwoRows]}>
             <View style={styles.statValueRow}>
-              <ThemedText style={styles.statValue}>{unlockedAchievements.length}</ThemedText>
+              <ThemedText style={styles.statValue}>{unlockedAchievementsCount}</ThemedText>
               <Ionicons color="#2f80ed" name="trophy-outline" size={18} />
             </View>
             <View style={styles.statMetaRow}>
@@ -123,7 +148,7 @@ export default function ProfileScreen() {
         <View style={styles.achievementsBlock}>
           <ThemedText type="sectionTitle">{t('profile.achievementsTitle')}</ThemedText>
           {achievementDefinitions.map((achievement) => {
-            const isUnlocked = achievement.isUnlocked(defaultStats);
+            const isUnlocked = achievementStatusById.get(achievement.id) ?? false;
 
             return (
               <View key={achievement.id} style={styles.achievementCard}>

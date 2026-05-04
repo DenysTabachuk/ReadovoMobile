@@ -212,6 +212,18 @@
       "first_test_completed": {
         "title": "First test completed",
         "description": "Complete your first test to unlock this achievement."
+      },
+      "ten_lessons_completed": {
+        "title": "10 lessons completed",
+        "description": "Complete 10 lessons to unlock this achievement."
+      },
+      "ten_words_learned": {
+        "title": "10 words learned",
+        "description": "Learn 10 words to unlock this achievement."
+      },
+      "first_thousand_coins": {
+        "title": "First 1000 coins",
+        "description": "Collect your first 1000 coins to unlock this achievement."
       }
     },
     "balance": "My balance"

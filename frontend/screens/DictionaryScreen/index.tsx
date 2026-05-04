@@ -20,22 +20,28 @@ import {
 import {
   ArticleQuizRunner,
   type QuizQuestion,
+  type QuizSessionResult,
 } from '@/components/articleQuizRunner';
 import { Button } from '@/components/button';
 import { FloatingActionButton } from '@/components/floatingActionButton';
 import { ScreenContainer } from '@/components/screenContainer';
+import { TestResult } from '@/components/testResult';
 import { ThemedText } from '@/components/themedText';
 import { Colors } from '@/constants/theme';
+import { getAchievementsProfile, updateAchievementsProgress } from '@/features/achievements';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useAuth } from '@/providers/authProvider';
 
 import { styles } from './styles';
 
 export default function DictionaryScreen() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
+  const { currentUser } = useAuth();
   const colorScheme = useColorScheme();
   const borderColor = colorScheme === 'dark' ? '#2d3336' : '#d0d7de';
   const [test, setTest] = useState<DictionaryTest>();
+  const [testResult, setTestResult] = useState<QuizSessionResult | null>(null);
 
   const {
     data,
@@ -77,6 +83,28 @@ export default function DictionaryScreen() {
     mutationFn: submitDictionaryTestAnswer,
     onSuccess: (result) => {
       void queryClient.invalidateQueries({ queryKey: ['dictionary', 'words'] });
+    },
+  });
+  const progressMutation = useMutation({
+    mutationFn: async () => {
+      if (!currentUser?.id) {
+        return null;
+      }
+
+      const profile = await getAchievementsProfile(currentUser.id);
+
+      return updateAchievementsProgress(currentUser.id, {
+        testsCompleted: profile.progress.testsCompleted + 1,
+      });
+    },
+    onSuccess: () => {
+      if (!currentUser?.id) {
+        return;
+      }
+
+      void queryClient.invalidateQueries({
+        queryKey: ['achievements-profile', currentUser.id],
+      });
     },
   });
 
@@ -121,8 +149,18 @@ export default function DictionaryScreen() {
     testMutation.mutate();
   }, [testMutation]);
 
-  const handleFinishTest = useCallback(() => {
+  const handleFinishTest = useCallback((result: QuizSessionResult) => {
+    setTestResult(result);
     setTest(undefined);
+    void progressMutation.mutateAsync();
+  }, [progressMutation]);
+
+  const handleRetryTest = useCallback(() => {
+    setTestResult(null);
+    testMutation.mutate();
+  }, [testMutation]);
+  const handleDoneTest = useCallback(() => {
+    setTestResult(null);
   }, []);
   const handleSubmitQuizAnswer = useCallback(
     async (question: QuizQuestion, selectedOptionIds: string[]) => {
@@ -186,6 +224,22 @@ export default function DictionaryScreen() {
             onFinish={handleFinishTest}
             onSubmitAnswer={handleSubmitQuizAnswer}
             questions={quizQuestions}
+          />
+        </View>
+      </ScreenContainer>
+    );
+  }
+
+  if (testResult) {
+    return (
+      <ScreenContainer style={styles.container}>
+        <View style={styles.testContainer}>
+          <TestResult
+            onDone={handleDoneTest}
+            onRetry={handleRetryTest}
+            result={testResult}
+            shouldUseSafeAreaBottom={false}
+            title={t('dictionary.test.title')}
           />
         </View>
       </ScreenContainer>

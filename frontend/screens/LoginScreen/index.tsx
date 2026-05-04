@@ -60,6 +60,7 @@ export default function LoginScreen() {
       await signIn(rememberMe, {
         displayName: null,
         email: response.user.email,
+        id: response.user.id,
       });
 
       showBanner({
@@ -93,6 +94,7 @@ export default function LoginScreen() {
       await signIn(rememberMe, {
         displayName: result.user.name ?? null,
         email: result.user.email ?? null,
+        id: null,
       });
 
       showBanner({

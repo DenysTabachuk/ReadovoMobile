@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
@@ -12,8 +12,9 @@ import {
 } from '@/api/wikipedia';
 import { useBanner } from '@/components/banner';
 import { Button } from '@/components/button';
-import { ArticleQuizRunner } from '@/components/articleQuizRunner';
+import { ArticleQuizRunner, type QuizSessionResult } from '@/components/articleQuizRunner';
 import { ScreenContainer } from '@/components/screenContainer';
+import { TestResult } from '@/components/testResult';
 import { ThemedText } from '@/components/themedText';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -28,6 +29,8 @@ export default function ArticleQuizScreen() {
   const router = useRouter();
   const { showBanner } = useBanner();
   const colorScheme = useColorScheme();
+  const [quizResult, setQuizResult] = useState<QuizSessionResult | null>(null);
+  const [quizAttempt, setQuizAttempt] = useState(0);
   const params = useLocalSearchParams<{
     id?: string | string[];
     level?: string | string[];
@@ -133,9 +136,21 @@ export default function ArticleQuizScreen() {
   return (
     <ScreenContainer style={styles.container}>
       <Stack.Screen options={{ title: t('article.reinforceKnowledge') }} />
-      {quizMutation.data?.questions?.length ? (
+      {quizResult ? (
+        <TestResult
+          onDone={() => router.back()}
+          onRetry={() => {
+            setQuizResult(null);
+            setQuizAttempt((current) => current + 1);
+          }}
+          result={quizResult}
+          shouldShowTitle={false}
+          title={t('article.reinforceKnowledge')}
+        />
+      ) : quizMutation.data?.questions?.length ? (
         <ArticleQuizRunner
-          onFinish={() => router.back()}
+          key={`article-quiz-${quizAttempt}`}
+          onFinish={(result) => setQuizResult(result)}
           questions={quizMutation.data.questions}
         />
       ) : (

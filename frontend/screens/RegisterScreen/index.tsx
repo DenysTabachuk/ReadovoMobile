@@ -64,6 +64,7 @@ export default function RegisterScreen() {
       await signIn(rememberMePreference, {
         displayName: null,
         email: response.user.email,
+        id: response.user.id,
       });
 
       showBanner({

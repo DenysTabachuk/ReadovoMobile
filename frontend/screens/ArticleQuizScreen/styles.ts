@@ -17,7 +17,9 @@ export const styles = StyleSheet.create({
     textAlign: 'center',
   },
   container: {
+    flex: 1,
     gap: Spacing.md,
+    paddingBottom: 0,
   },
   setupContent: {
     gap: Spacing.md,

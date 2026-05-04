@@ -17,7 +17,29 @@ export class DatabaseService implements OnModuleDestroy, OnModuleInit {
         email text NOT NULL UNIQUE,
         password_hash text NOT NULL,
         password_salt text NOT NULL,
+        lessons_completed integer NOT NULL DEFAULT 0,
+        tests_completed integer NOT NULL DEFAULT 0,
+        words_learned integer NOT NULL DEFAULT 0,
+        balance integer NOT NULL DEFAULT 0,
         created_at timestamptz NOT NULL DEFAULT now()
+      );
+    `);
+
+    await this.query(`
+      ALTER TABLE users
+      ADD COLUMN IF NOT EXISTS lessons_completed integer NOT NULL DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS tests_completed integer NOT NULL DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS words_learned integer NOT NULL DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS balance integer NOT NULL DEFAULT 0;
+    `);
+
+    await this.query(`
+      CREATE TABLE IF NOT EXISTS user_achievements (
+        user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        achievement_id text NOT NULL,
+        unlocked_at timestamptz NOT NULL DEFAULT now(),
+        claimed_at timestamptz,
+        PRIMARY KEY (user_id, achievement_id)
       );
     `);
 

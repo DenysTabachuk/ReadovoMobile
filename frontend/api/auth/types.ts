@@ -10,9 +10,13 @@ export type LoginUserRequest = {
 };
 
 export type AuthUser = {
+  balance: number;
   createdAt: string;
   email: string;
   id: string;
+  lessonsCompleted: number;
+  testsCompleted: number;
+  wordsLearned: number;
 };
 
 export type RegisterUserResponse = {

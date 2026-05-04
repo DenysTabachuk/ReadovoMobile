@@ -109,19 +109,27 @@ export class AuthService {
     ).toString('hex');
 
     return {
+      balance: 0,
       createdAt: new Date().toISOString(),
       email,
       id: randomUUID(),
+      lessonsCompleted: 0,
       passwordHash,
       passwordSalt,
+      testsCompleted: 0,
+      wordsLearned: 0,
     };
   }
 
   private toAuthUser(user: StoredUser): AuthUser {
     return {
+      balance: user.balance,
       createdAt: user.createdAt,
       email: user.email,
       id: user.id,
+      lessonsCompleted: user.lessonsCompleted,
+      testsCompleted: user.testsCompleted,
+      wordsLearned: user.wordsLearned,
     };
   }
 }
