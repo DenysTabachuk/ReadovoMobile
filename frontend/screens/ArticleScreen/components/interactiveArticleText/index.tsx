@@ -339,7 +339,6 @@ function parsePlainTextToBlocks(text: string): ArticleBlock[] {
     listItems = [];
     listOrdered = false;
   };
-
   for (const rawLine of lines) {
     const line = rawLine.trim();
 

@@ -22,6 +22,7 @@ type CtaAction = Omit<PressableProps, 'children' | 'style'> & {
 type CtaProps = {
   layout?: 'horizontal' | 'vertical';
   withBackground?: boolean;
+  bottomOffset?: number;
   primaryAction?: CtaAction;
   secondaryAction?: CtaAction;
 };
@@ -49,6 +50,7 @@ export function Cta({
   primaryAction,
   secondaryAction,
   withBackground = false,
+  bottomOffset,
 }: CtaProps) {
   const insets = useSafeAreaInsets();
   const backgroundColor = useThemeColor(
@@ -62,7 +64,8 @@ export function Cta({
   }
 
   const fullWidth = layout === 'horizontal';
-  const bottomOffset = withBackground ? 0 : insets.bottom + 16;
+  const resolvedBottomOffset =
+    bottomOffset ?? (withBackground ? 0 : insets.bottom + 16);
   const backgroundBottomPadding = withBackground
     ? Math.max(insets.bottom, 6)
     : undefined;
@@ -73,7 +76,7 @@ export function Cta({
       style={[
         styles.wrapper,
         withBackground ? styles.wrapperFullWidth : null,
-        { bottom: bottomOffset },
+        { bottom: resolvedBottomOffset },
       ]}>
       <View
         style={[

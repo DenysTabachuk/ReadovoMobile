@@ -9,7 +9,7 @@ export const styles = StyleSheet.create({
   listContent: {
     flexGrow: 1,
     gap: Spacing.md,
-    paddingBottom: Spacing.xxLg,
+    paddingBottom: 96,
   },
   header: {
     gap: Spacing.sm,
@@ -73,10 +73,6 @@ export const styles = StyleSheet.create({
     paddingHorizontal: Spacing.xLg,
     paddingVertical: Spacing.xxLg,
   },
-  startTestButton: {
-    alignSelf: 'flex-start',
-    marginTop: Spacing.sm,
-  },
   testContainer: {
     flex: 1,
     gap: Spacing.lg,
@@ -87,12 +83,6 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: Spacing.md,
     justifyContent: 'space-between',
-  },
-  testCard: {
-    borderRadius: 8,
-    borderWidth: 1,
-    gap: Spacing.lg,
-    padding: Spacing.lg,
   },
   questionWord: {
     textAlign: 'center',

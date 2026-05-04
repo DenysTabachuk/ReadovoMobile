@@ -12,6 +12,8 @@ import { ArticlesService } from './articles.service';
 import {
   type ArticleSimplificationLevel,
   type ArticleSimplificationTargetLength,
+  type GenerateArticleQuizRequest,
+  type ArticleQuizQuestion,
   type SimplifyArticleRequest,
   type SimplifyArticleResponse,
   type WikipediaArticle,
@@ -34,7 +36,11 @@ const ARTICLE_CATEGORIES: WikipediaArticleCategory[] = [
   'nature',
   'culture',
 ];
-const TARGET_LENGTHS: ArticleSimplificationTargetLength[] = ['short', 'medium'];
+const TARGET_LENGTHS: ArticleSimplificationTargetLength[] = [
+  'short',
+  'medium',
+  'long',
+];
 
 @Controller()
 export class ArticlesController {
@@ -130,5 +136,40 @@ export class ArticlesController {
       text,
       title,
     });
+  }
+
+  @Post('api/articles/quiz')
+  async generateArticleQuiz(
+    @Body() body: GenerateArticleQuizRequest,
+  ): Promise<{ questions: ArticleQuizQuestion[] }> {
+    const text = body.text?.trim();
+    const title = body.title?.trim();
+    const level = body.level?.trim().toUpperCase() as
+      | ArticleSimplificationLevel
+      | undefined;
+    const targetLength = body.targetLength?.trim().toLowerCase() as
+      | ArticleSimplificationTargetLength
+      | undefined;
+
+    if (!text) {
+      throw new BadRequestException('Article text is required.');
+    }
+
+    if (level && !SIMPLIFICATION_LEVELS.includes(level)) {
+      throw new BadRequestException('Article level is invalid.');
+    }
+
+    if (targetLength && !TARGET_LENGTHS.includes(targetLength)) {
+      throw new BadRequestException('Target length is invalid.');
+    }
+
+    const questions = await this.articlesService.generateArticleQuiz({
+      level,
+      targetLength: targetLength ?? DEFAULT_TARGET_LENGTH,
+      text,
+      title,
+    });
+
+    return { questions };
   }
 }

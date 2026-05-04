@@ -88,7 +88,26 @@ export type TableCell = {
 
 export type ArticleSimplificationLevel = 'A1' | 'A2' | 'B1' | 'B2';
 
-export type ArticleSimplificationTargetLength = 'short' | 'medium';
+export type ArticleSimplificationTargetLength = 'short' | 'medium' | 'long';
+
+export type ArticleQuizQuestionType =
+  | 'single_choice'
+  | 'multiple_choice'
+  | 'true_false';
+
+export type ArticleQuizQuestionOption = {
+  id: string;
+  text: string;
+};
+
+export type ArticleQuizQuestion = {
+  correctOptionIds: string[];
+  explanation?: string;
+  id: string;
+  options: ArticleQuizQuestionOption[];
+  prompt: string;
+  type: ArticleQuizQuestionType;
+};
 
 export type SimplifyArticleRequest = {
   level?: string;
@@ -97,11 +116,20 @@ export type SimplifyArticleRequest = {
   title?: string;
 };
 
+export type GenerateArticleQuizRequest = {
+  level?: string;
+  targetLength?: string;
+  text?: string;
+  title?: string;
+};
+
 export type SimplifyArticleResponse = {
   adaptedLength: number;
+  adaptedBlocks?: ArticleBlock[];
   adaptedText: string;
   level: ArticleSimplificationLevel;
   originalLength: number;
+  questions?: ArticleQuizQuestion[];
   targetLength: ArticleSimplificationTargetLength;
   title: string;
 };

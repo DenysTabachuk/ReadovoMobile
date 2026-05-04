@@ -360,7 +360,7 @@ describe('ArticlesService', () => {
 
     expect(createChatCompletionMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        max_completion_tokens: 1024,
+        max_completion_tokens: 2048,
         model: 'llama-3.3-70b-versatile',
       }),
     );
@@ -373,5 +373,67 @@ describe('ArticlesService', () => {
       targetLength: 'short',
       title: 'Solar System',
     });
+  });
+
+  it('parses structured simplification response with blocks and questions', async () => {
+    queryMock
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] });
+    createChatCompletionMock.mockResolvedValue({
+      choices: [
+        {
+          message: {
+            content: JSON.stringify({
+              adaptedBlocks: [
+                {
+                  level: 1,
+                  text: 'Solar System',
+                  type: 'heading',
+                },
+                {
+                  children: [{ text: 'The Sun is a star.', type: 'text' }],
+                  type: 'paragraph',
+                },
+              ],
+              adaptedText: 'The Sun is a star.',
+              questions: [
+                {
+                  correctOptionIds: ['a'],
+                  id: 'q-1',
+                  options: [
+                    { id: 'a', text: 'True' },
+                    { id: 'b', text: 'False' },
+                  ],
+                  prompt: 'The Sun is a star.',
+                  type: 'true_false',
+                },
+              ],
+            }),
+          },
+        },
+      ],
+    });
+
+    const response = await service.simplifyArticle({
+      level: 'A2',
+      targetLength: 'short',
+      text: 'Long article text',
+      title: 'Solar System',
+    });
+
+    expect(response.adaptedText).toBe('The Sun is a star.');
+    expect(response.adaptedBlocks).toHaveLength(2);
+    expect(response.questions).toEqual([
+      {
+        correctOptionIds: ['a'],
+        id: 'q-1',
+        options: [
+          { id: 'a', text: 'True' },
+          { id: 'b', text: 'False' },
+        ],
+        prompt: 'The Sun is a star.',
+        type: 'true_false',
+      },
+    ]);
   });
 });

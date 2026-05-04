@@ -3,6 +3,8 @@ import { API_BASE_URL } from '@/api/auth/constants';
 import { DEFAULT_ARTICLE_LIMIT } from './constants';
 import {
   type FetchWikipediaArticlesParams,
+  type GenerateArticleQuizRequest,
+  type GenerateArticleQuizResponse,
   type SimplifyArticleRequest,
   type SimplifyArticleResponse,
   type WikipediaArticle,
@@ -11,9 +13,14 @@ import {
 
 export type {
   ArticleBlock,
+  ArticleQuizQuestion,
+  ArticleQuizQuestionOption,
+  ArticleQuizQuestionType,
   FetchWikipediaArticlesParams,
   InlineNode,
   SimplifyArticleLevel,
+  GenerateArticleQuizRequest,
+  GenerateArticleQuizResponse,
   SimplifyArticleRequest,
   SimplifyArticleResponse,
   SimplifyArticleTargetLength,
@@ -104,4 +111,22 @@ export async function simplifyWikipediaArticle(
   }
 
   return response.json() as Promise<SimplifyArticleResponse>;
+}
+
+export async function generateArticleQuiz(
+  request: GenerateArticleQuizRequest
+): Promise<GenerateArticleQuizResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/articles/quiz`, {
+    body: JSON.stringify(request),
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    method: 'POST',
+  });
+
+  if (!response.ok) {
+    throw new Error('article.quizError');
+  }
+
+  return response.json() as Promise<GenerateArticleQuizResponse>;
 }

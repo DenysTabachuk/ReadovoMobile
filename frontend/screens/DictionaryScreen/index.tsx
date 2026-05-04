@@ -14,12 +14,15 @@ import {
   fetchDictionaryTest,
   submitDictionaryTestAnswer,
   type DictionaryTest,
-  type DictionaryTestAnswerResult,
-  type DictionaryTestQuestionOption,
   type DictionaryWord,
   type DictionaryWordProgress,
 } from '@/api/dictionary';
+import {
+  ArticleQuizRunner,
+  type QuizQuestion,
+} from '@/components/articleQuizRunner';
 import { Button } from '@/components/button';
+import { FloatingActionButton } from '@/components/floatingActionButton';
 import { ScreenContainer } from '@/components/screenContainer';
 import { ThemedText } from '@/components/themedText';
 import { Colors } from '@/constants/theme';
@@ -33,9 +36,6 @@ export default function DictionaryScreen() {
   const colorScheme = useColorScheme();
   const borderColor = colorScheme === 'dark' ? '#2d3336' : '#d0d7de';
   const [test, setTest] = useState<DictionaryTest>();
-  const [questionIndex, setQuestionIndex] = useState(0);
-  const [answerResult, setAnswerResult] = useState<DictionaryTestAnswerResult>();
-  const [selectedOptionId, setSelectedOptionId] = useState<string>();
 
   const {
     data,
@@ -50,33 +50,32 @@ export default function DictionaryScreen() {
   const words = data ?? [];
   const shouldShowInitialLoader = isLoading && words.length === 0;
   const shouldShowErrorState = Boolean(error) && words.length === 0;
-  const currentQuestion = test?.questions[questionIndex];
-  const isLastQuestion = questionIndex === (test?.questions.length ?? 0) - 1;
-  const testProgressLabel = useMemo(() => {
+  const quizQuestions = useMemo<QuizQuestion[]>(() => {
     if (!test) {
-      return '';
+      return [];
     }
 
-    return t('dictionary.test.progress', {
-      current: questionIndex + 1,
-      total: test.questions.length,
-    });
-  }, [questionIndex, t, test]);
+    return test.questions.map((question) => ({
+      id: question.wordId,
+      options: question.options.map((option) => ({
+        id: option.id,
+        text: option.translation,
+      })),
+      prompt: `${t('dictionary.test.questionLabel')}: ${question.word}`,
+      type: 'single_choice' as const,
+    }));
+  }, [t, test]);
 
   const testMutation = useMutation({
     mutationFn: fetchDictionaryTest,
     onSuccess: (nextTest) => {
       setTest(nextTest);
-      setQuestionIndex(0);
-      setAnswerResult(undefined);
-      setSelectedOptionId(undefined);
     },
   });
 
   const answerMutation = useMutation({
     mutationFn: submitDictionaryTestAnswer,
     onSuccess: (result) => {
-      setAnswerResult(result);
       void queryClient.invalidateQueries({ queryKey: ['dictionary', 'words'] });
     },
   });
@@ -122,43 +121,34 @@ export default function DictionaryScreen() {
     testMutation.mutate();
   }, [testMutation]);
 
-  const handleSelectOption = useCallback(
-    (option: DictionaryTestQuestionOption) => {
-      if (!currentQuestion || answerResult || answerMutation.isPending) {
-        return;
+  const handleFinishTest = useCallback(() => {
+    setTest(undefined);
+  }, []);
+  const handleSubmitQuizAnswer = useCallback(
+    async (question: QuizQuestion, selectedOptionIds: string[]) => {
+      const selectedOptionId = selectedOptionIds[0];
+
+      if (!selectedOptionId) {
+        throw new Error('No answer selected.');
       }
 
-      setSelectedOptionId(option.id);
-      answerMutation.mutate({
-        selectedOptionId: option.id,
-        wordId: currentQuestion.wordId,
+      const result = await answerMutation.mutateAsync({
+        selectedOptionId,
+        wordId: question.id,
       });
+
+      return {
+        correctOptionIds: [result.correctOptionId],
+        feedbackText: result.isCorrect
+          ? t('dictionary.test.correct')
+          : t('dictionary.test.incorrect', {
+              translation: result.correctTranslation,
+            }),
+        isCorrect: result.isCorrect,
+      };
     },
-    [answerMutation, answerResult, currentQuestion],
+    [answerMutation, t],
   );
-
-  const handleNextQuestion = useCallback(() => {
-    if (!test || !answerResult) {
-      return;
-    }
-
-    if (isLastQuestion) {
-      setTest(undefined);
-      setQuestionIndex(0);
-    } else {
-      setQuestionIndex((currentIndex) => currentIndex + 1);
-    }
-
-    setAnswerResult(undefined);
-    setSelectedOptionId(undefined);
-  }, [answerResult, isLastQuestion, test]);
-
-  const handleCloseTest = useCallback(() => {
-    setTest(undefined);
-    setQuestionIndex(0);
-    setAnswerResult(undefined);
-    setSelectedOptionId(undefined);
-  }, []);
 
   if (shouldShowInitialLoader) {
     return (
@@ -187,72 +177,16 @@ export default function DictionaryScreen() {
     );
   }
 
-  if (currentQuestion) {
+  if (quizQuestions.length > 0) {
     return (
       <ScreenContainer style={styles.container}>
         <View style={styles.testContainer}>
-          <View style={styles.testHeader}>
-            <View style={styles.wordTitleGroup}>
-              <ThemedText type="screenTitle">{t('dictionary.test.title')}</ThemedText>
-              <ThemedText type="description">{testProgressLabel}</ThemedText>
-            </View>
-            <Button onPress={handleCloseTest} variant="secondary">
-              {t('dictionary.test.close')}
-            </Button>
-          </View>
-
-          <View style={[styles.testCard, { borderColor }]}>
-            <ThemedText type="description">{t('dictionary.test.questionLabel')}</ThemedText>
-            <ThemedText type="screenTitle" style={styles.questionWord}>
-              {currentQuestion.word}
-            </ThemedText>
-
-            <View style={styles.optionsList}>
-              {currentQuestion.options.map((option, index) => {
-                const isSelected = selectedOptionId === option.id;
-                const isCorrect = answerResult?.correctOptionId === option.id;
-                const isWrongSelection = Boolean(answerResult) && isSelected && !isCorrect;
-
-                return (
-                  <Button
-                    disabled={Boolean(answerResult) || answerMutation.isPending}
-                    key={option.id}
-                    onPress={() => handleSelectOption(option)}
-                    style={[
-                      styles.optionButton,
-                      isCorrect ? styles.correctOption : null,
-                      isWrongSelection ? styles.wrongOption : null,
-                    ]}
-                    textStyle={[
-                      styles.optionText,
-                      isCorrect || isWrongSelection ? styles.answeredOptionText : null,
-                    ]}
-                    variant="secondary">
-                    {`${String.fromCharCode(65 + index)}) ${option.translation}`}
-                  </Button>
-                );
-              })}
-            </View>
-
-            {answerMutation.isPending ? (
-              <ActivityIndicator color={Colors[colorScheme ?? 'light'].tint} />
-            ) : null}
-
-            {answerResult ? (
-              <View style={styles.answerResult}>
-                <ThemedText type="bodyStrong">
-                  {answerResult.isCorrect
-                    ? t('dictionary.test.correct')
-                    : t('dictionary.test.incorrect', {
-                        translation: answerResult.correctTranslation,
-                      })}
-                </ThemedText>
-                <Button onPress={handleNextQuestion}>
-                  {isLastQuestion ? t('dictionary.test.finish') : t('dictionary.test.next')}
-                </Button>
-              </View>
-            ) : null}
-          </View>
+          <ThemedText type="screenTitle">{t('dictionary.test.title')}</ThemedText>
+          <ArticleQuizRunner
+            onFinish={handleFinishTest}
+            onSubmitAnswer={handleSubmitQuizAnswer}
+            questions={quizQuestions}
+          />
         </View>
       </ScreenContainer>
     );
@@ -280,17 +214,11 @@ export default function DictionaryScreen() {
             <ThemedText type="description" style={styles.description}>
               {t('dictionary.description')}
             </ThemedText>
-            <Button
-              disabled={words.length < 4 || testMutation.isPending}
-              onPress={handleStartTest}
-              style={styles.startTestButton}>
-              {testMutation.isPending
-                ? t('dictionary.test.loading')
-                : t('dictionary.test.start')}
-            </Button>
-            {testMutation.error ? (
+            {testMutation.error || answerMutation.error ? (
               <ThemedText type="body" style={styles.testError}>
-                {t('dictionary.test.error')}
+                {testMutation.error
+                  ? t('dictionary.test.error')
+                  : t('dictionary.test.answerError')}
               </ThemedText>
             ) : null}
           </View>
@@ -305,6 +233,14 @@ export default function DictionaryScreen() {
         renderItem={renderWord}
         showsVerticalScrollIndicator={false}
       />
+      <FloatingActionButton
+        bottomOffset={8}
+        disabled={words.length < 4 || testMutation.isPending}
+        onPress={handleStartTest}>
+        {testMutation.isPending
+          ? t('dictionary.test.loading')
+          : t('dictionary.test.start')}
+      </FloatingActionButton>
     </ScreenContainer>
   );
 }

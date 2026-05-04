@@ -16,6 +16,9 @@ import {
 } from './article-html-parser';
 import {
   type ArticleBlock,
+  type ArticleQuizQuestion,
+  type ArticleQuizQuestionOption,
+  type ArticleQuizQuestionType,
   type ArticleSimplificationLevel,
   type ArticleSimplificationTargetLength,
   type FormulaBlock,
@@ -227,7 +230,7 @@ export class ArticlesService {
       // Groq runs only on the backend so the API key never reaches the app.
       const client = new Groq({ apiKey });
       const completion = await client.chat.completions.create({
-        max_completion_tokens: 1024,
+        max_completion_tokens: 2048,
         messages: [
           {
             content:
@@ -242,7 +245,9 @@ export class ArticlesService {
         model: GROQ_MODEL,
         temperature: 0.3,
       });
-      const adaptedText = completion.choices[0]?.message?.content?.trim() ?? '';
+      const rawResponse = completion.choices[0]?.message?.content?.trim() ?? '';
+      const parsedResponse = this.parseSimplificationModelResponse(rawResponse);
+      const adaptedText = parsedResponse.adaptedText;
 
       if (!adaptedText) {
         this.logger.error(
@@ -258,6 +263,12 @@ export class ArticlesService {
         originalLength,
         targetLength,
         title,
+        ...(parsedResponse.adaptedBlocks
+          ? { adaptedBlocks: parsedResponse.adaptedBlocks }
+          : {}),
+        ...(parsedResponse.questions && parsedResponse.questions.length > 0
+          ? { questions: parsedResponse.questions }
+          : {}),
       };
 
       await this.storeSimplification(cacheKey, response);
@@ -284,6 +295,80 @@ export class ArticlesService {
       );
 
       throw new BadGatewayException('Failed to simplify article.');
+    }
+  }
+
+  async generateArticleQuiz(params: {
+    level?: ArticleSimplificationLevel;
+    targetLength?: ArticleSimplificationTargetLength;
+    text: string;
+    title?: string;
+  }): Promise<ArticleQuizQuestion[]> {
+    const title = params.title?.trim() || 'Untitled article';
+    const text = params.text.trim();
+    const level = params.level ?? DEFAULT_SIMPLIFICATION_LEVEL;
+    const targetLength = params.targetLength ?? DEFAULT_TARGET_LENGTH;
+    const apiKey = process.env.GROQ_API_KEY;
+
+    if (!apiKey) {
+      this.logger.error(
+        `Groq key is missing for article quiz: title="${title}"`,
+      );
+      throw new InternalServerErrorException(
+        'Article quiz generation service is not configured.',
+      );
+    }
+
+    const prompt = this.createQuizPrompt({
+      level,
+      targetLength,
+      text,
+      title,
+    });
+
+    try {
+      const client = new Groq({ apiKey });
+      const completion = await client.chat.completions.create({
+        max_completion_tokens: 1400,
+        messages: [
+          {
+            content:
+              'You are helping to create educational English quizzes for language learners.',
+            role: 'system',
+          },
+          {
+            content: prompt,
+            role: 'user',
+          },
+        ],
+        model: GROQ_MODEL,
+        temperature: 0.3,
+      });
+      const rawResponse = completion.choices[0]?.message?.content?.trim() ?? '';
+      const parsedResponse = this.parseQuizModelResponse(rawResponse);
+
+      if (parsedResponse.length === 0) {
+        throw new BadGatewayException(
+          'Article quiz generation is unavailable.',
+        );
+      }
+
+      return parsedResponse;
+    } catch (error) {
+      if (error instanceof BadGatewayException) {
+        throw error;
+      }
+
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown Groq error';
+      const errorStack = error instanceof Error ? error.stack : undefined;
+
+      this.logger.error(
+        `Groq quiz request failed: title="${title}", model=${GROQ_MODEL}, reason="${errorMessage}"`,
+        errorStack,
+      );
+
+      throw new BadGatewayException('Failed to generate article quiz.');
     }
   }
 
@@ -507,6 +592,8 @@ export class ArticlesService {
     text: string;
     title: string;
   }): string {
+    const questionRule = this.getQuestionCountRule(params.targetLength);
+
     return `You are helping to create educational English texts for language learners.
 
 Simplify and shorten the following English Wikipedia article for a user with level ${params.level}.
@@ -525,13 +612,321 @@ Rules:
 - Target length: ${params.targetLength}.
 - For "short", return about 8-12 sentences.
 - For "medium", return about 12-18 sentences.
-- Return only the adapted English text without explanations.
+- Return a valid JSON object only, without markdown fences or extra text.
+- JSON schema:
+  {
+    "adaptedText": string,
+    "adaptedBlocks": ArticleBlock[]
+  }
+- "adaptedText" must be a plain-text version of the same adapted content.
+- "adaptedBlocks" must follow this exact union:
+  - heading: { "type":"heading", "level":1|2|3, "text": string }
+  - paragraph: { "type":"paragraph", "children": InlineNode[] }
+  - list: { "type":"list", "ordered": boolean, "items": InlineNode[][] }
+  - table: { "type":"table", "rows": TableCell[][] }
+  - image: { "type":"image", "src": string, "alt"?: string, "caption"?: string }
+- InlineNode must be one of:
+  - { "type":"text", "text": string, "bold"?: boolean, "italic"?: boolean }
+  - { "type":"word", "text": string, "bold"?: boolean, "italic"?: boolean }
+- TableCell must be { "text": string, "header"?: boolean }.
+- Do not use "formula" blocks in adapted output.
+- Keep headings/tables/images where they help comprehension.
+- Never invent image URLs or table values that are not supported by the source text.
+- Generate comprehension questions for the adapted text.
+- Question count: ${questionRule}.
+- Allowed question types:
+  - "single_choice": exactly 1 correct option.
+  - "multiple_choice": 2 or more correct options.
+  - "true_false": exactly 2 options ("True", "False"), exactly 1 correct option.
+- Questions must match learner level ${params.level}.
+- Keep wording simple for A1/A2, moderate for B1, richer but clear for B2.
+- Every question must be answerable only from adapted text.
+- Extend JSON schema with:
+  "questions": [
+    {
+      "id": string,
+      "type": "single_choice" | "multiple_choice" | "true_false",
+      "prompt": string,
+      "options": [{ "id": string, "text": string }],
+      "correctOptionIds": string[],
+      "explanation"?: string
+    }
+  ]
 
 Title:
 ${params.title}
 
 Original text:
 ${params.text}`;
+  }
+
+  private createQuizPrompt(params: {
+    level: ArticleSimplificationLevel;
+    targetLength: ArticleSimplificationTargetLength;
+    text: string;
+    title: string;
+  }): string {
+    const questionRule = this.getQuestionCountRule(params.targetLength);
+
+    return `Generate a reading-comprehension quiz for the article below.
+
+Rules:
+- Language: English.
+- Learner level: ${params.level}.
+- Question count: ${questionRule}.
+- Allowed question types:
+  - "single_choice": exactly 1 correct option.
+  - "multiple_choice": 2 or more correct options.
+  - "true_false": exactly 2 options ("True", "False"), exactly 1 correct option.
+- Questions must be answerable from the article text only.
+- Do not invent facts.
+- For A1/A2 use simpler vocabulary and shorter prompts.
+- For B1 moderate complexity; for B2 richer but clear wording.
+- Return ONLY valid JSON:
+{
+  "questions": [
+    {
+      "id": string,
+      "type": "single_choice" | "multiple_choice" | "true_false",
+      "prompt": string,
+      "options": [{ "id": string, "text": string }],
+      "correctOptionIds": string[],
+      "explanation"?: string
+    }
+  ]
+}
+
+Title:
+${params.title}
+
+Text:
+${params.text}`;
+  }
+
+  private parseSimplificationModelResponse(rawResponse: string): {
+    adaptedBlocks?: ArticleBlock[];
+    adaptedText: string;
+    questions?: ArticleQuizQuestion[];
+  } {
+    if (!rawResponse) {
+      return { adaptedText: '' };
+    }
+
+    const normalized = rawResponse
+      .replace(/^```json\s*/i, '')
+      .replace(/^```\s*/i, '')
+      .replace(/\s*```$/, '')
+      .trim();
+
+    try {
+      const parsed = JSON.parse(normalized) as {
+        adaptedBlocks?: unknown;
+        adaptedText?: unknown;
+        questions?: unknown;
+      };
+      const adaptedText =
+        typeof parsed.adaptedText === 'string' ? parsed.adaptedText.trim() : '';
+      const adaptedBlocks = Array.isArray(parsed.adaptedBlocks)
+        ? (parsed.adaptedBlocks as ArticleBlock[])
+        : undefined;
+      const questions = this.normalizeQuestions(parsed.questions);
+
+      if (adaptedText) {
+        return {
+          adaptedBlocks,
+          adaptedText,
+          questions: questions.length > 0 ? questions : undefined,
+        };
+      }
+    } catch {
+      // Fallback to plain-text response format from older prompts.
+    }
+
+    return { adaptedText: rawResponse.trim() };
+  }
+
+  private parseQuizModelResponse(rawResponse: string): ArticleQuizQuestion[] {
+    if (!rawResponse) {
+      return [];
+    }
+
+    const normalized = rawResponse
+      .replace(/^```json\s*/i, '')
+      .replace(/^```\s*/i, '')
+      .replace(/\s*```$/, '')
+      .trim();
+
+    try {
+      const parsed = JSON.parse(normalized) as { questions?: unknown };
+      return this.normalizeQuestions(parsed.questions);
+    } catch {
+      return [];
+    }
+  }
+
+  private getQuestionCountRule(
+    targetLength: ArticleSimplificationTargetLength,
+  ): string {
+    if (targetLength === 'short') {
+      return 'exactly 3 questions';
+    }
+
+    if (targetLength === 'medium') {
+      return '4 to 5 questions';
+    }
+
+    return 'at least 6 questions';
+  }
+
+  private normalizeQuestions(rawQuestions: unknown): ArticleQuizQuestion[] {
+    if (!Array.isArray(rawQuestions)) {
+      return [];
+    }
+
+    return rawQuestions
+      .map((question, index) => this.normalizeQuestion(question, index))
+      .filter((question): question is ArticleQuizQuestion => question !== null);
+  }
+
+  private normalizeQuestion(
+    rawQuestion: unknown,
+    index: number,
+  ): ArticleQuizQuestion | null {
+    if (!rawQuestion || typeof rawQuestion !== 'object') {
+      return null;
+    }
+
+    const candidate = rawQuestion as {
+      correctOptionIds?: unknown;
+      explanation?: unknown;
+      id?: unknown;
+      options?: unknown;
+      prompt?: unknown;
+      type?: unknown;
+    };
+    const prompt =
+      typeof candidate.prompt === 'string' ? candidate.prompt.trim() : '';
+    const type = this.normalizeQuestionType(candidate.type);
+    const options = this.normalizeQuestionOptions(candidate.options);
+    const correctOptionIds = this.normalizeCorrectOptionIds(
+      candidate.correctOptionIds,
+      options,
+      type,
+    );
+
+    if (
+      !prompt ||
+      !type ||
+      options.length < 2 ||
+      correctOptionIds.length === 0
+    ) {
+      return null;
+    }
+
+    if (type === 'true_false') {
+      const hasTrueOption = options.some(
+        (option) => option.text.trim().toLowerCase() === 'true',
+      );
+      const hasFalseOption = options.some(
+        (option) => option.text.trim().toLowerCase() === 'false',
+      );
+
+      if (!hasTrueOption || !hasFalseOption || options.length !== 2) {
+        return null;
+      }
+    }
+
+    if (type === 'single_choice' && correctOptionIds.length !== 1) {
+      return null;
+    }
+
+    if (type === 'multiple_choice' && correctOptionIds.length < 2) {
+      return null;
+    }
+
+    const id =
+      typeof candidate.id === 'string' && candidate.id.trim()
+        ? candidate.id.trim()
+        : `q-${index + 1}`;
+    const explanation =
+      typeof candidate.explanation === 'string' &&
+      candidate.explanation.trim().length > 0
+        ? candidate.explanation.trim()
+        : undefined;
+
+    return {
+      correctOptionIds,
+      explanation,
+      id,
+      options,
+      prompt,
+      type,
+    };
+  }
+
+  private normalizeQuestionType(type: unknown): ArticleQuizQuestionType | null {
+    if (
+      type === 'single_choice' ||
+      type === 'multiple_choice' ||
+      type === 'true_false'
+    ) {
+      return type;
+    }
+
+    return null;
+  }
+
+  private normalizeQuestionOptions(
+    rawOptions: unknown,
+  ): ArticleQuizQuestionOption[] {
+    if (!Array.isArray(rawOptions)) {
+      return [];
+    }
+
+    return rawOptions
+      .map((option, index) => {
+        if (!option || typeof option !== 'object') {
+          return null;
+        }
+
+        const candidate = option as { id?: unknown; text?: unknown };
+        const text =
+          typeof candidate.text === 'string' ? candidate.text.trim() : '';
+
+        if (!text) {
+          return null;
+        }
+
+        const id =
+          typeof candidate.id === 'string' && candidate.id.trim()
+            ? candidate.id.trim()
+            : `o-${index + 1}`;
+
+        return { id, text };
+      })
+      .filter((option): option is ArticleQuizQuestionOption => option !== null);
+  }
+
+  private normalizeCorrectOptionIds(
+    rawCorrectOptionIds: unknown,
+    options: ArticleQuizQuestionOption[],
+    type: ArticleQuizQuestionType | null,
+  ): string[] {
+    if (!type || !Array.isArray(rawCorrectOptionIds)) {
+      return [];
+    }
+
+    const optionIds = new Set(options.map((option) => option.id));
+    const uniqueValidIds = Array.from(
+      new Set(
+        rawCorrectOptionIds.filter(
+          (id): id is string =>
+            typeof id === 'string' && id.trim().length > 0 && optionIds.has(id),
+        ),
+      ),
+    );
+
+    return uniqueValidIds;
   }
 
   private createSimplificationCacheKey(params: {

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import * as Linking from 'expo-linking';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -48,6 +48,7 @@ const TARGET_LENGTH_MAX_SENTENCES: Record<SimplifyArticleTargetLength, number> =
 
 export default function ArticleScreen() {
   const { t } = useTranslation();
+  const router = useRouter();
   const queryClient = useQueryClient();
   const colorScheme = useColorScheme();
   const { showBanner } = useBanner();
@@ -252,21 +253,41 @@ export default function ArticleScreen() {
     setSelectedWord(null);
     setShowAdaptedText(true);
   }, []);
+  const handleOpenQuiz = useCallback(() => {
+    if (articleId === null) {
+      return;
+    }
+    const quizTargetLength =
+      selectedTargetLength === 'original' ? 'medium' : selectedTargetLength;
+
+    router.push({
+      params: {
+        id: String(articleId),
+        level: selectedLevel,
+        targetLength: quizTargetLength,
+      },
+      pathname: '/article-quiz/[id]',
+    });
+  }, [articleId, router, selectedLevel, selectedTargetLength]);
 
   const displayedText = useMemo(() => {
-    if (showAdaptedText && adaptedArticle) {
+    if (showAdaptedText && adaptedArticle && !adaptedArticle.adaptedBlocks?.length) {
       return adaptedArticle.adaptedText;
     }
 
     return article?.content ?? '';
   }, [adaptedArticle, article?.content, showAdaptedText]);
   const displayedBlocks = useMemo(() => {
-    if (!article || showAdaptedText) {
+    if (!article) {
       return undefined;
     }
 
+    if (showAdaptedText) {
+      return adaptedArticle?.adaptedBlocks;
+    }
+
     return stripDuplicateTitleHeading(article.blocks, article.title);
-  }, [article, showAdaptedText]);
+  }, [adaptedArticle?.adaptedBlocks, article, showAdaptedText]);
   const shouldRenderHeroImage = useMemo(() => {
     if (!article?.thumbnailUrl || hasImageLoadError) {
       return false;
@@ -341,6 +362,18 @@ export default function ArticleScreen() {
             {t('article.errorDescription')}
           </ThemedText>
           <Button onPress={() => refetch()}>{t('article.retry')}</Button>
+        </View>
+      </ScreenContainer>
+    );
+  }
+
+  if (simplifyMutation.isPending) {
+    return (
+      <ScreenContainer>
+        <Stack.Screen options={{ title: article.title }} />
+        <View style={styles.centerState}>
+          <ActivityIndicator color={Colors[colorScheme ?? 'light'].tint} size="large" />
+          <ThemedText type="body">{t('article.adapting')}</ThemedText>
         </View>
       </ScreenContainer>
     );
@@ -472,7 +505,7 @@ export default function ArticleScreen() {
           layout="vertical"
           primaryAction={{
             label: t('article.reinforceKnowledge'),
-            onPress: () => {},
+            onPress: handleOpenQuiz,
           }}
           secondaryAction={{
             label: t('article.configureText'),
