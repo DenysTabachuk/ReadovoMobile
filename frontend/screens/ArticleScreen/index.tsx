@@ -18,6 +18,7 @@ import {
 } from '@/api/wikipedia';
 import { useBanner } from '@/components/banner';
 import { Button } from '@/components/button';
+import { FloatingActionButton } from '@/components/floatingActionButton';
 import { OptionPickerField } from '@/components/optionPickerField';
 import { ScreenContainer } from '@/components/screenContainer';
 import { ThemedText } from '@/components/themedText';
@@ -389,6 +390,9 @@ export default function ArticleScreen() {
         translation={translation?.translation}
         word={selectedWord?.word}
       />
+      <FloatingActionButton onPress={() => {}}>
+        {t('article.reinforceKnowledge')}
+      </FloatingActionButton>
     </ScreenContainer>
   );
 }

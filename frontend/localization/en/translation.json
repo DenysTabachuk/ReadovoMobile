@@ -168,7 +168,8 @@
     "lengths": {
       "short": "Short",
       "medium": "Medium"
-    }
+    },
+    "reinforceKnowledge": "Reinforce knowledge"
   },
   "translation": {
     "titleFallback": "Translation",

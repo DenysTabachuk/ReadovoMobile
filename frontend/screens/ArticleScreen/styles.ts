@@ -33,7 +33,7 @@ export const styles = StyleSheet.create({
   },
   content: {
     gap: Spacing.lg,
-    paddingBottom: Spacing.xxLg,
+    paddingBottom: 104,
     paddingHorizontal: Spacing.xLg,
     paddingTop: Spacing.lg,
   },

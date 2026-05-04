@@ -168,7 +168,8 @@
     "lengths": {
       "short": "Короткий",
       "medium": "Середній"
-    }
+    },
+    "reinforceKnowledge": "Закріпити знання"
   },
   "translation": {
     "titleFallback": "Переклад",
