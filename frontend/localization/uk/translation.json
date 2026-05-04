@@ -166,10 +166,22 @@
       "B2": "B2 - вище середнього"
     },
     "lengths": {
-      "short": "Короткий",
-      "medium": "Середній"
+      "original": "Оригінал (без адаптації)",
+      "short": "Короткий (~3-5 речень)",
+      "medium": "Середній (~6-10 речень)",
+      "long": "Довгий (~11-16 речень)"
     },
-    "reinforceKnowledge": "Закріпити знання"
+    "reinforceKnowledge": "Закріпити знання",
+    "textMode": {
+      "adapted": "Адаптований",
+      "original": "Оригінал"
+    },
+    "lengthsShort": {
+      "original": "Оригінал",
+      "short": "Короткий",
+      "medium": "Середній",
+      "long": "Довгий"
+    }
   },
   "translation": {
     "titleFallback": "Переклад",

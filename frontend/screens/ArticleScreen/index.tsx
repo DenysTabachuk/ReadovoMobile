@@ -21,6 +21,7 @@ import { Button } from '@/components/button';
 import { FloatingActionButton } from '@/components/floatingActionButton';
 import { OptionPickerField } from '@/components/optionPickerField';
 import { ScreenContainer } from '@/components/screenContainer';
+import { SegmentedToggle } from '@/components/segmentedToggle';
 import { ThemedText } from '@/components/themedText';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -34,9 +35,15 @@ type SelectedWord = {
   tokenKey: string;
   word: string;
 };
+type ArticleTextLengthOption = SimplifyArticleTargetLength | 'original';
 
 const DEFAULT_SIMPLIFICATION_LEVEL: SimplifyArticleLevel = 'A2';
-const DEFAULT_TARGET_LENGTH: SimplifyArticleTargetLength = 'short';
+const DEFAULT_TARGET_LENGTH: ArticleTextLengthOption = 'short';
+const TARGET_LENGTH_MAX_SENTENCES: Record<SimplifyArticleTargetLength, number> = {
+  short: 5,
+  medium: 10,
+  long: 16,
+};
 
 export default function ArticleScreen() {
   const { t } = useTranslation();
@@ -54,7 +61,7 @@ export default function ArticleScreen() {
     DEFAULT_SIMPLIFICATION_LEVEL,
   );
   const [selectedTargetLength, setSelectedTargetLength] =
-    useState<SimplifyArticleTargetLength>(DEFAULT_TARGET_LENGTH);
+    useState<ArticleTextLengthOption>(DEFAULT_TARGET_LENGTH);
 
   const rawArticleId = Array.isArray(params.id) ? params.id[0] : params.id;
   const parsedArticleId = Number(rawArticleId);
@@ -108,9 +115,12 @@ export default function ArticleScreen() {
         throw new Error('Article is unavailable.');
       }
 
+      const targetLength =
+        selectedTargetLength === 'original' ? undefined : selectedTargetLength;
+
       return simplifyWikipediaArticle({
         level: selectedLevel,
-        targetLength: selectedTargetLength,
+        targetLength,
         text: article.content,
         title: article.title,
       });
@@ -161,11 +171,41 @@ export default function ArticleScreen() {
   );
 
   const targetLengthOptions = useMemo(
-    () => [
-      { label: t('article.lengths.short'), value: 'short' as const },
-      { label: t('article.lengths.medium'), value: 'medium' as const },
-    ],
-    [t],
+    () => {
+      const sentenceCount = countSentences(article?.content ?? '');
+
+      return [
+        {
+          disabled: false,
+          displayLabel: t('article.lengthsShort.original'),
+          label: t('article.lengths.original'),
+          value: 'original' as const,
+        },
+        {
+          disabled: sentenceCount <= TARGET_LENGTH_MAX_SENTENCES.short,
+          displayLabel: t('article.lengthsShort.short'),
+          label: t('article.lengths.short'),
+          value: 'short' as const,
+        },
+        {
+          disabled: sentenceCount <= TARGET_LENGTH_MAX_SENTENCES.medium,
+          displayLabel: t('article.lengthsShort.medium'),
+          label: t('article.lengths.medium'),
+          value: 'medium' as const,
+        },
+        {
+          disabled: sentenceCount <= TARGET_LENGTH_MAX_SENTENCES.long,
+          displayLabel: t('article.lengthsShort.long'),
+          label: t('article.lengths.long'),
+          value: 'long' as const,
+        },
+      ];
+    },
+    [article?.content, t],
+  );
+
+  const isSelectedTargetLengthDisabled = Boolean(
+    targetLengthOptions.find((option) => option.value === selectedTargetLength)?.disabled,
   );
 
   const handleWordPress = useCallback((selection: SelectedWord) => {
@@ -238,6 +278,18 @@ export default function ArticleScreen() {
     setHasImageLoadError(false);
   }, [article?.thumbnailUrl]);
 
+  useEffect(() => {
+    if (!isSelectedTargetLengthDisabled) {
+      return;
+    }
+
+    const firstEnabledOption = targetLengthOptions.find((option) => !option.disabled);
+
+    if (firstEnabledOption) {
+      setSelectedTargetLength(firstEnabledOption.value);
+    }
+  }, [isSelectedTargetLengthDisabled, targetLengthOptions]);
+
   if (articleId === null) {
     return (
       <ScreenContainer>
@@ -308,43 +360,56 @@ export default function ArticleScreen() {
         </View>
 
         <View style={styles.actionRow}>
-          <OptionPickerField
-            label={t('article.levelLabel')}
-            onSelect={setSelectedLevel}
-            options={levelOptions}
-            selectedValue={selectedLevel}
-            title={t('article.levelPickerTitle')}
-          />
-          <OptionPickerField
-            label={t('article.lengthLabel')}
-            onSelect={setSelectedTargetLength}
-            options={targetLengthOptions}
-            selectedValue={selectedTargetLength}
-            title={t('article.lengthPickerTitle')}
-          />
+          <View style={styles.pickerField}>
+            <OptionPickerField
+              containerStyle={styles.pickerFieldContent}
+              label={t('article.levelLabel')}
+              onSelect={setSelectedLevel}
+              options={levelOptions}
+              selectedValue={selectedLevel}
+              title={t('article.levelPickerTitle')}
+            />
+          </View>
+          <View style={styles.pickerField}>
+            <OptionPickerField
+              containerStyle={styles.pickerFieldContent}
+              label={t('article.lengthLabel')}
+              onSelect={setSelectedTargetLength}
+              options={targetLengthOptions}
+              selectedValue={selectedTargetLength}
+              title={t('article.lengthPickerTitle')}
+            />
+          </View>
         </View>
 
         <View style={styles.actionRow}>
           <Button
-            disabled={simplifyMutation.isPending}
+            disabled={simplifyMutation.isPending || isSelectedTargetLengthDisabled}
             onPress={handleAdaptPress}
             variant="primary">
             {simplifyMutation.isPending
               ? t('article.adapting')
               : t('article.adaptText')}
           </Button>
-          {adaptedArticle ? (
-            <Button
-              onPress={
-                showAdaptedText ? handleShowOriginalPress : handleShowAdaptedPress
-              }
-              variant="secondary">
-              {showAdaptedText
-                ? t('article.showOriginalText')
-                : t('article.showAdaptedText')}
-            </Button>
-          ) : null}
         </View>
+
+        {adaptedArticle ? (
+          <SegmentedToggle
+            onChange={(value) => {
+              if (value === 'adapted') {
+                handleShowAdaptedPress();
+                return;
+              }
+
+              handleShowOriginalPress();
+            }}
+            options={[
+              { label: t('article.textMode.adapted'), value: 'adapted' },
+              { label: t('article.textMode.original'), value: 'original' },
+            ]}
+            selectedValue={showAdaptedText ? 'adapted' : 'original'}
+          />
+        ) : null}
 
         {adaptedArticle ? (
           <View style={styles.articleMeta}>
@@ -354,12 +419,16 @@ export default function ArticleScreen() {
                     adaptedLength: adaptedArticle.adaptedLength,
                     level: adaptedArticle.level,
                     originalLength: adaptedArticle.originalLength,
-                    targetLength: t(`article.lengths.${adaptedArticle.targetLength}`),
+                    targetLength: adaptedArticle.targetLength
+                      ? t(`article.lengths.${adaptedArticle.targetLength}`)
+                      : t('article.lengths.original'),
                   })
                 : t('article.originalState', {
                     level: adaptedArticle.level,
                     originalLength: adaptedArticle.originalLength,
-                    targetLength: t(`article.lengths.${adaptedArticle.targetLength}`),
+                    targetLength: adaptedArticle.targetLength
+                      ? t(`article.lengths.${adaptedArticle.targetLength}`)
+                      : t('article.lengths.original'),
                   })}
             </ThemedText>
           </View>
@@ -459,4 +528,15 @@ function getWikipediaImageIdentity(imageUrl: string): string | null {
   } catch {
     return imageUrl.trim().toLowerCase() || null;
   }
+}
+
+function countSentences(text: string): number {
+  const normalizedText = text.trim();
+
+  if (!normalizedText) {
+    return 0;
+  }
+
+  const matches = normalizedText.match(/[.!?]+(?=\s|$)/g);
+  return matches?.length ?? 1;
 }

@@ -88,7 +88,7 @@ export type TableCell = {
 
 export type SimplifyArticleLevel = 'A1' | 'A2' | 'B1' | 'B2';
 
-export type SimplifyArticleTargetLength = 'short' | 'medium';
+export type SimplifyArticleTargetLength = 'short' | 'medium' | 'long';
 
 export type SimplifyArticleRequest = {
   level?: SimplifyArticleLevel;

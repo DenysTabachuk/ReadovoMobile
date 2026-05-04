@@ -1,5 +1,12 @@
-import { useCallback, useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  Animated,
+  Pressable,
+  type StyleProp,
+  View,
+  type ViewStyle,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 import { ModalSheet } from '@/components/modalSheet';
 import { ThemedText } from '@/components/themedText';
@@ -8,11 +15,14 @@ import { useThemeColor } from '@/hooks/use-theme-color';
 import { styles } from './styles';
 
 type Option<T extends string> = {
+  disabled?: boolean;
+  displayLabel?: string;
   label: string;
   value: T;
 };
 
 type OptionPickerFieldProps<T extends string> = {
+  containerStyle?: StyleProp<ViewStyle>;
   label: string;
   onSelect: (value: T) => void;
   options: Option<T>[];
@@ -21,6 +31,7 @@ type OptionPickerFieldProps<T extends string> = {
 };
 
 export function OptionPickerField<T extends string>({
+  containerStyle,
   label,
   onSelect,
   options,
@@ -28,6 +39,7 @@ export function OptionPickerField<T extends string>({
   title,
 }: OptionPickerFieldProps<T>) {
   const [open, setOpen] = useState(false);
+  const chevronProgress = useRef(new Animated.Value(0)).current;
   const selectedOption = options.find((option) => option.value === selectedValue);
   const borderColor = useThemeColor({ dark: '#3a4348', light: '#d0d7de' }, 'icon');
   const selectedBackgroundColor = useThemeColor(
@@ -38,6 +50,7 @@ export function OptionPickerField<T extends string>({
     { dark: '#67c6e3', light: '#0a7ea4' },
     'tint',
   );
+  const chevronColor = useThemeColor({ dark: '#9ba1a6', light: '#687076' }, 'icon');
 
   const handleOpen = useCallback(() => {
     setOpen(true);
@@ -55,12 +68,38 @@ export function OptionPickerField<T extends string>({
     [onSelect],
   );
 
+  useEffect(() => {
+    Animated.timing(chevronProgress, {
+      duration: 180,
+      toValue: open ? 1 : 0,
+      useNativeDriver: true,
+    }).start();
+  }, [chevronProgress, open]);
+
+  const chevronAnimatedStyle = {
+    transform: [
+      {
+        rotate: chevronProgress.interpolate({
+          inputRange: [0, 1],
+          outputRange: ['0deg', '180deg'],
+        }),
+      },
+    ],
+  };
+
   return (
     <>
-      <View style={styles.field}>
-        <ThemedText type="bodyStrong">{label}</ThemedText>
+      <View style={[styles.field, containerStyle]}>
+        <ThemedText type="bodyStrong">
+          {label}
+        </ThemedText>
         <Pressable onPress={handleOpen} style={[styles.pickerButton, { borderColor }]}>
-          <ThemedText type="body">{selectedOption?.label ?? selectedValue}</ThemedText>
+          <ThemedText style={styles.pickerLabel} type="body">
+            {selectedOption?.displayLabel ?? selectedOption?.label ?? selectedValue}
+          </ThemedText>
+          <Animated.View style={chevronAnimatedStyle}>
+            <Ionicons color={chevronColor} name="chevron-down" size={18} />
+          </Animated.View>
         </Pressable>
       </View>
 
@@ -71,11 +110,13 @@ export function OptionPickerField<T extends string>({
 
             return (
               <Pressable
+                disabled={option.disabled}
                 key={option.value}
-                onPress={() => handleSelect(option.value)}
+                onPress={option.disabled ? undefined : () => handleSelect(option.value)}
                 style={[
                   styles.optionButton,
                   { borderColor },
+                  option.disabled ? styles.optionButtonDisabled : null,
                   isSelected
                     ? {
                         backgroundColor: selectedBackgroundColor,
@@ -83,7 +124,11 @@ export function OptionPickerField<T extends string>({
                       }
                     : null,
                 ]}>
-                <ThemedText type="bodyStrong">{option.label}</ThemedText>
+                <ThemedText
+                  style={option.disabled ? styles.optionTextDisabled : undefined}
+                  type="bodyStrong">
+                  {option.label}
+                </ThemedText>
               </Pressable>
             );
           })}

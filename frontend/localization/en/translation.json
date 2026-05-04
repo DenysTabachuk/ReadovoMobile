@@ -166,10 +166,22 @@
       "B2": "B2 - upper-intermediate"
     },
     "lengths": {
-      "short": "Short",
-      "medium": "Medium"
+      "original": "Original (no adaptation)",
+      "short": "Short (~3-5 sentences)",
+      "medium": "Medium (~6-10 sentences)",
+      "long": "Long (~11-16 sentences)"
     },
-    "reinforceKnowledge": "Reinforce knowledge"
+    "reinforceKnowledge": "Reinforce knowledge",
+    "textMode": {
+      "adapted": "Adapted",
+      "original": "Original"
+    },
+    "lengthsShort": {
+      "original": "Original",
+      "short": "Short",
+      "medium": "Medium",
+      "long": "Long"
+    }
   },
   "translation": {
     "titleFallback": "Translation",
