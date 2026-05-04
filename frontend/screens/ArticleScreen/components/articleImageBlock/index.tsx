@@ -14,6 +14,8 @@ type ArticleImageBlockProps = {
 };
 
 const FALLBACK_TITLE = 'Image unavailable';
+const MAX_CAPTION_LINES = 4;
+const MAX_ALT_FALLBACK_LINES = 5;
 
 export function ArticleImageBlock({
   alt,
@@ -55,7 +57,11 @@ export function ArticleImageBlock({
             {FALLBACK_TITLE}
           </ThemedText>
           {fallbackText ? (
-            <ThemedText style={styles.fallbackText} type="body">
+            <ThemedText
+              ellipsizeMode="tail"
+              numberOfLines={MAX_ALT_FALLBACK_LINES}
+              style={styles.fallbackText}
+              type="body">
               {fallbackText}
             </ThemedText>
           ) : null}
@@ -73,7 +79,11 @@ export function ArticleImageBlock({
         style={styles.image}
       />
       {caption ? (
-        <ThemedText style={styles.caption} type="body">
+        <ThemedText
+          ellipsizeMode="tail"
+          numberOfLines={MAX_CAPTION_LINES}
+          style={styles.caption}
+          type="body">
           {caption}
         </ThemedText>
       ) : null}

@@ -18,6 +18,7 @@ type ArticleTableBlockProps = {
 };
 
 const WIDE_TABLE_COLUMN_COUNT = 3;
+const MAX_SUMMARY_LINES = 2;
 
 export function ArticleTableBlock({
   renderCellContent,
@@ -27,7 +28,7 @@ export function ArticleTableBlock({
   const columnCount = useMemo(() => getTableColumnCount(rows), [rows]);
   const rowCount = rows.length;
   const isWideTable = columnCount >= WIDE_TABLE_COLUMN_COUNT;
-  const [isExpanded, setIsExpanded] = useState(!isWideTable);
+  const [isExpanded, setIsExpanded] = useState(false);
   const borderColor = useThemeColor(
     { dark: 'rgba(255, 255, 255, 0.16)', light: 'rgba(17, 24, 28, 0.12)' },
     'icon',
@@ -55,7 +56,11 @@ export function ArticleTableBlock({
         ]}>
         <View style={styles.toggleCopy}>
           <ThemedText type="bodyStrong">{headerText}</ThemedText>
-          <ThemedText style={styles.summary} type="body">
+          <ThemedText
+            ellipsizeMode="tail"
+            numberOfLines={MAX_SUMMARY_LINES}
+            style={styles.summary}
+            type="body">
             {summaryText}
           </ThemedText>
         </View>
