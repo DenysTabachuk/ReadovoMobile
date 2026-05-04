@@ -139,6 +139,9 @@ export default function ProfileScreen() {
                   <ThemedText style={styles.achievementDescription}>
                     {t(`profile.achievements.${achievement.id}.description`)}
                   </ThemedText>
+                  <ThemedText style={isUnlocked ? styles.unlockedText : styles.lockedText}>
+                    {isUnlocked ? t('profile.unlocked') : t('profile.locked')}
+                  </ThemedText>
                   <View style={styles.rewardRow}>
                     <Image
                       contentFit="contain"
@@ -150,9 +153,6 @@ export default function ProfileScreen() {
                     </ThemedText>
                   </View>
                 </View>
-                <ThemedText style={isUnlocked ? styles.unlockedText : styles.lockedText}>
-                  {isUnlocked ? t('profile.unlocked') : t('profile.locked')}
-                </ThemedText>
               </View>
             );
           })}
