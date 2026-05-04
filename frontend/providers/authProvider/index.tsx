@@ -10,12 +10,18 @@ import {
 } from 'react';
 
 type AuthContextValue = {
+  currentUser: AuthUserProfile | null;
   isAuthenticated: boolean;
   isHydratingAuth: boolean;
   rememberMePreference: boolean;
   setRememberMePreference: (rememberMe: boolean) => Promise<void>;
-  signIn: (rememberMe: boolean) => Promise<void>;
+  signIn: (rememberMe: boolean, userProfile?: AuthUserProfile | null) => Promise<void>;
   signOut: () => Promise<void>;
+};
+
+export type AuthUserProfile = {
+  displayName: string | null;
+  email: string | null;
 };
 
 type AuthProviderProps = {
@@ -25,6 +31,7 @@ type AuthProviderProps = {
 const AUTH_STORAGE_KEYS = {
   rememberMe: 'speakly.auth.rememberMe',
   session: 'speakly.auth.session',
+  userProfile: 'speakly.auth.userProfile',
 } as const;
 
 const AUTH_SESSION_VALUE = 'authenticated';
@@ -34,19 +41,22 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 export function AuthProvider({ children }: AuthProviderProps) {
   const [isHydratingAuth, setIsHydratingAuth] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [currentUser, setCurrentUser] = useState<AuthUserProfile | null>(null);
   const [rememberMePreference, setRememberMePreferenceState] = useState(false);
 
   useEffect(() => {
     async function hydrateAuthState() {
       try {
-        const [storedRememberMe, storedSession] = await Promise.all([
+        const [storedRememberMe, storedSession, storedUserProfile] = await Promise.all([
           AsyncStorage.getItem(AUTH_STORAGE_KEYS.rememberMe),
           AsyncStorage.getItem(AUTH_STORAGE_KEYS.session),
+          AsyncStorage.getItem(AUTH_STORAGE_KEYS.userProfile),
         ]);
 
         const rememberMe = storedRememberMe === 'true';
         setRememberMePreferenceState(rememberMe);
         setIsAuthenticated(rememberMe && storedSession === AUTH_SESSION_VALUE);
+        setCurrentUser(storedUserProfile ? (JSON.parse(storedUserProfile) as AuthUserProfile) : null);
       } catch (error) {
         console.error('Failed to hydrate auth state', error);
       } finally {
@@ -63,22 +73,35 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
   const signIn = useCallback(
-    async (rememberMe: boolean) => {
+    async (rememberMe: boolean, userProfile: AuthUserProfile | null = null) => {
       await setRememberMePreference(rememberMe);
 
       if (rememberMe) {
-        await AsyncStorage.setItem(AUTH_STORAGE_KEYS.session, AUTH_SESSION_VALUE);
+        const userProfileValue = userProfile ? JSON.stringify(userProfile) : '';
+
+        await Promise.all([
+          AsyncStorage.setItem(AUTH_STORAGE_KEYS.session, AUTH_SESSION_VALUE),
+          AsyncStorage.setItem(AUTH_STORAGE_KEYS.userProfile, userProfileValue),
+        ]);
       } else {
-        await AsyncStorage.removeItem(AUTH_STORAGE_KEYS.session);
+        await Promise.all([
+          AsyncStorage.removeItem(AUTH_STORAGE_KEYS.session),
+          AsyncStorage.removeItem(AUTH_STORAGE_KEYS.userProfile),
+        ]);
       }
 
+      setCurrentUser(userProfile);
       setIsAuthenticated(true);
     },
     [setRememberMePreference],
   );
 
   const signOut = useCallback(async () => {
-    await AsyncStorage.removeItem(AUTH_STORAGE_KEYS.session);
+    await Promise.all([
+      AsyncStorage.removeItem(AUTH_STORAGE_KEYS.session),
+      AsyncStorage.removeItem(AUTH_STORAGE_KEYS.userProfile),
+    ]);
+    setCurrentUser(null);
     setIsAuthenticated(false);
   }, []);
 
@@ -86,6 +109,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     () => ({
       isAuthenticated,
       isHydratingAuth,
+      currentUser,
       rememberMePreference,
       setRememberMePreference,
       signIn,
@@ -94,6 +118,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     [
       isAuthenticated,
       isHydratingAuth,
+      currentUser,
       rememberMePreference,
       setRememberMePreference,
       signIn,

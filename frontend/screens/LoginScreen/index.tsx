@@ -53,11 +53,14 @@ export default function LoginScreen() {
     try {
       setIsLoading(true);
 
-      await loginUser({
+      const response = await loginUser({
         email: normalizedEmail,
         password,
       });
-      await signIn(rememberMe);
+      await signIn(rememberMe, {
+        displayName: null,
+        email: response.user.email,
+      });
 
       showBanner({
         title: t('auth.success.title'),
@@ -87,7 +90,10 @@ export default function LoginScreen() {
       if (!result) {
         return;
       }
-      await signIn(rememberMe);
+      await signIn(rememberMe, {
+        displayName: result.user.name ?? null,
+        email: result.user.email ?? null,
+      });
 
       showBanner({
         title: t('auth.success.title'),

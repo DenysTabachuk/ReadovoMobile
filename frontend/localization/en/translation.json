@@ -9,7 +9,8 @@
   "tabs": {
     "articles": "Articles",
     "dictionary": "Dictionary",
-    "settings": "Settings"
+    "settings": "Settings",
+    "profile": "Profile"
   },
   "about": {
     "title": "Speakly",
@@ -191,5 +192,28 @@
     "addToDictionary": "Add to dictionary",
     "close": "Close",
     "dictionaryComingSoon": "Dictionary will be added next."
+  },
+  "profile": {
+    "title": "My profile",
+    "openSettings": "Open settings",
+    "defaultName": "Octopus",
+    "subtitle": "English Explorer",
+    "stats": {
+      "lessons": "lessons completed",
+      "tests": "tests completed",
+      "achievements": "achievements received",
+      "streak": "days in a row"
+    },
+    "achievementsTitle": "My achievements",
+    "reward": "+{{count}} coins",
+    "unlocked": "Unlocked",
+    "locked": "Locked",
+    "achievements": {
+      "first_test_completed": {
+        "title": "First test completed",
+        "description": "Complete your first test to unlock this achievement."
+      }
+    },
+    "balance": "My balance"
   }
 }

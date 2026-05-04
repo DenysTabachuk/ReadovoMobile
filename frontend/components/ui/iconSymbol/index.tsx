@@ -18,6 +18,7 @@ const MAPPING = {
   'paperplane.fill': 'send',
   'book.fill': 'menu-book',
   'gearshape.fill': 'settings',
+  'person.fill': 'person',
   'sun.max.fill': 'wb-sunny',
   'moon.fill': 'nightlight-round',
   'chevron.left.forwardslash.chevron.right': 'code',

@@ -9,7 +9,8 @@
   "tabs": {
     "articles": "Статті",
     "dictionary": "Словник",
-    "settings": "Налаштування"
+    "settings": "Налаштування",
+    "profile": "Профіль"
   },
   "about": {
     "title": "Speakly",
@@ -191,5 +192,28 @@
     "addToDictionary": "Додати у словник",
     "close": "Закрити",
     "dictionaryComingSoon": "Словник додамо наступним кроком."
+  },
+  "profile": {
+    "title": "Мій профіль",
+    "openSettings": "Відкрити налаштування",
+    "defaultName": "Восьминіжка",
+    "subtitle": "English Explorer",
+    "stats": {
+      "lessons": "уроків пройдено",
+      "tests": "тестів виконано",
+      "achievements": "досягнень отримано",
+      "streak": "днів поспіль"
+    },
+    "achievementsTitle": "Мої досягнення",
+    "reward": "+{{count}} монет",
+    "unlocked": "Отримано",
+    "locked": "Заблоковано",
+    "achievements": {
+      "first_test_completed": {
+        "title": "Перший тест пройдено",
+        "description": "Пройдіть перший тест, щоб отримати це досягнення."
+      }
+    },
+    "balance": "Мій баланс"
   }
 }

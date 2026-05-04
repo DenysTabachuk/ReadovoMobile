@@ -56,12 +56,15 @@ export default function RegisterScreen() {
     try {
       setIsLoading(true);
 
-      await registerUser({
+      const response = await registerUser({
         email: normalizedEmail,
         password,
         passwordConfirmation,
       });
-      await signIn(rememberMePreference);
+      await signIn(rememberMePreference, {
+        displayName: null,
+        email: response.user.email,
+      });
 
       showBanner({
         title: t('auth.registrationSuccess.title'),
