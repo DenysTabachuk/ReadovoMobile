@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -7,10 +7,12 @@ import { useTranslation } from 'react-i18next';
 import { loginUser } from '@/api/auth';
 import { Button } from '@/components/button';
 import { useBanner } from '@/components/banner';
+import { CheckboxRow } from '@/components/checkboxRow';
 import { FormTextInput } from '@/components/formTextInput';
 import { PasswordTextInput } from '@/components/passwordTextInput';
 import { ScreenContainer } from '@/components/screenContainer';
 import { ThemedText } from '@/components/themedText';
+import { useAuth } from '@/providers/authProvider';
 
 import { styles } from './styles';
 
@@ -19,9 +21,15 @@ const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export default function LoginScreen() {
   const { t } = useTranslation();
   const { showBanner } = useBanner();
+  const { rememberMePreference, setRememberMePreference, signIn } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(rememberMePreference);
+
+  useEffect(() => {
+    setRememberMe(rememberMePreference);
+  }, [rememberMePreference]);
 
   const handleSignIn = async () => {
     const normalizedEmail = email.trim().toLowerCase();
@@ -49,6 +57,7 @@ export default function LoginScreen() {
         email: normalizedEmail,
         password,
       });
+      await signIn(rememberMe);
 
       showBanner({
         title: t('auth.success.title'),
@@ -78,6 +87,7 @@ export default function LoginScreen() {
       if (!result) {
         return;
       }
+      await signIn(rememberMe);
 
       showBanner({
         title: t('auth.success.title'),
@@ -122,6 +132,16 @@ export default function LoginScreen() {
             placeholder={t('auth.passwordPlaceholder')}
             textContentType="password"
             value={password}
+          />
+
+          <CheckboxRow
+            checked={rememberMe}
+            label={t('auth.rememberMe')}
+            onPress={async () => {
+              const nextValue = !rememberMe;
+              setRememberMe(nextValue);
+              await setRememberMePreference(nextValue);
+            }}
           />
 
           <Pressable hitSlop={8} style={styles.forgotPasswordButton}>

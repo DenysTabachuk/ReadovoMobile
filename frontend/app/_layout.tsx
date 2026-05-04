@@ -13,6 +13,7 @@ import 'react-native-reanimated';
 import { BannerProvider } from '@/components/banner';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { AuthProvider } from '@/providers/authProvider';
 import { PreferencesProvider } from '@/providers/preferencesProvider';
 import { QueryProvider } from '@/providers/queryProvider';
 
@@ -23,7 +24,9 @@ export const unstable_settings = {
 export default function RootLayout() {
   return (
     <PreferencesProvider>
-      <RootLayoutContent />
+      <AuthProvider>
+        <RootLayoutContent />
+      </AuthProvider>
     </PreferencesProvider>
   );
 }

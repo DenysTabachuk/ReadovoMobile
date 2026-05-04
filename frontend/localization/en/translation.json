@@ -34,6 +34,7 @@
     "haveAccount": "Already have an account? Sign in",
     "orDivider": "OR",
     "googleButton": "Continue with Google",
+    "rememberMe": "Remember me",
     "togglePasswordVisibility": "Show or hide password",
     "signingIn": "Signing in...",
     "creatingAccount": "Creating account...",
@@ -133,6 +134,10 @@
     },
     "language": {
       "title": "Language"
+    },
+    "account": {
+      "title": "Account",
+      "logout": "Log out"
     }
   },
   "article": {

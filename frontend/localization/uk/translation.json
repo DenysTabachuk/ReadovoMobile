@@ -55,7 +55,8 @@
       "invalidCredentials": "Пошта або пароль неправильні",
       "loginFailed": "Не вдалося увійти",
       "registrationFailed": "Не вдалося створити акаунт"
-    }
+    },
+    "rememberMe": "Запам’ятати мене"
   },
   "articles": {
     "title": "Статті з Wikipedia",
@@ -133,6 +134,10 @@
     },
     "language": {
       "title": "Мова"
+    },
+    "account": {
+      "title": "Акаунт",
+      "logout": "Вийти"
     }
   },
   "article": {

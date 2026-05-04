@@ -10,6 +10,7 @@ import { FormTextInput } from '@/components/formTextInput';
 import { PasswordTextInput } from '@/components/passwordTextInput';
 import { ScreenContainer } from '@/components/screenContainer';
 import { ThemedText } from '@/components/themedText';
+import { useAuth } from '@/providers/authProvider';
 
 import { styles } from './styles';
 
@@ -19,6 +20,7 @@ const minPasswordLength = 8;
 export default function RegisterScreen() {
   const { t } = useTranslation();
   const { showBanner } = useBanner();
+  const { rememberMePreference, signIn } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [passwordConfirmation, setPasswordConfirmation] = useState('');
@@ -59,6 +61,7 @@ export default function RegisterScreen() {
         password,
         passwordConfirmation,
       });
+      await signIn(rememberMePreference);
 
       showBanner({
         title: t('auth.registrationSuccess.title'),

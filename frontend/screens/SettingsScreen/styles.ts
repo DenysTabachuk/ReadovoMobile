@@ -55,4 +55,14 @@ export const styles = StyleSheet.create({
   themeThumbDark: {
     backgroundColor: '#151718',
   },
+  logoutButton: {
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    paddingVertical: Spacing.xs,
+  },
+  logoutText: {
+    color: '#d64545',
+  },
 });
