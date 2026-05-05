@@ -37,7 +37,7 @@ const DEFAULT_SIMPLIFICATION_LEVEL: ArticleSimplificationLevel = 'A2';
 const DEFAULT_TARGET_LENGTH: ArticleSimplificationTargetLength = 'short';
 const GROQ_MODEL = 'llama-3.3-70b-versatile';
 const MAX_ARTICLE_LIMIT = 50;
-const WIKIMEDIA_USER_AGENT = 'SpeaklyMobile/1.0';
+const WIKIMEDIA_USER_AGENT = 'Readovo/1.0';
 const WIKIPEDIA_LANGUAGE_CODE = 'en';
 const WIKIPEDIA_CATEGORY_TITLES: Record<
   Exclude<WikipediaArticleCategory, 'all'>,

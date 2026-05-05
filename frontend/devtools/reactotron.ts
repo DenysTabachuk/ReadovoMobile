@@ -26,7 +26,7 @@ if (__DEV__ && isSupportedPlatform) {
   reactotron
     .configure({
       host,
-      name: 'Speakly Mobile',
+      name: 'Readovo',
     })
     .useReactNative({
       asyncStorage: false,

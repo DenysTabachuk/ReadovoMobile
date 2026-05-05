@@ -2,7 +2,7 @@ import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { Pool, type QueryResult, type QueryResultRow } from 'pg';
 
 const defaultDatabaseUrl =
-  'postgres://speakly:speakly_password@localhost:5432/speakly';
+  'postgres://readovo:readovo_password@localhost:5432/readovo';
 
 @Injectable()
 export class DatabaseService implements OnModuleDestroy, OnModuleInit {

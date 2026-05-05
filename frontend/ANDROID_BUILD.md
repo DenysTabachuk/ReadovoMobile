@@ -21,7 +21,7 @@ If the status is `unauthorized`, accept the USB debugging prompt on the phone.
 2. Build and install the debug app:
 
 ```powershell
-cd C:\SpeaklyMobile\frontend
+cd C:\ReadovoMobile\frontend
 npm run android
 ```
 
@@ -36,20 +36,20 @@ expo run:android
 If you only need the APK and do not want to run through Expo CLI:
 
 ```powershell
-cd C:\SpeaklyMobile\frontend\android
+cd C:\ReadovoMobile\frontend\android
 .\gradlew.bat assembleDebug
 ```
 
 The APK will be generated here:
 
 ```text
-C:\SpeaklyMobile\frontend\android\app\build\outputs\apk\debug\app-debug.apk
+C:\ReadovoMobile\frontend\android\app\build\outputs\apk\debug\app-debug.apk
 ```
 
 Install the APK manually:
 
 ```powershell
-adb install -r C:\SpeaklyMobile\frontend\android\app\build\outputs\apk\debug\app-debug.apk
+adb install -r C:\ReadovoMobile\frontend\android\app\build\outputs\apk\debug\app-debug.apk
 ```
 
 ## What Was Fixed
@@ -68,7 +68,7 @@ The cause was a missing `@react-native-community/cli` dependency. Because of tha
 This was fixed by running:
 
 ```powershell
-cd C:\SpeaklyMobile\frontend
+cd C:\ReadovoMobile\frontend
 npm install --save-dev @react-native-community/cli
 ```
 
@@ -140,7 +140,7 @@ Then reconnect the USB cable.
 Verify that the CLI dependency is installed:
 
 ```powershell
-cd C:\SpeaklyMobile\frontend
+cd C:\ReadovoMobile\frontend
 npm install
 npx.cmd react-native config
 ```
@@ -162,7 +162,7 @@ npm run android
 If you build directly through Gradle, set `NODE_ENV`:
 
 ```powershell
-cd C:\SpeaklyMobile\frontend\android
+cd C:\ReadovoMobile\frontend\android
 $env:NODE_ENV='development'
 .\gradlew.bat assembleDebug
 ```
@@ -174,14 +174,14 @@ When using `npm run android`, Expo CLI usually sets the required environment aut
 If the build was interrupted or appears to be stuck for a long time, stop the daemon:
 
 ```powershell
-cd C:\SpeaklyMobile\frontend\android
+cd C:\ReadovoMobile\frontend\android
 .\gradlew.bat --stop
 ```
 
 Then run the build again:
 
 ```powershell
-cd C:\SpeaklyMobile\frontend
+cd C:\ReadovoMobile\frontend
 npm run android
 ```
 
@@ -200,18 +200,18 @@ This is a warning and is not always fatal. If npm or the Android build behaves i
 ## Useful Commands
 
 ```powershell
-cd C:\SpeaklyMobile\frontend
+cd C:\ReadovoMobile\frontend
 npm install
 npm run android
 ```
 
 ```powershell
-cd C:\SpeaklyMobile\frontend
+cd C:\ReadovoMobile\frontend
 npx.cmd react-native config
 ```
 
 ```powershell
-cd C:\SpeaklyMobile\frontend\android
+cd C:\ReadovoMobile\frontend\android
 .\gradlew.bat --stop
 .\gradlew.bat assembleDebug
 ```

@@ -1,11 +1,11 @@
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: speakly-postgres
+    container_name: readovo-postgres
     environment:
-      POSTGRES_DB: speakly
-      POSTGRES_PASSWORD: speakly_password
-      POSTGRES_USER: speakly
+      POSTGRES_DB: readovo
+      POSTGRES_PASSWORD: readovo_password
+      POSTGRES_USER: readovo
     ports:
       - "5432:5432"
     volumes:

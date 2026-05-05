@@ -1,5 +1,5 @@
 export const PREFERENCE_STORAGE_KEYS = {
-  language: 'speakly.preferences.language',
-  onboarding: 'speakly.onboarding.completed',
-  theme: 'speakly.preferences.theme',
+  language: 'readovo.preferences.language',
+  onboarding: 'readovo.onboarding.completed',
+  theme: 'readovo.preferences.theme',
 } as const;

@@ -1,6 +1,6 @@
-# Speakly Mobile
+# Readovo Mobile
 
-Speakly Mobile is an Expo React Native app with a NestJS backend and PostgreSQL
+Readovo Mobile is an Expo React Native app with a NestJS backend and PostgreSQL
 database for local development.
 
 ## Prerequisites
@@ -52,9 +52,9 @@ The local database settings are:
 ```text
 Host: localhost
 Port: 5432
-Database: speakly
-User: speakly
-Password: speakly_password
+Database: readovo
+User: readovo
+Password: readovo_password
 ```
 
 The backend creates the `users` table automatically on startup.
@@ -64,7 +64,7 @@ The backend creates the `users` table automatically on startup.
 Create `backend/.env` from `backend/.env.example`:
 
 ```env
-DATABASE_URL=postgres://speakly:speakly_password@localhost:5432/speakly
+DATABASE_URL=postgres://readovo:readovo_password@localhost:5432/readovo
 PORT=3000
 ```
 

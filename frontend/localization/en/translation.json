@@ -1,7 +1,7 @@
 {
   "language": {
     "title": "Choose your language",
-    "description": "Select the language you want to use in Speakly."
+    "description": "Select the language you want to use in Readovo."
   },
   "start": {
     "continue": "Continue"
@@ -13,15 +13,15 @@
     "profile": "Profile"
   },
   "about": {
-    "title": "Speakly",
-    "description": "Speakly is an app for learning English through short educational texts. Read useful stories, discover new words, and build your understanding of English in context.",
+    "title": "Readovo",
+    "description": "Readovo is an app for learning English through short educational texts. Read useful stories, discover new words, and build your understanding of English in context.",
     "continue": "Continue"
   },
   "auth": {
     "title": "Sign in",
-    "description": "Sign in to your account to continue learning with Speakly.",
+    "description": "Sign in to your account to continue learning with Readovo.",
     "registerTitle": "Create account",
-    "registerDescription": "Enter your email and password to start using Speakly.",
+    "registerDescription": "Enter your email and password to start using Readovo.",
     "emailLabel": "Email address",
     "emailPlaceholder": "Email",
     "passwordLabel": "Password",

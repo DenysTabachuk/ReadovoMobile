@@ -71,7 +71,7 @@ describe('ArticlesService', () => {
 
     expect(requestOptions).toMatchObject({
       headers: {
-        'Api-User-Agent': 'SpeaklyMobile/1.0',
+        'Api-User-Agent': 'Readovo/1.0',
       },
     });
     expect(articles).toEqual([

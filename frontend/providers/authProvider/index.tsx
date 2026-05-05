@@ -30,9 +30,9 @@ type AuthProviderProps = {
 };
 
 const AUTH_STORAGE_KEYS = {
-  rememberMe: 'speakly.auth.rememberMe',
-  session: 'speakly.auth.session',
-  userProfile: 'speakly.auth.userProfile',
+  rememberMe: 'readovo.auth.rememberMe',
+  session: 'readovo.auth.session',
+  userProfile: 'readovo.auth.userProfile',
 } as const;
 
 const AUTH_SESSION_VALUE = 'authenticated';
