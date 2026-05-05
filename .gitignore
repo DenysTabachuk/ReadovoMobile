@@ -13,7 +13,6 @@ expo-env.d.ts
 
 # Generated native projects and mobile signing files
 ios/
-android/
 .kotlin/
 *.orig.*
 *.jks
