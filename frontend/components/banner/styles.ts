@@ -34,8 +34,8 @@ export const styles = StyleSheet.create({
     backgroundColor: '#c04135',
   },
   reward: {
-    backgroundColor: '#b7791f',
-    borderColor: '#f6d365',
+    backgroundColor: '#d9902f',
+    borderColor: '#ffe1a3',
   },
   content: {
     alignItems: 'center',

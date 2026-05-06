@@ -1,8 +1,10 @@
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, Pressable, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/button';
+import { CheckboxIndicator } from '@/components/checkboxRow';
 import { ThemedText } from '@/components/themedText';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -56,6 +58,7 @@ export function ArticleQuizRunner({
 }: ArticleQuizRunnerProps) {
   const { t } = useTranslation();
   const colorScheme = useColorScheme();
+  const isDarkTheme = colorScheme === 'dark';
   const [questionIndex, setQuestionIndex] = useState(0);
   const [selectedOptionIds, setSelectedOptionIds] = useState<string[]>([]);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -173,21 +176,56 @@ export function ArticleQuizRunner({
           {currentQuestion.options.map((option) => {
             const isSelected = selectedOptionIds.includes(option.id);
             const isCorrectOption = resolvedCorrectOptionIds.includes(option.id);
+            const isMultipleChoice = currentQuestion.type === 'multiple_choice';
+            const shouldShowCorrectState = isSubmitted && isCorrectOption;
+            const shouldShowWrongState = isSubmitted && isSelected && !isCorrectOption;
 
             return (
-              <Button
+              <Pressable
                 disabled={isSubmitted || isSubmitting}
                 key={option.id}
                 onPress={() => handleSelectOption(option.id)}
-                style={[
-                  isSubmitted && isCorrectOption ? styles.correctOption : null,
-                  isSubmitted && isSelected && !isCorrectOption
-                    ? styles.wrongOption
-                    : null,
-                ]}
-                variant={isSelected ? 'primary' : 'secondary'}>
-                {option.text}
-              </Button>
+                style={({ pressed }) => [
+                  styles.optionButton,
+                  isSelected ? styles.selectedOption : styles.unselectedOption,
+                  pressed && !isSubmitted && !isSubmitting ? styles.pressedOption : null,
+                  shouldShowCorrectState ? styles.correctOption : null,
+                  shouldShowWrongState ? styles.wrongOption : null,
+                  isSubmitting ? styles.disabledOption : null,
+                ]}>
+                {isMultipleChoice ? (
+                  <View style={styles.checkboxIndicator}>
+                    <CheckboxIndicator
+                      checked={isSelected}
+                      checkedColor={
+                        isSubmitted
+                          ? shouldShowWrongState
+                            ? '#cf222e'
+                            : '#2da44e'
+                          : '#fff'
+                      }
+                      uncheckedColor="#6f8f99"
+                    />
+                  </View>
+                ) : null}
+                <ThemedText
+                  type="buttonLabel"
+                  style={[
+                    styles.optionText,
+                    isSelected ? styles.selectedOptionText : styles.unselectedOptionText,
+                    shouldShowCorrectState ? styles.correctOptionText : null,
+                    shouldShowWrongState ? styles.wrongOptionText : null,
+                  ]}>
+                  {option.text}
+                </ThemedText>
+                {shouldShowCorrectState || shouldShowWrongState ? (
+                  <Ionicons
+                    color={shouldShowCorrectState ? '#2da44e' : '#cf222e'}
+                    name={shouldShowCorrectState ? 'checkmark-circle' : 'close-circle'}
+                    size={22}
+                  />
+                ) : null}
+              </Pressable>
             );
           })}
         </View>
@@ -195,13 +233,35 @@ export function ArticleQuizRunner({
           <ActivityIndicator color={Colors[colorScheme ?? 'light'].tint} size="small" />
         ) : null}
         {isSubmitted ? (
-          <ThemedText type="bodyStrong">
-            {submitResult?.feedbackText
-              ? submitResult.feedbackText
-              : isAnswerCorrect
-              ? t('dictionary.test.correct')
-              : t('article.quiz.incorrect', { defaultValue: 'Incorrect' })}
-          </ThemedText>
+          <View
+            style={[
+              styles.feedbackBlock,
+              isAnswerCorrect
+                ? isDarkTheme
+                  ? styles.correctFeedbackBlockDark
+                  : styles.correctFeedbackBlock
+                : isDarkTheme
+                ? styles.wrongFeedbackBlockDark
+                : styles.wrongFeedbackBlock,
+            ]}>
+            <Ionicons
+              color={isAnswerCorrect ? '#2da44e' : '#cf222e'}
+              name={isAnswerCorrect ? 'checkmark-circle' : 'close-circle'}
+              size={22}
+            />
+            <ThemedText
+              type="bodyStrong"
+              style={[
+                styles.feedbackText,
+                isAnswerCorrect ? styles.correctFeedbackText : styles.wrongFeedbackText,
+              ]}>
+              {submitResult?.feedbackText
+                ? submitResult.feedbackText
+                : isAnswerCorrect
+                ? t('dictionary.test.correct')
+                : t('article.quiz.incorrect')}
+            </ThemedText>
+          </View>
         ) : null}
         {(submitResult?.explanation || currentQuestion.explanation) && isSubmitted ? (
           <ThemedText type="body">

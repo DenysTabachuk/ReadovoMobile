@@ -11,6 +11,12 @@ type CheckboxRowProps = {
   onPress: PressableProps['onPress'];
 };
 
+type CheckboxIndicatorProps = {
+  checked: boolean;
+  checkedColor?: string;
+  uncheckedColor?: string;
+};
+
 export function CheckboxRow({ checked, label, onPress }: CheckboxRowProps) {
   return (
     <Pressable
@@ -19,12 +25,22 @@ export function CheckboxRow({ checked, label, onPress }: CheckboxRowProps) {
       hitSlop={8}
       style={styles.root}
       onPress={onPress}>
-      <Ionicons
-        color={checked ? '#3357d8' : '#8b8f94'}
-        name={checked ? 'checkbox' : 'square-outline'}
-        size={22}
-      />
+      <CheckboxIndicator checked={checked} />
       <ThemedText type="body">{label}</ThemedText>
     </Pressable>
+  );
+}
+
+export function CheckboxIndicator({
+  checked,
+  checkedColor = '#0a7ea4',
+  uncheckedColor = '#6f8f99',
+}: CheckboxIndicatorProps) {
+  return (
+    <Ionicons
+      color={checked ? checkedColor : uncheckedColor}
+      name={checked ? 'checkbox' : 'square-outline'}
+      size={22}
+    />
   );
 }

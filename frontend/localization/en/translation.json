@@ -206,7 +206,12 @@
       "medium": "Medium",
       "long": "Long"
     },
-    "configureText": "Configure text"
+    "configureText": "Configure text",
+    "quiz": {
+      "error": "Could not generate quiz. Try again.",
+      "generating": "Generating quiz...",
+      "incorrect": "Incorrect"
+    }
   },
   "translation": {
     "titleFallback": "Translation",

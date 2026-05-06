@@ -206,7 +206,12 @@
       "medium": "Середній",
       "long": "Довгий"
     },
-    "configureText": "Налаштувати текст"
+    "configureText": "Налаштувати текст",
+    "quiz": {
+      "error": "Не вдалося згенерувати тест. Спробуйте ще раз.",
+      "generating": "Генеруємо тест...",
+      "incorrect": "Неправильно"
+    }
   },
   "translation": {
     "titleFallback": "Переклад",
