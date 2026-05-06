@@ -1,5 +1,8 @@
+import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Pressable } from 'react-native';
+import ImageViewing from 'react-native-image-viewing';
 
 import { ThemedText } from '@/components/themedText';
 import { ThemedView } from '@/components/themedView';
@@ -23,6 +26,7 @@ export function ArticleImageBlock({
   src,
 }: ArticleImageBlockProps) {
   const [hasLoadError, setHasLoadError] = useState(false);
+  const [viewerOpen, setViewerOpen] = useState(false);
   const borderColor = useThemeColor(
     { dark: 'rgba(255, 255, 255, 0.16)', light: 'rgba(17, 24, 28, 0.12)' },
     'icon',
@@ -41,10 +45,46 @@ export function ArticleImageBlock({
 
     return normalizedCaption ?? normalizedAlt ?? null;
   }, [alt, caption]);
+  const viewerImages = useMemo(() => [{ uri: src }], [src]);
 
   useEffect(() => {
     setHasLoadError(false);
+    setViewerOpen(false);
   }, [src]);
+
+  const handleOpenViewer = useCallback(() => {
+    setViewerOpen(true);
+  }, []);
+
+  const handleCloseViewer = useCallback(() => {
+    setViewerOpen(false);
+  }, []);
+
+  const ViewerHeader = useCallback(
+    () => (
+      <Pressable
+        hitSlop={12}
+        onPress={handleCloseViewer}
+        style={styles.viewerCloseButton}>
+        <Ionicons color="#ffffff" name="close" size={28} />
+      </Pressable>
+    ),
+    [handleCloseViewer],
+  );
+  const ViewerFooter = useCallback(
+    () =>
+      caption ? (
+        <ThemedText
+          darkColor="#ffffff"
+          lightColor="#ffffff"
+          numberOfLines={3}
+          style={styles.viewerCaption}
+          type="body">
+          {caption}
+        </ThemedText>
+      ) : null,
+    [caption],
+  );
 
   if (!src || hasLoadError) {
     return (
@@ -72,14 +112,16 @@ export function ArticleImageBlock({
 
   return (
     <ThemedView style={styles.container}>
-      <Image
-        cachePolicy="disk"
-        contentFit="contain"
-        onError={() => setHasLoadError(true)}
-        source={{ uri: src }}
-        style={styles.image}
-        transition={120}
-      />
+      <Pressable onPress={handleOpenViewer}>
+        <Image
+          cachePolicy="disk"
+          contentFit="contain"
+          onError={() => setHasLoadError(true)}
+          source={{ uri: src }}
+          style={styles.image}
+          transition={120}
+        />
+      </Pressable>
       {caption ? (
         <ThemedText
           ellipsizeMode="tail"
@@ -89,6 +131,19 @@ export function ArticleImageBlock({
           {caption}
         </ThemedText>
       ) : null}
+      <ImageViewing
+        animationType="fade"
+        backgroundColor="#000000"
+        doubleTapToZoomEnabled
+        FooterComponent={ViewerFooter}
+        HeaderComponent={ViewerHeader}
+        imageIndex={0}
+        images={viewerImages}
+        onRequestClose={handleCloseViewer}
+        presentationStyle="overFullScreen"
+        swipeToCloseEnabled
+        visible={viewerOpen}
+      />
     </ThemedView>
   );
 }
