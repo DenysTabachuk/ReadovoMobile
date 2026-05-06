@@ -44,8 +44,10 @@ describe('ArticlesService', () => {
           query: {
             pages: {
               '1': {
-                extract: 'Article preview',
+                extract:
+                  'Article preview with enough detail for reading practice and a useful lesson preview about a broad topic with real context.',
                 fullurl: 'https://en.wikipedia.org/wiki/Example',
+                length: 6200,
                 pageid: 1,
                 thumbnail: {
                   source: 'https://upload.wikimedia.org/example.jpg',
@@ -76,8 +78,10 @@ describe('ArticlesService', () => {
     });
     expect(articles).toEqual([
       {
-        extract: 'Article preview',
+        extract:
+          'Article preview with enough detail for reading practice and a useful lesson preview about a broad topic with real context.',
         id: 1,
+        pageLength: 6200,
         thumbnailUrl: 'https://upload.wikimedia.org/example.jpg',
         title: 'Example',
         url: 'https://en.wikipedia.org/wiki/Example',
@@ -93,9 +97,13 @@ describe('ArticlesService', () => {
             pages: {
               '1': {
                 extract:
-                  'A function of a real variable (usually {\\displaystyle t}) can be mapped to {\\displaystyle s}.',
+                  'A function of a real variable (usually {\\displaystyle t}) can be mapped to {\\displaystyle s}, which makes the topic useful for a longer learning article.',
                 fullurl: 'https://en.wikipedia.org/wiki/Laplace_transform',
+                length: 9000,
                 pageid: 1,
+                thumbnail: {
+                  source: 'https://upload.wikimedia.org/laplace.jpg',
+                },
                 title: 'Laplace transform',
               },
             },
@@ -109,9 +117,10 @@ describe('ArticlesService', () => {
     expect(articles).toEqual([
       {
         extract:
-          'A function of a real variable (usually t) can be mapped to s.',
+          'A function of a real variable (usually t) can be mapped to s, which makes the topic useful for a longer learning article.',
         id: 1,
-        thumbnailUrl: undefined,
+        pageLength: 9000,
+        thumbnailUrl: 'https://upload.wikimedia.org/laplace.jpg',
         title: 'Laplace transform',
         url: 'https://en.wikipedia.org/wiki/Laplace_transform',
       },

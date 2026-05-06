@@ -8,7 +8,7 @@ type ThemeName = keyof typeof Colors;
 
 export const styles = StyleSheet.create({
   container: {
-    gap: Spacing.lg,
+    flex: 1,
   },
   collapsibleArrowExpanded: {
     transform: [{ rotate: '180deg' }],

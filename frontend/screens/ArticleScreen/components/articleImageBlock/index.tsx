@@ -73,10 +73,12 @@ export function ArticleImageBlock({
   return (
     <ThemedView style={styles.container}>
       <Image
+        cachePolicy="disk"
         contentFit="contain"
         onError={() => setHasLoadError(true)}
         source={{ uri: src }}
         style={styles.image}
+        transition={120}
       />
       {caption ? (
         <ThemedText

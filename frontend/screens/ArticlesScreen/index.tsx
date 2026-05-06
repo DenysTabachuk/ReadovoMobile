@@ -1,4 +1,4 @@
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useInfiniteQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { Image } from 'expo-image';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -17,6 +17,7 @@ import {
   type WikipediaArticle,
   type WikipediaArticleCategory,
 } from '@/api/wikipedia';
+import { DEFAULT_ARTICLE_LIMIT } from '@/api/wikipedia/constants';
 import { Button } from '@/components/button';
 import { ScreenContainer } from '@/components/screenContainer';
 import { ThemedText } from '@/components/themedText';
@@ -44,6 +45,7 @@ export default function ArticlesScreen() {
     useState<ArticlePreviewLengthFilter>('all');
   const [categoryFilter, setCategoryFilter] =
     useState<ArticleCategoryFilter>('all');
+  const [recommendedArticles, setRecommendedArticles] = useState(true);
   const [isManualRefresh, setIsManualRefresh] = useState(false);
 
   useEffect(() => {
@@ -57,48 +59,60 @@ export default function ArticlesScreen() {
   const {
     data,
     error,
+    fetchNextPage,
+    hasNextPage,
     isFetching,
+    isFetchingNextPage,
     isLoading,
     refetch,
-  } = useQuery({
+  } = useInfiniteQuery({
+    initialPageParam: [] as number[],
+    getNextPageParam: (lastPage, pages) => {
+      if (lastPage.length < DEFAULT_ARTICLE_LIMIT) {
+        return undefined;
+      }
+
+      return pages.flat().map((article) => article.id);
+    },
     placeholderData: keepPreviousData,
-    queryFn: () =>
+    queryFn: ({ pageParam }) =>
       fetchWikipediaArticles({
         category: categoryFilter as WikipediaArticleCategory,
+        excludeIds: pageParam,
+        previewLength: previewLengthFilter,
+        recommended: recommendedArticles,
         search: debouncedSearchValue,
       }),
-    queryKey: ['wikipedia', 'articles', debouncedSearchValue, categoryFilter],
+    queryKey: [
+      'wikipedia',
+      'articles',
+      debouncedSearchValue,
+      categoryFilter,
+      previewLengthFilter,
+      recommendedArticles,
+    ],
   });
-  const articles = data ?? [];
+  const articles = useMemo(() => {
+    const articleById = new Map<number, WikipediaArticle>();
+
+    for (const article of data?.pages.flat() ?? []) {
+      articleById.set(article.id, article);
+    }
+
+    return Array.from(articleById.values());
+  }, [data?.pages]);
   const shouldShowInitialLoader = isLoading && articles.length === 0;
   const shouldShowErrorState = Boolean(error) && articles.length === 0;
-  const isUpdatingResults = isFetching && !shouldShowInitialLoader;
-
-  const filteredArticles = useMemo(() => {
-    return articles.filter((article) => {
-      if (previewLengthFilter === 'all') {
-        return true;
-      }
-
-      const extractLength = article.extract.trim().length;
-
-      if (previewLengthFilter === 'short') {
-        return extractLength > 0 && extractLength <= 120;
-      }
-
-      if (previewLengthFilter === 'medium') {
-        return extractLength >= 121 && extractLength <= 220;
-      }
-
-      return extractLength >= 221;
-    });
-  }, [articles, previewLengthFilter]);
+  const isUpdatingResults =
+    isFetching && !isFetchingNextPage && !shouldShowInitialLoader;
+  const shouldShowLoadMore = articles.length > 0 && hasNextPage;
 
   const clearFilters = useCallback(() => {
     setSearchValue('');
     setDebouncedSearchValue('');
     setPreviewLengthFilter('all');
     setCategoryFilter('all');
+    setRecommendedArticles(true);
   }, []);
 
   const handleRefresh = useCallback(async () => {
@@ -110,6 +124,14 @@ export default function ArticlesScreen() {
       setIsManualRefresh(false);
     }
   }, [refetch]);
+
+  const handleLoadMore = useCallback(() => {
+    if (isFetchingNextPage || !hasNextPage) {
+      return;
+    }
+
+    void fetchNextPage();
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
   const openArticle = useCallback(
     (article: WikipediaArticle) => {
@@ -135,8 +157,11 @@ export default function ArticlesScreen() {
         {item.thumbnailUrl ? (
           <Image
             accessibilityIgnoresInvertColors
+            cachePolicy="disk"
+            contentFit="cover"
             source={{ uri: item.thumbnailUrl }}
             style={styles.articleImage}
+            transition={100}
           />
         ) : (
           <View style={[styles.imagePlaceholder, { borderColor }]}>
@@ -189,7 +214,7 @@ export default function ArticlesScreen() {
   return (
     <ScreenContainer style={styles.container}>
       <FlatList
-        data={filteredArticles}
+        data={articles}
         keyExtractor={(item) => String(item.id)}
         keyboardShouldPersistTaps="handled"
         ListHeaderComponent={
@@ -202,12 +227,14 @@ export default function ArticlesScreen() {
               categoryFilter={categoryFilter}
               isRefreshingResults={isUpdatingResults}
               isSearchActive={debouncedSearchValue.length > 0}
+              onChangeRecommendedArticles={setRecommendedArticles}
               onChangeCategoryFilter={setCategoryFilter}
               onChangePreviewLengthFilter={setPreviewLengthFilter}
               onChangeSearchValue={setSearchValue}
               onClearFilters={clearFilters}
               previewLengthFilter={previewLengthFilter}
-              resultCount={filteredArticles.length}
+              recommendedArticles={recommendedArticles}
+              resultCount={articles.length}
               searchValue={searchValue}
             />
           </View>
@@ -223,6 +250,20 @@ export default function ArticlesScreen() {
                 : t('articles.emptyFilterDescription')}
             </ThemedText>
           </View>
+        }
+        ListFooterComponent={
+          shouldShowLoadMore ? (
+            <View style={styles.loadMoreFooter}>
+              <Button
+                disabled={isFetchingNextPage}
+                onPress={handleLoadMore}
+                style={styles.loadMoreButton}>
+                {isFetchingNextPage
+                  ? t('articles.loadingMore')
+                  : t('articles.loadMore')}
+              </Button>
+            </View>
+          ) : null
         }
         refreshControl={
           <RefreshControl

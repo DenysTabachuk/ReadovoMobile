@@ -28,6 +28,7 @@ export type {
   WikipediaArticle,
   WikipediaArticleCategory,
   WikipediaArticleDetail,
+  WikipediaArticlePreviewLength,
 } from './types';
 
 export async function fetchWikipediaArticles(
@@ -43,6 +44,18 @@ export async function fetchWikipediaArticles(
 
   if (params.category && params.category !== 'all') {
     searchParams.set('category', params.category);
+  }
+
+  if (params.excludeIds?.length) {
+    searchParams.set('excludeIds', params.excludeIds.join(','));
+  }
+
+  if (params.previewLength && params.previewLength !== 'all') {
+    searchParams.set('previewLength', params.previewLength);
+  }
+
+  if (params.recommended !== undefined) {
+    searchParams.set('recommended', String(params.recommended));
   }
 
   const response = await fetch(`${API_BASE_URL}/articles?${searchParams.toString()}`);

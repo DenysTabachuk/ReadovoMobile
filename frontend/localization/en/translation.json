@@ -80,6 +80,7 @@
     "searchResults": "{{count}} articles found",
     "randomResults": "{{count}} articles in this set",
     "clearFilters": "Clear",
+    "recommendedLabel": "Recommended articles",
     "previewLengthLabel": "Description length",
     "previewLengthTitle": "Choose description length",
     "categoryLabel": "Category",
@@ -87,6 +88,8 @@
     "emptyTitle": "No articles found",
     "emptySearchDescription": "Try a shorter query or different keywords.",
     "emptyFilterDescription": "Change or clear the filters to see more articles.",
+    "loadMore": "Load more",
+    "loadingMore": "Loading more...",
     "filters": {
       "previewLength": {
         "all": "Any length",
@@ -96,7 +99,12 @@
       },
       "category": {
         "all": "All topics",
+        "biography": "People",
+        "food": "Food",
+        "geography": "Places",
         "history": "History",
+        "space": "Space",
+        "sports": "Sports",
         "science": "Science",
         "technology": "Technology",
         "nature": "Nature",

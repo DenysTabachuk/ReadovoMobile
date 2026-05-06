@@ -20,6 +20,26 @@ export const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: Spacing.sm,
   },
+  categoryChip: {
+    alignItems: 'center',
+    borderRadius: 999,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: Spacing.xs,
+    minHeight: 40,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+  },
+  categoryChipLabel: {
+    maxWidth: 120,
+  },
+  categoryList: {
+    gap: Spacing.sm,
+    paddingRight: Spacing.lg,
+  },
+  categorySection: {
+    gap: Spacing.xs,
+  },
   pickerField: {
     flex: 1,
     minWidth: 180,
@@ -46,6 +66,23 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     flexWrap: 'wrap',
+    gap: Spacing.sm,
+  },
+  recommendedToggle: {
+    alignItems: 'center',
+    borderRadius: 14,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: Spacing.md,
+    justifyContent: 'space-between',
+    minHeight: 52,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+  },
+  recommendedToggleLabel: {
+    alignItems: 'center',
+    flex: 1,
+    flexDirection: 'row',
     gap: Spacing.sm,
   },
   clearButton: {

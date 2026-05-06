@@ -65,6 +65,9 @@ export const styles = StyleSheet.create({
   infoText: {
     opacity: 0.8,
   },
+  listHeader: {
+    gap: Spacing.lg,
+  },
   wikipediaLink: {
     textDecorationLine: 'underline',
   },

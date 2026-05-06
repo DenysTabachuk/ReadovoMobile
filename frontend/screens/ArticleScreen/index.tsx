@@ -3,7 +3,7 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import * as Linking from 'expo-linking';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
+import { ActivityIndicator, Pressable, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { translateWord } from '@/api/translations';
@@ -379,59 +379,59 @@ export default function ArticleScreen() {
   return (
     <ScreenContainer style={styles.container}>
       <Stack.Screen options={{ title: article.title }} />
-      <ScrollView
+      <InteractiveArticleText
+        blocks={displayedBlocks}
         contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}>
-        {shouldRenderHeroImage ? (
-          <Image
-            contentFit="cover"
-            onError={() => setHasImageLoadError(true)}
-            source={{ uri: article.thumbnailUrl }}
-            style={styles.heroImage}
-          />
-        ) : null}
+        ListHeaderComponent={
+          <View style={styles.listHeader}>
+            {shouldRenderHeroImage ? (
+              <Image
+                cachePolicy="disk"
+                contentFit="cover"
+                onError={() => setHasImageLoadError(true)}
+                source={{ uri: article.thumbnailUrl }}
+                style={styles.heroImage}
+                transition={120}
+              />
+            ) : null}
 
-        <View style={styles.header}>
-          <ThemedText type="screenTitle">{article.title}</ThemedText>
-          <Pressable onPress={() => Linking.openURL(article.url)}>
-            <ThemedText type="bodyStrong" style={styles.wikipediaLink}>
-              {t('article.openOriginal')}
-            </ThemedText>
-          </Pressable>
-        </View>
+            <View style={styles.header}>
+              <ThemedText type="screenTitle">{article.title}</ThemedText>
+              <Pressable onPress={() => Linking.openURL(article.url)}>
+                <ThemedText type="bodyStrong" style={styles.wikipediaLink}>
+                  {t('article.openOriginal')}
+                </ThemedText>
+              </Pressable>
+            </View>
 
-        {adaptedArticle ? (
-          <View style={styles.articleMeta}>
-            <ThemedText type="description" style={styles.infoText}>
-              {showAdaptedText
-                ? t('article.adaptedState', {
-                    adaptedLength: adaptedArticle.adaptedLength,
-                    level: adaptedArticle.level,
-                    originalLength: adaptedArticle.originalLength,
-                    targetLength: adaptedArticle.targetLength
-                      ? t(`article.lengths.${adaptedArticle.targetLength}`)
-                      : t('article.lengths.original'),
-                  })
-                : t('article.originalState', {
-                    level: adaptedArticle.level,
-                    originalLength: adaptedArticle.originalLength,
-                    targetLength: adaptedArticle.targetLength
-                      ? t(`article.lengths.${adaptedArticle.targetLength}`)
-                      : t('article.lengths.original'),
-                  })}
-            </ThemedText>
+            {adaptedArticle ? (
+              <View style={styles.articleMeta}>
+                <ThemedText type="description" style={styles.infoText}>
+                  {showAdaptedText
+                    ? t('article.adaptedState', {
+                        adaptedLength: adaptedArticle.adaptedLength,
+                        level: adaptedArticle.level,
+                        originalLength: adaptedArticle.originalLength,
+                        targetLength: adaptedArticle.targetLength
+                          ? t(`article.lengths.${adaptedArticle.targetLength}`)
+                          : t('article.lengths.original'),
+                      })
+                    : t('article.originalState', {
+                        level: adaptedArticle.level,
+                        originalLength: adaptedArticle.originalLength,
+                        targetLength: adaptedArticle.targetLength
+                          ? t(`article.lengths.${adaptedArticle.targetLength}`)
+                          : t('article.lengths.original'),
+                      })}
+                </ThemedText>
+              </View>
+            ) : null}
           </View>
-        ) : null}
-
-        <View style={styles.articleContent}>
-          <InteractiveArticleText
-            blocks={displayedBlocks}
-            onWordPress={handleWordPress}
-            selectedTokenKey={selectedWord?.tokenKey}
-            text={displayedText}
-          />
-        </View>
-      </ScrollView>
+        }
+        onWordPress={handleWordPress}
+        selectedTokenKey={selectedWord?.tokenKey}
+        text={displayedText}
+      />
       <WordTranslationSheet
         context={selectedWord?.context}
         error={Boolean(translationError)}

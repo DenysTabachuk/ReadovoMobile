@@ -80,6 +80,7 @@
     "searchResults": "Знайдено статей: {{count}}",
     "randomResults": "Статей у добірці: {{count}}",
     "clearFilters": "Очистити",
+    "recommendedLabel": "Рекомендовані статті",
     "previewLengthLabel": "Довжина опису",
     "previewLengthTitle": "Оберіть довжину опису",
     "categoryLabel": "Категорія",
@@ -87,6 +88,8 @@
     "emptyTitle": "Статей не знайдено",
     "emptySearchDescription": "Спробуйте коротший запит або інші ключові слова.",
     "emptyFilterDescription": "Змініть або очистіть фільтри, щоб побачити більше статей.",
+    "loadMore": "Завантажити ще",
+    "loadingMore": "Завантажуємо ще...",
     "filters": {
       "previewLength": {
         "all": "Будь-яка довжина",
@@ -96,7 +99,12 @@
       },
       "category": {
         "all": "Усі теми",
+        "biography": "Люди",
+        "food": "Їжа",
+        "geography": "Місця",
         "history": "Історія",
+        "space": "Космос",
+        "sports": "Спорт",
         "science": "Наука",
         "technology": "Технології",
         "nature": "Природа",

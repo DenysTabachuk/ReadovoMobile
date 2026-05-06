@@ -29,6 +29,7 @@ import {
   type WikipediaArticle,
   type WikipediaArticleCategory,
   type WikipediaArticleDetail,
+  type WikipediaArticlePreviewLength,
   type WikipediaPage,
 } from './types';
 
@@ -37,17 +38,277 @@ const DEFAULT_SIMPLIFICATION_LEVEL: ArticleSimplificationLevel = 'A2';
 const DEFAULT_TARGET_LENGTH: ArticleSimplificationTargetLength = 'short';
 const GROQ_MODEL = 'llama-3.3-70b-versatile';
 const MAX_ARTICLE_LIMIT = 50;
+const MIN_BROWSE_EXTRACT_LENGTH = 90;
+const MIN_BROWSE_PAGE_LENGTH = 5000;
+const MIN_RECOMMENDED_EXTRACT_LENGTH = 80;
+const MIN_RECOMMENDED_PAGE_LENGTH = 4500;
+const MIN_SEARCH_EXTRACT_LENGTH = 60;
+const MIN_SEARCH_PAGE_LENGTH = 1800;
 const WIKIMEDIA_USER_AGENT = 'Readovo/1.0';
 const WIKIPEDIA_LANGUAGE_CODE = 'en';
 const WIKIPEDIA_CATEGORY_TITLES: Record<
   Exclude<WikipediaArticleCategory, 'all'>,
   string
 > = {
+  biography: 'Biography',
   culture: 'Culture',
+  food: 'Food and drink',
+  geography: 'Geography',
   history: 'History',
   nature: 'Nature',
   science: 'Science',
+  space: 'Outer space',
+  sports: 'Sports',
   technology: 'Technology',
+};
+const WIKIPEDIA_CATEGORY_SEARCH_TERMS: Record<
+  Exclude<WikipediaArticleCategory, 'all'>,
+  string
+> = {
+  biography: 'famous biography',
+  culture: 'culture art',
+  food: 'food cuisine',
+  geography: 'geography places',
+  history: 'history civilization',
+  nature: 'nature environment',
+  science: 'science discovery',
+  space: 'space astronomy',
+  sports: 'sport championship',
+  technology: 'technology invention',
+};
+const WIKIPEDIA_EXCLUDED_TITLE_PATTERNS = [
+  /^Category:/i,
+  /^Glossary of/i,
+  /^Index of/i,
+  /^List of/i,
+  /^Outline of/i,
+  /^Timeline of/i,
+  /\(disambiguation\)$/i,
+];
+const RECOMMENDED_ARTICLE_TITLES: Record<
+  Exclude<WikipediaArticleCategory, 'all'>,
+  string[]
+> = {
+  biography: [
+    'Albert Einstein',
+    'Marie Curie',
+    'Nikola Tesla',
+    'Ada Lovelace',
+    'Cleopatra',
+    'Nelson Mandela',
+    'Mahatma Gandhi',
+    'Frida Kahlo',
+    'Charles Darwin',
+    'Amelia Earhart',
+    'Leonardo da Vinci',
+    'William Shakespeare',
+    'Isaac Newton',
+    'Martin Luther King Jr.',
+    'Florence Nightingale',
+    'Alan Turing',
+    'Jane Austen',
+    'Galileo Galilei',
+    'Alexander the Great',
+    'Queen Victoria',
+  ],
+  culture: [
+    'Renaissance',
+    'Impressionism',
+    'Jazz',
+    'Cinema',
+    'Architecture',
+    'Greek mythology',
+    'Photography',
+    'Ballet',
+    'Opera',
+    'Hip hop music',
+    'Modern art',
+    'Theatre',
+    'Calligraphy',
+    'Fashion',
+    'Manga',
+    'Museum',
+    'Street art',
+    'Classical music',
+    'Animation',
+    'World Heritage Site',
+  ],
+  food: [
+    'Coffee',
+    'Chocolate',
+    'Pizza',
+    'Sushi',
+    'Tea',
+    'Bread',
+    'Wine',
+    'Cheese',
+    'Curry',
+    'Ice cream',
+    'Pasta',
+    'Honey',
+    'Rice',
+    'Olive oil',
+    'Fermentation',
+    'Cuisine',
+    'Hamburger',
+    'Apple',
+    'Spice',
+    'Baking',
+  ],
+  geography: [
+    'Grand Canyon',
+    'Sahara',
+    'Nile',
+    'Himalayas',
+    'New York City',
+    'London',
+    'Japan',
+    'Ukraine',
+    'Mediterranean Sea',
+    'Great Wall of China',
+    'Amazon River',
+    'Alps',
+    'Iceland',
+    'Venice',
+    'Pacific Ocean',
+    'Istanbul',
+    'Machu Picchu',
+    'Yellowstone National Park',
+    'Arctic',
+    'Singapore',
+  ],
+  history: [
+    'Ancient Egypt',
+    'Roman Empire',
+    'Vikings',
+    'Silk Road',
+    'World War II',
+    'Cold War',
+    'Industrial Revolution',
+    'French Revolution',
+    'Byzantine Empire',
+    'Mongol Empire',
+    'History of writing',
+    'Age of Discovery',
+    'American Revolution',
+    'Ottoman Empire',
+    'Maya civilization',
+    'Great Fire of London',
+    'Berlin Wall',
+    'Space Race',
+    'Renaissance',
+    'Printing press',
+  ],
+  nature: [
+    'Amazon rainforest',
+    'Great Barrier Reef',
+    'Mount Everest',
+    'Ocean',
+    'Volcano',
+    'Antarctica',
+    'Rainforest',
+    'Coral reef',
+    'Yellowstone National Park',
+    'Water cycle',
+    'Earthquake',
+    'Desert',
+    'Glacier',
+    'Climate change',
+    'Biodiversity',
+    'Tsunami',
+    'Aurora',
+    'Monsoon',
+    'Wetland',
+    'Everglades',
+  ],
+  science: [
+    'Evolution',
+    'Periodic table',
+    'Photosynthesis',
+    'DNA',
+    'Quantum mechanics',
+    'Plate tectonics',
+    'Vaccine',
+    'Human brain',
+    'Electricity',
+    'Gravity',
+    'Atom',
+    'Dinosaur',
+    'Penicillin',
+    'Relativity',
+    'Ecosystem',
+    'Microscope',
+    'Gene',
+    'Radioactivity',
+    'Fossil',
+    'Scientific method',
+  ],
+  space: [
+    'Moon',
+    'Mars',
+    'Jupiter',
+    'Milky Way',
+    'International Space Station',
+    'Hubble Space Telescope',
+    'Space exploration',
+    'Apollo 11',
+    'James Webb Space Telescope',
+    'Exoplanet',
+    'Solar System',
+    'Sun',
+    'Saturn',
+    'Black hole',
+    'Comet',
+    'Asteroid belt',
+    'Space Shuttle',
+    'Voyager program',
+    'Nebula',
+    'Big Bang',
+  ],
+  sports: [
+    'Association football',
+    'Basketball',
+    'Olympic Games',
+    'Tennis',
+    'Formula One',
+    'Cricket',
+    'Baseball',
+    'Rugby union',
+    'Swimming (sport)',
+    'Athletics (sport)',
+    'Boxing',
+    'Ice hockey',
+    'Volleyball',
+    'Cycling',
+    'Skiing',
+    'Surfing',
+    'Chess',
+    'Marathon',
+    'FIFA World Cup',
+    'Tour de France',
+  ],
+  technology: [
+    'Internet',
+    'Artificial intelligence',
+    'Smartphone',
+    'Electric car',
+    'Robotics',
+    'Computer',
+    'Renewable energy',
+    'Printing press',
+    'Steam engine',
+    'Blockchain',
+    'Video game',
+    'Virtual reality',
+    'Satellite',
+    '3D printing',
+    'Semiconductor',
+    'Battery',
+    'Electricity generation',
+    'Telephone',
+    'World Wide Web',
+    'Machine learning',
+  ],
 };
 const nodeRequire = createRequire(__filename);
 
@@ -70,6 +331,12 @@ type MathJaxModule = {
   ) => Promise<unknown>;
 };
 
+type ArticlePreviewQualityOptions = {
+  minExtractLength: number;
+  minPageLength: number;
+  requireThumbnail: boolean;
+};
+
 @Injectable()
 export class ArticlesService {
   private readonly logger = new Logger(ArticlesService.name);
@@ -85,7 +352,47 @@ export class ArticlesService {
       articleParams.limit ?? DEFAULT_ARTICLE_LIMIT,
     );
     const category = articleParams.category ?? 'all';
+    const excludeIds = articleParams.excludeIds ?? [];
+    const previewLength = articleParams.previewLength ?? 'all';
     const search = articleParams.search?.trim();
+    const shouldUseRecommendedArticles =
+      articleParams.recommended !== false && !search;
+
+    if (shouldUseRecommendedArticles) {
+      return this.getRecommendedArticles({
+        category,
+        excludeIds,
+        limit: normalizedLimit,
+        previewLength,
+      });
+    }
+
+    return this.getLiveArticles({
+      category,
+      excludeIds,
+      limit: normalizedLimit,
+      previewLength,
+      search,
+    });
+  }
+
+  async getRandomArticles(
+    limit = DEFAULT_ARTICLE_LIMIT,
+  ): Promise<WikipediaArticle[]> {
+    return this.getArticles({ limit, recommended: false });
+  }
+
+  private async getLiveArticles(params: {
+    category: WikipediaArticleCategory;
+    excludeIds?: number[];
+    limit: number;
+    previewLength: WikipediaArticlePreviewLength;
+    search?: string;
+  }): Promise<WikipediaArticle[]> {
+    const search = params.search;
+    const requestLimit = search
+      ? Math.min(MAX_ARTICLE_LIMIT, params.limit * 3)
+      : Math.min(MAX_ARTICLE_LIMIT, params.limit * 4);
     const queryParams = new URLSearchParams({
       action: 'query',
       exintro: '1',
@@ -95,42 +402,126 @@ export class ArticlesService {
       inprop: 'url',
       origin: '*',
       piprop: 'thumbnail',
-      pithumbsize: '320',
+      pithumbsize: '200',
       prop: 'extracts|pageimages|info',
       redirects: '1',
     });
 
     if (search) {
       queryParams.set('generator', 'search');
-      queryParams.set('gsrsearch', this.buildSearchQuery(search, category));
-      queryParams.set('gsrlimit', String(normalizedLimit));
-      queryParams.set('gsrnamespace', '0');
-    } else if (category !== 'all') {
-      queryParams.set('generator', 'categorymembers');
       queryParams.set(
-        'gcmtitle',
-        `Category:${WIKIPEDIA_CATEGORY_TITLES[category]}`,
+        'gsrsearch',
+        this.buildSearchQuery(search, params.category),
       );
-      queryParams.set('gcmlimit', String(normalizedLimit));
-      queryParams.set('gcmnamespace', '0');
-      queryParams.set('gcmtype', 'page');
+      queryParams.set('gsrlimit', String(requestLimit));
+      queryParams.set('gsrnamespace', '0');
+    } else if (params.category !== 'all') {
+      queryParams.set('generator', 'search');
+      queryParams.set(
+        'gsrsearch',
+        this.buildSearchQuery(
+          WIKIPEDIA_CATEGORY_SEARCH_TERMS[params.category],
+          params.category,
+        ),
+      );
+      queryParams.set('gsrlimit', String(requestLimit));
+      queryParams.set('gsrnamespace', '0');
     } else {
       queryParams.set('generator', 'random');
-      queryParams.set('grnlimit', String(normalizedLimit));
+      queryParams.set('grnlimit', String(requestLimit));
       queryParams.set('grnnamespace', '0');
     }
 
     const data = await this.fetchWikipediaResponse(queryParams);
+    const qualityOptions = search
+      ? {
+          minExtractLength: MIN_SEARCH_EXTRACT_LENGTH,
+          minPageLength: MIN_SEARCH_PAGE_LENGTH,
+          requireThumbnail: false,
+        }
+      : {
+          minExtractLength: MIN_BROWSE_EXTRACT_LENGTH,
+          minPageLength: MIN_BROWSE_PAGE_LENGTH,
+          requireThumbnail: true,
+        };
+    const excludedIds = new Set(params.excludeIds ?? []);
 
     return this.getPagesFromResponse(data)
-      .filter((page) => Boolean(page.extract && page.fullurl))
-      .map((page) => this.mapPageToArticle(page));
+      .filter((page) => !excludedIds.has(page.pageid))
+      .filter((page) =>
+        this.isUsableArticlePreview(page, qualityOptions, params.previewLength),
+      )
+      .map((page) => this.mapPageToArticle(page))
+      .slice(0, params.limit);
   }
 
-  async getRandomArticles(
-    limit = DEFAULT_ARTICLE_LIMIT,
-  ): Promise<WikipediaArticle[]> {
-    return this.getArticles({ limit });
+  private async getRecommendedArticles(params: {
+    category: WikipediaArticleCategory;
+    excludeIds: number[];
+    limit: number;
+    previewLength: WikipediaArticlePreviewLength;
+  }): Promise<WikipediaArticle[]> {
+    const titles = this.getRecommendedArticleTitles(
+      params.category,
+      params.limit,
+    );
+    const queryParams = new URLSearchParams({
+      action: 'query',
+      exintro: '1',
+      explaintext: '1',
+      exsentences: '2',
+      format: 'json',
+      inprop: 'url',
+      origin: '*',
+      piprop: 'thumbnail',
+      pithumbsize: '200',
+      prop: 'extracts|pageimages|info',
+      redirects: '1',
+      titles: titles.join('|'),
+    });
+    const data = await this.fetchWikipediaResponse(queryParams);
+    const titleRank = new Map(
+      titles.map((title, index) => [this.normalizeTitle(title), index]),
+    );
+    const excludedIds = new Set(params.excludeIds);
+
+    const recommendedArticles = this.getPagesFromResponse(data)
+      .filter((page) => !excludedIds.has(page.pageid))
+      .filter((page) =>
+        this.isUsableArticlePreview(
+          page,
+          {
+            minExtractLength: MIN_RECOMMENDED_EXTRACT_LENGTH,
+            minPageLength: MIN_RECOMMENDED_PAGE_LENGTH,
+            requireThumbnail: true,
+          },
+          params.previewLength,
+        ),
+      )
+      .sort(
+        (left, right) =>
+          (titleRank.get(this.normalizeTitle(left.title)) ??
+            Number.MAX_SAFE_INTEGER) -
+          (titleRank.get(this.normalizeTitle(right.title)) ??
+            Number.MAX_SAFE_INTEGER),
+      )
+      .map((page) => this.mapPageToArticle(page));
+
+    if (recommendedArticles.length >= params.limit) {
+      return recommendedArticles.slice(0, params.limit);
+    }
+
+    const fallbackArticles = await this.getLiveArticles({
+      category: params.category,
+      excludeIds: [
+        ...params.excludeIds,
+        ...recommendedArticles.map((article) => article.id),
+      ],
+      limit: params.limit - recommendedArticles.length,
+      previewLength: params.previewLength,
+    });
+
+    return [...recommendedArticles, ...fallbackArticles].slice(0, params.limit);
   }
 
   async getArticleDetail(pageId: number): Promise<WikipediaArticleDetail> {
@@ -141,7 +532,7 @@ export class ArticlesService {
       origin: '*',
       pageids: String(pageId),
       piprop: 'thumbnail',
-      pithumbsize: '640',
+      pithumbsize: '480',
       prop: 'pageimages|info',
       redirects: '1',
     });
@@ -523,6 +914,85 @@ export class ArticlesService {
     return `${search} incategory:"${WIKIPEDIA_CATEGORY_TITLES[category]}"`;
   }
 
+  private getRecommendedArticleTitles(
+    category: WikipediaArticleCategory,
+    limit: number,
+  ): string[] {
+    const pool =
+      category === 'all'
+        ? Object.values(RECOMMENDED_ARTICLE_TITLES).flat()
+        : RECOMMENDED_ARTICLE_TITLES[category];
+    const uniqueTitles = Array.from(new Set(pool));
+    const titleCount = Math.min(
+      uniqueTitles.length,
+      Math.max(limit, Math.min(MAX_ARTICLE_LIMIT, limit * 3)),
+    );
+
+    return this.shuffle(uniqueTitles).slice(0, titleCount);
+  }
+
+  private isUsableArticlePreview(
+    page: WikipediaPage,
+    options: ArticlePreviewQualityOptions,
+    previewLength: WikipediaArticlePreviewLength,
+  ): boolean {
+    const title = sanitizeWikipediaText(page.title).trim();
+    const extract = sanitizeWikipediaText(page.extract ?? '').trim();
+
+    if (!page.fullurl || !title || !extract) {
+      return false;
+    }
+
+    if (
+      WIKIPEDIA_EXCLUDED_TITLE_PATTERNS.some((pattern) => pattern.test(title))
+    ) {
+      return false;
+    }
+
+    if (options.requireThumbnail && !page.thumbnail?.source) {
+      return false;
+    }
+
+    if (extract.length < options.minExtractLength) {
+      return false;
+    }
+
+    if ((page.length ?? 0) < options.minPageLength) {
+      return false;
+    }
+
+    return this.isMatchingPreviewLength(extract, previewLength);
+  }
+
+  private isMatchingPreviewLength(
+    extract: string,
+    previewLength: WikipediaArticlePreviewLength,
+  ): boolean {
+    const extractLength = extract.trim().length;
+
+    if (previewLength === 'all') {
+      return true;
+    }
+
+    if (previewLength === 'short') {
+      return extractLength > 0 && extractLength <= 120;
+    }
+
+    if (previewLength === 'medium') {
+      return extractLength >= 121 && extractLength <= 220;
+    }
+
+    return extractLength >= 221;
+  }
+
+  private normalizeTitle(title: string): string {
+    return title.replaceAll('_', ' ').trim().toLowerCase();
+  }
+
+  private shuffle<T>(items: T[]): T[] {
+    return [...items].sort(() => Math.random() - 0.5);
+  }
+
   private createWikipediaRequestUrl(params: URLSearchParams): string {
     return `https://${WIKIPEDIA_LANGUAGE_CODE}.wikipedia.org/w/api.php?${params.toString()}`;
   }
@@ -541,6 +1011,7 @@ export class ArticlesService {
     return {
       extract: sanitizeWikipediaText(page.extract ?? ''),
       id: page.pageid,
+      pageLength: page.length,
       thumbnailUrl: page.thumbnail?.source,
       title: sanitizeWikipediaText(page.title),
       url: page.fullurl ?? '',

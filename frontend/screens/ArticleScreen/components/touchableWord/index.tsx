@@ -1,3 +1,5 @@
+import { memo, useCallback } from 'react';
+
 import { ThemedText } from '@/components/themedText';
 
 import { styles } from './styles';
@@ -17,7 +19,7 @@ type TouchableWordProps = {
   word: string;
 };
 
-export function TouchableWord({
+export const TouchableWord = memo(function TouchableWord({
   bold,
   contextSentence,
   italic,
@@ -27,15 +29,17 @@ export function TouchableWord({
   tokenKey,
   word,
 }: TouchableWordProps) {
+  const handlePress = useCallback(() => {
+    onPress({
+      context: contextSentence ?? '',
+      tokenKey,
+      word,
+    });
+  }, [contextSentence, onPress, tokenKey, word]);
+
   return (
     <ThemedText
-      onPress={() =>
-        onPress({
-          context: contextSentence ?? '',
-          tokenKey,
-          word,
-        })
-      }
+      onPress={handlePress}
       style={[
         styles.word,
         bold ? styles.bold : null,
@@ -47,4 +51,4 @@ export function TouchableWord({
       {text}
     </ThemedText>
   );
-}
+});

@@ -2,19 +2,34 @@ export type WikipediaArticle = {
   id: number;
   title: string;
   extract: string;
+  pageLength?: number;
   url: string;
   thumbnailUrl?: string;
 };
 
 export type FetchWikipediaArticlesParams = {
   category?: WikipediaArticleCategory;
+  excludeIds?: number[];
   limit?: number;
+  previewLength?: WikipediaArticlePreviewLength;
+  recommended?: boolean;
   search?: string;
 };
 
+export type WikipediaArticlePreviewLength =
+  | 'all'
+  | 'short'
+  | 'medium'
+  | 'long';
+
 export type WikipediaArticleCategory =
   | 'all'
+  | 'biography'
+  | 'food'
+  | 'geography'
   | 'history'
+  | 'space'
+  | 'sports'
   | 'science'
   | 'technology'
   | 'nature'

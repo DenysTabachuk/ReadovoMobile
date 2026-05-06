@@ -18,6 +18,7 @@ import {
   type SimplifyArticleResponse,
   type WikipediaArticle,
   type WikipediaArticleCategory,
+  type WikipediaArticlePreviewLength,
   type WikipediaArticleDetail,
 } from './types';
 
@@ -30,13 +31,24 @@ const SIMPLIFICATION_LEVELS: ArticleSimplificationLevel[] = [
 ];
 const ARTICLE_CATEGORIES: WikipediaArticleCategory[] = [
   'all',
+  'biography',
+  'food',
+  'geography',
   'history',
+  'space',
+  'sports',
   'science',
   'technology',
   'nature',
   'culture',
 ];
 const TARGET_LENGTHS: ArticleSimplificationTargetLength[] = [
+  'short',
+  'medium',
+  'long',
+];
+const PREVIEW_LENGTHS: WikipediaArticlePreviewLength[] = [
+  'all',
   'short',
   'medium',
   'long',
@@ -66,13 +78,21 @@ export class ArticlesController {
   @Get('articles')
   async getArticles(
     @Query('category') category?: string,
+    @Query('excludeIds') excludeIds?: string,
     @Query('limit') limit?: string,
+    @Query('previewLength') previewLength?: string,
+    @Query('recommended') recommended?: string,
     @Query('search') search?: string,
   ): Promise<WikipediaArticle[]> {
     const parsedLimit = limit === undefined ? undefined : Number(limit);
     const normalizedCategory = category?.trim().toLowerCase() as
       | WikipediaArticleCategory
       | undefined;
+    const normalizedPreviewLength = previewLength?.trim().toLowerCase() as
+      | WikipediaArticlePreviewLength
+      | undefined;
+    const normalizedRecommended = recommended?.trim().toLowerCase();
+    const parsedExcludeIds = this.parseExcludeIds(excludeIds);
 
     if (limit !== undefined && !Number.isFinite(parsedLimit)) {
       throw new BadRequestException('Article limit must be a number.');
@@ -85,11 +105,49 @@ export class ArticlesController {
       throw new BadRequestException('Article category is invalid.');
     }
 
+    if (
+      normalizedPreviewLength !== undefined &&
+      !PREVIEW_LENGTHS.includes(normalizedPreviewLength)
+    ) {
+      throw new BadRequestException('Preview length is invalid.');
+    }
+
+    if (
+      normalizedRecommended !== undefined &&
+      normalizedRecommended !== 'true' &&
+      normalizedRecommended !== 'false'
+    ) {
+      throw new BadRequestException('Recommended flag is invalid.');
+    }
+
     return this.articlesService.getArticles({
       category: normalizedCategory,
+      excludeIds: parsedExcludeIds,
       limit: parsedLimit,
+      previewLength: normalizedPreviewLength,
+      recommended:
+        normalizedRecommended === undefined
+          ? undefined
+          : normalizedRecommended === 'true',
       search,
     });
+  }
+
+  private parseExcludeIds(excludeIds?: string): number[] | undefined {
+    if (!excludeIds?.trim()) {
+      return undefined;
+    }
+
+    const parsedIds = excludeIds
+      .split(',')
+      .map((id) => Number(id.trim()))
+      .filter((id) => Number.isInteger(id) && id > 0);
+
+    if (parsedIds.length === 0) {
+      throw new BadRequestException('Excluded article ids are invalid.');
+    }
+
+    return Array.from(new Set(parsedIds));
   }
 
   @Get('articles/:id')

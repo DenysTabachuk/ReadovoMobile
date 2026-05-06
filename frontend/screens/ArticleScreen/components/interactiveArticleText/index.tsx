@@ -1,6 +1,20 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useMemo, useState } from 'react';
-import { Pressable, View } from 'react-native';
+import {
+  memo,
+  useCallback,
+  useMemo,
+  useState,
+  type ReactElement,
+} from 'react';
+import {
+  FlatList,
+  Pressable,
+  View,
+  type ListRenderItem,
+  type StyleProp,
+  type TextStyle,
+  type ViewStyle,
+} from 'react-native';
 
 import {
   type ArticleBlock,
@@ -18,6 +32,8 @@ import { styles } from './styles';
 
 type InteractiveArticleTextProps = {
   blocks?: ArticleBlock[];
+  contentContainerStyle?: StyleProp<ViewStyle>;
+  ListHeaderComponent?: ReactElement | null;
   onWordPress: (selection: {
     context: string;
     tokenKey: string;
@@ -25,6 +41,12 @@ type InteractiveArticleTextProps = {
   }) => void;
   selectedTokenKey?: string;
   text?: string;
+};
+
+type ArticleBlockListItem = {
+  block: ArticleBlock;
+  key: string;
+  sourceIndex: number;
 };
 
 type SentenceRange = {
@@ -50,12 +72,43 @@ type TouchableTextPart =
       word: string;
     };
 
+type TouchableInlineTextProps = {
+  nodes: InlineNode[];
+  onWordPress: InteractiveArticleTextProps['onWordPress'];
+  prefix: string;
+  selectedTokenKey?: string;
+  style: StyleProp<TextStyle>;
+};
+
+type TouchableListItemProps = {
+  item: InlineNode[];
+  itemIndex: number;
+  onWordPress: InteractiveArticleTextProps['onWordPress'];
+  ordered: boolean;
+  prefix: string;
+  selectedTokenKey?: string;
+};
+
 const LIST_ITEM_PATTERN = /^([*#-]+|[\u2022\u25cf\u25aa\u25e6]+|[A-Za-z0-9]+[.)])\s*(.*)$/;
 const SECTION_HEADING_PATTERN = /^(={2,})\s*(.*?)\s*\1$/;
 const SENTENCE_PATTERN = /[^.!?\n]+(?:[.!?]+(?=\s|$)|$)|\n+/g;
 
+// FlatList virtualization tuning for large articles:
+// - INITIAL_RENDER_BLOCK_COUNT: blocks rendered immediately when the screen opens.
+// - MAX_RENDER_BATCH_SIZE: max blocks added in one background render batch.
+// - RENDER_BATCH_INTERVAL_MS: delay between render batches; higher values reduce JS pressure.
+// - VIRTUALIZED_WINDOW_SIZE: number of viewport-heights kept mounted around the visible area.
+const INITIAL_RENDER_BLOCK_COUNT = 10;
+const MAX_RENDER_BATCH_SIZE = 10;
+const RENDER_BATCH_INTERVAL_MS = 50;
+const VIRTUALIZED_WINDOW_SIZE = 9;
+
+
+
 export function InteractiveArticleText({
   blocks,
+  contentContainerStyle,
+  ListHeaderComponent,
   onWordPress,
   selectedTokenKey,
   text,
@@ -69,18 +122,66 @@ export function InteractiveArticleText({
 
     return parsePlainTextToBlocks(text ?? '');
   }, [blocks, text]);
+  const visibleBlockItems = useMemo(() => {
+    const activeCollapsedLevels: number[] = [];
+    const items: ArticleBlockListItem[] = [];
 
-  const renderBlock = (block: ArticleBlock, blockKey: string) => {
+    resolvedBlocks.forEach((block, index) => {
+      if (block.type === 'heading') {
+        for (
+          let levelIndex = activeCollapsedLevels.length - 1;
+          levelIndex >= 0;
+          levelIndex -= 1
+        ) {
+          if (activeCollapsedLevels[levelIndex] >= block.level) {
+            activeCollapsedLevels.splice(levelIndex, 1);
+          }
+        }
+
+        const isHiddenByAncestor = activeCollapsedLevels.length > 0;
+        const headingKey = createHeadingKey(block, index);
+        const isCollapsed = Boolean(collapsedHeadings[headingKey]);
+
+        if (isCollapsed) {
+          activeCollapsedLevels.push(block.level);
+        }
+
+        if (!isHiddenByAncestor) {
+          items.push({
+            block,
+            key: headingKey,
+            sourceIndex: index,
+          });
+        }
+
+        return;
+      }
+
+      if (activeCollapsedLevels.length > 0) {
+        return;
+      }
+
+      items.push({
+        block,
+        key: `block-${index}`,
+        sourceIndex: index,
+      });
+    });
+
+    return items;
+  }, [collapsedHeadings, resolvedBlocks]);
+
+  const renderBlock = useCallback((block: ArticleBlock, blockKey: string) => {
     if (block.type === 'paragraph') {
       return (
-        <ThemedText key={blockKey} style={styles.paragraph} type="paragraph">
-          {renderTouchableParts({
-            nodes: block.children,
-            onWordPress,
-            prefix: blockKey,
-            selectedTokenKey,
-          })}
-        </ThemedText>
+        <TouchableInlineText
+          key={blockKey}
+          nodes={block.children}
+          onWordPress={onWordPress}
+          prefix={blockKey}
+          selectedTokenKey={selectedTokenKey}
+          style={styles.paragraph}
+        />
       );
     }
 
@@ -88,19 +189,15 @@ export function InteractiveArticleText({
       return (
         <View key={blockKey} style={styles.list}>
           {block.items.map((item, itemIndex) => (
-            <View key={`${blockKey}-item-${itemIndex}`} style={styles.listItem}>
-              <ThemedText style={styles.listBullet} type="paragraph">
-                {block.ordered ? `${itemIndex + 1}.` : '\u2022'}
-              </ThemedText>
-              <ThemedText style={styles.listItemText} type="paragraph">
-                {renderTouchableParts({
-                  nodes: item,
-                  onWordPress,
-                  prefix: `${blockKey}-item-${itemIndex}`,
-                  selectedTokenKey,
-                })}
-              </ThemedText>
-            </View>
+            <TouchableListItem
+              item={item}
+              itemIndex={itemIndex}
+              key={`${blockKey}-item-${itemIndex}`}
+              onWordPress={onWordPress}
+              ordered={block.ordered}
+              prefix={`${blockKey}-item-${itemIndex}`}
+              selectedTokenKey={selectedTokenKey}
+            />
           ))}
         </View>
       );
@@ -144,73 +241,64 @@ export function InteractiveArticleText({
         src={block.src}
       />
     );
-  };
+  }, [onWordPress, selectedTokenKey]);
+  const renderItem = useCallback<ListRenderItem<ArticleBlockListItem>>(
+    ({ item }) => {
+      const { block } = item;
+
+      if (block.type === 'heading') {
+        const isCollapsed = Boolean(collapsedHeadings[item.key]);
+
+        return (
+          <Pressable
+            onPress={() =>
+              setCollapsedHeadings((current) => ({
+                ...current,
+                [item.key]: !current[item.key],
+              }))
+            }
+            style={styles.collapsibleHeading}>
+            <ThemedText
+              style={[
+                styles.heading,
+                block.level === 1 ? styles.headingLevel1 : null,
+                block.level === 2 ? styles.headingLevel2 : null,
+                block.level === 3 ? styles.headingLevel3 : null,
+              ]}
+              type={getHeadingTypographyType(block.level)}>
+              {block.text}
+            </ThemedText>
+            <Ionicons
+              color={chevronColor}
+              name="chevron-down"
+              size={18}
+              style={isCollapsed ? null : styles.collapsibleArrowExpanded}
+            />
+          </Pressable>
+        );
+      }
+
+      return renderBlock(block, item.key);
+    },
+    [chevronColor, collapsedHeadings, renderBlock],
+  );
 
   return (
-    <View style={styles.container}>
-      {(() => {
-        const activeCollapsedLevels: number[] = [];
-
-        return resolvedBlocks.map((block, index) => {
-          const blockKey = `block-${index}`;
-
-          if (block.type === 'heading') {
-            for (let levelIndex = activeCollapsedLevels.length - 1; levelIndex >= 0; levelIndex -= 1) {
-              if (activeCollapsedLevels[levelIndex] >= block.level) {
-                activeCollapsedLevels.splice(levelIndex, 1);
-              }
-            }
-
-            const isHiddenByAncestor = activeCollapsedLevels.length > 0;
-            const headingKey = `heading-${index}-${block.text}`;
-            const isCollapsed = Boolean(collapsedHeadings[headingKey]);
-
-            if (isCollapsed) {
-              activeCollapsedLevels.push(block.level);
-            }
-
-            if (isHiddenByAncestor) {
-              return null;
-            }
-
-            return (
-              <Pressable
-                key={headingKey}
-                onPress={() =>
-                  setCollapsedHeadings((current) => ({
-                    ...current,
-                    [headingKey]: !current[headingKey],
-                  }))
-                }
-                style={styles.collapsibleHeading}>
-                <ThemedText
-                  style={[
-                    styles.heading,
-                    block.level === 1 ? styles.headingLevel1 : null,
-                    block.level === 2 ? styles.headingLevel2 : null,
-                    block.level === 3 ? styles.headingLevel3 : null,
-                  ]}
-                  type={getHeadingTypographyType(block.level)}>
-                  {block.text}
-                </ThemedText>
-                <Ionicons
-                  color={chevronColor}
-                  name="chevron-down"
-                  size={18}
-                  style={isCollapsed ? null : styles.collapsibleArrowExpanded}
-                />
-              </Pressable>
-            );
-          }
-
-          if (activeCollapsedLevels.length > 0) {
-            return null;
-          }
-
-          return renderBlock(block, blockKey);
-        });
-      })()}
-    </View>
+    <FlatList
+      data={visibleBlockItems}
+      initialNumToRender={INITIAL_RENDER_BLOCK_COUNT}
+      keyExtractor={(item) => item.key}
+      keyboardShouldPersistTaps="handled"
+      ListHeaderComponent={ListHeaderComponent}
+      maxToRenderPerBatch={MAX_RENDER_BATCH_SIZE}
+      renderItem={renderItem}
+      removeClippedSubviews={false}
+      showsVerticalScrollIndicator={false}
+      style={styles.container}
+      updateCellsBatchingPeriod={RENDER_BATCH_INTERVAL_MS}
+      windowSize={VIRTUALIZED_WINDOW_SIZE}
+      contentContainerStyle={contentContainerStyle}
+    />
   );
 }
 
@@ -259,7 +347,19 @@ function renderTouchableParts(params: {
   prefix: string;
   selectedTokenKey?: string;
 }) {
-  return splitTextToTouchableParts(params.nodes, params.prefix).map((part) => {
+  return renderTouchablePartsFromParts({
+    onWordPress: params.onWordPress,
+    parts: splitTextToTouchableParts(params.nodes, params.prefix),
+    selectedTokenKey: params.selectedTokenKey,
+  });
+}
+
+function renderTouchablePartsFromParts(params: {
+  onWordPress: InteractiveArticleTextProps['onWordPress'];
+  parts: TouchableTextPart[];
+  selectedTokenKey?: string;
+}) {
+  return params.parts.map((part) => {
     if (part.type === 'text') {
       return (
         <ThemedText
@@ -290,6 +390,116 @@ function renderTouchableParts(params: {
   });
 }
 
+const TouchableInlineText = memo(function TouchableInlineText({
+  nodes,
+  onWordPress,
+  prefix,
+  selectedTokenKey,
+  style,
+}: TouchableInlineTextProps) {
+  const parts = useMemo(
+    () => splitTextToTouchableParts(nodes, prefix),
+    [nodes, prefix],
+  );
+
+  return (
+    <ThemedText style={style} type="paragraph">
+      {renderTouchablePartsFromParts({
+        onWordPress,
+        parts,
+        selectedTokenKey,
+      })}
+    </ThemedText>
+  );
+}, areTouchableInlineTextPropsEqual);
+
+const TouchableListItem = memo(function TouchableListItem({
+  item,
+  itemIndex,
+  onWordPress,
+  ordered,
+  prefix,
+  selectedTokenKey,
+}: TouchableListItemProps) {
+  return (
+    <View style={styles.listItem}>
+      <ThemedText style={styles.listBullet} type="paragraph">
+        {ordered ? `${itemIndex + 1}.` : '\u2022'}
+      </ThemedText>
+      <TouchableInlineText
+        nodes={item}
+        onWordPress={onWordPress}
+        prefix={prefix}
+        selectedTokenKey={selectedTokenKey}
+        style={styles.listItemText}
+      />
+    </View>
+  );
+}, areTouchableListItemPropsEqual);
+
+function areTouchableInlineTextPropsEqual(
+  previousProps: TouchableInlineTextProps,
+  nextProps: TouchableInlineTextProps,
+): boolean {
+  return (
+    previousProps.nodes === nextProps.nodes &&
+    previousProps.onWordPress === nextProps.onWordPress &&
+    previousProps.prefix === nextProps.prefix &&
+    previousProps.style === nextProps.style &&
+    isSelectedTokenChangeIrrelevant({
+      nextSelectedTokenKey: nextProps.selectedTokenKey,
+      previousSelectedTokenKey: previousProps.selectedTokenKey,
+      prefix: nextProps.prefix,
+    })
+  );
+}
+
+function areTouchableListItemPropsEqual(
+  previousProps: TouchableListItemProps,
+  nextProps: TouchableListItemProps,
+): boolean {
+  return (
+    previousProps.item === nextProps.item &&
+    previousProps.itemIndex === nextProps.itemIndex &&
+    previousProps.onWordPress === nextProps.onWordPress &&
+    previousProps.ordered === nextProps.ordered &&
+    previousProps.prefix === nextProps.prefix &&
+    isSelectedTokenChangeIrrelevant({
+      nextSelectedTokenKey: nextProps.selectedTokenKey,
+      previousSelectedTokenKey: previousProps.selectedTokenKey,
+      prefix: nextProps.prefix,
+    })
+  );
+}
+
+function isSelectedTokenChangeIrrelevant(params: {
+  nextSelectedTokenKey?: string;
+  prefix: string;
+  previousSelectedTokenKey?: string;
+}): boolean {
+  const previousSelectionIsHere = isTokenKeyInsidePrefix(
+    params.previousSelectedTokenKey,
+    params.prefix,
+  );
+  const nextSelectionIsHere = isTokenKeyInsidePrefix(
+    params.nextSelectedTokenKey,
+    params.prefix,
+  );
+
+  if (!previousSelectionIsHere && !nextSelectionIsHere) {
+    return true;
+  }
+
+  return params.previousSelectedTokenKey === params.nextSelectedTokenKey;
+}
+
+function isTokenKeyInsidePrefix(
+  tokenKey: string | undefined,
+  prefix: string,
+): boolean {
+  return tokenKey?.startsWith(`${prefix}-word-`) ?? false;
+}
+
 function renderTableCellText(params: {
   cell: TableCell;
   onWordPress: InteractiveArticleTextProps['onWordPress'];
@@ -302,6 +512,13 @@ function renderTableCellText(params: {
     prefix: params.prefix,
     selectedTokenKey: params.selectedTokenKey,
   });
+}
+
+function createHeadingKey(
+  block: Extract<ArticleBlock, { type: 'heading' }>,
+  index: number,
+): string {
+  return `heading-${index}-${block.text}`;
 }
 
 function parsePlainTextToBlocks(text: string): ArticleBlock[] {

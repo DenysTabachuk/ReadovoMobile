@@ -11,6 +11,13 @@ export const styles = StyleSheet.create({
     gap: Spacing.md,
     paddingBottom: Spacing.xxLg,
   },
+  loadMoreButton: {
+    alignSelf: 'center',
+    minWidth: 180,
+  },
+  loadMoreFooter: {
+    paddingTop: Spacing.sm,
+  },
   header: {
     gap: Spacing.sm,
     paddingBottom: Spacing.md,
