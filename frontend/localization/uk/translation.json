@@ -222,7 +222,7 @@
     "defaultName": "Восьминіжка",
     "subtitle": "English Explorer",
     "stats": {
-      "lessons": "уроків пройдено",
+      "words": "слів вивчено",
       "tests": "тестів виконано",
       "achievements": "досягнень отримано",
       "streak": "днів поспіль"
@@ -235,6 +235,18 @@
       "first_test_completed": {
         "title": "Перший тест пройдено",
         "description": "Пройдіть перший тест, щоб отримати це досягнення."
+      },
+      "ten_lessons_completed": {
+        "title": "10 тестів виконано",
+        "description": "Виконайте 10 тестів, щоб отримати це досягнення."
+      },
+      "ten_words_learned": {
+        "title": "10 слів вивчено",
+        "description": "Вивчіть 10 слів, щоб отримати це досягнення."
+      },
+      "first_thousand_coins": {
+        "title": "Перші 1000 монет",
+        "description": "Зберіть 1000 монет, щоб отримати це досягнення."
       }
     },
     "balance": "Мій баланс"

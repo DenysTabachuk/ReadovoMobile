@@ -1,5 +1,11 @@
-import { ScrollView, View, useWindowDimensions } from 'react-native';
+import {
+  ScrollView,
+  View,
+  useWindowDimensions,
+  type DimensionValue,
+} from 'react-native';
 import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -8,8 +14,10 @@ import { ScreenContainer } from '@/components/screenContainer';
 import { ThemedText } from '@/components/themedText';
 import {
   getAchievementsProfile,
+  type AchievementProgress,
   type AchievementId,
 } from '@/features/achievements';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useAuth } from '@/providers/authProvider';
 
 import { styles } from './styles';
@@ -17,7 +25,9 @@ import { styles } from './styles';
 type AchievementDefinition = {
   badge: number;
   coinsReward: number;
+  getProgressValue: (progress: AchievementProgress) => number;
   id: AchievementId;
+  targetValue: number;
 };
 
 const achievementDefinitions: AchievementDefinition[] = [
@@ -25,21 +35,29 @@ const achievementDefinitions: AchievementDefinition[] = [
     id: 'first_test_completed',
     badge: require('@/assets/images/first-test-completed-badge.png'),
     coinsReward: 50,
+    getProgressValue: (progress) => progress.testsCompleted,
+    targetValue: 1,
   },
   {
     id: 'ten_lessons_completed',
     badge: require('@/assets/images/first-test-completed-badge.png'),
     coinsReward: 100,
+    getProgressValue: (progress) => progress.testsCompleted,
+    targetValue: 10,
   },
   {
     id: 'ten_words_learned',
     badge: require('@/assets/images/first-test-completed-badge.png'),
     coinsReward: 100,
+    getProgressValue: (progress) => progress.wordsLearned,
+    targetValue: 10,
   },
   {
     id: 'first_thousand_coins',
     badge: require('@/assets/images/first-test-completed-badge.png'),
     coinsReward: 200,
+    getProgressValue: (progress) => progress.balance,
+    targetValue: 1000,
   },
 ];
 
@@ -48,13 +66,16 @@ const defaultStats = {
   lessonsCompleted: 0,
   streakDays: 0,
   testsCompleted: 0,
+  wordsLearned: 0,
 };
 
 export default function ProfileScreen() {
   const { t } = useTranslation();
   const { currentUser } = useAuth();
+  const colorScheme = useColorScheme();
   const { width } = useWindowDimensions();
   const shouldUseTwoRows = width < 390;
+  const isDarkTheme = colorScheme === 'dark';
 
   const achievementsQuery = useQuery({
     enabled: Boolean(currentUser?.id),
@@ -106,14 +127,19 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        <View style={[styles.statsCard, shouldUseTwoRows && styles.statsCardTwoRows]}>
+        <View
+          style={[
+            styles.statsCard,
+            isDarkTheme ? styles.statsCardDark : null,
+            shouldUseTwoRows && styles.statsCardTwoRows,
+          ]}>
           <View style={[styles.statItem, shouldUseTwoRows && styles.statItemTwoRows]}>
             <View style={styles.statValueRow}>
-              <ThemedText style={styles.statValue}>{progress.lessonsCompleted}</ThemedText>
-              <Ionicons color="#7d4ef6" name="book-outline" size={18} />
+              <ThemedText style={styles.statValue}>{progress.wordsLearned}</ThemedText>
+              <Ionicons color="#7d4ef6" name="library-outline" size={18} />
             </View>
             <View style={styles.statMetaRow}>
-              <ThemedText style={styles.statLabel}>{t('profile.stats.lessons')}</ThemedText>
+              <ThemedText style={styles.statLabel}>{t('profile.stats.words')}</ThemedText>
             </View>
           </View>
           <View style={[styles.statItem, shouldUseTwoRows && styles.statItemTwoRows]}>
@@ -149,9 +175,31 @@ export default function ProfileScreen() {
           <ThemedText type="sectionTitle">{t('profile.achievementsTitle')}</ThemedText>
           {achievementDefinitions.map((achievement) => {
             const isUnlocked = achievementStatusById.get(achievement.id) ?? false;
+            const progressValue = achievement.getProgressValue(progress);
+            const progressRatio = Math.min(progressValue / achievement.targetValue, 1);
+            const progressPercentage: DimensionValue =
+              `${Math.round(progressRatio * 100)}%`;
 
             return (
-              <View key={achievement.id} style={styles.achievementCard}>
+              <View
+                key={achievement.id}
+                style={[
+                  styles.achievementCard,
+                  isUnlocked ? styles.unlockedAchievementCard : styles.lockedAchievementCard,
+                ]}>
+                {isUnlocked ? (
+                  <LinearGradient
+                    colors={
+                      isDarkTheme
+                        ? ['#211339', '#3a2461', '#5b36ad']
+                        : ['#f3edff', '#e4d7ff', '#c9b2ff']
+                    }
+                    end={{ x: 1, y: 1 }}
+                    pointerEvents="none"
+                    start={{ x: 0, y: 0 }}
+                    style={styles.unlockedAchievementGradient}
+                  />
+                ) : null}
                 <Image
                   contentFit="contain"
                   source={achievement.badge}
@@ -167,6 +215,22 @@ export default function ProfileScreen() {
                   <ThemedText style={isUnlocked ? styles.unlockedText : styles.lockedText}>
                     {isUnlocked ? t('profile.unlocked') : t('profile.locked')}
                   </ThemedText>
+                  <View style={styles.achievementProgressBlock}>
+                    <View style={styles.achievementProgressTrack}>
+                      <View
+                        style={[
+                          styles.achievementProgressFill,
+                          isUnlocked
+                            ? styles.unlockedAchievementProgressFill
+                            : styles.lockedAchievementProgressFill,
+                          { width: progressPercentage },
+                        ]}
+                      />
+                    </View>
+                    <ThemedText style={styles.achievementProgressText}>
+                      {`${Math.min(progressValue, achievement.targetValue)}/${achievement.targetValue}`}
+                    </ThemedText>
+                  </View>
                   <View style={styles.rewardRow}>
                     <Image
                       contentFit="contain"

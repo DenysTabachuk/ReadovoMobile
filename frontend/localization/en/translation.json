@@ -222,7 +222,7 @@
     "defaultName": "Octopus",
     "subtitle": "English Explorer",
     "stats": {
-      "lessons": "lessons completed",
+      "words": "words learned",
       "tests": "tests completed",
       "achievements": "achievements received",
       "streak": "days in a row"
@@ -237,8 +237,8 @@
         "description": "Complete your first test to unlock this achievement."
       },
       "ten_lessons_completed": {
-        "title": "10 lessons completed",
-        "description": "Complete 10 lessons to unlock this achievement."
+        "title": "10 tests completed",
+        "description": "Complete 10 tests to unlock this achievement."
       },
       "ten_words_learned": {
         "title": "10 words learned",

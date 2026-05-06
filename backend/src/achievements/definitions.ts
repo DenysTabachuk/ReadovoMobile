@@ -12,7 +12,7 @@ export const achievementDefinitions: AchievementDefinition[] = [
   },
   {
     id: 'ten_lessons_completed',
-    isUnlocked: (progress) => progress.lessonsCompleted >= 10,
+    isUnlocked: (progress) => progress.testsCompleted >= 10,
   },
   {
     id: 'ten_words_learned',
