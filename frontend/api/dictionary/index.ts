@@ -6,6 +6,7 @@ import {
   type DictionaryTestAnswerResult,
   type DictionaryWord,
   type SubmitDictionaryTestAnswerRequest,
+  type UpdateDictionaryWordProgressRequest,
 } from './types';
 
 export type {
@@ -17,6 +18,7 @@ export type {
   DictionaryWord,
   DictionaryWordProgress,
   SubmitDictionaryTestAnswerRequest,
+  UpdateDictionaryWordProgressRequest,
 } from './types';
 
 export async function fetchDictionaryWords(): Promise<DictionaryWord[]> {
@@ -73,4 +75,23 @@ export async function submitDictionaryTestAnswer(
   }
 
   return response.json() as Promise<DictionaryTestAnswerResult>;
+}
+
+export async function updateDictionaryWordProgress(
+  wordId: string,
+  request: UpdateDictionaryWordProgressRequest,
+): Promise<DictionaryWord> {
+  const response = await fetch(`${API_BASE_URL}/api/dictionary/words/${wordId}/progress`, {
+    body: JSON.stringify(request),
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    method: 'PATCH',
+  });
+
+  if (!response.ok) {
+    throw new Error('dictionary.progressUpdateError');
+  }
+
+  return response.json() as Promise<DictionaryWord>;
 }

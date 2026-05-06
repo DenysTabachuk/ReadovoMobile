@@ -3,8 +3,10 @@ import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
+  Pressable,
   RefreshControl,
   View,
+  type DimensionValue,
   type ListRenderItem,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -13,6 +15,7 @@ import {
   fetchDictionaryWords,
   fetchDictionaryTest,
   submitDictionaryTestAnswer,
+  updateDictionaryWordProgress,
   type DictionaryTest,
   type DictionaryWord,
   type DictionaryWordProgress,
@@ -29,7 +32,12 @@ import { ScreenContainer } from '@/components/screenContainer';
 import { TestResult } from '@/components/testResult';
 import { ThemedText } from '@/components/themedText';
 import { Colors } from '@/constants/theme';
-import { getAchievementsProfile, updateAchievementsProgress } from '@/features/achievements';
+import {
+  getAchievementBadge,
+  getAchievementsProfile,
+  getNewlyUnlockedAchievements,
+  updateAchievementsProgress,
+} from '@/features/achievements';
 import { calculateQuizReward } from '@/features/quizRewards';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useAuth } from '@/providers/authProvider';
@@ -45,6 +53,7 @@ export default function DictionaryScreen() {
   const borderColor = colorScheme === 'dark' ? '#2d3336' : '#d0d7de';
   const [test, setTest] = useState<DictionaryTest>();
   const [testResult, setTestResult] = useState<QuizSessionResult | null>(null);
+  const [openProgressMenuWordId, setOpenProgressMenuWordId] = useState<string | null>(null);
 
   const {
     data,
@@ -88,6 +97,32 @@ export default function DictionaryScreen() {
       void queryClient.invalidateQueries({ queryKey: ['dictionary', 'words'] });
     },
   });
+  const wordProgressMutation = useMutation({
+    mutationFn: ({
+      progress,
+      wordId,
+    }: {
+      progress: DictionaryWordProgress;
+      wordId: string;
+    }) => updateDictionaryWordProgress(wordId, { progress }),
+    onError: () => {
+      showBanner({
+        description: t('dictionary.progressUpdateErrorDescription'),
+        durationMs: 4200,
+        title: t('dictionary.progressUpdateError'),
+        variant: 'error',
+      });
+    },
+    onSuccess: () => {
+      setOpenProgressMenuWordId(null);
+      void queryClient.invalidateQueries({ queryKey: ['dictionary', 'words'] });
+      if (currentUser?.id) {
+        void queryClient.invalidateQueries({
+          queryKey: ['achievements-profile', currentUser.id],
+        });
+      }
+    },
+  });
   const progressMutation = useMutation({
     mutationFn: async (result: QuizSessionResult) => {
       if (!currentUser?.id) {
@@ -106,6 +141,10 @@ export default function DictionaryScreen() {
       });
 
       return {
+        newlyUnlockedAchievements: getNewlyUnlockedAchievements(
+          profile.achievements,
+          updatedProfile.achievements,
+        ),
         profile: updatedProfile,
         rewardCoins,
       };
@@ -118,6 +157,22 @@ export default function DictionaryScreen() {
       void queryClient.invalidateQueries({
         queryKey: ['achievements-profile', currentUser.id],
       });
+
+      const achievement = response?.newlyUnlockedAchievements[0];
+
+      if (achievement) {
+        showBanner({
+          achievement: {
+            badge: getAchievementBadge(achievement.badgeKey),
+            coinsReward: achievement.coinsReward,
+          },
+          description: t(achievement.descriptionKey),
+          durationMs: 5200,
+          title: t(achievement.titleKey),
+          variant: 'achievement',
+        });
+        return;
+      }
 
       if (response?.rewardCoins !== undefined) {
         showBanner({
@@ -132,6 +187,14 @@ export default function DictionaryScreen() {
   const renderWord = useCallback<ListRenderItem<DictionaryWord>>(
     ({ item }) => {
       const progressColors = getProgressBadgeColors(item.progress, colorScheme);
+      const progressRatio = Math.min(
+        item.correctAnswersCount / item.requiredCorrectAnswers,
+        1,
+      );
+      const progressPercentage: DimensionValue = `${Math.round(progressRatio * 100)}%`;
+      const isProgressMenuOpen = openProgressMenuWordId === item.id;
+      const inProgressColors = getProgressBadgeColors('in_progress', colorScheme);
+      const isDarkTheme = colorScheme === 'dark';
 
       return (
         <View style={[styles.wordCard, { borderColor }]}>
@@ -144,26 +207,92 @@ export default function DictionaryScreen() {
                 {item.translation}
               </ThemedText>
             </View>
-            <View
-              style={[
-                styles.progressBadge,
-                { backgroundColor: progressColors.backgroundColor },
-              ]}>
-              <ThemedText
-                type="bodyStrong"
-                style={[styles.progressText, { color: progressColors.textColor }]}>
-                {getProgressLabel(item.progress, t)}
-              </ThemedText>
+            <View style={styles.progressControl}>
+              <Pressable
+                disabled={item.progress !== 'learned'}
+                onPress={() =>
+                  setOpenProgressMenuWordId((current) =>
+                    current === item.id ? null : item.id,
+                  )
+                }
+                style={[
+                  styles.progressBadge,
+                  { backgroundColor: progressColors.backgroundColor },
+                ]}>
+                <ThemedText
+                  type="bodyStrong"
+                  style={[styles.progressText, { color: progressColors.textColor }]}>
+                  {getProgressLabel(item.progress, t)}
+                </ThemedText>
+              </Pressable>
+              {isProgressMenuOpen ? (
+                <View
+                  style={[
+                    styles.progressMenu,
+                    isDarkTheme && styles.progressMenuDark,
+                  ]}>
+                  <ThemedText
+                    style={[
+                      styles.progressMenuHint,
+                      isDarkTheme && styles.progressMenuHintDark,
+                    ]}>
+                    {t('dictionary.progressMenuHint')}
+                  </ThemedText>
+                  <Pressable
+                    disabled={wordProgressMutation.isPending}
+                    onPress={() =>
+                      wordProgressMutation.mutate({
+                        progress: 'in_progress',
+                        wordId: item.id,
+                      })
+                    }
+                    style={[
+                      styles.progressBadge,
+                      styles.progressMenuBadge,
+                      { backgroundColor: inProgressColors.backgroundColor },
+                    ]}>
+                    <ThemedText
+                      type="bodyStrong"
+                      style={[
+                        styles.progressText,
+                        { color: inProgressColors.textColor },
+                      ]}>
+                      {t('dictionary.progress.in_progress')}
+                    </ThemedText>
+                  </Pressable>
+                </View>
+              ) : null}
             </View>
           </View>
 
           <ThemedText type="body" style={styles.contextText}>
             {item.context}
           </ThemedText>
+          <View style={styles.learningProgressBlock}>
+            <View style={styles.learningProgressTrack}>
+              <View
+                style={[
+                  styles.learningProgressFill,
+                  { width: progressPercentage },
+                ]}
+              />
+            </View>
+            <ThemedText style={styles.learningProgressText}>
+              {`${Math.min(item.correctAnswersCount, item.requiredCorrectAnswers)}/${item.requiredCorrectAnswers}`}
+            </ThemedText>
+          </View>
         </View>
       );
     },
-    [borderColor, colorScheme, t],
+    [
+      borderColor,
+      colorScheme,
+      currentUser?.id,
+      openProgressMenuWordId,
+      queryClient,
+      t,
+      wordProgressMutation,
+    ],
   );
 
   const handleStartTest = useCallback(() => {

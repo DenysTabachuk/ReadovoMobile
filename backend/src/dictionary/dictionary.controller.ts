@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
 
 import { DictionaryService } from './dictionary.service';
 import {
@@ -10,6 +10,7 @@ import {
   type QuizOptionsRequest,
   type SimilarWordsRequest,
   type SubmitDictionaryTestAnswerRequest,
+  type UpdateDictionaryWordProgressRequest,
 } from './types';
 
 @Controller('api/dictionary')
@@ -26,6 +27,14 @@ export class DictionaryController {
     @Body() body: CreateDictionaryWordRequest,
   ): Promise<DictionaryWord> {
     return this.dictionaryService.createWord(body);
+  }
+
+  @Patch('words/:wordId/progress')
+  updateWordProgress(
+    @Param('wordId') wordId: string,
+    @Body() body: UpdateDictionaryWordProgressRequest,
+  ): Promise<DictionaryWord> {
+    return this.dictionaryService.updateWordProgress(wordId, body);
   }
 
   @Post('embedding')

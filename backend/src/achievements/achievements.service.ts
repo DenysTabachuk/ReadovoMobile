@@ -41,10 +41,16 @@ export class AchievementsService {
     const achievements: AchievementStatus[] = achievementDefinitions.map((definition) => {
       const unlocked = unlockedMap.get(definition.id);
       return {
+        badgeKey: definition.badgeKey,
         claimedAt: unlocked?.claimed_at?.toISOString() ?? null,
+        coinsReward: definition.coinsReward,
+        descriptionKey: definition.descriptionKey,
         id: definition.id,
         isClaimed: Boolean(unlocked?.claimed_at),
         isUnlocked: Boolean(unlocked),
+        progressValue: definition.getProgressValue(progress),
+        targetValue: definition.targetValue,
+        titleKey: definition.titleKey,
         unlockedAt: unlocked?.unlocked_at?.toISOString() ?? null,
       };
     });
@@ -100,7 +106,8 @@ export class AchievementsService {
   }
 
   private async getUserProgress(userId: string): Promise<UserProgress> {
-    const result = await this.databaseService.query<UserProgressRow>(
+    const [userResult, learnedWordsResult] = await Promise.all([
+      this.databaseService.query<UserProgressRow>(
       `
         SELECT lessons_completed, tests_completed, words_learned, balance
         FROM users
@@ -108,9 +115,17 @@ export class AchievementsService {
         LIMIT 1
       `,
       [userId],
-    );
+      ),
+      this.databaseService.query<{ count: string }>(
+        `
+          SELECT COUNT(*)::text AS count
+          FROM dictionary_words
+          WHERE progress = 'learned'
+        `,
+      ),
+    ]);
 
-    const row = result.rows[0];
+    const row = userResult.rows[0];
 
     if (!row) {
       throw new NotFoundException('User not found.');
@@ -120,7 +135,7 @@ export class AchievementsService {
       balance: row.balance,
       lessonsCompleted: row.lessons_completed,
       testsCompleted: row.tests_completed,
-      wordsLearned: row.words_learned,
+      wordsLearned: Number(learnedWordsResult.rows[0]?.count ?? 0),
     };
   }
 

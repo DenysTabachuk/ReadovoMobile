@@ -17,7 +17,12 @@ import { ScreenContainer } from '@/components/screenContainer';
 import { TestResult } from '@/components/testResult';
 import { ThemedText } from '@/components/themedText';
 import { Colors } from '@/constants/theme';
-import { getAchievementsProfile, updateAchievementsProgress } from '@/features/achievements';
+import {
+  getAchievementBadge,
+  getAchievementsProfile,
+  getNewlyUnlockedAchievements,
+  updateAchievementsProgress,
+} from '@/features/achievements';
 import { calculateQuizReward } from '@/features/quizRewards';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useAuth } from '@/providers/authProvider';
@@ -109,12 +114,16 @@ export default function ArticleQuizScreen() {
         targetLength: resolveEffectiveTargetLength(quizTargetLength, article.content),
       });
 
-      await updateAchievementsProgress(currentUser.id, {
+      const updatedProfile = await updateAchievementsProgress(currentUser.id, {
         balance: profile.progress.balance + rewardCoins,
         testsCompleted: profile.progress.testsCompleted + 1,
       });
 
       return {
+        newlyUnlockedAchievements: getNewlyUnlockedAchievements(
+          profile.achievements,
+          updatedProfile.achievements,
+        ),
         rewardCoins,
       };
     },
@@ -126,6 +135,22 @@ export default function ArticleQuizScreen() {
       void queryClient.invalidateQueries({
         queryKey: ['achievements-profile', currentUser.id],
       });
+
+      const achievement = response?.newlyUnlockedAchievements[0];
+
+      if (achievement) {
+        showBanner({
+          achievement: {
+            badge: getAchievementBadge(achievement.badgeKey),
+            coinsReward: achievement.coinsReward,
+          },
+          description: t(achievement.descriptionKey),
+          durationMs: 5200,
+          title: t(achievement.titleKey),
+          variant: 'achievement',
+        });
+        return;
+      }
 
       if (response?.rewardCoins !== undefined) {
         showBanner({

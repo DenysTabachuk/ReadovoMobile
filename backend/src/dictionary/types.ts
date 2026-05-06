@@ -2,10 +2,12 @@ export type DictionaryWordProgress = 'new' | 'in_progress' | 'learned';
 
 export type DictionaryWord = {
   context: string;
+  correctAnswersCount: number;
   createdAt: string;
   id: string;
   lastReviewedAt?: string;
   progress: DictionaryWordProgress;
+  requiredCorrectAnswers: number;
   translation: string;
   word: string;
 };
@@ -48,6 +50,10 @@ export type DictionaryTest = {
 export type SubmitDictionaryTestAnswerRequest = {
   selectedOptionId?: string;
   wordId?: string;
+};
+
+export type UpdateDictionaryWordProgressRequest = {
+  progress?: DictionaryWordProgress;
 };
 
 export type DictionaryTestAnswerResult = {

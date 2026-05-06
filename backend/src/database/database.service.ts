@@ -57,6 +57,27 @@ export class DatabaseService implements OnModuleDestroy, OnModuleInit {
     `);
 
     await this.query(`
+      INSERT INTO user_achievements (user_id, achievement_id, unlocked_at)
+      SELECT user_id, 'ten_tests_completed', unlocked_at
+      FROM user_achievements
+      WHERE achievement_id = 'ten_lessons_completed'
+      ON CONFLICT (user_id, achievement_id) DO NOTHING;
+    `);
+
+    await this.query(`
+      INSERT INTO user_achievements (user_id, achievement_id, unlocked_at)
+      SELECT id, 'ten_tests_completed', now()
+      FROM users
+      WHERE tests_completed >= 10
+      ON CONFLICT (user_id, achievement_id) DO NOTHING;
+    `);
+
+    await this.query(`
+      DELETE FROM user_achievements
+      WHERE achievement_id = 'ten_lessons_completed';
+    `);
+
+    await this.query(`
       CREATE TABLE IF NOT EXISTS article_simplifications (
         cache_key text PRIMARY KEY,
         title text NOT NULL,
@@ -84,7 +105,17 @@ export class DatabaseService implements OnModuleDestroy, OnModuleInit {
 
     await this.query(`
       ALTER TABLE dictionary_words
-      ADD COLUMN IF NOT EXISTS last_reviewed_at timestamptz;
+      ADD COLUMN IF NOT EXISTS last_reviewed_at timestamptz,
+      ADD COLUMN IF NOT EXISTS correct_answers_count integer NOT NULL DEFAULT 0;
+    `);
+
+    await this.query(`
+      UPDATE dictionary_words
+      SET correct_answers_count = CASE
+        WHEN progress = 'learned' THEN 5
+        WHEN progress = 'in_progress' AND correct_answers_count = 0 THEN 1
+        ELSE correct_answers_count
+      END;
     `);
   }
 

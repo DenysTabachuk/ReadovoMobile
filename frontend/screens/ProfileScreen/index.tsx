@@ -13,53 +13,13 @@ import { useTranslation } from 'react-i18next';
 import { ScreenContainer } from '@/components/screenContainer';
 import { ThemedText } from '@/components/themedText';
 import {
+  getAchievementBadge,
   getAchievementsProfile,
-  type AchievementProgress,
-  type AchievementId,
 } from '@/features/achievements';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useAuth } from '@/providers/authProvider';
 
 import { styles } from './styles';
-
-type AchievementDefinition = {
-  badge: number;
-  coinsReward: number;
-  getProgressValue: (progress: AchievementProgress) => number;
-  id: AchievementId;
-  targetValue: number;
-};
-
-const achievementDefinitions: AchievementDefinition[] = [
-  {
-    id: 'first_test_completed',
-    badge: require('@/assets/images/first-test-completed-badge.png'),
-    coinsReward: 50,
-    getProgressValue: (progress) => progress.testsCompleted,
-    targetValue: 1,
-  },
-  {
-    id: 'ten_lessons_completed',
-    badge: require('@/assets/images/first-test-completed-badge.png'),
-    coinsReward: 100,
-    getProgressValue: (progress) => progress.testsCompleted,
-    targetValue: 10,
-  },
-  {
-    id: 'ten_words_learned',
-    badge: require('@/assets/images/first-test-completed-badge.png'),
-    coinsReward: 100,
-    getProgressValue: (progress) => progress.wordsLearned,
-    targetValue: 10,
-  },
-  {
-    id: 'first_thousand_coins',
-    badge: require('@/assets/images/first-test-completed-badge.png'),
-    coinsReward: 200,
-    getProgressValue: (progress) => progress.balance,
-    targetValue: 1000,
-  },
-];
 
 const defaultStats = {
   balance: 0,
@@ -84,12 +44,7 @@ export default function ProfileScreen() {
   });
 
   const progress = achievementsQuery.data?.progress ?? defaultStats;
-  const achievementStatusById = new Map<AchievementId, boolean>(
-    (achievementsQuery.data?.achievements ?? []).map((achievement) => [
-      achievement.id,
-      achievement.isUnlocked,
-    ]),
-  );
+  const achievements = achievementsQuery.data?.achievements ?? [];
   const unlockedAchievementsCount = (achievementsQuery.data?.achievements ?? []).filter(
     (achievement) => achievement.isUnlocked,
   ).length;
@@ -173,9 +128,9 @@ export default function ProfileScreen() {
 
         <View style={styles.achievementsBlock}>
           <ThemedText type="sectionTitle">{t('profile.achievementsTitle')}</ThemedText>
-          {achievementDefinitions.map((achievement) => {
-            const isUnlocked = achievementStatusById.get(achievement.id) ?? false;
-            const progressValue = achievement.getProgressValue(progress);
+          {achievements.map((achievement) => {
+            const isUnlocked = achievement.isUnlocked;
+            const progressValue = achievement.progressValue;
             const progressRatio = Math.min(progressValue / achievement.targetValue, 1);
             const progressPercentage: DimensionValue =
               `${Math.round(progressRatio * 100)}%`;
@@ -202,15 +157,15 @@ export default function ProfileScreen() {
                 ) : null}
                 <Image
                   contentFit="contain"
-                  source={achievement.badge}
+                  source={getAchievementBadge(achievement.badgeKey)}
                   style={[styles.achievementBadge, !isUnlocked && styles.lockedAchievementBadge]}
                 />
                 <View style={styles.achievementMeta}>
                   <ThemedText type="bodyStrong">
-                    {t(`profile.achievements.${achievement.id}.title`)}
+                    {t(achievement.titleKey)}
                   </ThemedText>
                   <ThemedText style={styles.achievementDescription}>
-                    {t(`profile.achievements.${achievement.id}.description`)}
+                    {t(achievement.descriptionKey)}
                   </ThemedText>
                   <ThemedText style={isUnlocked ? styles.unlockedText : styles.lockedText}>
                     {isUnlocked ? t('profile.unlocked') : t('profile.locked')}

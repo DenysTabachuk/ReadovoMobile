@@ -1,4 +1,8 @@
 export { getAchievementsProfile, updateAchievementsProgress } from './api';
+export {
+  getAchievementBadge,
+  getNewlyUnlockedAchievements,
+} from './definitions';
 export type {
   AchievementId,
   AchievementProgress,

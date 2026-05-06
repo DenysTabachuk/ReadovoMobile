@@ -1,6 +1,7 @@
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Image } from 'expo-image';
 import { Animated, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 import { Banner } from './banner';
 import {
@@ -111,6 +112,45 @@ export function BannerProvider({ children }: BannerProviderProps) {
 }
 
 function BannerContent({ banner }: { banner: ShowBannerOptions }) {
+  const { t } = useTranslation();
+
+  if (banner.variant === 'achievement' && banner.achievement) {
+    return (
+      <View style={styles.content}>
+        <Image
+          accessibilityIgnoresInvertColors
+          contentFit="contain"
+          source={banner.achievement.badge}
+          style={styles.achievementBadge}
+        />
+        <View style={styles.textContent}>
+          <ThemedText type="bodyStrong" style={styles.achievementTitle}>
+            {banner.title}
+          </ThemedText>
+          {banner.description ? (
+            <ThemedText style={styles.achievementDescription}>
+              {banner.description}
+            </ThemedText>
+          ) : null}
+          <ThemedText style={styles.achievementStatus}>
+            {t('profile.unlocked')}
+          </ThemedText>
+          <View style={styles.achievementRewardRow}>
+            <Image
+              accessibilityIgnoresInvertColors
+              contentFit="contain"
+              source={require('@/assets/images/money.png')}
+              style={styles.achievementMoneyIcon}
+            />
+            <ThemedText style={styles.achievementRewardText}>
+              {t('profile.reward', { count: banner.achievement.coinsReward })}
+            </ThemedText>
+          </View>
+        </View>
+      </View>
+    );
+  }
+
   const shouldShowRewardIcon = banner.variant === 'reward';
 
   return (

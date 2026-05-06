@@ -15,11 +15,13 @@ import {
   type QuizOptionsRequest,
   type SimilarWordsRequest,
   type SubmitDictionaryTestAnswerRequest,
+  type UpdateDictionaryWordProgressRequest,
 } from './types';
 import { DictionaryEmbeddingService } from './dictionary-embedding.service';
 
 const DEFAULT_DICTIONARY_TEST_LIMIT = 10;
 const DICTIONARY_TEST_OPTION_COUNT = 4;
+export const REQUIRED_CORRECT_ANSWERS_TO_LEARN = 5;
 
 @Injectable()
 export class DictionaryService {
@@ -50,8 +52,10 @@ export class DictionaryService {
     return this.dictionaryRepository.createOrUpdate({
       context,
       createdAt: new Date().toISOString(),
+      correctAnswersCount: 0,
       id: randomUUID(),
       progress: 'new',
+      requiredCorrectAnswers: REQUIRED_CORRECT_ANSWERS_TO_LEARN,
       translation,
       word,
     });
@@ -127,9 +131,15 @@ export class DictionaryService {
     }
 
     const isCorrect = selectedOptionId === word.id;
+    const nextReviewProgress = this.getNextReviewProgress(
+      word.correctAnswersCount,
+      word.progress,
+      isCorrect,
+    );
     const reviewedWord = await this.dictionaryRepository.updateReviewResult(
       word.id,
-      this.getNextProgress(word.progress, isCorrect),
+      nextReviewProgress.progress,
+      nextReviewProgress.correctAnswersCount,
       new Date().toISOString(),
     );
 
@@ -143,6 +153,38 @@ export class DictionaryService {
       isCorrect,
       word: reviewedWord,
     };
+  }
+
+  async updateWordProgress(
+    wordId: string,
+    request: UpdateDictionaryWordProgressRequest,
+  ): Promise<DictionaryWord> {
+    const progress = request.progress;
+
+    if (progress !== 'in_progress') {
+      throw new BadRequestException('Only in_progress status can be set manually.');
+    }
+
+    const word = await this.dictionaryRepository.findById(wordId);
+
+    if (!word) {
+      throw new NotFoundException('Dictionary word was not found.');
+    }
+
+    const updatedWord = await this.dictionaryRepository.updateProgress(
+      word.id,
+      progress,
+      Math.min(
+        word.correctAnswersCount,
+        REQUIRED_CORRECT_ANSWERS_TO_LEARN - 1,
+      ),
+    );
+
+    if (!updatedWord) {
+      throw new NotFoundException('Dictionary word was not found.');
+    }
+
+    return updatedWord;
   }
 
   private async resolveWordList(wordList?: string[]): Promise<string[]> {
@@ -200,17 +242,35 @@ export class DictionaryService {
     };
   }
 
-  private getNextProgress(
+  private getNextReviewProgress(
+    currentCorrectAnswersCount: number,
     currentProgress: DictionaryWord['progress'],
     isCorrect: boolean,
-  ): DictionaryWord['progress'] {
+  ): Pick<DictionaryWord, 'correctAnswersCount' | 'progress'> {
     if (!isCorrect) {
-      return 'in_progress';
+      const correctAnswersCount =
+        currentProgress === 'learned'
+          ? REQUIRED_CORRECT_ANSWERS_TO_LEARN - 1
+          : currentCorrectAnswersCount;
+
+      return {
+        correctAnswersCount,
+        progress: 'in_progress',
+      };
     }
 
-    return currentProgress === 'in_progress' || currentProgress === 'learned'
-      ? 'learned'
-      : 'in_progress';
+    const correctAnswersCount = Math.min(
+      currentCorrectAnswersCount + 1,
+      REQUIRED_CORRECT_ANSWERS_TO_LEARN,
+    );
+
+    return {
+      correctAnswersCount,
+      progress:
+        correctAnswersCount >= REQUIRED_CORRECT_ANSWERS_TO_LEARN
+          ? 'learned'
+          : 'in_progress',
+    };
   }
 
   private normalizeWord(word: string): string {

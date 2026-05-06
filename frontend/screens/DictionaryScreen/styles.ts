@@ -49,8 +49,70 @@ export const styles = StyleSheet.create({
     paddingHorizontal: Spacing.sm,
     paddingVertical: Spacing.xs,
   },
+  progressControl: {
+    alignItems: 'flex-end',
+    gap: Spacing.xs,
+    position: 'relative',
+  },
   progressText: {
     textAlign: 'center',
+  },
+  learningProgressBlock: {
+    gap: Spacing.xs,
+  },
+  learningProgressTrack: {
+    backgroundColor: '#ece8f7',
+    borderRadius: 999,
+    height: 8,
+    overflow: 'hidden',
+    width: '100%',
+  },
+  learningProgressFill: {
+    backgroundColor: '#6f3ff2',
+    borderRadius: 999,
+    height: '100%',
+  },
+  learningProgressText: {
+    color: '#6f7080',
+    fontSize: 13,
+    fontWeight: '600',
+    lineHeight: 18,
+  },
+  progressMenu: {
+    backgroundColor: '#fff',
+    borderColor: '#e8e8ef',
+    borderRadius: 8,
+    borderWidth: 1,
+    gap: Spacing.sm,
+    elevation: 6,
+    minWidth: 190,
+    padding: Spacing.sm,
+    position: 'absolute',
+    right: 0,
+    shadowColor: '#000',
+    shadowOffset: {
+      height: 4,
+      width: 0,
+    },
+    shadowOpacity: 0.14,
+    shadowRadius: 10,
+    top: 36,
+    zIndex: 5,
+  },
+  progressMenuDark: {
+    backgroundColor: '#1f2428',
+    borderColor: '#2d3336',
+  },
+  progressMenuHint: {
+    color: '#6f7080',
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  progressMenuHintDark: {
+    color: '#c3c7cf',
+  },
+  progressMenuBadge: {
+    alignSelf: 'flex-start',
   },
   centerState: {
     alignItems: 'center',

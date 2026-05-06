@@ -119,6 +119,9 @@
     "retry": "Try again",
     "saved": "Word saved to dictionary",
     "saveError": "Could not save the word. Try again.",
+    "progressUpdateError": "Could not update word progress.",
+    "progressUpdateErrorDescription": "Check your connection and try again.",
+    "progressMenuHint": "Move this word back if you do not feel confident yet.",
     "progress": {
       "new": "New",
       "in_progress": "In progress",
@@ -241,7 +244,7 @@
         "title": "First test completed",
         "description": "Complete your first test to unlock this achievement."
       },
-      "ten_lessons_completed": {
+      "ten_tests_completed": {
         "title": "10 tests completed",
         "description": "Complete 10 tests to unlock this achievement."
       },
