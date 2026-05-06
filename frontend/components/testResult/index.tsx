@@ -81,7 +81,6 @@ export function TestResult({
             </ThemedText>
           </View>
         </View>
-
       </View>
 
       <View

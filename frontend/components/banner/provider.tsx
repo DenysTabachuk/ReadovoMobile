@@ -1,5 +1,6 @@
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Animated } from 'react-native';
+import { Image } from 'expo-image';
+import { Animated, View } from 'react-native';
 
 import { Banner } from './banner';
 import {
@@ -9,6 +10,8 @@ import {
 } from './constants';
 import { BannerContext } from './context';
 import { type ShowBannerOptions } from './types';
+import { ThemedText } from '@/components/themedText';
+import { styles } from './styles';
 
 type BannerProviderProps = {
   children: ReactNode;
@@ -96,12 +99,39 @@ export function BannerProvider({ children }: BannerProviderProps) {
       {children}
       {banner ? (
         <Banner
-          banner={banner}
           hideBanner={hideBanner}
           opacity={opacity}
           translateY={translateY}
-        />
+          variant={banner.variant}>
+          <BannerContent banner={banner} />
+        </Banner>
       ) : null}
     </BannerContext.Provider>
+  );
+}
+
+function BannerContent({ banner }: { banner: ShowBannerOptions }) {
+  const shouldShowRewardIcon = banner.variant === 'reward';
+
+  return (
+    <View style={styles.content}>
+      {shouldShowRewardIcon ? (
+        <Image
+          accessibilityIgnoresInvertColors
+          source={require('@/assets/images/money.png')}
+          style={styles.rewardIcon}
+        />
+      ) : null}
+      <View style={styles.textContent}>
+        <ThemedText type="bodyStrong" style={styles.title}>
+          {banner.title}
+        </ThemedText>
+        {banner.description ? (
+          <ThemedText style={styles.description}>
+            {banner.description}
+          </ThemedText>
+        ) : null}
+      </View>
+    </View>
   );
 }

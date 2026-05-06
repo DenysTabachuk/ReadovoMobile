@@ -33,6 +33,23 @@ export const styles = StyleSheet.create({
   error: {
     backgroundColor: '#c04135',
   },
+  reward: {
+    backgroundColor: '#b7791f',
+    borderColor: '#f6d365',
+  },
+  content: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: Spacing.md,
+  },
+  rewardIcon: {
+    height: 40,
+    width: 40,
+  },
+  textContent: {
+    flex: 1,
+    minWidth: 0,
+  },
   title: {
     ...Typography.bodyStrong,
     color: '#fff',

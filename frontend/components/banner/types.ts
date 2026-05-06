@@ -1,4 +1,4 @@
-export type BannerVariant = 'success' | 'error';
+export type BannerVariant = 'success' | 'error' | 'reward';
 
 export type ShowBannerOptions = {
   description?: string;

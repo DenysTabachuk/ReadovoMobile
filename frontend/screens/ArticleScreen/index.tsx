@@ -257,14 +257,11 @@ export default function ArticleScreen() {
     if (articleId === null) {
       return;
     }
-    const quizTargetLength =
-      selectedTargetLength === 'original' ? 'medium' : selectedTargetLength;
-
     router.push({
       params: {
         id: String(articleId),
         level: selectedLevel,
-        targetLength: quizTargetLength,
+        targetLength: selectedTargetLength,
       },
       pathname: '/article-quiz/[id]',
     });

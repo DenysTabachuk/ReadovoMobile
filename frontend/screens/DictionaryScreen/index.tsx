@@ -23,12 +23,14 @@ import {
   type QuizSessionResult,
 } from '@/components/articleQuizRunner';
 import { Button } from '@/components/button';
+import { useBanner } from '@/components/banner';
 import { FloatingActionButton } from '@/components/floatingActionButton';
 import { ScreenContainer } from '@/components/screenContainer';
 import { TestResult } from '@/components/testResult';
 import { ThemedText } from '@/components/themedText';
 import { Colors } from '@/constants/theme';
 import { getAchievementsProfile, updateAchievementsProgress } from '@/features/achievements';
+import { calculateQuizReward } from '@/features/quizRewards';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useAuth } from '@/providers/authProvider';
 
@@ -37,6 +39,7 @@ import { styles } from './styles';
 export default function DictionaryScreen() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
+  const { showBanner } = useBanner();
   const { currentUser } = useAuth();
   const colorScheme = useColorScheme();
   const borderColor = colorScheme === 'dark' ? '#2d3336' : '#d0d7de';
@@ -86,18 +89,28 @@ export default function DictionaryScreen() {
     },
   });
   const progressMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (result: QuizSessionResult) => {
       if (!currentUser?.id) {
         return null;
       }
 
       const profile = await getAchievementsProfile(currentUser.id);
+      const rewardCoins = calculateQuizReward({
+        isFirstTestCompleted: profile.progress.testsCompleted === 0,
+        percentage: result.percentage,
+      });
 
-      return updateAchievementsProgress(currentUser.id, {
+      const updatedProfile = await updateAchievementsProgress(currentUser.id, {
+        balance: profile.progress.balance + rewardCoins,
         testsCompleted: profile.progress.testsCompleted + 1,
       });
+
+      return {
+        profile: updatedProfile,
+        rewardCoins,
+      };
     },
-    onSuccess: () => {
+    onSuccess: (response) => {
       if (!currentUser?.id) {
         return;
       }
@@ -105,6 +118,14 @@ export default function DictionaryScreen() {
       void queryClient.invalidateQueries({
         queryKey: ['achievements-profile', currentUser.id],
       });
+
+      if (response?.rewardCoins !== undefined) {
+        showBanner({
+          durationMs: 4200,
+          title: t('profile.reward', { count: response.rewardCoins }),
+          variant: 'reward',
+        });
+      }
     },
   });
 
@@ -152,7 +173,7 @@ export default function DictionaryScreen() {
   const handleFinishTest = useCallback((result: QuizSessionResult) => {
     setTestResult(result);
     setTest(undefined);
-    void progressMutation.mutateAsync();
+    void progressMutation.mutateAsync(result);
   }, [progressMutation]);
 
   const handleRetryTest = useCallback(() => {

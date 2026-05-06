@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
@@ -17,18 +17,29 @@ import { ScreenContainer } from '@/components/screenContainer';
 import { TestResult } from '@/components/testResult';
 import { ThemedText } from '@/components/themedText';
 import { Colors } from '@/constants/theme';
+import { getAchievementsProfile, updateAchievementsProgress } from '@/features/achievements';
+import { calculateQuizReward } from '@/features/quizRewards';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useAuth } from '@/providers/authProvider';
 
 import { styles } from './styles';
 
 const DEFAULT_LEVEL: SimplifyArticleLevel = 'A2';
 const DEFAULT_LENGTH: SimplifyArticleTargetLength = 'medium';
+const TARGET_LENGTH_MAX_SENTENCES: Record<SimplifyArticleTargetLength, number> = {
+  short: 5,
+  medium: 10,
+  long: 16,
+};
+type ArticleQuizLengthParam = SimplifyArticleTargetLength | 'original';
 
 export default function ArticleQuizScreen() {
   const { t } = useTranslation();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { showBanner } = useBanner();
   const colorScheme = useColorScheme();
+  const { currentUser } = useAuth();
   const [quizResult, setQuizResult] = useState<QuizSessionResult | null>(null);
   const [quizAttempt, setQuizAttempt] = useState(0);
   const params = useLocalSearchParams<{
@@ -65,9 +76,14 @@ export default function ArticleQuizScreen() {
         throw new Error('Article is unavailable.');
       }
 
+      const targetLength = resolveEffectiveTargetLength(
+        quizTargetLength,
+        article.content,
+      );
+
       return generateArticleQuiz({
         level: quizLevel,
-        targetLength: quizTargetLength,
+        targetLength,
         text: article.content,
         title: article.title,
       });
@@ -77,6 +93,47 @@ export default function ArticleQuizScreen() {
         title: t('article.quiz.error', { defaultValue: 'Could not generate quiz. Try again.' }),
         variant: 'error',
       });
+    },
+  });
+  const progressMutation = useMutation({
+    mutationFn: async (result: QuizSessionResult) => {
+      if (!currentUser?.id || !article) {
+        return null;
+      }
+
+      const profile = await getAchievementsProfile(currentUser.id);
+      const rewardCoins = calculateQuizReward({
+        isFirstTestCompleted: profile.progress.testsCompleted === 0,
+        level: quizLevel,
+        percentage: result.percentage,
+        targetLength: resolveEffectiveTargetLength(quizTargetLength, article.content),
+      });
+
+      await updateAchievementsProgress(currentUser.id, {
+        balance: profile.progress.balance + rewardCoins,
+        testsCompleted: profile.progress.testsCompleted + 1,
+      });
+
+      return {
+        rewardCoins,
+      };
+    },
+    onSuccess: (response) => {
+      if (!currentUser?.id) {
+        return;
+      }
+
+      void queryClient.invalidateQueries({
+        queryKey: ['achievements-profile', currentUser.id],
+      });
+
+      if (response?.rewardCoins !== undefined) {
+        showBanner({
+          durationMs: 4200,
+          title: t('profile.reward', { count: response.rewardCoins }),
+          variant: 'reward',
+        });
+      }
     },
   });
 
@@ -150,7 +207,10 @@ export default function ArticleQuizScreen() {
       ) : quizMutation.data?.questions?.length ? (
         <ArticleQuizRunner
           key={`article-quiz-${quizAttempt}`}
-          onFinish={(result) => setQuizResult(result)}
+          onFinish={(result) => {
+            setQuizResult(result);
+            void progressMutation.mutateAsync(result);
+          }}
           questions={quizMutation.data.questions}
         />
       ) : (
@@ -186,10 +246,46 @@ function normalizeLevel(value?: string): SimplifyArticleLevel | null {
 
 function normalizeTargetLength(
   value?: string,
-): SimplifyArticleTargetLength | null {
+): ArticleQuizLengthParam | null {
+  if (value === 'original') {
+    return value;
+  }
+
   if (value === 'short' || value === 'medium' || value === 'long') {
     return value;
   }
 
   return null;
+}
+
+function resolveEffectiveTargetLength(
+  targetLength: ArticleQuizLengthParam,
+  text: string,
+): SimplifyArticleTargetLength {
+  if (targetLength !== 'original') {
+    return targetLength;
+  }
+
+  const sentenceCount = countSentences(text);
+
+  if (sentenceCount <= TARGET_LENGTH_MAX_SENTENCES.short) {
+    return 'short';
+  }
+
+  if (sentenceCount <= TARGET_LENGTH_MAX_SENTENCES.medium) {
+    return 'medium';
+  }
+
+  return 'long';
+}
+
+function countSentences(text: string): number {
+  const normalizedText = text.trim();
+
+  if (!normalizedText) {
+    return 0;
+  }
+
+  const matches = normalizedText.match(/[.!?]+(?=\s|$)/g);
+  return matches?.length ?? 1;
 }
