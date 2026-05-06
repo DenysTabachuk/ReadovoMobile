@@ -66,6 +66,26 @@ Create `backend/.env` from `backend/.env.example`:
 ```env
 DATABASE_URL=postgres://readovo:readovo_password@localhost:5432/readovo
 PORT=3000
+SMTP_HOST=
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=
+SMTP_PASSWORD=
+EMAIL_FROM=
+```
+
+`SMTP_*` and `EMAIL_FROM` are used to send email verification codes. If they are
+empty in local development, the backend logs the verification code.
+
+For Gmail, use an app password instead of your normal account password:
+
+```env
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=your.email@gmail.com
+SMTP_PASSWORD=your_google_app_password
+EMAIL_FROM=Readovo <your.email@gmail.com>
 ```
 
 Start the backend:
@@ -125,16 +145,29 @@ npm start -- --clear
 
 ## Registration Flow
 
-The app currently supports registration with:
+The app supports registration with:
 
 - email
 - password
 - repeated password
 
-The frontend calls:
+The frontend first calls:
 
 ```text
 POST /auth/register
+```
+
+The backend stores the registration in `pending_user_registrations`, sends a
+6-digit code that expires in 15 minutes, and only creates a user after:
+
+```text
+POST /auth/verify-email
+```
+
+Users can request a new code with:
+
+```text
+POST /auth/resend-verification-code
 ```
 
 Passwords are not stored as plain text. The backend stores `passwordHash` and

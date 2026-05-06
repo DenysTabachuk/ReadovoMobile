@@ -10,6 +10,17 @@ export type StoredUser = {
   wordsLearned: number;
 };
 
+export type PendingUserRegistration = {
+  createdAt: string;
+  email: string;
+  id: string;
+  passwordHash: string;
+  passwordSalt: string;
+  verificationCodeHash: string;
+  verificationCodeSalt: string;
+  verificationExpiresAt: string;
+};
+
 export type AuthUser = {
   balance: number;
   createdAt: string;
@@ -21,9 +32,19 @@ export type AuthUser = {
 };
 
 export type RegisterUserResponse = {
-  user: AuthUser;
+  email: string;
+  verificationExpiresAt: string;
 };
 
 export type LoginUserResponse = {
   user: AuthUser;
+};
+
+export type VerifyEmailResponse = {
+  user: AuthUser;
+};
+
+export type ResendVerificationCodeResponse = {
+  email: string;
+  verificationExpiresAt: string;
 };

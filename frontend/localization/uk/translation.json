@@ -38,11 +38,20 @@
     "togglePasswordVisibility": "Показати або сховати пароль",
     "signingIn": "Вхід...",
     "creatingAccount": "Створюємо акаунт...",
+    "verificationCodeSent": "Код підтвердження надіслано на вашу пошту",
+    "verifyEmailTitle": "Підтвердьте email",
+    "verifyEmailDescription": "Введіть 6-значний код, який ми надіслали на {{email}}. Код діє 15 хвилин.",
+    "verificationCodeLabel": "Код підтвердження",
+    "verificationCodePlaceholder": "6-значний код",
+    "verifyEmailButton": "Підтвердити email",
+    "verifyingEmail": "Підтверджуємо email...",
+    "resendVerificationCode": "Надіслати код ще раз",
+    "resendingVerificationCode": "Надсилаємо код...",
     "success": {
       "title": "Вхід успішний"
     },
     "registrationSuccess": {
-      "title": "Акаунт створено"
+      "title": "Email підтверджено. Тепер можна увійти"
     },
     "errors": {
       "title": "Не вдалося увійти",
@@ -55,7 +64,12 @@
       "passwordRequired": "Введіть пароль",
       "invalidCredentials": "Пошта або пароль неправильні",
       "loginFailed": "Не вдалося увійти",
-      "registrationFailed": "Не вдалося створити акаунт"
+      "registrationFailed": "Не вдалося створити акаунт",
+      "invalidVerificationCodeFormat": "Введіть 6-значний код із листа",
+      "invalidOrExpiredVerificationCode": "Код неправильний або вже прострочений",
+      "emailVerificationFailed": "Не вдалося підтвердити email",
+      "pendingRegistrationNotFound": "Почніть реєстрацію ще раз, щоб отримати новий код",
+      "resendVerificationCodeFailed": "Не вдалося надіслати новий код"
     },
     "rememberMe": "Запам’ятати мене"
   },
@@ -226,4 +240,3 @@
     "balance": "Мій баланс"
   }
 }
-

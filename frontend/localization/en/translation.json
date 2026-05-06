@@ -39,11 +39,20 @@
     "togglePasswordVisibility": "Show or hide password",
     "signingIn": "Signing in...",
     "creatingAccount": "Creating account...",
+    "verificationCodeSent": "Verification code sent to your email",
+    "verifyEmailTitle": "Confirm email",
+    "verifyEmailDescription": "Enter the 6-digit code we sent to {{email}}. The code is valid for 15 minutes.",
+    "verificationCodeLabel": "Verification code",
+    "verificationCodePlaceholder": "6-digit code",
+    "verifyEmailButton": "Confirm email",
+    "verifyingEmail": "Confirming email...",
+    "resendVerificationCode": "Send code again",
+    "resendingVerificationCode": "Sending code...",
     "success": {
       "title": "Signed in successfully"
     },
     "registrationSuccess": {
-      "title": "Account created"
+      "title": "Email confirmed. You can sign in now"
     },
     "errors": {
       "title": "Sign-in failed",
@@ -56,7 +65,12 @@
       "passwordRequired": "Enter your password",
       "invalidCredentials": "Email or password is incorrect",
       "loginFailed": "Could not sign in",
-      "registrationFailed": "Could not create account"
+      "registrationFailed": "Could not create account",
+      "invalidVerificationCodeFormat": "Enter the 6-digit code from your email",
+      "invalidOrExpiredVerificationCode": "The code is incorrect or has expired",
+      "emailVerificationFailed": "Could not confirm email",
+      "pendingRegistrationNotFound": "Start registration again to receive a new code",
+      "resendVerificationCodeFailed": "Could not send a new code"
     }
   },
   "articles": {

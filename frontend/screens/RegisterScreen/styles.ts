@@ -26,4 +26,7 @@ export const styles = StyleSheet.create({
     color: '#3357d8',
     textAlign: 'center',
   },
+  verificationContent: {
+    gap: Spacing.md,
+  },
 });

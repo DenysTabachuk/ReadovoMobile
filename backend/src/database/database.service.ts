@@ -34,6 +34,19 @@ export class DatabaseService implements OnModuleDestroy, OnModuleInit {
     `);
 
     await this.query(`
+      CREATE TABLE IF NOT EXISTS pending_user_registrations (
+        id uuid PRIMARY KEY,
+        email text NOT NULL UNIQUE,
+        password_hash text NOT NULL,
+        password_salt text NOT NULL,
+        verification_code_hash text NOT NULL,
+        verification_code_salt text NOT NULL,
+        verification_expires_at timestamptz NOT NULL,
+        created_at timestamptz NOT NULL DEFAULT now()
+      );
+    `);
+
+    await this.query(`
       CREATE TABLE IF NOT EXISTS user_achievements (
         user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         achievement_id text NOT NULL,
