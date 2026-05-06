@@ -22,6 +22,16 @@ export const styles = StyleSheet.create({
     paddingBottom: 0,
   },
   setupContent: {
+    flex: 1,
+    justifyContent: 'space-between',
+  },
+  setupBody: {
     gap: Spacing.md,
+  },
+  setupButton: {
+    width: '100%',
+  },
+  setupFooter: {
+    marginTop: 'auto',
   },
 });

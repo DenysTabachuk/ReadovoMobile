@@ -155,16 +155,21 @@ export default function ArticleQuizScreen() {
         />
       ) : (
         <View style={styles.setupContent}>
-          <ThemedText type="screenTitle">{article.title}</ThemedText>
-          <ThemedText type="description">{t('article.quiz.generating', { defaultValue: 'Generating quiz...' })}</ThemedText>
-          {quizMutation.isPending ? (
-            <ActivityIndicator color={Colors[colorScheme ?? 'light'].tint} size="large" />
-          ) : null}
-          <Button
-            disabled={quizMutation.isPending}
-            onPress={() => quizMutation.mutate()}>
-            {t('article.retry')}
-          </Button>
+          <View style={styles.setupBody}>
+            <ThemedText type="screenTitle">{article.title}</ThemedText>
+            <ThemedText type="description">{t('article.quiz.generating', { defaultValue: 'Generating quiz...' })}</ThemedText>
+            {quizMutation.isPending ? (
+              <ActivityIndicator color={Colors[colorScheme ?? 'light'].tint} size="large" />
+            ) : null}
+          </View>
+          <View style={styles.setupFooter}>
+            <Button
+              disabled={quizMutation.isPending}
+              onPress={() => quizMutation.mutate()}
+              style={styles.setupButton}>
+              {t('article.retry')}
+            </Button>
+          </View>
         </View>
       )}
     </ScreenContainer>

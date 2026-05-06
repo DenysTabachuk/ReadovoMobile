@@ -42,6 +42,8 @@ export function WordTranslationSheet({
           <Button
             disabled={isAddToDictionaryDisabled}
             onPress={onAddToDictionary}
+            style={styles.actionButton}
+            textStyle={styles.actionButtonText}
             variant="secondary">
             {t('translation.addToDictionary')}
           </Button>

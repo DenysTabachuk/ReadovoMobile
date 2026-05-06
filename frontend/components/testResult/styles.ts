@@ -7,7 +7,7 @@ export const styles = StyleSheet.create({
     width: '100%',
   },
   actions: {
-    bottom: -Spacing.xxLg,
+    bottom: 0,
     gap: Spacing.sm,
     left: 0,
     position: 'absolute',
