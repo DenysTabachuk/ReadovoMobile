@@ -1,48 +1,30 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
-import {
-  fetchWikipediaArticleDetail,
-  generateArticleQuiz,
-  type SimplifyArticleLevel,
-  type SimplifyArticleTargetLength,
-} from '@/api/wikipedia';
-import { useBanner } from '@/components/banner';
 import { Button } from '@/components/button';
 import { ArticleQuizRunner, type QuizSessionResult } from '@/components/articleQuizRunner';
 import { ScreenContainer } from '@/components/screenContainer';
 import { TestResult } from '@/components/testResult';
 import { ThemedText } from '@/components/themedText';
 import { Colors } from '@/constants/theme';
-import {
-  getAchievementBadge,
-  getAchievementsProfile,
-  getNewlyUnlockedAchievements,
-  updateAchievementsProgress,
-} from '@/features/achievements';
-import { calculateQuizReward } from '@/features/quizRewards';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useAuth } from '@/providers/authProvider';
 
+import {
+  normalizeLevel,
+  normalizeTargetLength,
+} from './articleQuizParams';
+import { DEFAULT_LENGTH, DEFAULT_LEVEL } from './constants';
 import { styles } from './styles';
-
-const DEFAULT_LEVEL: SimplifyArticleLevel = 'A2';
-const DEFAULT_LENGTH: SimplifyArticleTargetLength = 'medium';
-const TARGET_LENGTH_MAX_SENTENCES: Record<SimplifyArticleTargetLength, number> = {
-  short: 5,
-  medium: 10,
-  long: 16,
-};
-type ArticleQuizLengthParam = SimplifyArticleTargetLength | 'original';
+import { useFetchWikipediaArticleDetail } from './useFetchWikipediaArticleDetail';
+import { useCompleteArticleQuiz } from './useCompleteArticleQuiz';
+import { useGenerateArticleQuiz } from './useGenerateArticleQuiz';
 
 export default function ArticleQuizScreen() {
   const { t } = useTranslation();
   const router = useRouter();
-  const queryClient = useQueryClient();
-  const { showBanner } = useBanner();
   const colorScheme = useColorScheme();
   const { currentUser } = useAuth();
   const [quizResult, setQuizResult] = useState<QuizSessionResult | null>(null);
@@ -63,103 +45,25 @@ export default function ArticleQuizScreen() {
   const quizTargetLength =
     normalizeTargetLength(rawTargetLength) ?? DEFAULT_LENGTH;
 
-  const { data: article, error, isLoading, refetch } = useQuery({
-    enabled: articleId !== null,
-    queryFn: async () => {
-      if (articleId === null) {
-        throw new Error('Invalid article id.');
-      }
-
-      return fetchWikipediaArticleDetail(articleId);
-    },
-    queryKey: ['wikipedia', 'article', articleId],
+  const {
+    data: article,
+    isError: isArticleError,
+    isLoading,
+    refetch,
+  } = useFetchWikipediaArticleDetail({
+    articleId,
   });
 
-  const quizMutation = useMutation({
-    mutationFn: async () => {
-      if (!article) {
-        throw new Error('Article is unavailable.');
-      }
-
-      const targetLength = resolveEffectiveTargetLength(
-        quizTargetLength,
-        article.content,
-      );
-
-      return generateArticleQuiz({
-        level: quizLevel,
-        targetLength,
-        text: article.content,
-        title: article.title,
-      });
-    },
-    onError: () => {
-      showBanner({
-        title: t('article.quiz.error', { defaultValue: 'Could not generate quiz. Try again.' }),
-        variant: 'error',
-      });
-    },
+  const quizMutation = useGenerateArticleQuiz({
+    article,
+    quizLevel,
+    quizTargetLength,
   });
-  const progressMutation = useMutation({
-    mutationFn: async (result: QuizSessionResult) => {
-      if (!currentUser?.id || !article) {
-        return null;
-      }
-
-      const profile = await getAchievementsProfile(currentUser.id);
-      const rewardCoins = calculateQuizReward({
-        isFirstTestCompleted: profile.progress.testsCompleted === 0,
-        level: quizLevel,
-        percentage: result.percentage,
-        targetLength: resolveEffectiveTargetLength(quizTargetLength, article.content),
-      });
-
-      const updatedProfile = await updateAchievementsProgress(currentUser.id, {
-        balance: profile.progress.balance + rewardCoins,
-        testsCompleted: profile.progress.testsCompleted + 1,
-      });
-
-      return {
-        newlyUnlockedAchievements: getNewlyUnlockedAchievements(
-          profile.achievements,
-          updatedProfile.achievements,
-        ),
-        rewardCoins,
-      };
-    },
-    onSuccess: (response) => {
-      if (!currentUser?.id) {
-        return;
-      }
-
-      void queryClient.invalidateQueries({
-        queryKey: ['achievements-profile', currentUser.id],
-      });
-
-      const achievement = response?.newlyUnlockedAchievements[0];
-
-      if (achievement) {
-        showBanner({
-          achievement: {
-            badge: getAchievementBadge(achievement.badgeKey),
-            coinsReward: achievement.coinsReward,
-          },
-          description: t(achievement.descriptionKey),
-          durationMs: 5200,
-          title: t(achievement.titleKey),
-          variant: 'achievement',
-        });
-        return;
-      }
-
-      if (response?.rewardCoins !== undefined) {
-        showBanner({
-          durationMs: 4200,
-          title: t('profile.reward', { count: response.rewardCoins }),
-          variant: 'reward',
-        });
-      }
-    },
+  const progressMutation = useCompleteArticleQuiz({
+    article,
+    currentUserId: currentUser?.id ?? undefined,
+    quizLevel,
+    quizTargetLength,
   });
 
   useEffect(() => {
@@ -169,6 +73,14 @@ export default function ArticleQuizScreen() {
 
     quizMutation.mutate();
   }, [article, quizMutation]);
+
+  useEffect(() => {
+    if (!isArticleError) {
+      return;
+    }
+
+    router.back();
+  }, [isArticleError, router]);
 
   if (articleId === null) {
     return (
@@ -198,7 +110,11 @@ export default function ArticleQuizScreen() {
     );
   }
 
-  if (error || !article) {
+  if (isArticleError) {
+    return null;
+  }
+
+  if (!article) {
     return (
       <ScreenContainer>
         <Stack.Screen options={{ title: t('article.reinforceKnowledge') }} />
@@ -259,58 +175,4 @@ export default function ArticleQuizScreen() {
       )}
     </ScreenContainer>
   );
-}
-
-function normalizeLevel(value?: string): SimplifyArticleLevel | null {
-  if (value === 'A1' || value === 'A2' || value === 'B1' || value === 'B2') {
-    return value;
-  }
-
-  return null;
-}
-
-function normalizeTargetLength(
-  value?: string,
-): ArticleQuizLengthParam | null {
-  if (value === 'original') {
-    return value;
-  }
-
-  if (value === 'short' || value === 'medium' || value === 'long') {
-    return value;
-  }
-
-  return null;
-}
-
-function resolveEffectiveTargetLength(
-  targetLength: ArticleQuizLengthParam,
-  text: string,
-): SimplifyArticleTargetLength {
-  if (targetLength !== 'original') {
-    return targetLength;
-  }
-
-  const sentenceCount = countSentences(text);
-
-  if (sentenceCount <= TARGET_LENGTH_MAX_SENTENCES.short) {
-    return 'short';
-  }
-
-  if (sentenceCount <= TARGET_LENGTH_MAX_SENTENCES.medium) {
-    return 'medium';
-  }
-
-  return 'long';
-}
-
-function countSentences(text: string): number {
-  const normalizedText = text.trim();
-
-  if (!normalizedText) {
-    return 0;
-  }
-
-  const matches = normalizedText.match(/[.!?]+(?=\s|$)/g);
-  return matches?.length ?? 1;
 }
