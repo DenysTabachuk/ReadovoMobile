@@ -26,17 +26,20 @@ import { SegmentedToggle } from '@/components/segmentedToggle';
 import { ThemedText } from '@/components/themedText';
 import { IconSymbol } from '@/components/ui/iconSymbol';
 import { Colors } from '@/constants/theme';
-import { getArticleQuizSessionKey } from '@/features/articleQuizSession';
 import {
+  createRecentArticleFromDetail,
   createSavedArticleFromDetail,
   createSavedArticlesWithArticle,
   isArticleSaved,
+  recordRecentArticle,
   readSavedArticles,
   removeSavedArticle,
+  RECENT_ARTICLES_QUERY_KEY,
   saveArticleForLater,
   SAVED_ARTICLES_QUERY_KEY,
+  getArticleQuizSessionKey,
   type SavedArticle,
-} from '@/features/savedArticles';
+} from '@/features/articles';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 
@@ -454,6 +457,18 @@ export default function ArticleScreen() {
   useEffect(() => {
     setHasImageLoadError(false);
   }, [article?.thumbnailUrl]);
+
+  useEffect(() => {
+    if (!article) {
+      return;
+    }
+
+    const recentArticle = createRecentArticleFromDetail(article);
+
+    void recordRecentArticle(recentArticle).then((recentArticles) => {
+      queryClient.setQueryData(RECENT_ARTICLES_QUERY_KEY, recentArticles);
+    });
+  }, [article, queryClient]);
 
   useEffect(() => {
     if (!isSelectedTargetLengthDisabled) {

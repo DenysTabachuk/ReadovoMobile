@@ -1,1 +1,1 @@
-export { default } from '@/screens/ArticleScreen';
+export { default } from '@/features/articles/screens/ArticleScreen';

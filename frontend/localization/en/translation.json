@@ -136,7 +136,20 @@
     "loading": "Loading articles...",
     "errorTitle": "Articles are unavailable",
     "errorDescription": "Check your internet connection and try again.",
-    "retry": "Try again"
+    "retry": "Try again",
+    "myArticles": {
+      "label": "My articles"
+    },
+    "recent": {
+      "label": "Recent",
+      "title": "Recent articles",
+      "description": "Articles you opened earlier, newest first.",
+      "emptyTitle": "No recent articles yet",
+      "emptyDescription": "Open an article and it will appear here.",
+      "openAction": "Open recent articles",
+      "openedIndicator": "Opened before"
+    },
+    "personalResults": "{{count}} articles"
   },
   "dictionary": {
     "title": "My dictionary",

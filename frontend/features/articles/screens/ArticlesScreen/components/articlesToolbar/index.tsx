@@ -20,6 +20,7 @@ import { useThemeColor } from '@/hooks/use-theme-color';
 import { styles } from './styles';
 
 export type ArticlePreviewLengthFilter = 'all' | 'short' | 'medium' | 'long';
+export type ArticlePersonalFilter = 'recent' | 'saved' | null;
 export type ArticleCategoryFilter =
   | 'all'
   | 'biography'
@@ -42,11 +43,12 @@ type CategoryOption = {
 
 type ArticlesToolbarProps = {
   categoryFilter: ArticleCategoryFilter;
-  isSavedFilterActive: boolean;
+  personalFilter: ArticlePersonalFilter;
   isRefreshingResults: boolean;
   isSearchActive: boolean;
   previewLengthFilter: ArticlePreviewLengthFilter;
   recommendedArticles: boolean;
+  recentArticlesCount: number;
   resultCount: number;
   savedArticlesCount: number;
   searchValue: string;
@@ -55,16 +57,17 @@ type ArticlesToolbarProps = {
   onChangeRecommendedArticles: (value: boolean) => void;
   onChangeSearchValue: (value: string) => void;
   onClearFilters: () => void;
-  onToggleSavedFilter: () => void;
+  onChangePersonalFilter: (value: ArticlePersonalFilter) => void;
 };
 
 export function ArticlesToolbar({
   categoryFilter,
-  isSavedFilterActive,
+  personalFilter,
   isRefreshingResults,
   isSearchActive,
   previewLengthFilter,
   recommendedArticles,
+  recentArticlesCount,
   resultCount,
   savedArticlesCount,
   searchValue,
@@ -73,7 +76,7 @@ export function ArticlesToolbar({
   onChangeRecommendedArticles,
   onChangeSearchValue,
   onClearFilters,
-  onToggleSavedFilter,
+  onChangePersonalFilter,
 }: ArticlesToolbarProps) {
   const { t } = useTranslation();
   const [isRecommendedInfoOpen, setIsRecommendedInfoOpen] = useState(false);
@@ -92,7 +95,7 @@ export function ArticlesToolbar({
   );
   const selectedCategoryColor = isDarkMode ? '#d9c7ff' : tintColor;
   const hasActiveFilters =
-    isSavedFilterActive ||
+    personalFilter !== null ||
     searchValue.trim().length > 0 ||
     previewLengthFilter !== 'all' ||
     categoryFilter !== 'all' ||
@@ -278,7 +281,7 @@ export function ArticlesToolbar({
 
       <View style={styles.categorySection}>
         <ThemedText type="bodyStrong">
-          {t('articles.categoryLabel')}
+          {t('articles.myArticles.label')}
         </ThemedText>
         <ScrollView
           horizontal
@@ -286,22 +289,24 @@ export function ArticlesToolbar({
           contentContainerStyle={styles.categoryList}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={t('articles.saved.openAction')}
-            accessibilityState={{ selected: isSavedFilterActive }}
-            onPress={onToggleSavedFilter}
+            accessibilityLabel={t('articles.recent.openAction')}
+            accessibilityState={{ selected: personalFilter === 'recent' }}
+            onPress={() =>
+              onChangePersonalFilter(personalFilter === 'recent' ? null : 'recent')
+            }
             style={({ pressed }) => [
               styles.categoryChip,
               {
-                backgroundColor: isSavedFilterActive
-                  ? selectedCategoryBackground
-                  : cardColor,
-                borderColor: isSavedFilterActive ? savedAccentColor : borderColor,
+                backgroundColor:
+                  personalFilter === 'recent' ? selectedCategoryBackground : cardColor,
+                borderColor:
+                  personalFilter === 'recent' ? selectedCategoryColor : borderColor,
                 opacity: pressed ? 0.75 : 1,
               },
             ]}>
             <Ionicons
-              color={isSavedFilterActive ? savedAccentColor : isDarkMode ? '#a78bfa' : mutedTextColor}
-              name={isSavedFilterActive ? 'bookmark' : 'bookmark-outline'}
+              color={personalFilter === 'recent' ? selectedCategoryColor : mutedTextColor}
+              name={personalFilter === 'recent' ? 'eye' : 'eye-outline'}
               size={18}
             />
             <ThemedText
@@ -309,7 +314,58 @@ export function ArticlesToolbar({
               type="bodyStrong"
               style={[
                 styles.categoryChipLabel,
-                { color: isSavedFilterActive ? savedAccentColor : mutedTextColor },
+                {
+                  color:
+                    personalFilter === 'recent' ? selectedCategoryColor : mutedTextColor,
+                },
+              ]}>
+              {t('articles.recent.label')}
+            </ThemedText>
+            <ThemedText
+              type="bodyStrong"
+              style={[
+                styles.savedCount,
+                {
+                  color:
+                    personalFilter === 'recent' ? selectedCategoryColor : mutedTextColor,
+                },
+              ]}>
+              {recentArticlesCount}
+            </ThemedText>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('articles.saved.openAction')}
+            accessibilityState={{ selected: personalFilter === 'saved' }}
+            onPress={() =>
+              onChangePersonalFilter(personalFilter === 'saved' ? null : 'saved')
+            }
+            style={({ pressed }) => [
+              styles.categoryChip,
+              {
+                backgroundColor:
+                  personalFilter === 'saved' ? selectedCategoryBackground : cardColor,
+                borderColor: personalFilter === 'saved' ? savedAccentColor : borderColor,
+                opacity: pressed ? 0.75 : 1,
+              },
+            ]}>
+            <Ionicons
+              color={
+                personalFilter === 'saved'
+                  ? savedAccentColor
+                  : isDarkMode
+                    ? '#a78bfa'
+                    : mutedTextColor
+              }
+              name={personalFilter === 'saved' ? 'bookmark' : 'bookmark-outline'}
+              size={18}
+            />
+            <ThemedText
+              numberOfLines={1}
+              type="bodyStrong"
+              style={[
+                styles.categoryChipLabel,
+                { color: personalFilter === 'saved' ? savedAccentColor : mutedTextColor },
               ]}>
               {t('articles.saved.label')}
             </ThemedText>
@@ -317,13 +373,24 @@ export function ArticlesToolbar({
               type="bodyStrong"
               style={[
                 styles.savedCount,
-                { color: isSavedFilterActive ? savedAccentColor : mutedTextColor },
+                { color: personalFilter === 'saved' ? savedAccentColor : mutedTextColor },
               ]}>
               {savedArticlesCount}
             </ThemedText>
           </Pressable>
+        </ScrollView>
+      </View>
+
+      <View style={styles.categorySection}>
+        <ThemedText type="bodyStrong">
+          {t('articles.categoryLabel')}
+        </ThemedText>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.categoryList}>
           {categoryOptions.map((option) => {
-            const isSelected = !isSavedFilterActive && option.value === categoryFilter;
+            const isSelected = personalFilter === null && option.value === categoryFilter;
             const categoryColor = isSelected
               ? selectedCategoryColor
               : isDarkMode
@@ -375,9 +442,11 @@ export function ArticlesToolbar({
       <View style={styles.resultsRow}>
         <View style={styles.resultsStatus}>
           <ThemedText type="body" style={{ color: mutedTextColor }}>
-            {isSearchActive
-              ? t('articles.searchResults', { count: resultCount })
-              : t('articles.randomResults', { count: resultCount })}
+            {personalFilter !== null
+              ? t('articles.personalResults', { count: resultCount })
+              : isSearchActive
+                ? t('articles.searchResults', { count: resultCount })
+                : t('articles.randomResults', { count: resultCount })}
           </ThemedText>
           {isRefreshingResults ? (
             <ActivityIndicator color={tintColor} size="small" />

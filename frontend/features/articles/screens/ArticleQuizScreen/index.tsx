@@ -10,7 +10,7 @@ import { ScreenContainer } from '@/components/screenContainer';
 import { TestResult } from '@/components/testResult';
 import { ThemedText } from '@/components/themedText';
 import { Colors } from '@/constants/theme';
-import { getArticleQuizSessionKey } from '@/features/articleQuizSession';
+import { getArticleQuizSessionKey } from '@/features/articles';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useAuth } from '@/providers/authProvider';
 import { type GenerateArticleQuizResponse } from '@/api/wikipedia';

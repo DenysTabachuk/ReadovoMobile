@@ -63,12 +63,17 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     height: 36,
     justifyContent: 'center',
-    marginRight: -Spacing.xs,
-    marginTop: -Spacing.xs,
+    width: 36,
+  },
+  articleActionsColumn: {
+    alignItems: 'center',
+    alignSelf: 'stretch',
+    justifyContent: 'space-between',
     width: 36,
   },
   articleExtract: {
     flexShrink: 1,
+    textAlign: 'justify',
   },
   adaptationLine: {
     flexShrink: 1,
@@ -116,5 +121,11 @@ export const styles = StyleSheet.create({
   emptyStateButton: {
     marginTop: Spacing.sm,
     minWidth: 160,
+  },
+  openedIndicator: {
+    alignItems: 'center',
+    height: 36,
+    justifyContent: 'center',
+    width: 36,
   },
 });

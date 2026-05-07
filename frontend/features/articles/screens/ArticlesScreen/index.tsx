@@ -35,13 +35,16 @@ import { IconSymbol } from '@/components/ui/iconSymbol';
 import { Colors } from '@/constants/theme';
 import {
   createSavedArticlesWithArticle,
+  isArticleRecentlyOpened,
   isArticleSaved,
   readSavedArticles,
+  readRecentArticles,
   removeSavedArticle,
   saveArticleForLater,
+  RECENT_ARTICLES_QUERY_KEY,
   SAVED_ARTICLES_QUERY_KEY,
   type SavedArticle,
-} from '@/features/savedArticles';
+} from '@/features/articles';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 
@@ -50,6 +53,7 @@ import { ArticleThumbnail } from './components/articleThumbnail';
 import {
   ArticlesToolbar,
   type ArticleCategoryFilter,
+  type ArticlePersonalFilter,
   type ArticlePreviewLengthFilter,
 } from './components/articlesToolbar';
 
@@ -71,7 +75,7 @@ export default function ArticlesScreen() {
   const [categoryFilter, setCategoryFilter] =
     useState<ArticleCategoryFilter>('all');
   const [recommendedArticles, setRecommendedArticles] = useState(true);
-  const [isSavedFilterActive, setIsSavedFilterActive] = useState(false);
+  const [personalFilter, setPersonalFilter] = useState<ArticlePersonalFilter>(null);
   const [isManualRefresh, setIsManualRefresh] = useState(false);
   const [expandedAdaptationArticleIds, setExpandedAdaptationArticleIds] =
     useState<Record<number, boolean>>({});
@@ -129,6 +133,10 @@ export default function ArticlesScreen() {
   const { data: savedArticles = [] } = useQuery({
     queryFn: readSavedArticles,
     queryKey: SAVED_ARTICLES_QUERY_KEY,
+  });
+  const { data: recentArticles = [] } = useQuery({
+    queryFn: readRecentArticles,
+    queryKey: RECENT_ARTICLES_QUERY_KEY,
   });
   const savedArticleMutation = useMutation<
     { saved: boolean; savedArticles: SavedArticle[] },
@@ -197,15 +205,20 @@ export default function ArticlesScreen() {
 
     return Array.from(articleById.values());
   }, [data?.pages]);
-  const displayedArticles = isSavedFilterActive ? savedArticles : articles;
+  const displayedArticles =
+    personalFilter === 'saved'
+      ? savedArticles
+      : personalFilter === 'recent'
+        ? recentArticles
+        : articles;
   const shouldShowInitialLoader =
-    !isSavedFilterActive && isLoading && articles.length === 0;
+    personalFilter === null && isLoading && articles.length === 0;
   const shouldShowErrorState =
-    !isSavedFilterActive && Boolean(error) && articles.length === 0;
+    personalFilter === null && Boolean(error) && articles.length === 0;
   const isUpdatingResults =
-    !isSavedFilterActive && isFetching && !isFetchingNextPage && !shouldShowInitialLoader;
+    personalFilter === null && isFetching && !isFetchingNextPage && !shouldShowInitialLoader;
   const shouldShowLoadMore =
-    !isSavedFilterActive && articles.length > 0 && hasNextPage;
+    personalFilter === null && articles.length > 0 && hasNextPage;
 
   const clearFilters = useCallback(() => {
     setSearchValue('');
@@ -213,29 +226,29 @@ export default function ArticlesScreen() {
     setPreviewLengthFilter('all');
     setCategoryFilter('all');
     setRecommendedArticles(true);
-    setIsSavedFilterActive(false);
+    setPersonalFilter(null);
   }, []);
 
   const handleChangeCategoryFilter = useCallback((value: ArticleCategoryFilter) => {
-    setIsSavedFilterActive(false);
+    setPersonalFilter(null);
     setCategoryFilter(value);
   }, []);
 
   const handleChangePreviewLengthFilter = useCallback(
     (value: ArticlePreviewLengthFilter) => {
-      setIsSavedFilterActive(false);
+      setPersonalFilter(null);
       setPreviewLengthFilter(value);
     },
     [],
   );
 
   const handleChangeRecommendedArticles = useCallback((value: boolean) => {
-    setIsSavedFilterActive(false);
+    setPersonalFilter(null);
     setRecommendedArticles(value);
   }, []);
 
   const handleChangeSearchValue = useCallback((value: string) => {
-    setIsSavedFilterActive(false);
+    setPersonalFilter(null);
     setSearchValue(value);
   }, []);
 
@@ -264,13 +277,13 @@ export default function ArticlesScreen() {
     }));
   }, []);
 
-  const handleToggleSavedFilter = useCallback(() => {
+  const handleChangePersonalFilter = useCallback((value: ArticlePersonalFilter) => {
     setSearchValue('');
     setDebouncedSearchValue('');
     setPreviewLengthFilter('all');
     setCategoryFilter('all');
     setRecommendedArticles(true);
-    setIsSavedFilterActive((current) => !current);
+    setPersonalFilter(value);
   }, []);
 
   const openArticle = useCallback((article: WikipediaArticle) => {
@@ -295,6 +308,7 @@ export default function ArticlesScreen() {
   const renderArticle = useCallback<ListRenderItem<WikipediaArticle>>(
     ({ item }) => {
       const isSaved = isArticleSaved(item.id, savedArticles);
+      const wasOpened = isArticleRecentlyOpened(item.id, recentArticles);
 
       return (
         <Pressable
@@ -316,23 +330,6 @@ export default function ArticlesScreen() {
               <ThemedText type="sectionTitle" style={styles.articleTitle}>
                 {item.title}
               </ThemedText>
-              <Pressable
-                accessibilityLabel={
-                  isSaved
-                    ? t('article.savedArticles.removeAction')
-                    : t('article.savedArticles.saveAction')
-                }
-                onPress={(event) => {
-                  event.stopPropagation();
-                  toggleSavedArticle(item);
-                }}
-                style={styles.cardBookmarkButton}>
-                <IconSymbol
-                  color={isSaved ? savedAccentColor : iconColor}
-                  name={isSaved ? 'bookmark.fill' : 'bookmark'}
-                  size={22}
-                />
-              </Pressable>
             </View>
             <ThemedText type="body" style={styles.articleExtract} numberOfLines={5}>
               {item.extract}
@@ -373,14 +370,46 @@ export default function ArticlesScreen() {
               </View>
             ) : null}
           </View>
+          <View style={styles.articleActionsColumn}>
+            <Pressable
+              accessibilityLabel={
+                isSaved
+                  ? t('article.savedArticles.removeAction')
+                  : t('article.savedArticles.saveAction')
+              }
+              onPress={(event) => {
+                event.stopPropagation();
+                toggleSavedArticle(item);
+              }}
+              style={styles.cardBookmarkButton}>
+              <IconSymbol
+                color={isSaved ? savedAccentColor : iconColor}
+                name={isSaved ? 'bookmark.fill' : 'bookmark'}
+                size={22}
+              />
+            </Pressable>
+            {wasOpened ? (
+              <View
+                accessibilityLabel={t('articles.recent.openedIndicator')}
+                style={styles.openedIndicator}>
+                <Ionicons
+                  color={colorScheme === 'dark' ? '#9ba1a6' : '#687076'}
+                  name="eye-outline"
+                  size={16}
+                />
+              </View>
+            ) : null}
+          </View>
         </Pressable>
       );
     },
     [
       borderColor,
+      colorScheme,
       expandedAdaptationArticleIds,
       iconColor,
       openArticle,
+      recentArticles,
       savedArticles,
       savedAccentColor,
       t,
@@ -434,17 +463,18 @@ export default function ArticlesScreen() {
             </View>
             <ArticlesToolbar
               categoryFilter={categoryFilter}
-              isSavedFilterActive={isSavedFilterActive}
+              personalFilter={personalFilter}
               isRefreshingResults={isUpdatingResults}
               isSearchActive={debouncedSearchValue.length > 0}
               onChangeRecommendedArticles={handleChangeRecommendedArticles}
               onChangeCategoryFilter={handleChangeCategoryFilter}
+              onChangePersonalFilter={handleChangePersonalFilter}
               onChangePreviewLengthFilter={handleChangePreviewLengthFilter}
               onChangeSearchValue={handleChangeSearchValue}
               onClearFilters={clearFilters}
-              onToggleSavedFilter={handleToggleSavedFilter}
               previewLengthFilter={previewLengthFilter}
               recommendedArticles={recommendedArticles}
+              recentArticlesCount={recentArticles.length}
               resultCount={displayedArticles.length}
               savedArticlesCount={savedArticles.length}
               searchValue={searchValue}
@@ -454,13 +484,17 @@ export default function ArticlesScreen() {
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <ThemedText type="sectionTitle" style={styles.centerTitle}>
-              {isSavedFilterActive
+              {personalFilter === 'saved'
                 ? t('articles.saved.emptyTitle')
+                : personalFilter === 'recent'
+                  ? t('articles.recent.emptyTitle')
                 : t('articles.emptyTitle')}
             </ThemedText>
             <ThemedText type="body" style={styles.centerDescription}>
-              {isSavedFilterActive
+              {personalFilter === 'saved'
                 ? t('articles.saved.emptyDescription')
+                : personalFilter === 'recent'
+                  ? t('articles.recent.emptyDescription')
                 : debouncedSearchValue.length > 0
                   ? t('articles.emptySearchDescription')
                   : t('articles.emptyFilterDescription')}
@@ -482,7 +516,7 @@ export default function ArticlesScreen() {
           ) : null
         }
         refreshControl={
-          isSavedFilterActive ? undefined : (
+          personalFilter !== null ? undefined : (
             <RefreshControl
               refreshing={isManualRefresh}
               tintColor={Colors[colorScheme ?? 'light'].tint}
