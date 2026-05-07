@@ -162,7 +162,9 @@ export class DictionaryService {
     const progress = request.progress;
 
     if (progress !== 'in_progress') {
-      throw new BadRequestException('Only in_progress status can be set manually.');
+      throw new BadRequestException(
+        'Only in_progress status can be set manually.',
+      );
     }
 
     const word = await this.dictionaryRepository.findById(wordId);
@@ -174,10 +176,7 @@ export class DictionaryService {
     const updatedWord = await this.dictionaryRepository.updateProgress(
       word.id,
       progress,
-      Math.min(
-        word.correctAnswersCount,
-        REQUIRED_CORRECT_ANSWERS_TO_LEARN - 1,
-      ),
+      Math.min(word.correctAnswersCount, REQUIRED_CORRECT_ANSWERS_TO_LEARN - 1),
     );
 
     if (!updatedWord) {

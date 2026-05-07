@@ -15,8 +15,8 @@ import { styles } from './styles';
 export default function SettingsScreen() {
   const { t } = useTranslation();
   const { signOut } = useAuth();
-  const { setThemePreference, themePreference } = usePreferences();
-  const isDarkTheme = themePreference === 'dark';
+  const { colorScheme, setThemePreference } = usePreferences();
+  const isDarkTheme = colorScheme === 'dark';
 
   const handleToggleTheme = () => {
     setThemePreference(isDarkTheme ? 'light' : 'dark');

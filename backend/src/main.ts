@@ -4,16 +4,22 @@ import { join, resolve } from 'node:path';
 
 import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { json, urlencoded } from 'express';
 
 import { AppModule } from './app.module';
 
 const bootstrapLogger = new Logger('Bootstrap');
+const REQUEST_BODY_LIMIT = '2mb';
 loadBackendEnv();
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    bodyParser: false,
+  });
 
   app.enableCors();
+  app.use(json({ limit: REQUEST_BODY_LIMIT }));
+  app.use(urlencoded({ extended: true, limit: REQUEST_BODY_LIMIT }));
 
   const port = process.env.PORT ?? 3000;
 

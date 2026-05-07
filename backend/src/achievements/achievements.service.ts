@@ -38,22 +38,24 @@ export class AchievementsService {
       refreshedUnlockedRows.map((row) => [row.achievement_id, row]),
     );
 
-    const achievements: AchievementStatus[] = achievementDefinitions.map((definition) => {
-      const unlocked = unlockedMap.get(definition.id);
-      return {
-        badgeKey: definition.badgeKey,
-        claimedAt: unlocked?.claimed_at?.toISOString() ?? null,
-        coinsReward: definition.coinsReward,
-        descriptionKey: definition.descriptionKey,
-        id: definition.id,
-        isClaimed: Boolean(unlocked?.claimed_at),
-        isUnlocked: Boolean(unlocked),
-        progressValue: definition.getProgressValue(progress),
-        targetValue: definition.targetValue,
-        titleKey: definition.titleKey,
-        unlockedAt: unlocked?.unlocked_at?.toISOString() ?? null,
-      };
-    });
+    const achievements: AchievementStatus[] = achievementDefinitions.map(
+      (definition) => {
+        const unlocked = unlockedMap.get(definition.id);
+        return {
+          badgeKey: definition.badgeKey,
+          claimedAt: unlocked?.claimed_at?.toISOString() ?? null,
+          coinsReward: definition.coinsReward,
+          descriptionKey: definition.descriptionKey,
+          id: definition.id,
+          isClaimed: Boolean(unlocked?.claimed_at),
+          isUnlocked: Boolean(unlocked),
+          progressValue: definition.getProgressValue(progress),
+          targetValue: definition.targetValue,
+          titleKey: definition.titleKey,
+          unlockedAt: unlocked?.unlocked_at?.toISOString() ?? null,
+        };
+      },
+    );
 
     return {
       achievements,
@@ -108,13 +110,13 @@ export class AchievementsService {
   private async getUserProgress(userId: string): Promise<UserProgress> {
     const [userResult, learnedWordsResult] = await Promise.all([
       this.databaseService.query<UserProgressRow>(
-      `
+        `
         SELECT lessons_completed, tests_completed, words_learned, balance
         FROM users
         WHERE id = $1
         LIMIT 1
       `,
-      [userId],
+        [userId],
       ),
       this.databaseService.query<{ count: string }>(
         `
@@ -159,7 +161,10 @@ export class AchievementsService {
   ): Promise<void> {
     const unlockedIds = new Set(unlockedRows.map((row) => row.achievement_id));
     const newUnlockIds = achievementDefinitions
-      .filter((definition) => definition.isUnlocked(progress) && !unlockedIds.has(definition.id))
+      .filter(
+        (definition) =>
+          definition.isUnlocked(progress) && !unlockedIds.has(definition.id),
+      )
       .map((definition) => definition.id);
 
     if (newUnlockIds.length === 0) {
@@ -180,7 +185,10 @@ export class AchievementsService {
     );
   }
 
-  private resolveProgressValue(next: number | undefined, current: number): number {
+  private resolveProgressValue(
+    next: number | undefined,
+    current: number,
+  ): number {
     if (typeof next !== 'number' || Number.isNaN(next)) {
       return current;
     }

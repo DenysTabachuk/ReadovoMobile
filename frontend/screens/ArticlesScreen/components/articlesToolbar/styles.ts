@@ -6,13 +6,26 @@ export const styles = StyleSheet.create({
   container: {
     gap: Spacing.md,
   },
+  searchClearButton: {
+    alignItems: 'center',
+    height: 40,
+    justifyContent: 'center',
+    width: 40,
+  },
   searchInput: {
-    borderRadius: 16,
-    borderWidth: 1,
+    flex: 1,
     fontSize: 16,
     minHeight: 52,
-    paddingHorizontal: Spacing.lg,
+    paddingLeft: Spacing.lg,
+    paddingRight: Spacing.xs,
     paddingVertical: Spacing.md,
+  },
+  searchInputContainer: {
+    alignItems: 'center',
+    borderRadius: 16,
+    borderWidth: 1,
+    flexDirection: 'row',
+    minHeight: 52,
   },
   filtersRow: {
     alignItems: 'flex-end',
@@ -55,6 +68,14 @@ export const styles = StyleSheet.create({
   filterChipActive: {
     borderWidth: 0,
   },
+  infoButton: {
+    alignItems: 'center',
+    borderRadius: 14,
+    borderWidth: 1,
+    height: 52,
+    justifyContent: 'center',
+    width: 52,
+  },
   resultsRow: {
     alignItems: 'center',
     flexDirection: 'row',
@@ -73,6 +94,7 @@ export const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
     flexDirection: 'row',
+    flex: 1,
     gap: Spacing.md,
     justifyContent: 'space-between',
     minHeight: 52,
@@ -84,11 +106,30 @@ export const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     gap: Spacing.sm,
+    minWidth: 0,
+  },
+  recommendedRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: Spacing.sm,
+  },
+  recommendedInfoContent: {
+    gap: Spacing.md,
+  },
+  recommendedInfoButton: {
+    marginTop: Spacing.sm,
+  },
+  recommendedInfoText: {
+    lineHeight: 22,
   },
   clearButton: {
     borderRadius: 999,
     minHeight: 32,
     justifyContent: 'center',
     paddingHorizontal: Spacing.sm,
+  },
+  savedCount: {
+    minWidth: 16,
+    textAlign: 'right',
   },
 });

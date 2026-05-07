@@ -58,6 +58,9 @@
       "title": "Sign-in failed",
       "default": "Could not sign in with Google",
       "missingNativeModule": "Google Sign-In is not available in this build. Rebuild the app with a development build.",
+      "googleSignInInProgress": "Google sign-in is already in progress",
+      "googlePlayServicesUnavailable": "Google Play Services is not available",
+      "googleDeveloperError": "Google sign-in is not configured correctly for this build.",
       "invalidEmail": "Enter a valid email address",
       "passwordTooShort": "Password must be at least 8 characters",
       "passwordsDoNotMatch": "Passwords do not match",
@@ -81,6 +84,12 @@
     "randomResults": "{{count}} articles in this set",
     "clearFilters": "Clear",
     "recommendedLabel": "Recommended articles",
+    "recommendedInfo": {
+      "title": "About recommended articles",
+      "description": "These articles are hand-picked by the Readovo team to make it easier to find interesting reading material, especially while you are just getting started.",
+      "openAction": "Learn about recommended articles",
+      "thanks": "Thanks!"
+    },
     "previewLengthLabel": "Description length",
     "previewLengthTitle": "Choose description length",
     "categoryLabel": "Category",
@@ -90,6 +99,19 @@
     "emptyFilterDescription": "Change or clear the filters to see more articles.",
     "loadMore": "Load more",
     "loadingMore": "Loading more...",
+    "adaptationsAvailable": "Adapted versions ready",
+    "adaptationsHint": "You can always adapt this text for yourself.",
+    "showAdaptations": "Show adapted versions",
+    "saved": {
+      "label": "Saved",
+      "title": "Saved articles",
+      "description": "Articles you saved to read later.",
+      "emptyTitle": "No saved articles yet",
+      "emptyDescription": "Save articles to find them here later.",
+      "browseCta": "Browse articles",
+      "openAction": "Open saved articles",
+      "browseAction": "Browse articles"
+    },
     "filters": {
       "previewLength": {
         "all": "Any length",
@@ -180,6 +202,7 @@
     "loading": "Loading article...",
     "errorTitle": "Article is unavailable",
     "errorDescription": "We could not load this article right now.",
+    "imageUnavailable": "Image unavailable",
     "invalidId": "This article link is invalid.",
     "retry": "Try again",
     "openOriginal": "Open original on Wikipedia",
@@ -202,9 +225,9 @@
     },
     "lengths": {
       "original": "Original (no adaptation)",
-      "short": "Short (~3-5 sentences)",
-      "medium": "Medium (~6-10 sentences)",
-      "long": "Long (~11-16 sentences)"
+      "percent10": "About 10% of the original",
+      "percent25": "About 25% of the original",
+      "percent50": "About 50% of the original"
     },
     "reinforceKnowledge": "Reinforce knowledge",
     "textMode": {
@@ -213,15 +236,26 @@
     },
     "lengthsShort": {
       "original": "Original",
-      "short": "Short",
-      "medium": "Medium",
-      "long": "Long"
+      "percent10": "10%",
+      "percent25": "25%",
+      "percent50": "50%"
     },
     "configureText": "Configure text",
+    "savedArticles": {
+      "saved": "Saved for later",
+      "removed": "Removed from saved",
+      "error": "Could not update saved articles.",
+      "saveAction": "Save article for later",
+      "removeAction": "Remove article from saved"
+    },
     "quiz": {
       "error": "Could not generate quiz. Try again.",
       "generating": "Generating quiz...",
-      "incorrect": "Incorrect"
+      "incorrect": "Incorrect",
+      "modeTitle": "Reinforce knowledge",
+      "articleKnowledge": "Check understanding of the text",
+      "vocabularyKnowledge": "Check vocabulary from the text",
+      "missingGeneratedQuiz": "Could not open the generated quiz."
     }
   },
   "translation": {

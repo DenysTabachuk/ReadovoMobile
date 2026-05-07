@@ -24,6 +24,7 @@ describe('ArticlesService', () => {
   beforeEach(() => {
     fetchMock = jest.fn();
     queryMock = jest.fn();
+    queryMock.mockResolvedValue({ rows: [] });
     global.fetch = fetchMock as typeof fetch;
     createChatCompletionMock.mockReset();
     process.env.GROQ_API_KEY = 'test-key';
@@ -330,18 +331,29 @@ describe('ArticlesService', () => {
 
     const response = await service.simplifyArticle({
       level: 'A2',
-      targetLength: 'short',
+      targetPercent: 25,
       text: 'Long article text',
       title: 'Solar System',
     });
 
     expect(createChatCompletionMock).not.toHaveBeenCalled();
     expect(response).toEqual({
+      adaptedBlocks: [
+        {
+          children: [
+            {
+              text: 'Simple text about the Solar System.',
+              type: 'text',
+            },
+          ],
+          type: 'paragraph',
+        },
+      ],
       adaptedLength: 32,
-      adaptedText: 'Simple text about the Solar System.',
       level: 'A2',
       originalLength: 120,
-      targetLength: 'short',
+      questions: undefined,
+      targetPercent: 25,
       title: 'Solar System',
     });
   });
@@ -354,7 +366,19 @@ describe('ArticlesService', () => {
       choices: [
         {
           message: {
-            content: 'The Solar System has the Sun and planets.',
+            content: JSON.stringify({
+              adaptedBlocks: [
+                {
+                  children: [
+                    {
+                      text: 'The Solar System has the Sun and planets.',
+                      type: 'text',
+                    },
+                  ],
+                  type: 'paragraph',
+                },
+              ],
+            }),
           },
         },
       ],
@@ -362,7 +386,7 @@ describe('ArticlesService', () => {
 
     const response = await service.simplifyArticle({
       level: 'A2',
-      targetLength: 'short',
+      targetPercent: 25,
       text: 'Long article text',
       title: 'Solar System',
     });
@@ -373,13 +397,23 @@ describe('ArticlesService', () => {
         model: 'llama-3.3-70b-versatile',
       }),
     );
-    expect(queryMock).toHaveBeenCalledTimes(2);
+    expect(queryMock).toHaveBeenCalledTimes(3);
     expect(response).toEqual({
+      adaptedBlocks: [
+        {
+          children: [
+            {
+              text: 'The Solar System has the Sun and planets.',
+              type: 'text',
+            },
+          ],
+          type: 'paragraph',
+        },
+      ],
       adaptedLength: 41,
-      adaptedText: 'The Solar System has the Sun and planets.',
       level: 'A2',
       originalLength: 17,
-      targetLength: 'short',
+      targetPercent: 25,
       title: 'Solar System',
     });
   });
@@ -404,7 +438,6 @@ describe('ArticlesService', () => {
                   type: 'paragraph',
                 },
               ],
-              adaptedText: 'The Sun is a star.',
               questions: [
                 {
                   correctOptionIds: ['a'],
@@ -425,12 +458,11 @@ describe('ArticlesService', () => {
 
     const response = await service.simplifyArticle({
       level: 'A2',
-      targetLength: 'short',
+      targetPercent: 25,
       text: 'Long article text',
       title: 'Solar System',
     });
 
-    expect(response.adaptedText).toBe('The Sun is a star.');
     expect(response.adaptedBlocks).toHaveLength(2);
     expect(response.questions).toEqual([
       {
@@ -444,5 +476,184 @@ describe('ArticlesService', () => {
         type: 'true_false',
       },
     ]);
+  });
+
+  it('prepares all percent variants for persisted article adaptations', async () => {
+    createChatCompletionMock.mockImplementation(
+      (request: { messages: Array<{ content?: string }> }) => {
+        const prompt = String(request.messages[1]?.content ?? '');
+        const percentMatch = prompt.match(/about (\d+)%/);
+        const percent = percentMatch?.[1] ?? '25';
+
+        return Promise.resolve({
+          choices: [
+            {
+              message: {
+                content: JSON.stringify({
+                  adaptedBlocks: [
+                    {
+                      children: [
+                        {
+                          text: `Solar System summary ${percent}%.`,
+                          type: 'text',
+                        },
+                      ],
+                      type: 'paragraph',
+                    },
+                  ],
+                }),
+              },
+            },
+          ],
+        });
+      },
+    );
+
+    const response = await service.simplifyArticle({
+      articleId: 42,
+      level: 'A2',
+      targetPercent: 25,
+      text: 'Long article text',
+      title: 'Solar System',
+    });
+
+    expect(createChatCompletionMock).toHaveBeenCalledTimes(3);
+    expect(queryMock).toHaveBeenCalledTimes(7);
+    expect(response.targetPercent).toBe(25);
+    expect(response.adaptedBlocks[0]).toEqual({
+      children: [{ text: 'Solar System summary 25%.', type: 'text' }],
+      type: 'paragraph',
+    });
+  });
+
+  it('simplifies long structured articles in chunks and preserves selected media blocks', async () => {
+    const firstParagraph =
+      `${'The Sun gives Earth light and heat. '.repeat(220)}`.trim();
+    const secondParagraph =
+      `${'Planets move around the Sun in space. '.repeat(220)}`.trim();
+    const text = `${firstParagraph}\n\n${secondParagraph}`;
+
+    createChatCompletionMock
+      .mockResolvedValueOnce({
+        choices: [
+          {
+            message: {
+              content: JSON.stringify({
+                adaptedBlocks: [
+                  {
+                    children: [
+                      { text: 'The Sun gives Earth light.', type: 'text' },
+                    ],
+                    type: 'paragraph',
+                  },
+                  {
+                    alt: 'The Sun',
+                    caption: 'The Sun',
+                    src: 'https://upload.wikimedia.org/sun.jpg',
+                    type: 'image',
+                  },
+                ],
+              }),
+            },
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        choices: [
+          {
+            message: {
+              content: JSON.stringify({
+                adaptedBlocks: [
+                  {
+                    children: [
+                      { text: 'Planets move around the Sun.', type: 'text' },
+                    ],
+                    type: 'paragraph',
+                  },
+                  {
+                    rows: [
+                      [
+                        { header: true, text: 'Planet' },
+                        { header: true, text: 'Type' },
+                      ],
+                      [{ text: 'Earth' }, { text: 'Rocky' }],
+                    ],
+                    type: 'table',
+                  },
+                ],
+              }),
+            },
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        choices: [
+          {
+            message: {
+              content: JSON.stringify({
+                questions: [
+                  {
+                    correctOptionIds: ['a'],
+                    id: 'q-1',
+                    options: [
+                      { id: 'a', text: 'True' },
+                      { id: 'b', text: 'False' },
+                    ],
+                    prompt: 'The Sun gives Earth light.',
+                    type: 'true_false',
+                  },
+                ],
+              }),
+            },
+          },
+        ],
+      });
+
+    const response = await service.simplifyArticle({
+      blocks: [
+        {
+          children: [{ text: firstParagraph, type: 'text' }],
+          type: 'paragraph',
+        },
+        {
+          alt: 'The Sun',
+          caption: 'The Sun',
+          src: 'https://upload.wikimedia.org/sun.jpg',
+          type: 'image',
+        },
+        {
+          children: [{ text: secondParagraph, type: 'text' }],
+          type: 'paragraph',
+        },
+        {
+          rows: [
+            [
+              { header: true, text: 'Planet' },
+              { header: true, text: 'Type' },
+            ],
+            [{ text: 'Earth' }, { text: 'Rocky' }],
+          ],
+          type: 'table',
+        },
+      ],
+      level: 'A2',
+      targetPercent: 25,
+      text,
+      title: 'Solar System',
+    });
+
+    expect(createChatCompletionMock).toHaveBeenCalledTimes(3);
+    expect(response.adaptedBlocks).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          src: 'https://upload.wikimedia.org/sun.jpg',
+          type: 'image',
+        }),
+        expect.objectContaining({
+          type: 'table',
+        }),
+      ]),
+    );
+    expect(response.questions).toHaveLength(1);
   });
 });

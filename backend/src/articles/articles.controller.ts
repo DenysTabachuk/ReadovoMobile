@@ -11,6 +11,7 @@ import {
 import { ArticlesService } from './articles.service';
 import {
   type ArticleSimplificationLevel,
+  type ArticleSimplificationTargetPercent,
   type ArticleSimplificationTargetLength,
   type GenerateArticleQuizRequest,
   type ArticleQuizQuestion,
@@ -23,6 +24,7 @@ import {
 } from './types';
 
 const DEFAULT_TARGET_LENGTH: ArticleSimplificationTargetLength = 'short';
+const DEFAULT_TARGET_PERCENT: ArticleSimplificationTargetPercent = 25;
 const SIMPLIFICATION_LEVELS: ArticleSimplificationLevel[] = [
   'A1',
   'A2',
@@ -47,6 +49,7 @@ const TARGET_LENGTHS: ArticleSimplificationTargetLength[] = [
   'medium',
   'long',
 ];
+const TARGET_PERCENTS: ArticleSimplificationTargetPercent[] = [10, 25, 50];
 const PREVIEW_LENGTHS: WikipediaArticlePreviewLength[] = [
   'all',
   'short',
@@ -169,12 +172,12 @@ export class ArticlesController {
   ): Promise<SimplifyArticleResponse> {
     const text = body.text?.trim();
     const title = body.title?.trim();
+    const articleId = Number(body.articleId);
     const level = body.level?.trim().toUpperCase() as
       | ArticleSimplificationLevel
       | undefined;
-    const targetLength = body.targetLength?.trim().toLowerCase() as
-      | ArticleSimplificationTargetLength
-      | undefined;
+    const targetPercent =
+      body.targetPercent === undefined ? undefined : Number(body.targetPercent);
 
     if (!text) {
       throw new BadRequestException('Article text is required.');
@@ -184,13 +187,23 @@ export class ArticlesController {
       throw new BadRequestException('Article level is invalid.');
     }
 
-    if (targetLength && !TARGET_LENGTHS.includes(targetLength)) {
-      throw new BadRequestException('Target length is invalid.');
+    if (
+      targetPercent !== undefined &&
+      !TARGET_PERCENTS.includes(
+        targetPercent as ArticleSimplificationTargetPercent,
+      )
+    ) {
+      throw new BadRequestException('Target percent is invalid.');
     }
 
     return this.articlesService.simplifyArticle({
+      articleId:
+        Number.isInteger(articleId) && articleId > 0 ? articleId : undefined,
+      blocks: Array.isArray(body.blocks) ? body.blocks : undefined,
       level,
-      targetLength: targetLength ?? DEFAULT_TARGET_LENGTH,
+      targetPercent:
+        (targetPercent as ArticleSimplificationTargetPercent | undefined) ??
+        DEFAULT_TARGET_PERCENT,
       text,
       title,
     });

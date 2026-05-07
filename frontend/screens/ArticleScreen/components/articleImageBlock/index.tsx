@@ -1,8 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Pressable } from 'react-native';
-import ImageViewing from 'react-native-image-viewing';
+import { useTranslation } from 'react-i18next';
+import { ActivityIndicator, Modal, Pressable, View } from 'react-native';
+import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
 
 import { ThemedText } from '@/components/themedText';
 import { ThemedView } from '@/components/themedView';
@@ -16,17 +22,28 @@ type ArticleImageBlockProps = {
   src: string;
 };
 
-const FALLBACK_TITLE = 'Image unavailable';
 const MAX_CAPTION_LINES = 4;
 const MAX_ALT_FALLBACK_LINES = 5;
+const MIN_VIEWER_SCALE = 1;
+const MAX_VIEWER_SCALE = 4;
+const DOUBLE_TAP_VIEWER_SCALE = 2;
 
 export function ArticleImageBlock({
   alt,
   caption,
   src,
 }: ArticleImageBlockProps) {
+  const { t } = useTranslation();
   const [hasLoadError, setHasLoadError] = useState(false);
   const [viewerOpen, setViewerOpen] = useState(false);
+  const [viewerLoadError, setViewerLoadError] = useState(false);
+  const [viewerLoaded, setViewerLoaded] = useState(false);
+  const viewerScale = useSharedValue(MIN_VIEWER_SCALE);
+  const savedViewerScale = useSharedValue(MIN_VIEWER_SCALE);
+  const viewerTranslateX = useSharedValue(0);
+  const viewerTranslateY = useSharedValue(0);
+  const savedViewerTranslateX = useSharedValue(0);
+  const savedViewerTranslateY = useSharedValue(0);
   const borderColor = useThemeColor(
     { dark: 'rgba(255, 255, 255, 0.16)', light: 'rgba(17, 24, 28, 0.12)' },
     'icon',
@@ -45,46 +62,134 @@ export function ArticleImageBlock({
 
     return normalizedCaption ?? normalizedAlt ?? null;
   }, [alt, caption]);
-  const viewerImages = useMemo(() => [{ uri: src }], [src]);
+  const resetViewerTransform = useCallback(() => {
+    viewerScale.value = MIN_VIEWER_SCALE;
+    savedViewerScale.value = MIN_VIEWER_SCALE;
+    viewerTranslateX.value = 0;
+    viewerTranslateY.value = 0;
+    savedViewerTranslateX.value = 0;
+    savedViewerTranslateY.value = 0;
+  }, [
+    savedViewerScale,
+    savedViewerTranslateX,
+    savedViewerTranslateY,
+    viewerScale,
+    viewerTranslateX,
+    viewerTranslateY,
+  ]);
+  const pinchGesture = useMemo(
+    () =>
+      Gesture.Pinch()
+        .onUpdate((event) => {
+          viewerScale.value = clampViewerScale(
+            savedViewerScale.value * event.scale,
+          );
+        })
+        .onEnd(() => {
+          if (viewerScale.value <= MIN_VIEWER_SCALE) {
+            viewerScale.value = withSpring(MIN_VIEWER_SCALE);
+            savedViewerScale.value = MIN_VIEWER_SCALE;
+            viewerTranslateX.value = withSpring(0);
+            viewerTranslateY.value = withSpring(0);
+            savedViewerTranslateX.value = 0;
+            savedViewerTranslateY.value = 0;
+            return;
+          }
+
+          savedViewerScale.value = viewerScale.value;
+        }),
+    [
+      savedViewerScale,
+      savedViewerTranslateX,
+      savedViewerTranslateY,
+      viewerScale,
+      viewerTranslateX,
+      viewerTranslateY,
+    ],
+  );
+  const panGesture = useMemo(
+    () =>
+      Gesture.Pan()
+        .onUpdate((event) => {
+          if (viewerScale.value <= MIN_VIEWER_SCALE) {
+            return;
+          }
+
+          viewerTranslateX.value = savedViewerTranslateX.value + event.translationX;
+          viewerTranslateY.value = savedViewerTranslateY.value + event.translationY;
+        })
+        .onEnd(() => {
+          savedViewerTranslateX.value = viewerTranslateX.value;
+          savedViewerTranslateY.value = viewerTranslateY.value;
+        }),
+    [
+      savedViewerTranslateX,
+      savedViewerTranslateY,
+      viewerScale,
+      viewerTranslateX,
+      viewerTranslateY,
+    ],
+  );
+  const doubleTapGesture = useMemo(
+    () =>
+      Gesture.Tap()
+        .numberOfTaps(2)
+        .onEnd(() => {
+          if (viewerScale.value > MIN_VIEWER_SCALE) {
+            viewerScale.value = withSpring(MIN_VIEWER_SCALE);
+            savedViewerScale.value = MIN_VIEWER_SCALE;
+            viewerTranslateX.value = withSpring(0);
+            viewerTranslateY.value = withSpring(0);
+            savedViewerTranslateX.value = 0;
+            savedViewerTranslateY.value = 0;
+            return;
+          }
+
+          viewerScale.value = withSpring(DOUBLE_TAP_VIEWER_SCALE);
+          savedViewerScale.value = DOUBLE_TAP_VIEWER_SCALE;
+        }),
+    [
+      savedViewerScale,
+      savedViewerTranslateX,
+      savedViewerTranslateY,
+      viewerScale,
+      viewerTranslateX,
+      viewerTranslateY,
+    ],
+  );
+  const viewerGesture = useMemo(
+    () => Gesture.Simultaneous(pinchGesture, panGesture, doubleTapGesture),
+    [doubleTapGesture, panGesture, pinchGesture],
+  );
+  const viewerImageStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: viewerTranslateX.value },
+      { translateY: viewerTranslateY.value },
+      { scale: viewerScale.value },
+    ],
+  }));
 
   useEffect(() => {
     setHasLoadError(false);
     setViewerOpen(false);
-  }, [src]);
+    setViewerLoadError(false);
+    setViewerLoaded(false);
+    resetViewerTransform();
+  }, [resetViewerTransform, src]);
 
   const handleOpenViewer = useCallback(() => {
+    setViewerLoadError(false);
+    setViewerLoaded(false);
+    resetViewerTransform();
     setViewerOpen(true);
-  }, []);
+  }, [resetViewerTransform]);
 
   const handleCloseViewer = useCallback(() => {
     setViewerOpen(false);
-  }, []);
-
-  const ViewerHeader = useCallback(
-    () => (
-      <Pressable
-        hitSlop={12}
-        onPress={handleCloseViewer}
-        style={styles.viewerCloseButton}>
-        <Ionicons color="#ffffff" name="close" size={28} />
-      </Pressable>
-    ),
-    [handleCloseViewer],
-  );
-  const ViewerFooter = useCallback(
-    () =>
-      caption ? (
-        <ThemedText
-          darkColor="#ffffff"
-          lightColor="#ffffff"
-          numberOfLines={3}
-          style={styles.viewerCaption}
-          type="body">
-          {caption}
-        </ThemedText>
-      ) : null,
-    [caption],
-  );
+    setViewerLoadError(false);
+    setViewerLoaded(false);
+    resetViewerTransform();
+  }, [resetViewerTransform]);
 
   if (!src || hasLoadError) {
     return (
@@ -94,7 +199,7 @@ export function ArticleImageBlock({
           lightColor={fallbackBackgroundColor}
           style={[styles.fallback, { borderColor }]}>
           <ThemedText style={styles.fallbackTitle} type="bodyStrong">
-            {FALLBACK_TITLE}
+            {t('article.imageUnavailable')}
           </ThemedText>
           {fallbackText ? (
             <ThemedText
@@ -131,19 +236,65 @@ export function ArticleImageBlock({
           {caption}
         </ThemedText>
       ) : null}
-      <ImageViewing
+      <Modal
         animationType="fade"
-        backgroundColor="#000000"
-        doubleTapToZoomEnabled
-        FooterComponent={ViewerFooter}
-        HeaderComponent={ViewerHeader}
-        imageIndex={0}
-        images={viewerImages}
         onRequestClose={handleCloseViewer}
         presentationStyle="overFullScreen"
-        swipeToCloseEnabled
-        visible={viewerOpen}
-      />
+        transparent
+        visible={viewerOpen}>
+        <GestureHandlerRootView style={styles.viewerRoot}>
+          <View style={styles.viewer}>
+            <Pressable
+              hitSlop={12}
+              onPress={handleCloseViewer}
+              style={styles.viewerCloseButton}>
+              <Ionicons color="#ffffff" name="close" size={28} />
+            </Pressable>
+            {!viewerLoaded && !viewerLoadError ? (
+              <View style={styles.viewerLoading}>
+                <ActivityIndicator color="#ffffff" size="large" />
+              </View>
+            ) : null}
+            {viewerLoadError ? (
+              <ThemedText
+                darkColor="#ffffff"
+                lightColor="#ffffff"
+                style={styles.viewerFallbackTitle}
+                type="bodyStrong">
+                {t('article.imageUnavailable')}
+              </ThemedText>
+            ) : (
+              <GestureDetector gesture={viewerGesture}>
+                <Animated.View style={[styles.viewerImageWrapper, viewerImageStyle]}>
+                  <Image
+                    contentFit="contain"
+                    onError={() => setViewerLoadError(true)}
+                    onLoad={() => setViewerLoaded(true)}
+                    source={{ uri: src }}
+                    style={styles.viewerImage}
+                  />
+                </Animated.View>
+              </GestureDetector>
+            )}
+            {caption ? (
+              <ThemedText
+                darkColor="#ffffff"
+                lightColor="#ffffff"
+                numberOfLines={3}
+                style={styles.viewerCaption}
+                type="body">
+                {caption}
+              </ThemedText>
+            ) : null}
+          </View>
+        </GestureHandlerRootView>
+      </Modal>
     </ThemedView>
   );
+}
+
+function clampViewerScale(value: number) {
+  'worklet';
+
+  return Math.min(Math.max(value, MIN_VIEWER_SCALE), MAX_VIEWER_SCALE);
 }

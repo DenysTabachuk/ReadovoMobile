@@ -29,6 +29,10 @@ import { ArticleImageBlock } from '../articleImageBlock';
 import { ArticleTableBlock } from '../articleTableBlock';
 import { TouchableWord } from '../touchableWord';
 import { styles } from './styles';
+import {
+  splitTextToTouchableParts,
+  type TouchableTextPart,
+} from './textParts';
 
 type InteractiveArticleTextProps = {
   blocks?: ArticleBlock[];
@@ -49,29 +53,6 @@ type ArticleBlockListItem = {
   sourceIndex: number;
 };
 
-type SentenceRange = {
-  end: number;
-  text: string;
-};
-
-type TouchableTextPart =
-  | {
-      bold?: boolean;
-      italic?: boolean;
-      key: string;
-      text: string;
-      type: 'text';
-    }
-  | {
-      bold?: boolean;
-      contextSentence?: string;
-      italic?: boolean;
-      key: string;
-      text: string;
-      type: 'word';
-      word: string;
-    };
-
 type TouchableInlineTextProps = {
   nodes: InlineNode[];
   onWordPress: InteractiveArticleTextProps['onWordPress'];
@@ -91,7 +72,6 @@ type TouchableListItemProps = {
 
 const LIST_ITEM_PATTERN = /^([*#-]+|[\u2022\u25cf\u25aa\u25e6]+|[A-Za-z0-9]+[.)])\s*(.*)$/;
 const SECTION_HEADING_PATTERN = /^(={2,})\s*(.*?)\s*\1$/;
-const SENTENCE_PATTERN = /[^.!?\n]+(?:[.!?]+(?=\s|$)|$)|\n+/g;
 
 // FlatList virtualization tuning for large articles:
 // - INITIAL_RENDER_BLOCK_COUNT: blocks rendered immediately when the screen opens.
@@ -300,45 +280,6 @@ export function InteractiveArticleText({
       contentContainerStyle={contentContainerStyle}
     />
   );
-}
-
-export function splitTextToTouchableParts(
-  nodes: InlineNode[],
-  prefix: string,
-): TouchableTextPart[] {
-  const text = nodes.map((node) => node.text).join('');
-  const sentenceRanges = getSentenceRanges(text);
-  const parts: TouchableTextPart[] = [];
-  let cursor = 0;
-
-  nodes.forEach((node, index) => {
-    const start = cursor;
-    const end = start + node.text.length;
-
-    if (node.type === 'word') {
-      parts.push({
-        bold: node.bold,
-        contextSentence: getSentenceForRange(sentenceRanges, start, end),
-        italic: node.italic,
-        key: `${prefix}-word-${index}-${start}`,
-        text: node.text,
-        type: 'word',
-        word: normalizeWord(node.text),
-      });
-    } else {
-      parts.push({
-        bold: node.bold,
-        italic: node.italic,
-        key: `${prefix}-text-${index}-${start}`,
-        text: node.text,
-        type: 'text',
-      });
-    }
-
-    cursor = end;
-  });
-
-  return parts;
 }
 
 function renderTouchableParts(params: {
@@ -642,39 +583,6 @@ function createInlineNodesFromPlainText(text: string): InlineNode[] {
   }
 
   return nodes;
-}
-
-function getSentenceRanges(text: string): SentenceRange[] {
-  return Array.from(text.matchAll(SENTENCE_PATTERN))
-    .map((match) => {
-      const sentenceText = match[0].trim();
-
-      if (!sentenceText || sentenceText === '\n') {
-        return null;
-      }
-
-      return {
-        end: (match.index ?? 0) + match[0].length,
-        text: sentenceText,
-      };
-    })
-    .filter((range): range is SentenceRange => range !== null);
-}
-
-function getSentenceForRange(
-  sentenceRanges: SentenceRange[],
-  start: number,
-  end: number,
-): string {
-  const sentence = sentenceRanges.find(
-    (range) => start < range.end && end <= range.end,
-  );
-
-  return sentence?.text ?? '';
-}
-
-function normalizeWord(word: string): string {
-  return word.replaceAll('\u2019', "'").toLowerCase();
 }
 
 function getHeadingTypographyType(level: 1 | 2 | 3) {

@@ -17,6 +17,8 @@ const MAPPING = {
   'house.fill': 'home',
   'paperplane.fill': 'send',
   'book.fill': 'menu-book',
+  bookmark: 'bookmark-border',
+  'bookmark.fill': 'bookmark',
   'gearshape.fill': 'settings',
   'person.fill': 'person',
   'sun.max.fill': 'wb-sunny',

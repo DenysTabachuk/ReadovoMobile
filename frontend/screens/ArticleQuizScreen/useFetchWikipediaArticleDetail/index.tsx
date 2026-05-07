@@ -18,7 +18,7 @@ export function useFetchWikipediaArticleDetail({
     enabled: articleId !== null,
     queryFn: async () => {
       if (articleId === null) {
-        throw new Error('Invalid article id.');
+        throw new Error('article.invalidId');
       }
 
       return fetchWikipediaArticleDetail(articleId);

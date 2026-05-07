@@ -31,6 +31,12 @@ export const styles = StyleSheet.create({
     height: 220,
     width: '100%',
   },
+  viewer: {
+    alignItems: 'center',
+    backgroundColor: '#000000',
+    flex: 1,
+    justifyContent: 'center',
+  },
   viewerCaption: {
     bottom: Spacing.xLg,
     left: Spacing.xLg,
@@ -50,5 +56,29 @@ export const styles = StyleSheet.create({
     top: Spacing.xLg,
     width: 44,
     zIndex: 2,
+  },
+  viewerFallbackTitle: {
+    paddingHorizontal: Spacing.xLg,
+    textAlign: 'center',
+  },
+  viewerImage: {
+    height: '100%',
+    width: '100%',
+  },
+  viewerImageWrapper: {
+    height: '100%',
+    width: '100%',
+  },
+  viewerLoading: {
+    alignItems: 'center',
+    bottom: 0,
+    justifyContent: 'center',
+    left: 0,
+    position: 'absolute',
+    right: 0,
+    top: 0,
+  },
+  viewerRoot: {
+    flex: 1,
   },
 });

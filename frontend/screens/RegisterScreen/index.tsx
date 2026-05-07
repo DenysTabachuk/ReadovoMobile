@@ -80,7 +80,9 @@ export default function RegisterScreen() {
           : 'auth.errors.registrationFailed';
 
       showBanner({
-        title: t(messageKey),
+        title: t(messageKey, {
+          defaultValue: t('auth.errors.registrationFailed'),
+        }),
         variant: 'error',
       });
     } finally {
@@ -121,7 +123,9 @@ export default function RegisterScreen() {
           : 'auth.errors.emailVerificationFailed';
 
       showBanner({
-        title: t(messageKey),
+        title: t(messageKey, {
+          defaultValue: t('auth.errors.emailVerificationFailed'),
+        }),
         variant: 'error',
       });
     } finally {
@@ -151,7 +155,9 @@ export default function RegisterScreen() {
           : 'auth.errors.resendVerificationCodeFailed';
 
       showBanner({
-        title: t(messageKey),
+        title: t(messageKey, {
+          defaultValue: t('auth.errors.resendVerificationCodeFailed'),
+        }),
         variant: 'error',
       });
     } finally {

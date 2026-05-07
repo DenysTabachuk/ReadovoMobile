@@ -11,8 +11,11 @@ import {
   type WikipediaArticleDetail,
 } from './types';
 
+const ARTICLE_QUIZ_GENERATION_TIMEOUT_MS = 60000;
+
 export type {
   ArticleBlock,
+  ArticleAdaptationSummary,
   ArticleQuizQuestion,
   ArticleQuizQuestionOption,
   ArticleQuizQuestionType,
@@ -24,6 +27,7 @@ export type {
   SimplifyArticleRequest,
   SimplifyArticleResponse,
   SimplifyArticleTargetLength,
+  SimplifyArticleTargetPercent,
   TableCell,
   WikipediaArticle,
   WikipediaArticleCategory,
@@ -61,7 +65,7 @@ export async function fetchWikipediaArticles(
   const response = await fetch(`${API_BASE_URL}/articles?${searchParams.toString()}`);
 
   if (!response.ok) {
-    throw new Error('Failed to fetch Wikipedia articles.');
+    throw new Error('articles.errorDescription');
   }
 
   return response.json() as Promise<WikipediaArticle[]>;
@@ -85,7 +89,7 @@ export async function fetchWikipediaArticleDetail(
   );
 
   if (!response.ok) {
-    throw new Error('Failed to fetch Wikipedia article.');
+    throw new Error('article.errorDescription');
   }
 
   return response.json() as Promise<WikipediaArticleDetail>;
@@ -129,16 +133,31 @@ export async function simplifyWikipediaArticle(
 export async function generateArticleQuiz(
   request: GenerateArticleQuizRequest
 ): Promise<GenerateArticleQuizResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/articles/quiz`, {
-    body: JSON.stringify(request),
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    method: 'POST',
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(
+    () => controller.abort(),
+    ARTICLE_QUIZ_GENERATION_TIMEOUT_MS,
+  );
+
+  let response: Response;
+
+  try {
+    response = await fetch(`${API_BASE_URL}/api/articles/quiz`, {
+      body: JSON.stringify(request),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      method: 'POST',
+      signal: controller.signal,
+    });
+  } catch {
+    throw new Error('article.quiz.error');
+  } finally {
+    clearTimeout(timeoutId);
+  }
 
   if (!response.ok) {
-    throw new Error('article.quizError');
+    throw new Error('article.quiz.error');
   }
 
   return response.json() as Promise<GenerateArticleQuizResponse>;

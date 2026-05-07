@@ -80,14 +80,34 @@ export class DatabaseService implements OnModuleDestroy, OnModuleInit {
     await this.query(`
       CREATE TABLE IF NOT EXISTS article_simplifications (
         cache_key text PRIMARY KEY,
+        article_id integer,
         title text NOT NULL,
         level text NOT NULL,
         target_length text NOT NULL,
+        target_percent integer,
+        source_hash text,
         original_length integer NOT NULL,
-        adapted_text text NOT NULL,
+        adapted_text text,
+        adapted_blocks jsonb,
+        questions jsonb,
         adapted_length integer NOT NULL,
         created_at timestamptz NOT NULL DEFAULT now()
       );
+    `);
+
+    await this.query(`
+      ALTER TABLE article_simplifications
+      ADD COLUMN IF NOT EXISTS article_id integer,
+      ADD COLUMN IF NOT EXISTS target_percent integer,
+      ADD COLUMN IF NOT EXISTS source_hash text,
+      ADD COLUMN IF NOT EXISTS adapted_blocks jsonb,
+      ADD COLUMN IF NOT EXISTS questions jsonb,
+      ALTER COLUMN adapted_text DROP NOT NULL;
+    `);
+
+    await this.query(`
+      CREATE INDEX IF NOT EXISTS article_simplifications_article_id_idx
+      ON article_simplifications (article_id);
     `);
 
     await this.query(`

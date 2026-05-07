@@ -5,15 +5,18 @@ import { isDeveloperError } from '../isDeveloperError';
 
 export function getGoogleSignInUserMessage(error: { code: string }) {
   if (error.code === statusCodes.IN_PROGRESS) {
-    return 'Google sign in is already in progress';
+    return 'auth.errors.googleSignInInProgress';
   }
 
   if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
-    return 'Google Play Services is not available';
+    return 'auth.errors.googlePlayServicesUnavailable';
   }
 
   if (isDeveloperError(error)) {
-    return `Google Sign-In DEVELOPER_ERROR. Check Android OAuth client: package ${ANDROID_PACKAGE_NAME}, SHA-1 ${DEBUG_SHA1}.`;
+    console.error(
+      `[GoogleSignIn] DEVELOPER_ERROR. Check Android OAuth client: package ${ANDROID_PACKAGE_NAME}, SHA-1 ${DEBUG_SHA1}.`,
+    );
+    return 'auth.errors.googleDeveloperError';
   }
 
   return null;

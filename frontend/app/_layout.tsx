@@ -5,6 +5,7 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { Platform, View } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import '@/localization';
 import '@/devtools/reactotron';
@@ -44,44 +45,47 @@ function RootLayoutContent() {
       return;
     }
 
+    void NavigationBar.setBackgroundColorAsync(backgroundColor);
     void NavigationBar.setButtonStyleAsync(
       colorScheme === 'dark' ? 'light' : 'dark',
     );
   }, [backgroundColor, colorScheme]);
 
   return (
-    <View style={{ backgroundColor, flex: 1 }}>
-      <SafeAreaProvider>
-        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-          <QueryProvider>
-            <BannerProvider>
-              <Stack
-                screenOptions={{
-                  contentStyle: {
-                    backgroundColor,
-                  },
-                }}>
-                <Stack.Screen name="index" options={{ headerShown: false }} />
-                <Stack.Screen name="about" options={{ headerShown: false }} />
-                <Stack.Screen name="login" options={{ headerShown: false }} />
-                <Stack.Screen name="register" options={{ headerShown: false }} />
-                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                <Stack.Screen name="article/[id]" />
-                <Stack.Screen name="article-quiz/[id]" />
-                <Stack.Screen
-                  name="modal"
-                  options={{ presentation: 'modal', title: 'Modal' }}
+    <GestureHandlerRootView style={{ backgroundColor, flex: 1 }}>
+      <View style={{ backgroundColor, flex: 1 }}>
+        <SafeAreaProvider>
+          <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+            <QueryProvider>
+              <BannerProvider>
+                <Stack
+                  screenOptions={{
+                    contentStyle: {
+                      backgroundColor,
+                    },
+                  }}>
+                  <Stack.Screen name="index" options={{ headerShown: false }} />
+                  <Stack.Screen name="about" options={{ headerShown: false }} />
+                  <Stack.Screen name="login" options={{ headerShown: false }} />
+                  <Stack.Screen name="register" options={{ headerShown: false }} />
+                  <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                  <Stack.Screen name="article/[id]" />
+                  <Stack.Screen name="article-quiz/[id]" />
+                  <Stack.Screen
+                    name="modal"
+                    options={{ presentation: 'modal', title: 'Modal' }}
+                  />
+                </Stack>
+                <StatusBar
+                  backgroundColor={backgroundColor}
+                  style={colorScheme === 'dark' ? 'light' : 'dark'}
+                  translucent={false}
                 />
-              </Stack>
-              <StatusBar
-                backgroundColor={backgroundColor}
-                style={colorScheme === 'dark' ? 'light' : 'dark'}
-                translucent={false}
-              />
-            </BannerProvider>
-          </QueryProvider>
-        </ThemeProvider>
-      </SafeAreaProvider>
-    </View>
+              </BannerProvider>
+            </QueryProvider>
+          </ThemeProvider>
+        </SafeAreaProvider>
+      </View>
+    </GestureHandlerRootView>
   );
 }

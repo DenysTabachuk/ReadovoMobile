@@ -1,4 +1,5 @@
 export type WikipediaArticle = {
+  availableAdaptations?: ArticleAdaptationSummary[];
   id: number;
   title: string;
   extract: string;
@@ -104,6 +105,12 @@ export type TableCell = {
 export type SimplifyArticleLevel = 'A1' | 'A2' | 'B1' | 'B2';
 
 export type SimplifyArticleTargetLength = 'short' | 'medium' | 'long';
+export type SimplifyArticleTargetPercent = 10 | 25 | 50;
+
+export type ArticleAdaptationSummary = {
+  level: SimplifyArticleLevel;
+  targetPercent: SimplifyArticleTargetPercent;
+};
 
 export type ArticleQuizQuestionType =
   | 'single_choice'
@@ -125,8 +132,10 @@ export type ArticleQuizQuestion = {
 };
 
 export type SimplifyArticleRequest = {
+  articleId?: number;
+  blocks?: ArticleBlock[];
   level?: SimplifyArticleLevel;
-  targetLength?: SimplifyArticleTargetLength;
+  targetPercent?: SimplifyArticleTargetPercent;
   text: string;
   title: string;
 };
@@ -143,12 +152,11 @@ export type GenerateArticleQuizResponse = {
 };
 
 export type SimplifyArticleResponse = {
+  adaptedBlocks: ArticleBlock[];
   adaptedLength: number;
-  adaptedBlocks?: ArticleBlock[];
-  adaptedText: string;
   level: SimplifyArticleLevel;
   originalLength: number;
   questions?: ArticleQuizQuestion[];
-  targetLength: SimplifyArticleTargetLength;
+  targetPercent: SimplifyArticleTargetPercent;
   title: string;
 };

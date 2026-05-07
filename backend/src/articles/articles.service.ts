@@ -19,6 +19,7 @@ import {
   type ArticleQuizQuestion,
   type ArticleQuizQuestionOption,
   type ArticleQuizQuestionType,
+  type ArticleSimplificationTargetPercent,
   type ArticleSimplificationLevel,
   type ArticleSimplificationTargetLength,
   type FormulaBlock,
@@ -36,7 +37,12 @@ import {
 const DEFAULT_ARTICLE_LIMIT = 20;
 const DEFAULT_SIMPLIFICATION_LEVEL: ArticleSimplificationLevel = 'A2';
 const DEFAULT_TARGET_LENGTH: ArticleSimplificationTargetLength = 'short';
+const DEFAULT_TARGET_PERCENT: ArticleSimplificationTargetPercent = 25;
 const GROQ_MODEL = 'llama-3.3-70b-versatile';
+const GROQ_REQUEST_TIMEOUT_MS = 45000;
+const MAX_SIMPLIFICATION_CHUNK_CHARS = 12000;
+const MAX_SIMPLIFICATION_CHUNK_COMPLETION_TOKENS = 1400;
+const MAX_SIMPLIFICATION_COMPLETION_TOKENS = 2048;
 const MAX_ARTICLE_LIMIT = 50;
 const MIN_BROWSE_EXTRACT_LENGTH = 90;
 const MIN_BROWSE_PAGE_LENGTH = 5000;
@@ -84,6 +90,9 @@ const WIKIPEDIA_EXCLUDED_TITLE_PATTERNS = [
   /^Outline of/i,
   /^Timeline of/i,
   /\(disambiguation\)$/i,
+];
+const SIMPLIFICATION_TARGET_PERCENTS: ArticleSimplificationTargetPercent[] = [
+  10, 25, 50,
 ];
 const RECOMMENDED_ARTICLE_TITLES: Record<
   Exclude<WikipediaArticleCategory, 'all'>,
@@ -337,6 +346,18 @@ type ArticlePreviewQualityOptions = {
   requireThumbnail: boolean;
 };
 
+type SimplificationChunk = {
+  blocks?: ArticleBlock[];
+  index: number;
+  text: string;
+  total: number;
+};
+
+type SimplificationModelResponse = {
+  adaptedBlocks: ArticleBlock[];
+  questions?: ArticleQuizQuestion[];
+};
+
 @Injectable()
 export class ArticlesService {
   private readonly logger = new Logger(ArticlesService.name);
@@ -359,21 +380,25 @@ export class ArticlesService {
       articleParams.recommended !== false && !search;
 
     if (shouldUseRecommendedArticles) {
-      return this.getRecommendedArticles({
+      const articles = await this.getRecommendedArticles({
         category,
         excludeIds,
         limit: normalizedLimit,
         previewLength,
       });
+
+      return this.attachAvailableAdaptations(articles);
     }
 
-    return this.getLiveArticles({
+    const articles = await this.getLiveArticles({
       category,
       excludeIds,
       limit: normalizedLimit,
       previewLength,
       search,
     });
+
+    return this.attachAvailableAdaptations(articles);
   }
 
   async getRandomArticles(
@@ -565,34 +590,94 @@ export class ArticlesService {
     };
   }
 
+  private async attachAvailableAdaptations(
+    articles: WikipediaArticle[],
+  ): Promise<WikipediaArticle[]> {
+    if (articles.length === 0) {
+      return articles;
+    }
+
+    const articleIds = articles.map((article) => article.id);
+    const result = await this.databaseService.query<{
+      article_id: number;
+      level: string;
+      target_percent: number;
+    }>(
+      `
+        SELECT DISTINCT article_id, level, target_percent
+        FROM article_simplifications
+        WHERE article_id = ANY($1::int[])
+          AND target_percent IS NOT NULL
+          AND adapted_blocks IS NOT NULL
+        ORDER BY level, target_percent
+      `,
+      [articleIds],
+    );
+    const adaptationsByArticleId = new Map<
+      number,
+      WikipediaArticle['availableAdaptations']
+    >();
+
+    for (const row of result.rows) {
+      const targetPercent = this.normalizeTargetPercent(row.target_percent);
+
+      if (!targetPercent || !this.isSimplificationLevel(row.level)) {
+        continue;
+      }
+
+      const currentAdaptations =
+        adaptationsByArticleId.get(row.article_id) ?? [];
+
+      currentAdaptations.push({
+        level: row.level,
+        targetPercent,
+      });
+      adaptationsByArticleId.set(row.article_id, currentAdaptations);
+    }
+
+    return articles.map((article) => {
+      const availableAdaptations = adaptationsByArticleId.get(article.id);
+
+      return availableAdaptations?.length
+        ? { ...article, availableAdaptations }
+        : article;
+    });
+  }
+
   async simplifyArticle(params: {
+    articleId?: number;
+    blocks?: ArticleBlock[];
     level?: ArticleSimplificationLevel;
-    targetLength?: ArticleSimplificationTargetLength;
+    targetPercent?: ArticleSimplificationTargetPercent;
     text: string;
     title?: string;
   }): Promise<SimplifyArticleResponse> {
     const title = params.title?.trim() || 'Untitled article';
     const text = params.text.trim();
     const level = params.level ?? DEFAULT_SIMPLIFICATION_LEVEL;
-    const targetLength = params.targetLength ?? DEFAULT_TARGET_LENGTH;
+    const targetPercent = params.targetPercent ?? DEFAULT_TARGET_PERCENT;
     const originalLength = text.length;
+    const sourceBlocks =
+      params.blocks && params.blocks.length > 0 ? params.blocks : undefined;
+    const sourceHash = this.createSourceHash({ sourceBlocks, text, title });
     const cacheKey = this.createSimplificationCacheKey({
+      articleId: params.articleId,
       level,
-      targetLength,
-      text,
+      sourceHash,
+      targetPercent,
       title,
     });
     const cachedResponse = await this.getCachedSimplification(cacheKey);
 
     if (cachedResponse) {
       this.logger.log(
-        `Simplification cache hit: title="${title}", level=${level}, targetLength=${targetLength}`,
+        `Simplification cache hit: title="${title}", level=${level}, targetPercent=${targetPercent}`,
       );
       return cachedResponse;
     }
 
     this.logger.log(
-      `Simplification cache miss: title="${title}", level=${level}, targetLength=${targetLength}, originalLength=${originalLength}`,
+      `Simplification cache miss: title="${title}", level=${level}, targetPercent=${targetPercent}, originalLength=${originalLength}`,
     );
 
     const apiKey = process.env.GROQ_API_KEY;
@@ -606,13 +691,6 @@ export class ArticlesService {
       );
     }
 
-    const prompt = this.createSimplificationPrompt({
-      level,
-      targetLength,
-      text,
-      title,
-    });
-
     try {
       this.logger.log(
         `Sending simplification request to Groq: model=${GROQ_MODEL}, title="${title}"`,
@@ -620,52 +698,88 @@ export class ArticlesService {
 
       // Groq runs only on the backend so the API key never reaches the app.
       const client = new Groq({ apiKey });
-      const completion = await client.chat.completions.create({
-        max_completion_tokens: 2048,
-        messages: [
-          {
-            content:
-              'You are helping to create educational English texts for language learners.',
-            role: 'system',
-          },
-          {
-            content: prompt,
-            role: 'user',
-          },
-        ],
-        model: GROQ_MODEL,
-        temperature: 0.3,
+      const targetPercentsToPrepare = await this.getMissingTargetPercents({
+        articleId: params.articleId,
+        level,
+        requestedTargetPercent: targetPercent,
+        sourceHash,
+        title,
       });
-      const rawResponse = completion.choices[0]?.message?.content?.trim() ?? '';
-      const parsedResponse = this.parseSimplificationModelResponse(rawResponse);
-      const adaptedText = parsedResponse.adaptedText;
+      const preparedResponses = new Map<
+        ArticleSimplificationTargetPercent,
+        SimplifyArticleResponse
+      >();
 
-      if (!adaptedText) {
-        this.logger.error(
-          `Groq returned empty simplification text: title="${title}"`,
+      for (const currentTargetPercent of targetPercentsToPrepare) {
+        const parsedResponse =
+          text.length > MAX_SIMPLIFICATION_CHUNK_CHARS
+            ? await this.simplifyArticleInChunks({
+                client,
+                level,
+                sourceBlocks,
+                targetPercent: currentTargetPercent,
+                text,
+                title,
+              })
+            : await this.simplifySingleArticleInput({
+                client,
+                level,
+                sourceBlocks,
+                targetPercent: currentTargetPercent,
+                text,
+                title,
+              });
+        const adaptedBlocks = parsedResponse.adaptedBlocks;
+
+        if (adaptedBlocks.length === 0) {
+          this.logger.error(
+            `Groq returned empty simplification blocks: title="${title}", targetPercent=${currentTargetPercent}`,
+          );
+          throw new BadGatewayException(
+            'Article simplification is unavailable.',
+          );
+        }
+
+        const adaptedLength =
+          this.extractPlainTextFromArticleBlocks(adaptedBlocks).length;
+        const response: SimplifyArticleResponse = {
+          adaptedBlocks,
+          adaptedLength,
+          level,
+          originalLength,
+          targetPercent: currentTargetPercent,
+          title,
+          ...(parsedResponse.questions && parsedResponse.questions.length > 0
+            ? { questions: parsedResponse.questions }
+            : {}),
+        };
+        const currentCacheKey = this.createSimplificationCacheKey({
+          articleId: params.articleId,
+          level,
+          sourceHash,
+          targetPercent: currentTargetPercent,
+          title,
+        });
+
+        await this.storeSimplification({
+          articleId: params.articleId,
+          cacheKey: currentCacheKey,
+          response,
+          sourceHash,
+        });
+        preparedResponses.set(currentTargetPercent, response);
+        this.logger.log(
+          `Simplification stored: title="${title}", targetPercent=${currentTargetPercent}, adaptedLength=${response.adaptedLength}`,
         );
-        throw new BadGatewayException('Article simplification is unavailable.');
       }
 
-      const response: SimplifyArticleResponse = {
-        adaptedLength: adaptedText.length,
-        adaptedText,
-        level,
-        originalLength,
-        targetLength,
-        title,
-        ...(parsedResponse.adaptedBlocks
-          ? { adaptedBlocks: parsedResponse.adaptedBlocks }
-          : {}),
-        ...(parsedResponse.questions && parsedResponse.questions.length > 0
-          ? { questions: parsedResponse.questions }
-          : {}),
-      };
+      const response =
+        preparedResponses.get(targetPercent) ??
+        (await this.getCachedSimplification(cacheKey));
 
-      await this.storeSimplification(cacheKey, response);
-      this.logger.log(
-        `Simplification stored: title="${title}", adaptedLength=${response.adaptedLength}`,
-      );
+      if (!response) {
+        throw new BadGatewayException('Article simplification is unavailable.');
+      }
 
       return response;
     } catch (error) {
@@ -719,23 +833,13 @@ export class ArticlesService {
 
     try {
       const client = new Groq({ apiKey });
-      const completion = await client.chat.completions.create({
-        max_completion_tokens: 1400,
-        messages: [
-          {
-            content:
-              'You are helping to create educational English quizzes for language learners.',
-            role: 'system',
-          },
-          {
-            content: prompt,
-            role: 'user',
-          },
-        ],
-        model: GROQ_MODEL,
-        temperature: 0.3,
+      const rawResponse = await this.createGroqTextCompletion({
+        client,
+        maxCompletionTokens: 1400,
+        prompt,
+        systemMessage:
+          'You are helping to create educational English quizzes for language learners.',
       });
-      const rawResponse = completion.choices[0]?.message?.content?.trim() ?? '';
       const parsedResponse = this.parseQuizModelResponse(rawResponse);
 
       if (parsedResponse.length === 0) {
@@ -760,6 +864,150 @@ export class ArticlesService {
       );
 
       throw new BadGatewayException('Failed to generate article quiz.');
+    }
+  }
+
+  private async simplifySingleArticleInput(params: {
+    client: Groq;
+    level: ArticleSimplificationLevel;
+    sourceBlocks?: ArticleBlock[];
+    targetPercent: ArticleSimplificationTargetPercent;
+    text: string;
+    title: string;
+  }): Promise<SimplificationModelResponse> {
+    const prompt = this.createSimplificationPrompt({
+      level: params.level,
+      sourceBlocks: params.sourceBlocks,
+      targetPercent: params.targetPercent,
+      text: params.text,
+      title: params.title,
+    });
+    const rawResponse = await this.createGroqTextCompletion({
+      client: params.client,
+      maxCompletionTokens: MAX_SIMPLIFICATION_COMPLETION_TOKENS,
+      prompt,
+      systemMessage:
+        'You are helping to create educational English texts for language learners.',
+    });
+
+    return this.parseSimplificationModelResponse(rawResponse);
+  }
+
+  private async simplifyArticleInChunks(params: {
+    client: Groq;
+    level: ArticleSimplificationLevel;
+    sourceBlocks?: ArticleBlock[];
+    targetPercent: ArticleSimplificationTargetPercent;
+    text: string;
+    title: string;
+  }): Promise<SimplificationModelResponse> {
+    const chunks = this.createSimplificationChunks({
+      sourceBlocks: params.sourceBlocks,
+      text: params.text,
+    });
+    const adaptedChunkResponses: SimplificationModelResponse[] = [];
+
+    this.logger.log(
+      `Chunked simplification started: title="${params.title}", chunks=${chunks.length}`,
+    );
+
+    for (const chunk of chunks) {
+      const prompt = this.createChunkSimplificationPrompt({
+        chunk,
+        level: params.level,
+        targetPercent: params.targetPercent,
+        title: params.title,
+      });
+      const rawResponse = await this.createGroqTextCompletion({
+        client: params.client,
+        maxCompletionTokens: MAX_SIMPLIFICATION_CHUNK_COMPLETION_TOKENS,
+        prompt,
+        systemMessage:
+          'You simplify one article section at a time for English learners.',
+      });
+      const parsedResponse = this.parseSimplificationModelResponse(rawResponse);
+
+      if (parsedResponse.adaptedBlocks.length > 0) {
+        adaptedChunkResponses.push(parsedResponse);
+      }
+    }
+
+    const adaptedBlocks = adaptedChunkResponses.flatMap(
+      (response) => response.adaptedBlocks,
+    );
+    const adaptedText = this.extractPlainTextFromArticleBlocks(adaptedBlocks);
+
+    if (adaptedBlocks.length === 0 || !adaptedText) {
+      return { adaptedBlocks: [] };
+    }
+
+    const quizPrompt = this.createQuizPrompt({
+      level: params.level,
+      targetPercent: params.targetPercent,
+      text: adaptedText,
+      title: params.title,
+    });
+    const quizRawResponse = await this.createGroqTextCompletion({
+      client: params.client,
+      maxCompletionTokens: 1400,
+      prompt: quizPrompt,
+      systemMessage:
+        'You are helping to create educational English quizzes for language learners.',
+    });
+    const questions = this.parseQuizModelResponse(quizRawResponse);
+
+    return {
+      adaptedBlocks,
+      questions: questions.length > 0 ? questions : undefined,
+    };
+  }
+
+  private async createGroqTextCompletion(params: {
+    client: Groq;
+    maxCompletionTokens: number;
+    prompt: string;
+    systemMessage: string;
+  }): Promise<string> {
+    const completion = await this.withTimeout(
+      params.client.chat.completions.create({
+        max_completion_tokens: params.maxCompletionTokens,
+        messages: [
+          {
+            content: params.systemMessage,
+            role: 'system',
+          },
+          {
+            content: params.prompt,
+            role: 'user',
+          },
+        ],
+        model: GROQ_MODEL,
+        temperature: 0.3,
+      }),
+      GROQ_REQUEST_TIMEOUT_MS,
+      'Groq request timed out.',
+    );
+
+    return completion.choices[0]?.message?.content?.trim() ?? '';
+  }
+
+  private async withTimeout<T>(
+    promise: Promise<T>,
+    timeoutMs: number,
+    message: string,
+  ): Promise<T> {
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timeoutId = setTimeout(() => reject(new Error(message)), timeoutMs);
+    });
+
+    try {
+      return await Promise.race([promise, timeoutPromise]);
+    } finally {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
     }
   }
 
@@ -1057,13 +1305,399 @@ export class ArticlesService {
     };
   }
 
+  private createSimplificationChunks(params: {
+    sourceBlocks?: ArticleBlock[];
+    text: string;
+  }): SimplificationChunk[] {
+    if (params.sourceBlocks?.length) {
+      return this.createBlockSimplificationChunks(params.sourceBlocks);
+    }
+
+    return this.createTextSimplificationChunks(params.text);
+  }
+
+  private createBlockSimplificationChunks(
+    sourceBlocks: ArticleBlock[],
+  ): SimplificationChunk[] {
+    const splitBlocks = sourceBlocks.flatMap((block) =>
+      this.splitOversizedBlock(block),
+    );
+    const chunkBlocks: ArticleBlock[][] = [];
+    let currentBlocks: ArticleBlock[] = [];
+    let currentLength = 0;
+
+    const flushChunk = () => {
+      if (currentBlocks.length === 0) {
+        return;
+      }
+
+      chunkBlocks.push(currentBlocks);
+      currentBlocks = [];
+      currentLength = 0;
+    };
+
+    for (const block of splitBlocks) {
+      const blockLength = this.getArticleBlockPromptText(block).length;
+
+      if (
+        currentBlocks.length > 0 &&
+        currentLength + blockLength > MAX_SIMPLIFICATION_CHUNK_CHARS
+      ) {
+        flushChunk();
+      }
+
+      currentBlocks.push(block);
+      currentLength += blockLength;
+    }
+
+    flushChunk();
+
+    return chunkBlocks.map((blocks, index) => ({
+      blocks,
+      index: index + 1,
+      text: this.extractPlainTextFromArticleBlocks(blocks),
+      total: chunkBlocks.length,
+    }));
+  }
+
+  private createTextSimplificationChunks(text: string): SimplificationChunk[] {
+    const paragraphs = text
+      .split(/\n{2,}/)
+      .map((paragraph) => paragraph.trim())
+      .filter(Boolean);
+    const chunks: string[] = [];
+    let currentChunk = '';
+
+    const appendTextPart = (part: string) => {
+      if (!currentChunk) {
+        currentChunk = part;
+        return;
+      }
+
+      if (
+        currentChunk.length + part.length + 2 >
+        MAX_SIMPLIFICATION_CHUNK_CHARS
+      ) {
+        chunks.push(currentChunk);
+        currentChunk = part;
+        return;
+      }
+
+      currentChunk = `${currentChunk}\n\n${part}`;
+    };
+
+    for (const paragraph of paragraphs) {
+      if (paragraph.length <= MAX_SIMPLIFICATION_CHUNK_CHARS) {
+        appendTextPart(paragraph);
+        continue;
+      }
+
+      for (const sentenceGroup of this.splitTextBySentences(paragraph)) {
+        appendTextPart(sentenceGroup);
+      }
+    }
+
+    if (currentChunk) {
+      chunks.push(currentChunk);
+    }
+
+    return chunks.map((chunkText, index) => ({
+      index: index + 1,
+      text: chunkText,
+      total: chunks.length,
+    }));
+  }
+
+  private splitOversizedBlock(block: ArticleBlock): ArticleBlock[] {
+    const blockLength = this.getArticleBlockPromptText(block).length;
+
+    if (blockLength <= MAX_SIMPLIFICATION_CHUNK_CHARS) {
+      return [block];
+    }
+
+    if (block.type === 'paragraph') {
+      return this.splitTextBySentences(
+        this.extractTextFromInlineNodes(block.children),
+      ).map((text) => ({
+        children: this.createPlainTextInlineNodes(text),
+        type: 'paragraph',
+      }));
+    }
+
+    if (block.type === 'list') {
+      return block.items.map((item) => ({
+        items: [item],
+        ordered: block.ordered,
+        type: 'list',
+      }));
+    }
+
+    if (block.type === 'table') {
+      const chunks: ArticleBlock[] = [];
+      let currentRows: typeof block.rows = [];
+      let currentLength = 0;
+
+      for (const row of block.rows) {
+        const rowLength = row.map((cell) => cell.text).join(' | ').length;
+
+        if (
+          currentRows.length > 0 &&
+          currentLength + rowLength > MAX_SIMPLIFICATION_CHUNK_CHARS
+        ) {
+          chunks.push({ rows: currentRows, type: 'table' });
+          currentRows = [];
+          currentLength = 0;
+        }
+
+        currentRows.push(row);
+        currentLength += rowLength;
+      }
+
+      if (currentRows.length > 0) {
+        chunks.push({ rows: currentRows, type: 'table' });
+      }
+
+      return chunks;
+    }
+
+    return [block];
+  }
+
+  private splitTextBySentences(text: string): string[] {
+    const sentences =
+      text
+        .match(/[^.!?\n]+(?:[.!?]+(?=\s|$)|$)/g)
+        ?.map((sentence) => sentence.trim()) ?? [];
+
+    if (sentences.length === 0) {
+      return [text.slice(0, MAX_SIMPLIFICATION_CHUNK_CHARS)];
+    }
+
+    const chunks: string[] = [];
+    let currentChunk = '';
+
+    for (const sentence of sentences) {
+      const sentenceParts =
+        sentence.length > MAX_SIMPLIFICATION_CHUNK_CHARS
+          ? this.splitOversizedSentence(sentence)
+          : [sentence];
+
+      for (const sentencePart of sentenceParts) {
+        if (!currentChunk) {
+          currentChunk = sentencePart;
+          continue;
+        }
+
+        if (
+          currentChunk.length + sentencePart.length + 1 >
+          MAX_SIMPLIFICATION_CHUNK_CHARS
+        ) {
+          chunks.push(currentChunk);
+          currentChunk = sentencePart;
+          continue;
+        }
+
+        currentChunk = `${currentChunk} ${sentencePart}`;
+      }
+    }
+
+    if (currentChunk) {
+      chunks.push(currentChunk);
+    }
+
+    return chunks;
+  }
+
+  private splitOversizedSentence(sentence: string): string[] {
+    const words = sentence.split(/\s+/).filter(Boolean);
+    const chunks: string[] = [];
+    let currentChunk = '';
+
+    for (const word of words) {
+      if (!currentChunk) {
+        currentChunk = word;
+        continue;
+      }
+
+      if (
+        currentChunk.length + word.length + 1 >
+        MAX_SIMPLIFICATION_CHUNK_CHARS
+      ) {
+        chunks.push(currentChunk);
+        currentChunk = word;
+        continue;
+      }
+
+      currentChunk = `${currentChunk} ${word}`;
+    }
+
+    if (currentChunk) {
+      chunks.push(currentChunk);
+    }
+
+    return chunks;
+  }
+
+  private formatArticleBlocksForPrompt(blocks?: ArticleBlock[]): string {
+    if (!blocks?.length) {
+      return 'No structured source blocks were provided.';
+    }
+
+    return blocks
+      .map((block, index) => {
+        const sourceId = `source-${index + 1}`;
+
+        if (block.type === 'image') {
+          return JSON.stringify({
+            alt: block.alt,
+            caption: block.caption,
+            sourceId,
+            src: block.src,
+            type: block.type,
+          });
+        }
+
+        if (block.type === 'table') {
+          return JSON.stringify({
+            rows: block.rows,
+            sourceId,
+            type: block.type,
+          });
+        }
+
+        if (block.type === 'heading') {
+          return JSON.stringify({
+            level: block.level,
+            sourceId,
+            text: block.text,
+            type: block.type,
+          });
+        }
+
+        if (block.type === 'formula') {
+          return JSON.stringify({
+            altText: block.altText,
+            sourceId,
+            type: block.type,
+          });
+        }
+
+        return JSON.stringify({
+          sourceId,
+          text: this.getArticleBlockPromptText(block),
+          type: block.type,
+        });
+      })
+      .join('\n');
+  }
+
+  private getArticleBlockPromptText(block: ArticleBlock): string {
+    if (block.type === 'heading') {
+      return block.text.trim();
+    }
+
+    if (block.type === 'paragraph') {
+      return this.extractTextFromInlineNodes(block.children);
+    }
+
+    if (block.type === 'list') {
+      return block.items
+        .map((item) => this.extractTextFromInlineNodes(item))
+        .join('\n');
+    }
+
+    if (block.type === 'table') {
+      return block.rows
+        .map((row) => row.map((cell) => cell.text.trim()).join(' | '))
+        .join('\n');
+    }
+
+    if (block.type === 'formula') {
+      return block.altText.trim();
+    }
+
+    return [block.alt, block.caption].filter(Boolean).join(' ').trim();
+  }
+
+  private extractPlainTextFromArticleBlocks(blocks: ArticleBlock[]): string {
+    return blocks
+      .map((block) => this.getArticleBlockPromptText(block))
+      .filter(Boolean)
+      .join('\n\n')
+      .trim();
+  }
+
+  private extractTextFromInlineNodes(nodes: { text: string }[]): string {
+    return nodes
+      .map((node) => node.text)
+      .join('')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  private createPlainTextInlineNodes(
+    text: string,
+  ): { text: string; type: 'text' }[] {
+    return [{ text, type: 'text' }];
+  }
+
+  private createChunkSimplificationPrompt(params: {
+    chunk: SimplificationChunk;
+    level: ArticleSimplificationLevel;
+    targetPercent: ArticleSimplificationTargetPercent;
+    title: string;
+  }): string {
+    return `Simplify this chunk of a longer English Wikipedia article.
+
+Article title: ${params.title}
+Chunk: ${params.chunk.index} of ${params.chunk.total}
+Learner level: ${params.level}
+Final target length: about ${params.targetPercent}% of the original article
+
+Rules:
+- Preserve meaning and local context.
+- Do not add facts.
+- Do not cut a sentence in the middle.
+- Keep related ideas together.
+- Use simple, natural English for level ${params.level}.
+- Keep this chunk compact because all simplified chunks will be joined into one article that is about ${params.targetPercent}% of the original.
+- Return ONLY valid JSON with this schema:
+  {
+    "adaptedBlocks": ArticleBlock[]
+  }
+- You may keep images and tables only when they help understand this simplified chunk.
+- If you keep an image, copy its "src" exactly from the source block.
+- If you keep a table, keep only useful rows/cells from the source table and simplify labels if needed.
+- Do not invent image URLs, table facts, or source values.
+- Do not generate questions for this chunk.
+
+Allowed ArticleBlock union:
+- heading: { "type":"heading", "level":1|2|3, "text": string }
+- paragraph: { "type":"paragraph", "children": InlineNode[] }
+- list: { "type":"list", "ordered": boolean, "items": InlineNode[][] }
+- table: { "type":"table", "rows": TableCell[][] }
+- image: { "type":"image", "src": string, "alt"?: string, "caption"?: string }
+InlineNode:
+- { "type":"text", "text": string, "bold"?: boolean, "italic"?: boolean }
+- { "type":"word", "text": string, "bold"?: boolean, "italic"?: boolean }
+TableCell:
+- { "text": string, "header"?: boolean }
+
+Source blocks:
+${this.formatArticleBlocksForPrompt(params.chunk.blocks)}
+
+Source text:
+${params.chunk.text}`;
+  }
+
   private createSimplificationPrompt(params: {
     level: ArticleSimplificationLevel;
-    targetLength: ArticleSimplificationTargetLength;
+    sourceBlocks?: ArticleBlock[];
+    targetPercent: ArticleSimplificationTargetPercent;
     text: string;
     title: string;
   }): string {
-    const questionRule = this.getQuestionCountRule(params.targetLength);
+    const questionRule = this.getQuestionCountRule(params.targetPercent);
 
     return `You are helping to create educational English texts for language learners.
 
@@ -1080,16 +1714,12 @@ Rules:
 - Avoid complex academic words where possible.
 - If a difficult word is important, keep it but explain it simply.
 - Make the text coherent, not just a list of sentences.
-- Target length: ${params.targetLength}.
-- For "short", return about 8-12 sentences.
-- For "medium", return about 12-18 sentences.
+- Target length: about ${params.targetPercent}% of the original article.
 - Return a valid JSON object only, without markdown fences or extra text.
 - JSON schema:
   {
-    "adaptedText": string,
     "adaptedBlocks": ArticleBlock[]
   }
-- "adaptedText" must be a plain-text version of the same adapted content.
 - "adaptedBlocks" must follow this exact union:
   - heading: { "type":"heading", "level":1|2|3, "text": string }
   - paragraph: { "type":"paragraph", "children": InlineNode[] }
@@ -1102,6 +1732,9 @@ Rules:
 - TableCell must be { "text": string, "header"?: boolean }.
 - Do not use "formula" blocks in adapted output.
 - Keep headings/tables/images where they help comprehension.
+- If source blocks are provided, use them to decide which source tables and images are useful.
+- If you keep an image, copy its "src" exactly from the source image block.
+- If you keep a table, keep only useful rows/cells from a source table and simplify labels if needed.
 - Never invent image URLs or table values that are not supported by the source text.
 - Generate comprehension questions for the adapted text.
 - Question count: ${questionRule}.
@@ -1127,17 +1760,23 @@ Rules:
 Title:
 ${params.title}
 
+Source blocks:
+${this.formatArticleBlocksForPrompt(params.sourceBlocks)}
+
 Original text:
 ${params.text}`;
   }
 
   private createQuizPrompt(params: {
     level: ArticleSimplificationLevel;
-    targetLength: ArticleSimplificationTargetLength;
+    targetLength?: ArticleSimplificationTargetLength;
+    targetPercent?: ArticleSimplificationTargetPercent;
     text: string;
     title: string;
   }): string {
-    const questionRule = this.getQuestionCountRule(params.targetLength);
+    const questionRule = this.getQuestionCountRule(
+      params.targetPercent ?? params.targetLength ?? DEFAULT_TARGET_LENGTH,
+    );
 
     return `Generate a reading-comprehension quiz for the article below.
 
@@ -1174,13 +1813,11 @@ Text:
 ${params.text}`;
   }
 
-  private parseSimplificationModelResponse(rawResponse: string): {
-    adaptedBlocks?: ArticleBlock[];
-    adaptedText: string;
-    questions?: ArticleQuizQuestion[];
-  } {
+  private parseSimplificationModelResponse(
+    rawResponse: string,
+  ): SimplificationModelResponse {
     if (!rawResponse) {
-      return { adaptedText: '' };
+      return { adaptedBlocks: [] };
     }
 
     const normalized = rawResponse
@@ -1192,28 +1829,24 @@ ${params.text}`;
     try {
       const parsed = JSON.parse(normalized) as {
         adaptedBlocks?: unknown;
-        adaptedText?: unknown;
         questions?: unknown;
       };
-      const adaptedText =
-        typeof parsed.adaptedText === 'string' ? parsed.adaptedText.trim() : '';
       const adaptedBlocks = Array.isArray(parsed.adaptedBlocks)
         ? (parsed.adaptedBlocks as ArticleBlock[])
-        : undefined;
+        : [];
       const questions = this.normalizeQuestions(parsed.questions);
 
-      if (adaptedText) {
+      if (adaptedBlocks.length > 0) {
         return {
           adaptedBlocks,
-          adaptedText,
           questions: questions.length > 0 ? questions : undefined,
         };
       }
     } catch {
-      // Fallback to plain-text response format from older prompts.
+      // Invalid JSON is handled as an unavailable structured response.
     }
 
-    return { adaptedText: rawResponse.trim() };
+    return { adaptedBlocks: [] };
   }
 
   private parseQuizModelResponse(rawResponse: string): ArticleQuizQuestion[] {
@@ -1236,13 +1869,15 @@ ${params.text}`;
   }
 
   private getQuestionCountRule(
-    targetLength: ArticleSimplificationTargetLength,
+    targetLength:
+      | ArticleSimplificationTargetLength
+      | ArticleSimplificationTargetPercent,
   ): string {
-    if (targetLength === 'short') {
+    if (targetLength === 'short' || targetLength === 10) {
       return 'exactly 3 questions';
     }
 
-    if (targetLength === 'medium') {
+    if (targetLength === 'medium' || targetLength === 25) {
       return '4 to 5 questions';
     }
 
@@ -1401,18 +2036,71 @@ ${params.text}`;
   }
 
   private createSimplificationCacheKey(params: {
+    articleId?: number;
     level: ArticleSimplificationLevel;
-    targetLength: ArticleSimplificationTargetLength;
-    text: string;
+    sourceHash: string;
+    targetPercent: ArticleSimplificationTargetPercent;
     title: string;
   }): string {
     const digest = createHash('sha256')
       .update(
-        `${params.title}::${params.level}::${params.targetLength}::${params.text}`,
+        `${params.articleId ?? 'no-id'}::${params.title}::${params.level}::${params.targetPercent}::${params.sourceHash}`,
       )
       .digest('hex');
 
-    return `${params.level}::${params.targetLength}::${digest}`;
+    return `${params.level}::${params.targetPercent}::${digest}`;
+  }
+
+  private createSourceHash(params: {
+    sourceBlocks?: ArticleBlock[];
+    text: string;
+    title: string;
+  }): string {
+    return createHash('sha256')
+      .update(
+        `${params.title}::${params.text}::${params.sourceBlocks ? JSON.stringify(params.sourceBlocks) : ''}`,
+      )
+      .digest('hex');
+  }
+
+  private async getMissingTargetPercents(params: {
+    articleId?: number;
+    level: ArticleSimplificationLevel;
+    requestedTargetPercent: ArticleSimplificationTargetPercent;
+    sourceHash: string;
+    title: string;
+  }): Promise<ArticleSimplificationTargetPercent[]> {
+    const missingTargetPercents: ArticleSimplificationTargetPercent[] = [];
+
+    const targetPercents = params.articleId
+      ? SIMPLIFICATION_TARGET_PERCENTS
+      : [params.requestedTargetPercent];
+
+    for (const targetPercent of targetPercents) {
+      const cacheKey = this.createSimplificationCacheKey({
+        articleId: params.articleId,
+        level: params.level,
+        sourceHash: params.sourceHash,
+        targetPercent,
+        title: params.title,
+      });
+      const cachedResponse = await this.getCachedSimplification(cacheKey);
+
+      if (!cachedResponse) {
+        missingTargetPercents.push(targetPercent);
+      }
+    }
+
+    if (
+      !missingTargetPercents.includes(params.requestedTargetPercent) &&
+      missingTargetPercents.length > 0
+    ) {
+      return missingTargetPercents;
+    }
+
+    return missingTargetPercents.length > 0
+      ? missingTargetPercents
+      : [params.requestedTargetPercent];
   }
 
   private async getCachedSimplification(
@@ -1423,10 +2111,12 @@ ${params.text}`;
         SELECT
           title,
           level,
-          target_length,
+          target_percent,
           original_length,
+          adapted_blocks,
           adapted_text,
-          adapted_length
+          adapted_length,
+          questions
         FROM article_simplifications
         WHERE cache_key = $1
       `,
@@ -1438,50 +2128,117 @@ ${params.text}`;
       return null;
     }
 
+    const adaptedBlocks = this.normalizeCachedAdaptedBlocks(row);
+
+    if (adaptedBlocks.length === 0) {
+      return null;
+    }
+
     return {
       adaptedLength: row.adapted_length,
-      adaptedText: row.adapted_text,
+      adaptedBlocks,
       level: row.level as ArticleSimplificationLevel,
       originalLength: row.original_length,
-      targetLength: row.target_length as ArticleSimplificationTargetLength,
+      questions: Array.isArray(row.questions) ? row.questions : undefined,
+      targetPercent:
+        this.normalizeTargetPercent(row.target_percent) ??
+        DEFAULT_TARGET_PERCENT,
       title: row.title,
     };
   }
 
-  private async storeSimplification(
-    cacheKey: string,
-    response: SimplifyArticleResponse,
-  ): Promise<void> {
+  private normalizeCachedAdaptedBlocks(
+    row: SimplifiedArticleCacheRow,
+  ): ArticleBlock[] {
+    if (Array.isArray(row.adapted_blocks)) {
+      return row.adapted_blocks;
+    }
+
+    if (row.adapted_text?.trim()) {
+      return [
+        {
+          children: [{ text: row.adapted_text.trim(), type: 'text' }],
+          type: 'paragraph',
+        },
+      ];
+    }
+
+    return [];
+  }
+
+  private async storeSimplification(params: {
+    articleId?: number;
+    cacheKey: string;
+    response: SimplifyArticleResponse;
+    sourceHash: string;
+  }): Promise<void> {
+    const adaptedText = this.extractPlainTextFromArticleBlocks(
+      params.response.adaptedBlocks,
+    );
+
     await this.databaseService.query(
       `
         INSERT INTO article_simplifications (
           cache_key,
+          article_id,
           title,
           level,
           target_length,
+          target_percent,
+          source_hash,
           original_length,
           adapted_text,
+          adapted_blocks,
+          questions,
           adapted_length
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, $10::jsonb, $11)
         ON CONFLICT (cache_key) DO UPDATE
         SET
           title = EXCLUDED.title,
+          article_id = EXCLUDED.article_id,
           level = EXCLUDED.level,
           target_length = EXCLUDED.target_length,
+          target_percent = EXCLUDED.target_percent,
+          source_hash = EXCLUDED.source_hash,
           original_length = EXCLUDED.original_length,
           adapted_text = EXCLUDED.adapted_text,
+          adapted_blocks = EXCLUDED.adapted_blocks,
+          questions = EXCLUDED.questions,
           adapted_length = EXCLUDED.adapted_length
       `,
       [
-        cacheKey,
-        response.title,
-        response.level,
-        response.targetLength,
-        response.originalLength,
-        response.adaptedText,
-        response.adaptedLength,
+        params.cacheKey,
+        params.articleId,
+        params.response.title,
+        params.response.level,
+        String(params.response.targetPercent),
+        params.response.targetPercent,
+        params.sourceHash,
+        params.response.originalLength,
+        adaptedText,
+        JSON.stringify(params.response.adaptedBlocks),
+        params.response.questions
+          ? JSON.stringify(params.response.questions)
+          : null,
+        params.response.adaptedLength,
       ],
     );
+  }
+
+  private normalizeTargetPercent(
+    targetPercent: number | undefined,
+  ): ArticleSimplificationTargetPercent | null {
+    if (targetPercent === 10 || targetPercent === 25 || targetPercent === 50) {
+      return targetPercent;
+    }
+
+    return null;
+  }
+
+  private isSimplificationLevel(
+    level: string,
+  ): level is ArticleSimplificationLevel {
+    return level === 'A1' || level === 'A2' || level === 'B1' || level === 'B2';
   }
 }

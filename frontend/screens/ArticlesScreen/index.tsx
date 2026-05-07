@@ -1,6 +1,14 @@
-import { keepPreviousData, useInfiniteQuery } from '@tanstack/react-query';
+import {
+  keepPreviousData,
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+  type InfiniteData,
+  type QueryKey,
+} from '@tanstack/react-query';
+import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { Image } from 'expo-image';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -13,19 +21,32 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import {
+  type ArticleAdaptationSummary,
   fetchWikipediaArticles,
   type WikipediaArticle,
   type WikipediaArticleCategory,
 } from '@/api/wikipedia';
 import { DEFAULT_ARTICLE_LIMIT } from '@/api/wikipedia/constants';
+import { useBanner } from '@/components/banner';
 import { Button } from '@/components/button';
 import { ScreenContainer } from '@/components/screenContainer';
 import { ThemedText } from '@/components/themedText';
+import { IconSymbol } from '@/components/ui/iconSymbol';
 import { Colors } from '@/constants/theme';
+import {
+  createSavedArticlesWithArticle,
+  isArticleSaved,
+  readSavedArticles,
+  removeSavedArticle,
+  saveArticleForLater,
+  SAVED_ARTICLES_QUERY_KEY,
+  type SavedArticle,
+} from '@/features/savedArticles';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 
 import { styles } from './styles';
+import { ArticleThumbnail } from './components/articleThumbnail';
 import {
   ArticlesToolbar,
   type ArticleCategoryFilter,
@@ -36,8 +57,12 @@ const ARTICLE_SEARCH_DEBOUNCE_MS = 1200;
 
 export default function ArticlesScreen() {
   const { t } = useTranslation();
+  const queryClient = useQueryClient();
   const colorScheme = useColorScheme();
   const iconColor = useThemeColor({}, 'icon');
+  const tintColor = Colors[colorScheme ?? 'light'].tint;
+  const savedAccentColor = colorScheme === 'dark' ? '#c4a7ff' : tintColor;
+  const { showBanner } = useBanner();
   const borderColor = colorScheme === 'dark' ? '#2d3336' : '#d0d7de';
   const [searchValue, setSearchValue] = useState('');
   const [debouncedSearchValue, setDebouncedSearchValue] = useState('');
@@ -46,7 +71,10 @@ export default function ArticlesScreen() {
   const [categoryFilter, setCategoryFilter] =
     useState<ArticleCategoryFilter>('all');
   const [recommendedArticles, setRecommendedArticles] = useState(true);
+  const [isSavedFilterActive, setIsSavedFilterActive] = useState(false);
   const [isManualRefresh, setIsManualRefresh] = useState(false);
+  const [expandedAdaptationArticleIds, setExpandedAdaptationArticleIds] =
+    useState<Record<number, boolean>>({});
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -65,7 +93,13 @@ export default function ArticlesScreen() {
     isFetchingNextPage,
     isLoading,
     refetch,
-  } = useInfiniteQuery({
+  } = useInfiniteQuery<
+    WikipediaArticle[],
+    Error,
+    InfiniteData<WikipediaArticle[], number[]>,
+    QueryKey,
+    number[]
+  >({
     initialPageParam: [] as number[],
     getNextPageParam: (lastPage, pages) => {
       if (lastPage.length < DEFAULT_ARTICLE_LIMIT) {
@@ -92,6 +126,68 @@ export default function ArticlesScreen() {
       recommendedArticles,
     ],
   });
+  const { data: savedArticles = [] } = useQuery({
+    queryFn: readSavedArticles,
+    queryKey: SAVED_ARTICLES_QUERY_KEY,
+  });
+  const savedArticleMutation = useMutation<
+    { saved: boolean; savedArticles: SavedArticle[] },
+    Error,
+    { article: WikipediaArticle; saved: boolean },
+    { previousSavedArticles?: SavedArticle[] }
+  >({
+    mutationFn: async ({
+      article,
+      saved,
+    }: {
+      article: WikipediaArticle;
+      saved: boolean;
+    }) => {
+      const nextSavedArticles = saved
+        ? await removeSavedArticle(article.id)
+        : await saveArticleForLater(article);
+
+      return {
+        saved: !saved,
+        savedArticles: nextSavedArticles,
+      };
+    },
+    onError: (_error, _variables, context) => {
+      if (context?.previousSavedArticles) {
+        queryClient.setQueryData(
+          SAVED_ARTICLES_QUERY_KEY,
+          context.previousSavedArticles,
+        );
+      }
+
+      showBanner({
+        title: t('article.savedArticles.error'),
+        variant: 'error',
+      });
+    },
+    onMutate: async ({ article, saved }) => {
+      await queryClient.cancelQueries({ queryKey: SAVED_ARTICLES_QUERY_KEY });
+
+      const previousSavedArticles =
+        queryClient.getQueryData<SavedArticle[]>(SAVED_ARTICLES_QUERY_KEY) ?? [];
+      const nextSavedArticles = saved
+        ? previousSavedArticles.filter((savedArticle) => savedArticle.id !== article.id)
+        : createSavedArticlesWithArticle(previousSavedArticles, article);
+
+      queryClient.setQueryData(SAVED_ARTICLES_QUERY_KEY, nextSavedArticles);
+
+      return { previousSavedArticles };
+    },
+    onSuccess: (response) => {
+      queryClient.setQueryData(SAVED_ARTICLES_QUERY_KEY, response.savedArticles);
+      showBanner({
+        title: response.saved
+          ? t('article.savedArticles.saved')
+          : t('article.savedArticles.removed'),
+        variant: 'success',
+      });
+    },
+  });
   const articles = useMemo(() => {
     const articleById = new Map<number, WikipediaArticle>();
 
@@ -101,11 +197,15 @@ export default function ArticlesScreen() {
 
     return Array.from(articleById.values());
   }, [data?.pages]);
-  const shouldShowInitialLoader = isLoading && articles.length === 0;
-  const shouldShowErrorState = Boolean(error) && articles.length === 0;
+  const displayedArticles = isSavedFilterActive ? savedArticles : articles;
+  const shouldShowInitialLoader =
+    !isSavedFilterActive && isLoading && articles.length === 0;
+  const shouldShowErrorState =
+    !isSavedFilterActive && Boolean(error) && articles.length === 0;
   const isUpdatingResults =
-    isFetching && !isFetchingNextPage && !shouldShowInitialLoader;
-  const shouldShowLoadMore = articles.length > 0 && hasNextPage;
+    !isSavedFilterActive && isFetching && !isFetchingNextPage && !shouldShowInitialLoader;
+  const shouldShowLoadMore =
+    !isSavedFilterActive && articles.length > 0 && hasNextPage;
 
   const clearFilters = useCallback(() => {
     setSearchValue('');
@@ -113,6 +213,30 @@ export default function ArticlesScreen() {
     setPreviewLengthFilter('all');
     setCategoryFilter('all');
     setRecommendedArticles(true);
+    setIsSavedFilterActive(false);
+  }, []);
+
+  const handleChangeCategoryFilter = useCallback((value: ArticleCategoryFilter) => {
+    setIsSavedFilterActive(false);
+    setCategoryFilter(value);
+  }, []);
+
+  const handleChangePreviewLengthFilter = useCallback(
+    (value: ArticlePreviewLengthFilter) => {
+      setIsSavedFilterActive(false);
+      setPreviewLengthFilter(value);
+    },
+    [],
+  );
+
+  const handleChangeRecommendedArticles = useCallback((value: boolean) => {
+    setIsSavedFilterActive(false);
+    setRecommendedArticles(value);
+  }, []);
+
+  const handleChangeSearchValue = useCallback((value: string) => {
+    setIsSavedFilterActive(false);
+    setSearchValue(value);
   }, []);
 
   const handleRefresh = useCallback(async () => {
@@ -133,55 +257,136 @@ export default function ArticlesScreen() {
     void fetchNextPage();
   }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
-  const openArticle = useCallback(
+  const toggleAdaptations = useCallback((articleId: number) => {
+    setExpandedAdaptationArticleIds((current) => ({
+      ...current,
+      [articleId]: !current[articleId],
+    }));
+  }, []);
+
+  const handleToggleSavedFilter = useCallback(() => {
+    setSearchValue('');
+    setDebouncedSearchValue('');
+    setPreviewLengthFilter('all');
+    setCategoryFilter('all');
+    setRecommendedArticles(true);
+    setIsSavedFilterActive((current) => !current);
+  }, []);
+
+  const openArticle = useCallback((article: WikipediaArticle) => {
+    router.push({
+      pathname: '/article/[id]',
+      params: {
+        id: String(article.id),
+      },
+    });
+  }, []);
+
+  const toggleSavedArticle = useCallback(
     (article: WikipediaArticle) => {
-      router.push({
-        pathname: '/article/[id]',
-        params: {
-          id: String(article.id),
-        },
+      savedArticleMutation.mutate({
+        article,
+        saved: isArticleSaved(article.id, savedArticles),
       });
     },
-    []
+    [savedArticleMutation, savedArticles],
   );
 
   const renderArticle = useCallback<ListRenderItem<WikipediaArticle>>(
-    ({ item }) => (
-      <Pressable
-        style={({ pressed }) => [
-          styles.articleCard,
-          { borderColor },
-          pressed ? styles.articleCardPressed : null,
-        ]}
-        onPress={() => openArticle(item)}>
-        {item.thumbnailUrl ? (
-          <Image
-            accessibilityIgnoresInvertColors
-            cachePolicy="disk"
-            contentFit="cover"
-            source={{ uri: item.thumbnailUrl }}
-            style={styles.articleImage}
-            transition={100}
-          />
-        ) : (
-          <View style={[styles.imagePlaceholder, { borderColor }]}>
-            <ThemedText type="sectionTitle" style={{ color: iconColor }}>
-              W
-            </ThemedText>
-          </View>
-        )}
+    ({ item }) => {
+      const isSaved = isArticleSaved(item.id, savedArticles);
 
-        <View style={styles.articleContent}>
-          <ThemedText type="sectionTitle" style={styles.articleTitle}>
-            {item.title}
-          </ThemedText>
-          <ThemedText type="body" style={styles.articleExtract}>
-            {item.extract}
-          </ThemedText>
-        </View>
-      </Pressable>
-    ),
-    [borderColor, iconColor, openArticle]
+      return (
+        <Pressable
+          style={({ pressed }) => [
+            styles.articleCard,
+            { borderColor },
+            pressed ? styles.articleCardPressed : null,
+          ]}
+          onPress={() => openArticle(item)}>
+          <ArticleThumbnail
+            borderColor={borderColor}
+            iconColor={iconColor}
+            thumbnailUrl={item.thumbnailUrl}
+            title={item.title}
+          />
+
+          <View style={styles.articleContent}>
+            <View style={styles.articleTitleRow}>
+              <ThemedText type="sectionTitle" style={styles.articleTitle}>
+                {item.title}
+              </ThemedText>
+              <Pressable
+                accessibilityLabel={
+                  isSaved
+                    ? t('article.savedArticles.removeAction')
+                    : t('article.savedArticles.saveAction')
+                }
+                onPress={(event) => {
+                  event.stopPropagation();
+                  toggleSavedArticle(item);
+                }}
+                style={styles.cardBookmarkButton}>
+                <IconSymbol
+                  color={isSaved ? savedAccentColor : iconColor}
+                  name={isSaved ? 'bookmark.fill' : 'bookmark'}
+                  size={22}
+                />
+              </Pressable>
+            </View>
+            <ThemedText type="body" style={styles.articleExtract} numberOfLines={5}>
+              {item.extract}
+            </ThemedText>
+            {item.availableAdaptations?.length ? (
+              <View style={styles.adaptations}>
+                <Pressable
+                  onPress={(event) => {
+                    event.stopPropagation();
+                    toggleAdaptations(item.id);
+                  }}
+                  style={styles.adaptationsToggle}>
+                  <ThemedText type="bodyStrong" style={styles.adaptationsToggleText}>
+                    {t('articles.adaptationsAvailable')}
+                  </ThemedText>
+                  <Ionicons
+                    color={iconColor}
+                    name={
+                      expandedAdaptationArticleIds[item.id]
+                        ? 'chevron-up'
+                        : 'chevron-down'
+                    }
+                    size={16}
+                  />
+                </Pressable>
+                {expandedAdaptationArticleIds[item.id] ? (
+                  <View style={styles.adaptationsPanel}>
+                    {formatAdaptations(item.availableAdaptations).map((label) => (
+                      <ThemedText key={label} type="description" style={styles.adaptationLine}>
+                        {label}
+                      </ThemedText>
+                    ))}
+                    <ThemedText type="description" style={styles.adaptationsHint}>
+                      {t('articles.adaptationsHint')}
+                    </ThemedText>
+                  </View>
+                ) : null}
+              </View>
+            ) : null}
+          </View>
+        </Pressable>
+      );
+    },
+    [
+      borderColor,
+      expandedAdaptationArticleIds,
+      iconColor,
+      openArticle,
+      savedArticles,
+      savedAccentColor,
+      t,
+      toggleAdaptations,
+      toggleSavedArticle,
+    ],
   );
 
   if (shouldShowInitialLoader) {
@@ -214,27 +419,34 @@ export default function ArticlesScreen() {
   return (
     <ScreenContainer style={styles.container}>
       <FlatList
-        data={articles}
+        data={displayedArticles}
         keyExtractor={(item) => String(item.id)}
         keyboardShouldPersistTaps="handled"
         ListHeaderComponent={
           <View style={styles.header}>
-            <ThemedText type="screenTitle">{t('articles.title')}</ThemedText>
-            <ThemedText type="description" style={styles.description}>
-              {t('articles.description')}
-            </ThemedText>
+            <View style={styles.headerTopRow}>
+              <View style={styles.headerTitleGroup}>
+                <ThemedText type="screenTitle">{t('articles.title')}</ThemedText>
+                <ThemedText type="description" style={styles.description}>
+                  {t('articles.description')}
+                </ThemedText>
+              </View>
+            </View>
             <ArticlesToolbar
               categoryFilter={categoryFilter}
+              isSavedFilterActive={isSavedFilterActive}
               isRefreshingResults={isUpdatingResults}
               isSearchActive={debouncedSearchValue.length > 0}
-              onChangeRecommendedArticles={setRecommendedArticles}
-              onChangeCategoryFilter={setCategoryFilter}
-              onChangePreviewLengthFilter={setPreviewLengthFilter}
-              onChangeSearchValue={setSearchValue}
+              onChangeRecommendedArticles={handleChangeRecommendedArticles}
+              onChangeCategoryFilter={handleChangeCategoryFilter}
+              onChangePreviewLengthFilter={handleChangePreviewLengthFilter}
+              onChangeSearchValue={handleChangeSearchValue}
               onClearFilters={clearFilters}
+              onToggleSavedFilter={handleToggleSavedFilter}
               previewLengthFilter={previewLengthFilter}
               recommendedArticles={recommendedArticles}
-              resultCount={articles.length}
+              resultCount={displayedArticles.length}
+              savedArticlesCount={savedArticles.length}
               searchValue={searchValue}
             />
           </View>
@@ -242,12 +454,16 @@ export default function ArticlesScreen() {
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <ThemedText type="sectionTitle" style={styles.centerTitle}>
-              {t('articles.emptyTitle')}
+              {isSavedFilterActive
+                ? t('articles.saved.emptyTitle')
+                : t('articles.emptyTitle')}
             </ThemedText>
             <ThemedText type="body" style={styles.centerDescription}>
-              {debouncedSearchValue.length > 0
-                ? t('articles.emptySearchDescription')
-                : t('articles.emptyFilterDescription')}
+              {isSavedFilterActive
+                ? t('articles.saved.emptyDescription')
+                : debouncedSearchValue.length > 0
+                  ? t('articles.emptySearchDescription')
+                  : t('articles.emptyFilterDescription')}
             </ThemedText>
           </View>
         }
@@ -266,11 +482,13 @@ export default function ArticlesScreen() {
           ) : null
         }
         refreshControl={
-          <RefreshControl
-            refreshing={isManualRefresh}
-            tintColor={Colors[colorScheme ?? 'light'].tint}
-            onRefresh={handleRefresh}
-          />
+          isSavedFilterActive ? undefined : (
+            <RefreshControl
+              refreshing={isManualRefresh}
+              tintColor={Colors[colorScheme ?? 'light'].tint}
+              onRefresh={handleRefresh}
+            />
+          )
         }
         renderItem={renderArticle}
         removeClippedSubviews={false}
@@ -279,4 +497,21 @@ export default function ArticlesScreen() {
       />
     </ScreenContainer>
   );
+}
+
+function formatAdaptations(adaptations: ArticleAdaptationSummary[]): string[] {
+  const percentsByLevel = new Map<string, number[]>();
+
+  adaptations.forEach((adaptation) => {
+    const currentPercents = percentsByLevel.get(adaptation.level) ?? [];
+
+    currentPercents.push(adaptation.targetPercent);
+    percentsByLevel.set(adaptation.level, currentPercents);
+  });
+
+  return Array.from(percentsByLevel.entries()).map(([level, percents]) => {
+    const sortedPercents = Array.from(new Set(percents)).sort((left, right) => left - right);
+
+    return `${level} - ${sortedPercents.map((percent) => `${percent}%`).join(' ')}`;
+  });
 }

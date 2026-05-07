@@ -11,10 +11,10 @@ import { createDictionaryWord } from '@/api/dictionary';
 import {
   type ArticleBlock,
   fetchWikipediaArticleDetail,
+  generateArticleQuiz,
   type SimplifyArticleLevel,
   simplifyWikipediaArticle,
   type SimplifyArticleResponse,
-  type SimplifyArticleTargetLength,
 } from '@/api/wikipedia';
 import { useBanner } from '@/components/banner';
 import { Button } from '@/components/button';
@@ -24,8 +24,21 @@ import { OptionPickerField } from '@/components/optionPickerField';
 import { ScreenContainer } from '@/components/screenContainer';
 import { SegmentedToggle } from '@/components/segmentedToggle';
 import { ThemedText } from '@/components/themedText';
+import { IconSymbol } from '@/components/ui/iconSymbol';
 import { Colors } from '@/constants/theme';
+import { getArticleQuizSessionKey } from '@/features/articleQuizSession';
+import {
+  createSavedArticleFromDetail,
+  createSavedArticlesWithArticle,
+  isArticleSaved,
+  readSavedArticles,
+  removeSavedArticle,
+  saveArticleForLater,
+  SAVED_ARTICLES_QUERY_KEY,
+  type SavedArticle,
+} from '@/features/savedArticles';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useThemeColor } from '@/hooks/use-theme-color';
 
 import { InteractiveArticleText } from './components/interactiveArticleText';
 import { WordTranslationSheet } from './components/wordTranslationSheet';
@@ -36,21 +49,19 @@ type SelectedWord = {
   tokenKey: string;
   word: string;
 };
-type ArticleTextLengthOption = SimplifyArticleTargetLength | 'original';
+type ArticleTextLengthOption = '10' | '25' | '50' | 'original';
 
 const DEFAULT_SIMPLIFICATION_LEVEL: SimplifyArticleLevel = 'A2';
-const DEFAULT_TARGET_LENGTH: ArticleTextLengthOption = 'short';
-const TARGET_LENGTH_MAX_SENTENCES: Record<SimplifyArticleTargetLength, number> = {
-  short: 5,
-  medium: 10,
-  long: 16,
-};
+const DEFAULT_TARGET_PERCENT: ArticleTextLengthOption = '25';
 
 export default function ArticleScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const queryClient = useQueryClient();
   const colorScheme = useColorScheme();
+  const iconColor = useThemeColor({}, 'icon');
+  const tintColor = Colors[colorScheme ?? 'light'].tint;
+  const savedAccentColor = colorScheme === 'dark' ? '#c4a7ff' : tintColor;
   const { showBanner } = useBanner();
   const params = useLocalSearchParams<{
     id?: string | string[];
@@ -63,8 +74,9 @@ export default function ArticleScreen() {
     DEFAULT_SIMPLIFICATION_LEVEL,
   );
   const [selectedTargetLength, setSelectedTargetLength] =
-    useState<ArticleTextLengthOption>(DEFAULT_TARGET_LENGTH);
+    useState<ArticleTextLengthOption>(DEFAULT_TARGET_PERCENT);
   const [isAdaptSettingsOpen, setIsAdaptSettingsOpen] = useState(false);
+  const [isQuizModePickerOpen, setIsQuizModePickerOpen] = useState(false);
 
   const rawArticleId = Array.isArray(params.id) ? params.id[0] : params.id;
   const parsedArticleId = Number(rawArticleId);
@@ -79,7 +91,7 @@ export default function ArticleScreen() {
     enabled: articleId !== null,
     queryFn: async () => {
       if (articleId === null) {
-        throw new Error('Invalid article id.');
+        throw new Error('article.invalidId');
       }
 
       return fetchWikipediaArticleDetail(articleId);
@@ -94,7 +106,7 @@ export default function ArticleScreen() {
     enabled: selectedWord !== null,
     queryFn: async () => {
       if (!selectedWord) {
-        throw new Error('No word selected.');
+        throw new Error('translation.error');
       }
 
       return translateWord({
@@ -112,31 +124,37 @@ export default function ArticleScreen() {
       'uk',
     ],
   });
+  const { data: savedArticles } = useQuery({
+    queryFn: readSavedArticles,
+    queryKey: SAVED_ARTICLES_QUERY_KEY,
+  });
+  const isCurrentArticleSaved = isArticleSaved(articleId, savedArticles);
   const simplifyMutation = useMutation({
     mutationFn: async () => {
       if (!article) {
-        throw new Error('Article is unavailable.');
+        throw new Error('article.errorDescription');
       }
 
-      const targetLength =
-        selectedTargetLength === 'original' ? undefined : selectedTargetLength;
+      const targetPercent =
+        selectedTargetLength === 'original'
+          ? undefined
+          : (Number(selectedTargetLength) as 10 | 25 | 50);
 
       return simplifyWikipediaArticle({
+        articleId: article.id,
+        blocks: createSimplificationRequestBlocks(
+          stripDuplicateTitleHeading(article.blocks, article.title),
+        ),
         level: selectedLevel,
-        targetLength,
+        targetPercent,
         text: article.content,
         title: article.title,
       });
     },
     onError: (mutationError) => {
-      const fallbackMessage = t('article.adaptError');
-      const message =
-        mutationError instanceof Error
-          ? mutationError.message.replace(/^article\.adaptError:\s*/, '')
-          : fallbackMessage;
-
+      console.error('[ArticleScreen] Failed to adapt article', mutationError);
       showBanner({
-        title: message === 'article.adaptError' ? fallbackMessage : message,
+        title: t('article.adaptError'),
         variant: 'error',
       });
     },
@@ -144,6 +162,7 @@ export default function ArticleScreen() {
       setAdaptedArticle(response);
       setShowAdaptedText(true);
       setSelectedWord(null);
+      void queryClient.invalidateQueries({ queryKey: ['wikipedia', 'articles'] });
     },
   });
   const dictionaryMutation = useMutation({
@@ -162,6 +181,112 @@ export default function ArticleScreen() {
       });
     },
   });
+  const savedArticleMutation = useMutation({
+    mutationFn: async () => {
+      if (!article) {
+        throw new Error('article.errorDescription');
+      }
+
+      const savedArticle = createSavedArticleFromDetail(article);
+
+      if (isCurrentArticleSaved) {
+        const nextSavedArticles = await removeSavedArticle(article.id);
+
+        return {
+          saved: false,
+          savedArticles: nextSavedArticles,
+        };
+      }
+
+      const nextSavedArticles = await saveArticleForLater(savedArticle);
+
+      return {
+        saved: true,
+        savedArticles: nextSavedArticles,
+      };
+    },
+    onError: (_error, _variables, context) => {
+      if (context?.previousSavedArticles) {
+        queryClient.setQueryData(
+          SAVED_ARTICLES_QUERY_KEY,
+          context.previousSavedArticles,
+        );
+      }
+
+      showBanner({
+        title: t('article.savedArticles.error'),
+        variant: 'error',
+      });
+    },
+    onMutate: async () => {
+      if (!article) {
+        return {};
+      }
+
+      await queryClient.cancelQueries({ queryKey: SAVED_ARTICLES_QUERY_KEY });
+
+      const previousSavedArticles =
+        queryClient.getQueryData<SavedArticle[]>(SAVED_ARTICLES_QUERY_KEY) ?? [];
+      const nextSavedArticles = isCurrentArticleSaved
+        ? previousSavedArticles.filter((savedArticle) => savedArticle.id !== article.id)
+        : createSavedArticlesWithArticle(
+            previousSavedArticles,
+            createSavedArticleFromDetail(article),
+          );
+
+      queryClient.setQueryData(SAVED_ARTICLES_QUERY_KEY, nextSavedArticles);
+
+      return { previousSavedArticles };
+    },
+    onSuccess: (response) => {
+      queryClient.setQueryData(SAVED_ARTICLES_QUERY_KEY, response.savedArticles);
+      showBanner({
+        title: response.saved
+          ? t('article.savedArticles.saved')
+          : t('article.savedArticles.removed'),
+        variant: 'success',
+      });
+    },
+  });
+  const quizMutation = useMutation({
+    mutationFn: async () => {
+      if (!article) {
+        throw new Error('article.errorDescription');
+      }
+
+      return generateArticleQuiz({
+        level: selectedLevel,
+        targetLength: 'medium',
+        text: article.content,
+        title: article.title,
+      });
+    },
+    onError: () => {
+      showBanner({
+        title: t('article.quiz.error'),
+        variant: 'error',
+      });
+    },
+    onSuccess: (response) => {
+      if (articleId === null) {
+        return;
+      }
+
+      queryClient.setQueryData(
+        getArticleQuizSessionKey(articleId, selectedLevel, 'medium'),
+        response,
+      );
+      setIsQuizModePickerOpen(false);
+      router.push({
+        params: {
+          id: String(articleId),
+          level: selectedLevel,
+          targetLength: 'medium',
+        },
+        pathname: '/article-quiz/[id]',
+      });
+    },
+  });
 
   const levelOptions = useMemo(
     () => [
@@ -175,8 +300,6 @@ export default function ArticleScreen() {
 
   const targetLengthOptions = useMemo(
     () => {
-      const sentenceCount = countSentences(article?.content ?? '');
-
       return [
         {
           disabled: false,
@@ -185,26 +308,26 @@ export default function ArticleScreen() {
           value: 'original' as const,
         },
         {
-          disabled: sentenceCount <= TARGET_LENGTH_MAX_SENTENCES.short,
-          displayLabel: t('article.lengthsShort.short'),
-          label: t('article.lengths.short'),
-          value: 'short' as const,
+          disabled: false,
+          displayLabel: t('article.lengthsShort.percent10'),
+          label: t('article.lengths.percent10'),
+          value: '10' as const,
         },
         {
-          disabled: sentenceCount <= TARGET_LENGTH_MAX_SENTENCES.medium,
-          displayLabel: t('article.lengthsShort.medium'),
-          label: t('article.lengths.medium'),
-          value: 'medium' as const,
+          disabled: false,
+          displayLabel: t('article.lengthsShort.percent25'),
+          label: t('article.lengths.percent25'),
+          value: '25' as const,
         },
         {
-          disabled: sentenceCount <= TARGET_LENGTH_MAX_SENTENCES.long,
-          displayLabel: t('article.lengthsShort.long'),
-          label: t('article.lengths.long'),
-          value: 'long' as const,
+          disabled: false,
+          displayLabel: t('article.lengthsShort.percent50'),
+          label: t('article.lengths.percent50'),
+          value: '50' as const,
         },
       ];
     },
-    [article?.content, t],
+    [t],
   );
 
   const isSelectedTargetLengthDisabled = Boolean(
@@ -239,6 +362,23 @@ export default function ArticleScreen() {
     setIsAdaptSettingsOpen(false);
   }, []);
 
+  const handleOpenQuizModePicker = useCallback(() => {
+    quizMutation.reset();
+    setIsQuizModePickerOpen(true);
+  }, [quizMutation]);
+
+  const handleCloseQuizModePicker = useCallback(() => {
+    if (quizMutation.isPending) {
+      return;
+    }
+
+    setIsQuizModePickerOpen(false);
+  }, [quizMutation.isPending]);
+
+  const handleGenerateArticleQuiz = useCallback(() => {
+    quizMutation.mutate();
+  }, [quizMutation]);
+
   const handleAdaptFromModal = useCallback(() => {
     simplifyMutation.mutate();
     setIsAdaptSettingsOpen(false);
@@ -253,27 +393,35 @@ export default function ArticleScreen() {
     setSelectedWord(null);
     setShowAdaptedText(true);
   }, []);
-  const handleOpenQuiz = useCallback(() => {
-    if (articleId === null) {
+  const handleToggleSavedArticle = useCallback(() => {
+    if (savedArticleMutation.isPending) {
       return;
     }
-    router.push({
-      params: {
-        id: String(articleId),
-        level: selectedLevel,
-        targetLength: selectedTargetLength,
-      },
-      pathname: '/article-quiz/[id]',
-    });
-  }, [articleId, router, selectedLevel, selectedTargetLength]);
 
+    savedArticleMutation.mutate();
+  }, [savedArticleMutation]);
+  const renderSavedHeaderButton = useCallback(
+    () => (
+      <Pressable
+        accessibilityLabel={
+          isCurrentArticleSaved
+            ? t('article.savedArticles.removeAction')
+            : t('article.savedArticles.saveAction')
+        }
+        onPress={handleToggleSavedArticle}
+        style={styles.headerIconButton}>
+        <IconSymbol
+          color={isCurrentArticleSaved ? savedAccentColor : iconColor}
+          name={isCurrentArticleSaved ? 'bookmark.fill' : 'bookmark'}
+          size={24}
+        />
+      </Pressable>
+    ),
+    [handleToggleSavedArticle, iconColor, isCurrentArticleSaved, savedAccentColor, t],
+  );
   const displayedText = useMemo(() => {
-    if (showAdaptedText && adaptedArticle && !adaptedArticle.adaptedBlocks?.length) {
-      return adaptedArticle.adaptedText;
-    }
-
     return article?.content ?? '';
-  }, [adaptedArticle, article?.content, showAdaptedText]);
+  }, [article?.content]);
   const displayedBlocks = useMemo(() => {
     if (!article) {
       return undefined;
@@ -367,7 +515,12 @@ export default function ArticleScreen() {
   if (simplifyMutation.isPending) {
     return (
       <ScreenContainer>
-        <Stack.Screen options={{ title: article.title }} />
+        <Stack.Screen
+          options={{
+            headerRight: renderSavedHeaderButton,
+            title: article.title,
+          }}
+        />
         <View style={styles.centerState}>
           <ActivityIndicator color={Colors[colorScheme ?? 'light'].tint} size="large" />
           <ThemedText type="body">{t('article.adapting')}</ThemedText>
@@ -378,7 +531,12 @@ export default function ArticleScreen() {
 
   return (
     <ScreenContainer style={styles.container}>
-      <Stack.Screen options={{ title: article.title }} />
+      <Stack.Screen
+        options={{
+          headerRight: renderSavedHeaderButton,
+          title: article.title,
+        }}
+      />
       <InteractiveArticleText
         blocks={displayedBlocks}
         contentContainerStyle={styles.content}
@@ -412,16 +570,16 @@ export default function ArticleScreen() {
                         adaptedLength: adaptedArticle.adaptedLength,
                         level: adaptedArticle.level,
                         originalLength: adaptedArticle.originalLength,
-                        targetLength: adaptedArticle.targetLength
-                          ? t(`article.lengths.${adaptedArticle.targetLength}`)
-                          : t('article.lengths.original'),
+                        targetLength: t(
+                          `article.lengths.percent${adaptedArticle.targetPercent}`,
+                        ),
                       })
                     : t('article.originalState', {
                         level: adaptedArticle.level,
                         originalLength: adaptedArticle.originalLength,
-                        targetLength: adaptedArticle.targetLength
-                          ? t(`article.lengths.${adaptedArticle.targetLength}`)
-                          : t('article.lengths.original'),
+                        targetLength: t(
+                          `article.lengths.percent${adaptedArticle.targetPercent}`,
+                        ),
                       })}
                 </ThemedText>
               </View>
@@ -497,12 +655,33 @@ export default function ArticleScreen() {
           {simplifyMutation.isPending ? t('article.adapting') : t('article.adaptText')}
         </Button>
       </ModalSheet>
-      {!isAdaptSettingsOpen ? (
+      <ModalSheet
+        contentStyle={styles.adaptModalContent}
+        onClose={handleCloseQuizModePicker}
+        open={isQuizModePickerOpen}
+        title={t('article.quiz.modeTitle')}>
+        {quizMutation.isPending ? (
+          <View style={styles.quizModalLoading}>
+            <ActivityIndicator color={Colors[colorScheme ?? 'light'].tint} size="large" />
+            <ThemedText type="body">{t('article.quiz.generating')}</ThemedText>
+          </View>
+        ) : (
+          <View style={styles.quizModalActions}>
+            <Button onPress={handleGenerateArticleQuiz} variant="primary">
+              {t('article.quiz.articleKnowledge')}
+            </Button>
+            <Button onPress={() => undefined} variant="secondary">
+              {t('article.quiz.vocabularyKnowledge')}
+            </Button>
+          </View>
+        )}
+      </ModalSheet>
+      {!isAdaptSettingsOpen && !isQuizModePickerOpen ? (
         <Cta
           layout="vertical"
           primaryAction={{
             label: t('article.reinforceKnowledge'),
-            onPress: handleOpenQuiz,
+            onPress: handleOpenQuizModePicker,
           }}
           secondaryAction={{
             label: t('article.configureText'),
@@ -580,14 +759,17 @@ function getWikipediaImageIdentity(imageUrl: string): string | null {
   }
 }
 
-function countSentences(text: string): number {
-  const normalizedText = text.trim();
+function createSimplificationRequestBlocks(blocks: ArticleBlock[]): ArticleBlock[] {
+  return blocks.map((block) => {
+    if (block.type !== 'formula') {
+      return block;
+    }
 
-  if (!normalizedText) {
-    return 0;
-  }
-
-  const matches = normalizedText.match(/[.!?]+(?=\s|$)/g);
-  return matches?.length ?? 1;
+    return {
+      altText: block.altText,
+      display: block.display,
+      type: 'formula',
+    };
+  });
 }
 

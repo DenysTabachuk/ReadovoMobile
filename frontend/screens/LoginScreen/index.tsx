@@ -73,7 +73,7 @@ export default function LoginScreen() {
         error instanceof Error ? error.message : 'auth.errors.loginFailed';
 
       showBanner({
-        title: t(messageKey),
+        title: t(messageKey, { defaultValue: t('auth.errors.loginFailed') }),
         variant: 'error',
       });
     } finally {
@@ -104,9 +104,11 @@ export default function LoginScreen() {
       router.replace('/(tabs)');
     } catch (error) {
       console.error('[LoginScreen] Google sign-in flow failed', error);
+      const messageKey =
+        error instanceof Error ? error.message : 'auth.errors.default';
 
       showBanner({
-        title: t('auth.errors.title'),
+        title: t(messageKey, { defaultValue: t('auth.errors.default') }),
         variant: 'error',
       });
     } finally {

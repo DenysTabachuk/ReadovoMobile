@@ -8,6 +8,7 @@ import {
   useMemo,
   useState,
 } from 'react';
+import { useColorScheme as useSystemColorScheme } from 'react-native';
 import i18n from '@/localization';
 import type { LanguagePreference, ThemePreference } from './types';
 import { saveThemePreference } from './preferenceStorage/saveThemePreference';
@@ -17,7 +18,7 @@ import { saveLanguagePreference } from './preferenceStorage/saveLanguagePreferen
 export type { LanguagePreference, ThemePreference } from './types';
 
 type PreferencesContextValue = {
-  colorScheme: ThemePreference;
+  colorScheme: Exclude<ThemePreference, 'system'>;
   hasCompletedOnboarding: boolean;
   languagePreference: LanguagePreference;
   themePreference: ThemePreference;
@@ -46,8 +47,9 @@ export function PreferencesProvider({ children }: PreferencesProviderProps) {
   const [preferences, setPreferences] = useState<StoredPreferencesState>({
     hasCompletedOnboarding: false,
     languagePreference: 'en',
-    themePreference: 'light',
+    themePreference: 'system',
   });
+  const systemColorScheme = useSystemColorScheme();
 
   useEffect(() => {
     async function initializePreferences() {
@@ -61,7 +63,7 @@ export function PreferencesProvider({ children }: PreferencesProviderProps) {
         setPreferences({
           hasCompletedOnboarding: storedPreferences.hasCompletedOnboarding,
           languagePreference: storedPreferences.languagePreference ?? 'en',
-          themePreference: storedPreferences.themePreference ?? 'light',
+          themePreference: storedPreferences.themePreference ?? 'system',
         });
       } catch (error) {
         console.error('Failed to initialize preferences', error);
@@ -101,9 +103,17 @@ export function PreferencesProvider({ children }: PreferencesProviderProps) {
     }));
   }, []);
 
+  const colorScheme = useMemo<Exclude<ThemePreference, 'system'>>(() => {
+    if (preferences.themePreference !== 'system') {
+      return preferences.themePreference;
+    }
+
+    return systemColorScheme === 'dark' ? 'dark' : 'light';
+  }, [preferences.themePreference, systemColorScheme]);
+
   const value = useMemo<PreferencesContextValue>(
     () => ({
-      colorScheme: preferences.themePreference,
+      colorScheme,
       hasCompletedOnboarding: preferences.hasCompletedOnboarding,
       languagePreference: preferences.languagePreference,
       themePreference: preferences.themePreference,
@@ -114,6 +124,7 @@ export function PreferencesProvider({ children }: PreferencesProviderProps) {
     }),
     [
       completeOnboarding,
+      colorScheme,
       isLoading,
       preferences.hasCompletedOnboarding,
       preferences.languagePreference,

@@ -26,7 +26,7 @@ export function useGenerateArticleQuiz({
   return useMutation({
     mutationFn: async () => {
       if (!article) {
-        throw new Error('Article is unavailable.');
+        throw new Error('article.errorDescription');
       }
 
       const targetLength = resolveEffectiveTargetLength(
@@ -43,9 +43,7 @@ export function useGenerateArticleQuiz({
     },
     onError: () => {
       showBanner({
-        title: t('article.quiz.error', {
-          defaultValue: 'Could not generate quiz. Try again.',
-        }),
+        title: t('article.quiz.error'),
         variant: 'error',
       });
     },

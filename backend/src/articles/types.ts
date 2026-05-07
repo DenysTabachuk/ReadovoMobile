@@ -1,4 +1,5 @@
 export type WikipediaArticle = {
+  availableAdaptations?: ArticleAdaptationSummary[];
   id: number;
   title: string;
   extract: string;
@@ -16,11 +17,7 @@ export type GetWikipediaArticlesParams = {
   search?: string;
 };
 
-export type WikipediaArticlePreviewLength =
-  | 'all'
-  | 'short'
-  | 'medium'
-  | 'long';
+export type WikipediaArticlePreviewLength = 'all' | 'short' | 'medium' | 'long';
 
 export type WikipediaArticleCategory =
   | 'all'
@@ -104,6 +101,12 @@ export type TableCell = {
 export type ArticleSimplificationLevel = 'A1' | 'A2' | 'B1' | 'B2';
 
 export type ArticleSimplificationTargetLength = 'short' | 'medium' | 'long';
+export type ArticleSimplificationTargetPercent = 10 | 25 | 50;
+
+export type ArticleAdaptationSummary = {
+  level: ArticleSimplificationLevel;
+  targetPercent: ArticleSimplificationTargetPercent;
+};
 
 export type ArticleQuizQuestionType =
   | 'single_choice'
@@ -125,8 +128,10 @@ export type ArticleQuizQuestion = {
 };
 
 export type SimplifyArticleRequest = {
+  articleId?: number;
+  blocks?: ArticleBlock[];
   level?: string;
-  targetLength?: string;
+  targetPercent?: number | string;
   text?: string;
   title?: string;
 };
@@ -139,13 +144,12 @@ export type GenerateArticleQuizRequest = {
 };
 
 export type SimplifyArticleResponse = {
+  adaptedBlocks: ArticleBlock[];
   adaptedLength: number;
-  adaptedBlocks?: ArticleBlock[];
-  adaptedText: string;
   level: ArticleSimplificationLevel;
   originalLength: number;
   questions?: ArticleQuizQuestion[];
-  targetLength: ArticleSimplificationTargetLength;
+  targetPercent: ArticleSimplificationTargetPercent;
   title: string;
 };
 
@@ -167,10 +171,15 @@ export type WikipediaApiResponse = {
 };
 
 export type SimplifiedArticleCacheRow = {
+  adapted_blocks?: ArticleBlock[];
   adapted_length: number;
-  adapted_text: string;
+  adapted_text?: string;
+  article_id?: number;
+  questions?: ArticleQuizQuestion[];
   level: string;
   original_length: number;
+  source_hash?: string;
+  target_percent?: number;
   target_length: string;
   title: string;
 };

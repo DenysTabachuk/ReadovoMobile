@@ -57,6 +57,13 @@ export const styles = StyleSheet.create({
   header: {
     gap: Spacing.sm,
   },
+  headerIconButton: {
+    alignItems: 'center',
+    height: 44,
+    justifyContent: 'center',
+    marginRight: Spacing.sm,
+    width: 44,
+  },
   heroImage: {
     borderRadius: 12,
     height: 220,
@@ -67,6 +74,14 @@ export const styles = StyleSheet.create({
   },
   listHeader: {
     gap: Spacing.lg,
+  },
+  quizModalActions: {
+    gap: Spacing.md,
+  },
+  quizModalLoading: {
+    alignItems: 'center',
+    gap: Spacing.md,
+    paddingVertical: Spacing.xLg,
   },
   wikipediaLink: {
     textDecorationLine: 'underline',

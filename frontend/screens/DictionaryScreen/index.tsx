@@ -317,7 +317,7 @@ export default function DictionaryScreen() {
       const selectedOptionId = selectedOptionIds[0];
 
       if (!selectedOptionId) {
-        throw new Error('No answer selected.');
+        throw new Error('dictionary.test.answerError');
       }
 
       const result = await answerMutation.mutateAsync({

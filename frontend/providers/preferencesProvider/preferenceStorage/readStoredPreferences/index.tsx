@@ -14,7 +14,9 @@ function parseLanguagePreference(
 }
 
 function parseThemePreference(value: string | null): ThemePreference | undefined {
-  return value === 'light' || value === 'dark' ? value : undefined;
+  return value === 'system' || value === 'light' || value === 'dark'
+    ? value
+    : undefined;
 }
 
 

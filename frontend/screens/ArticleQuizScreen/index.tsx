@@ -1,5 +1,6 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
@@ -9,8 +10,10 @@ import { ScreenContainer } from '@/components/screenContainer';
 import { TestResult } from '@/components/testResult';
 import { ThemedText } from '@/components/themedText';
 import { Colors } from '@/constants/theme';
+import { getArticleQuizSessionKey } from '@/features/articleQuizSession';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useAuth } from '@/providers/authProvider';
+import { type GenerateArticleQuizResponse } from '@/api/wikipedia';
 
 import {
   normalizeLevel,
@@ -20,11 +23,11 @@ import { DEFAULT_LENGTH, DEFAULT_LEVEL } from './constants';
 import { styles } from './styles';
 import { useFetchWikipediaArticleDetail } from './useFetchWikipediaArticleDetail';
 import { useCompleteArticleQuiz } from './useCompleteArticleQuiz';
-import { useGenerateArticleQuiz } from './useGenerateArticleQuiz';
 
 export default function ArticleQuizScreen() {
   const { t } = useTranslation();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const colorScheme = useColorScheme();
   const { currentUser } = useAuth();
   const [quizResult, setQuizResult] = useState<QuizSessionResult | null>(null);
@@ -44,6 +47,8 @@ export default function ArticleQuizScreen() {
   const quizLevel = normalizeLevel(rawLevel) ?? DEFAULT_LEVEL;
   const quizTargetLength =
     normalizeTargetLength(rawTargetLength) ?? DEFAULT_LENGTH;
+  const quizSessionTargetLength =
+    quizTargetLength === 'original' ? DEFAULT_LENGTH : quizTargetLength;
 
   const {
     data: article,
@@ -54,25 +59,17 @@ export default function ArticleQuizScreen() {
     articleId,
   });
 
-  const quizMutation = useGenerateArticleQuiz({
-    article,
-    quizLevel,
-    quizTargetLength,
-  });
+  const quizSession = useMemo(() => {
+    return queryClient.getQueryData<GenerateArticleQuizResponse>(
+      getArticleQuizSessionKey(articleId, quizLevel, quizSessionTargetLength),
+    );
+  }, [articleId, queryClient, quizLevel, quizSessionTargetLength]);
   const progressMutation = useCompleteArticleQuiz({
     article,
     currentUserId: currentUser?.id ?? undefined,
     quizLevel,
     quizTargetLength,
   });
-
-  useEffect(() => {
-    if (!article || quizMutation.isPending || quizMutation.data?.questions?.length) {
-      return;
-    }
-
-    quizMutation.mutate();
-  }, [article, quizMutation]);
 
   useEffect(() => {
     if (!isArticleError) {
@@ -145,30 +142,26 @@ export default function ArticleQuizScreen() {
           shouldShowTitle={false}
           title={t('article.reinforceKnowledge')}
         />
-      ) : quizMutation.data?.questions?.length ? (
+      ) : quizSession?.questions?.length ? (
         <ArticleQuizRunner
           key={`article-quiz-${quizAttempt}`}
           onFinish={(result) => {
             setQuizResult(result);
             void progressMutation.mutateAsync(result);
           }}
-          questions={quizMutation.data.questions}
+          questions={quizSession.questions}
         />
       ) : (
         <View style={styles.setupContent}>
           <View style={styles.setupBody}>
             <ThemedText type="screenTitle">{article.title}</ThemedText>
-            <ThemedText type="description">{t('article.quiz.generating', { defaultValue: 'Generating quiz...' })}</ThemedText>
-            {quizMutation.isPending ? (
-              <ActivityIndicator color={Colors[colorScheme ?? 'light'].tint} size="large" />
-            ) : null}
+            <ThemedText type="description">
+              {t('article.quiz.missingGeneratedQuiz')}
+            </ThemedText>
           </View>
           <View style={styles.setupFooter}>
-            <Button
-              disabled={quizMutation.isPending}
-              onPress={() => quizMutation.mutate()}
-              style={styles.setupButton}>
-              {t('article.retry')}
+            <Button onPress={() => router.back()} style={styles.setupButton}>
+              {t('translation.close')}
             </Button>
           </View>
         </View>
