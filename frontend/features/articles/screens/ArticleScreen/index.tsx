@@ -9,10 +9,13 @@ import { useTranslation } from 'react-i18next';
 import { translateWord } from '@/api/translations';
 import { createDictionaryWord } from '@/api/dictionary';
 import {
+  type ArticleAdaptationSummary,
   type ArticleBlock,
+  fetchArticleAdaptations,
   fetchWikipediaArticleDetail,
   generateArticleQuiz,
   type SimplifyArticleLevel,
+  type SimplifyArticleTargetPercent,
   simplifyWikipediaArticle,
   type SimplifyArticleResponse,
 } from '@/api/wikipedia';
@@ -67,6 +70,18 @@ export default function ArticleScreen() {
   const iconColor = useThemeColor({}, 'icon');
   const tintColor = Colors[colorScheme ?? 'light'].tint;
   const savedAccentColor = colorScheme === 'dark' ? '#c4a7ff' : tintColor;
+  const adaptationReadyBackgroundColor = useThemeColor(
+    { dark: '#123822', light: '#e8f8ef' },
+    'background',
+  );
+  const adaptationReadyBorderColor = useThemeColor(
+    { dark: '#2b6f43', light: '#9dddb7' },
+    'icon',
+  );
+  const adaptationReadyTextColor = useThemeColor(
+    { dark: '#7ee0a0', light: '#1f8a4c' },
+    'text',
+  );
   const { showBanner } = useBanner();
   const params = useLocalSearchParams<{
     id?: string | string[];
@@ -102,6 +117,17 @@ export default function ArticleScreen() {
       return fetchWikipediaArticleDetail(articleId);
     },
     queryKey: ['wikipedia', 'article', articleId],
+  });
+  const { data: articleAdaptationsById = {} } = useQuery({
+    enabled: articleId !== null,
+    queryFn: async () => {
+      if (articleId === null) {
+        throw new Error('article.invalidId');
+      }
+
+      return fetchArticleAdaptations([articleId]);
+    },
+    queryKey: ['wikipedia', 'article-adaptations', articleId],
   });
   const {
     data: translation,
@@ -324,16 +350,6 @@ export default function ArticleScreen() {
     },
   });
 
-  const levelOptions = useMemo(
-    () => [
-      { label: t('article.levels.A1'), value: 'A1' as const },
-      { label: t('article.levels.A2'), value: 'A2' as const },
-      { label: t('article.levels.B1'), value: 'B1' as const },
-      { label: t('article.levels.B2'), value: 'B2' as const },
-    ],
-    [t],
-  );
-
   const targetLengthOptions = useMemo(
     () => {
       return [
@@ -370,6 +386,79 @@ export default function ArticleScreen() {
       ];
     },
     [t],
+  );
+  const selectedTargetPercent = useMemo(
+    () => getTargetPercentFromOption(selectedTargetLength),
+    [selectedTargetLength],
+  );
+  const availableAdaptations = useMemo(() => {
+    const persistedAdaptations =
+      articleId === null ? [] : articleAdaptationsById[String(articleId)] ?? [];
+    const currentAdaptation = adaptedArticle
+      ? [
+          {
+            level: adaptedArticle.level,
+            targetPercent: adaptedArticle.targetPercent,
+          },
+        ]
+      : [];
+    const uniqueAdaptations = new Map<string, ArticleAdaptationSummary>();
+
+    [...persistedAdaptations, ...currentAdaptation].forEach((adaptation) => {
+      uniqueAdaptations.set(
+        `${adaptation.level}-${adaptation.targetPercent}`,
+        adaptation,
+      );
+    });
+
+    return Array.from(uniqueAdaptations.values());
+  }, [adaptedArticle, articleAdaptationsById, articleId]);
+  const isSelectedAdaptationAvailable = availableAdaptations.some(
+    (adaptation) => isSameAdaptation(adaptation, selectedLevel, selectedTargetPercent),
+  );
+  const levelOptions = useMemo(
+    () =>
+      (['A1', 'A2', 'B1', 'B2'] as const).map((level) => {
+        const readyTargetPercents = Array.from(
+          new Set(
+            availableAdaptations
+              .filter((adaptation) => adaptation.level === level)
+              .map((adaptation) => adaptation.targetPercent),
+          ),
+        ).sort((left, right) => left - right);
+
+        return {
+          badgeLabel: readyTargetPercents.length
+            ? t('article.levelReadyBadge', {
+                lengths: readyTargetPercents
+                  .map((targetPercent) =>
+                    getAdaptedArticleTargetLengthShortLabel(targetPercent, t),
+                  )
+                  .join(', '),
+              })
+            : undefined,
+          label: t(`article.levels.${level}`),
+          value: level,
+        };
+      }),
+    [availableAdaptations, t],
+  );
+  const targetLengthOptionsWithReadiness = useMemo(
+    () =>
+      targetLengthOptions.map((option) => {
+        const targetPercent = getTargetPercentFromOption(option.value);
+        const isAvailable = availableAdaptations.some((adaptation) =>
+          isSameAdaptation(adaptation, selectedLevel, targetPercent),
+        );
+
+        return isAvailable
+          ? {
+              ...option,
+              badgeLabel: t('article.adaptationReadyBadge'),
+            }
+          : option;
+      }),
+    [availableAdaptations, selectedLevel, t, targetLengthOptions],
   );
 
   const isSelectedTargetLengthDisabled = Boolean(
@@ -701,12 +790,42 @@ export default function ArticleScreen() {
             <OptionPickerField
               label={t('article.lengthLabel')}
               onSelect={setSelectedTargetLength}
-              options={targetLengthOptions}
+              options={targetLengthOptionsWithReadiness}
               selectedValue={selectedTargetLength}
               title={t('article.lengthPickerTitle')}
             />
           </View>
         </View>
+        {isSelectedAdaptationAvailable ? (
+          <View
+            style={[
+              styles.adaptationReadyNotice,
+              {
+                backgroundColor: adaptationReadyBackgroundColor,
+                borderColor: adaptationReadyBorderColor,
+              },
+            ]}>
+            <ThemedText
+              type="bodyStrong"
+              style={{ color: adaptationReadyTextColor }}>
+              {t('article.adaptationReadyTitle')}
+            </ThemedText>
+            <ThemedText
+              type="description"
+              style={[
+                styles.adaptationReadyDescription,
+                { color: adaptationReadyTextColor },
+              ]}>
+              {t('article.adaptationReadyDescription', {
+                level: selectedLevel,
+                targetLength: getAdaptedArticleTargetLengthShortLabel(
+                  selectedTargetPercent,
+                  t,
+                ),
+              })}
+            </ThemedText>
+          </View>
+        ) : null}
         <Button
           disabled={simplifyMutation.isPending || isSelectedTargetLengthDisabled}
           onPress={handleAdaptFromModal}
@@ -841,5 +960,34 @@ function getAdaptedArticleTargetLengthLabel(
   }
 
   return t(`article.lengths.percent${targetPercent}`);
+}
+
+function getAdaptedArticleTargetLengthShortLabel(
+  targetPercent: SimplifyArticleTargetPercent,
+  t: ReturnType<typeof useTranslation>['t'],
+): string {
+  if (targetPercent === 100) {
+    return t('article.lengthsShort.original');
+  }
+
+  return t(`article.lengthsShort.percent${targetPercent}`);
+}
+
+function getTargetPercentFromOption(
+  targetLength: ArticleTextLengthOption,
+): SimplifyArticleTargetPercent {
+  if (targetLength === 'original') {
+    return 100;
+  }
+
+  return Number(targetLength) as SimplifyArticleTargetPercent;
+}
+
+function isSameAdaptation(
+  adaptation: ArticleAdaptationSummary,
+  level: SimplifyArticleLevel,
+  targetPercent: SimplifyArticleTargetPercent,
+): boolean {
+  return adaptation.level === level && adaptation.targetPercent === targetPercent;
 }
 

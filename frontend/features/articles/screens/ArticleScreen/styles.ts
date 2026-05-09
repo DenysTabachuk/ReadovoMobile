@@ -18,6 +18,17 @@ export const styles = StyleSheet.create({
   adaptModalPickerField: {
     minWidth: 0,
   },
+  adaptationReadyDescription: {
+    fontSize: 15,
+    lineHeight: 21,
+  },
+  adaptationReadyNotice: {
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: Spacing.xs,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.md,
+  },
   pickerField: {
     flex: 1,
     minWidth: 150,

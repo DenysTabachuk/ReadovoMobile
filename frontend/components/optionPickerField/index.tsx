@@ -15,6 +15,7 @@ import { useThemeColor } from '@/hooks/use-theme-color';
 import { styles } from './styles';
 
 type Option<T extends string> = {
+  badgeLabel?: string;
   disabled?: boolean;
   displayLabel?: string;
   label: string;
@@ -48,6 +49,10 @@ export function OptionPickerField<T extends string>({
   );
   const selectedBorderColor = useThemeColor(
     { dark: '#67c6e3', light: '#0a7ea4' },
+    'tint',
+  );
+  const badgeColor = useThemeColor(
+    { dark: '#7ee0a0', light: '#1f8a4c' },
     'tint',
   );
   const chevronColor = useThemeColor({ dark: '#9ba1a6', light: '#687076' }, 'icon');
@@ -124,11 +129,30 @@ export function OptionPickerField<T extends string>({
                       }
                     : null,
                 ]}>
-                <ThemedText
-                  style={option.disabled ? styles.optionTextDisabled : undefined}
-                  type="bodyStrong">
-                  {option.label}
-                </ThemedText>
+                <View style={styles.optionContent}>
+                  <ThemedText
+                    style={[
+                      styles.optionLabel,
+                      option.disabled ? styles.optionTextDisabled : null,
+                    ]}
+                    type="bodyStrong">
+                    {option.label}
+                  </ThemedText>
+                  {option.badgeLabel ? (
+                    <View style={styles.optionBadge}>
+                      <Ionicons
+                        color={badgeColor}
+                        name="checkmark-circle"
+                        size={16}
+                      />
+                      <ThemedText
+                        type="description"
+                        style={[styles.optionBadgeText, { color: badgeColor }]}>
+                        {option.badgeLabel}
+                      </ThemedText>
+                    </View>
+                  ) : null}
+                </View>
               </Pressable>
             );
           })}

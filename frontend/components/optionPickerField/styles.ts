@@ -16,6 +16,25 @@ export const styles = StyleSheet.create({
   optionButtonDisabled: {
     opacity: 0.45,
   },
+  optionBadge: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: Spacing.xs,
+    marginLeft: Spacing.sm,
+  },
+  optionBadgeText: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  optionContent: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  optionLabel: {
+    flex: 1,
+    minWidth: 0,
+  },
   optionTextDisabled: {
     textDecorationLine: 'line-through',
   },

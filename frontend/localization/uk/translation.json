@@ -248,13 +248,17 @@
       "original": "Оригінал"
     },
     "lengthsShort": {
-      "original": "Оригінал",
+      "original": "100%",
       "percent10": "10%",
       "percent25": "25%",
       "percent50": "50%",
       "percent75": "75%"
     },
     "configureText": "Налаштувати текст",
+    "adaptationReadyBadge": "Готово",
+    "levelReadyBadge": "Готово: {{lengths}}",
+    "adaptationReadyTitle": "Цю версію вже адаптовано",
+    "adaptationReadyDescription": "{{level}}, {{targetLength}} вже готово. Можна використати без очікування нової адаптації.",
     "savedArticles": {
       "saved": "Збережено для читання пізніше",
       "removed": "Видалено зі збережених",
