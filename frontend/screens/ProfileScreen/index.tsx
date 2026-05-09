@@ -1,9 +1,11 @@
 import {
+  Pressable,
   ScrollView,
   View,
   useWindowDimensions,
   type DimensionValue,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -11,11 +13,13 @@ import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 
 import { ScreenContainer } from '@/components/screenContainer';
+import { Mascot } from '@/components/mascot';
 import { ThemedText } from '@/components/themedText';
 import {
   getAchievementBadge,
   getAchievementsProfile,
 } from '@/features/achievements';
+import { getMascotProfile } from '@/features/mascot';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useAuth } from '@/providers/authProvider';
 
@@ -31,6 +35,7 @@ const defaultStats = {
 
 export default function ProfileScreen() {
   const { t } = useTranslation();
+  const router = useRouter();
   const { currentUser } = useAuth();
   const colorScheme = useColorScheme();
   const { width } = useWindowDimensions();
@@ -41,6 +46,11 @@ export default function ProfileScreen() {
     enabled: Boolean(currentUser?.id),
     queryFn: () => getAchievementsProfile(currentUser?.id ?? ''),
     queryKey: ['achievements-profile', currentUser?.id],
+  });
+  const mascotQuery = useQuery({
+    enabled: Boolean(currentUser?.id),
+    queryFn: () => getMascotProfile(currentUser?.id ?? ''),
+    queryKey: ['mascot-profile', currentUser?.id],
   });
 
   const progress = achievementsQuery.data?.progress ?? defaultStats;
@@ -59,19 +69,34 @@ export default function ProfileScreen() {
         </View>
 
         <View style={styles.profileCard}>
-          <Image
-            contentFit="cover"
-            source={require('@/assets/images/octopus.png')}
-            style={styles.avatar}
-          />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('profile.customizeMascotHint', {
+              defaultValue: 'Customize mascot',
+            })}
+            onPress={() => router.push('/wardrobe')}
+            style={({ pressed }) => [
+              styles.avatarButton,
+              pressed ? styles.avatarButtonPressed : null,
+            ]}>
+            <Mascot
+              equippedItems={mascotQuery.data?.equippedItems}
+              style={styles.avatar}
+            />
+          </Pressable>
           <View style={styles.profileMeta}>
             <ThemedText type="sectionTitle">{displayName}</ThemedText>
             <ThemedText style={styles.profileSubtitle}>{t('profile.subtitle')}</ThemedText>
+            <ThemedText style={styles.mascotHint}>
+              {t('profile.customizeMascotHint', {
+                defaultValue: 'Tap the mascot to change its look',
+              })}
+            </ThemedText>
             <View style={styles.walletRow}>
               <View style={styles.walletItem}>
                 <Image
                   contentFit="contain"
-                  source={require('@/assets/images/money.png')}
+                  source={require('../../assets/images/money.png')}
                   style={styles.walletIcon}
                 />
                 <ThemedText style={styles.walletText}>
@@ -189,7 +214,7 @@ export default function ProfileScreen() {
                   <View style={styles.rewardRow}>
                     <Image
                       contentFit="contain"
-                      source={require('@/assets/images/money.png')}
+                      source={require('../../assets/images/money.png')}
                       style={styles.moneyIcon}
                     />
                     <ThemedText style={styles.rewardText}>

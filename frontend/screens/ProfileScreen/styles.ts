@@ -26,6 +26,17 @@ export const styles = StyleSheet.create({
     height: 96,
     width: 96,
   },
+  avatarButton: {
+    borderRadius: 48,
+  },
+  avatarButtonPressed: {
+    opacity: 0.72,
+  },
+  mascotHint: {
+    color: '#8c8ea1',
+    fontSize: 13,
+    lineHeight: 18,
+  },
   profileMeta: {
     flex: 1,
     gap: Spacing.xs,

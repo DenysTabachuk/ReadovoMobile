@@ -57,6 +57,26 @@ export class DatabaseService implements OnModuleDestroy, OnModuleInit {
     `);
 
     await this.query(`
+      CREATE TABLE IF NOT EXISTS user_mascot_profiles (
+        user_id uuid PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+        equipped_head_item_id text,
+        equipped_eyes_item_id text,
+        equipped_glasses_id text,
+        equipped_hat_id text,
+        equipped_bandana_id text,
+        equipped_eye_patch_id text,
+        owned_item_ids text[] NOT NULL DEFAULT '{}',
+        updated_at timestamptz NOT NULL DEFAULT now()
+      );
+    `);
+
+    await this.query(`
+      ALTER TABLE user_mascot_profiles
+      ADD COLUMN IF NOT EXISTS equipped_head_item_id text,
+      ADD COLUMN IF NOT EXISTS equipped_eyes_item_id text;
+    `);
+
+    await this.query(`
       INSERT INTO user_achievements (user_id, achievement_id, unlocked_at)
       SELECT user_id, 'ten_tests_completed', unlocked_at
       FROM user_achievements
@@ -108,6 +128,42 @@ export class DatabaseService implements OnModuleDestroy, OnModuleInit {
     await this.query(`
       CREATE INDEX IF NOT EXISTS article_simplifications_article_id_idx
       ON article_simplifications (article_id);
+    `);
+
+    await this.query(`
+      CREATE TABLE IF NOT EXISTS user_saved_articles (
+        user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        article_id integer NOT NULL,
+        title text NOT NULL,
+        extract text NOT NULL,
+        url text NOT NULL,
+        thumbnail_url text,
+        saved_at timestamptz NOT NULL DEFAULT now(),
+        PRIMARY KEY (user_id, article_id)
+      );
+    `);
+
+    await this.query(`
+      CREATE TABLE IF NOT EXISTS user_recent_articles (
+        user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        article_id integer NOT NULL,
+        title text NOT NULL,
+        extract text NOT NULL,
+        url text NOT NULL,
+        thumbnail_url text,
+        opened_at timestamptz NOT NULL DEFAULT now(),
+        PRIMARY KEY (user_id, article_id)
+      );
+    `);
+
+    await this.query(`
+      CREATE INDEX IF NOT EXISTS user_saved_articles_user_saved_at_idx
+      ON user_saved_articles (user_id, saved_at DESC);
+    `);
+
+    await this.query(`
+      CREATE INDEX IF NOT EXISTS user_recent_articles_user_opened_at_idx
+      ON user_recent_articles (user_id, opened_at DESC);
     `);
 
     await this.query(`

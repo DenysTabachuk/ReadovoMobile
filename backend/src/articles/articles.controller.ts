@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Post,
@@ -13,6 +14,9 @@ import {
   type ArticleSimplificationLevel,
   type ArticleSimplificationTargetPercent,
   type ArticleSimplificationTargetLength,
+  type ArticleAdaptationsByArticleId,
+  type UserRecentArticle,
+  type UserSavedArticle,
   type GenerateArticleQuizRequest,
   type ArticleQuizQuestion,
   type SimplifyArticleRequest,
@@ -49,7 +53,9 @@ const TARGET_LENGTHS: ArticleSimplificationTargetLength[] = [
   'medium',
   'long',
 ];
-const TARGET_PERCENTS: ArticleSimplificationTargetPercent[] = [10, 25, 50];
+const TARGET_PERCENTS: ArticleSimplificationTargetPercent[] = [
+  10, 25, 50, 75, 100,
+];
 const PREVIEW_LENGTHS: WikipediaArticlePreviewLength[] = [
   'all',
   'short',
@@ -153,6 +159,81 @@ export class ArticlesController {
     return Array.from(new Set(parsedIds));
   }
 
+  @Get('api/articles/adaptations')
+  async getArticleAdaptations(
+    @Query('articleIds') articleIds?: string,
+  ): Promise<ArticleAdaptationsByArticleId> {
+    const parsedArticleIds = this.parseArticleIds(articleIds);
+
+    return this.articlesService.getAvailableAdaptationsByArticleIds(
+      parsedArticleIds,
+    );
+  }
+
+  private parseArticleIds(articleIds?: string): number[] {
+    if (!articleIds?.trim()) {
+      throw new BadRequestException('Article ids are required.');
+    }
+
+    const parsedIds = articleIds
+      .split(',')
+      .map((id) => Number(id.trim()))
+      .filter((id) => Number.isInteger(id) && id > 0);
+
+    if (parsedIds.length === 0) {
+      throw new BadRequestException('Article ids are invalid.');
+    }
+
+    return Array.from(new Set(parsedIds));
+  }
+
+  @Get('api/users/:userId/articles/saved')
+  async getSavedArticles(
+    @Param('userId') userId: string,
+  ): Promise<UserSavedArticle[]> {
+    return this.articlesService.getSavedArticles(userId);
+  }
+
+  @Post('api/users/:userId/articles/saved')
+  async saveArticle(
+    @Param('userId') userId: string,
+    @Body() body: WikipediaArticle,
+  ): Promise<UserSavedArticle[]> {
+    this.validateArticlePayload(body);
+
+    return this.articlesService.saveArticleForUser(userId, body);
+  }
+
+  @Delete('api/users/:userId/articles/saved/:articleId')
+  async removeSavedArticle(
+    @Param('userId') userId: string,
+    @Param('articleId') articleId: string,
+  ): Promise<UserSavedArticle[]> {
+    const parsedArticleId = this.parseArticleId(articleId);
+
+    return this.articlesService.removeSavedArticleForUser(
+      userId,
+      parsedArticleId,
+    );
+  }
+
+  @Get('api/users/:userId/articles/recent')
+  async getRecentArticles(
+    @Param('userId') userId: string,
+  ): Promise<UserRecentArticle[]> {
+    return this.articlesService.getRecentArticles(userId);
+  }
+
+  @Post('api/users/:userId/articles/recent')
+  async recordRecentArticle(
+    @Param('userId') userId: string,
+    @Body() body: WikipediaArticle,
+  ): Promise<UserRecentArticle[]> {
+    this.validateArticlePayload(body);
+
+    return this.articlesService.recordRecentArticleForUser(userId, body);
+  }
+
   @Get('articles/:id')
   async getArticleDetail(
     @Param('id') id: string,
@@ -164,6 +245,32 @@ export class ArticlesController {
     }
 
     return this.articlesService.getArticleDetail(pageId);
+  }
+
+  private parseArticleId(articleId: string): number {
+    const parsedArticleId = Number(articleId);
+
+    if (!Number.isInteger(parsedArticleId) || parsedArticleId <= 0) {
+      throw new BadRequestException('Article id must be a positive integer.');
+    }
+
+    return parsedArticleId;
+  }
+
+  private validateArticlePayload(article: WikipediaArticle): void {
+    if (
+      !article ||
+      typeof article !== 'object' ||
+      !Number.isInteger(article.id) ||
+      article.id <= 0 ||
+      typeof article.title !== 'string' ||
+      !article.title.trim() ||
+      typeof article.extract !== 'string' ||
+      typeof article.url !== 'string' ||
+      !article.url.trim()
+    ) {
+      throw new BadRequestException('Article payload is invalid.');
+    }
   }
 
   @Post('api/articles/simplify')

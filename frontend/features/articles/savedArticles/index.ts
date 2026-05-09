@@ -1,8 +1,5 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
+import { API_BASE_URL } from '@/api/auth/constants';
 import { type WikipediaArticle, type WikipediaArticleDetail } from '@/api/wikipedia';
-
-const SAVED_ARTICLES_STORAGE_KEY = 'readovo:savedArticles';
 
 export const SAVED_ARTICLES_QUERY_KEY = ['savedArticles'] as const;
 
@@ -33,44 +30,56 @@ export function isArticleSaved(
   return Boolean(savedArticles?.some((article) => article.id === articleId));
 }
 
-export async function readSavedArticles(): Promise<SavedArticle[]> {
-  const storedValue = await AsyncStorage.getItem(SAVED_ARTICLES_STORAGE_KEY);
+export async function readSavedArticles(userId: string): Promise<SavedArticle[]> {
+  const response = await fetch(
+    `${API_BASE_URL}/api/users/${userId}/articles/saved`,
+  );
 
-  if (!storedValue) {
-    return [];
+  if (!response.ok) {
+    throw new Error('article.savedArticles.loadFailed');
   }
 
-  try {
-    const parsedValue = JSON.parse(storedValue);
-
-    if (!Array.isArray(parsedValue)) {
-      return [];
-    }
-
-    return parsedValue.filter(isStoredSavedArticle);
-  } catch {
-    return [];
-  }
+  return response.json() as Promise<SavedArticle[]>;
 }
 
 export async function saveArticleForLater(
+  userId: string,
   article: WikipediaArticle,
 ): Promise<SavedArticle[]> {
-  const savedArticles = await readSavedArticles();
-  const nextSavedArticles = createSavedArticlesWithArticle(savedArticles, article);
+  const response = await fetch(
+    `${API_BASE_URL}/api/users/${userId}/articles/saved`,
+    {
+      body: JSON.stringify(article),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      method: 'POST',
+    },
+  );
 
-  await writeSavedArticles(nextSavedArticles);
+  if (!response.ok) {
+    throw new Error('article.savedArticles.error');
+  }
 
-  return nextSavedArticles;
+  return response.json() as Promise<SavedArticle[]>;
 }
 
-export async function removeSavedArticle(articleId: number): Promise<SavedArticle[]> {
-  const savedArticles = await readSavedArticles();
-  const nextSavedArticles = savedArticles.filter((article) => article.id !== articleId);
+export async function removeSavedArticle(
+  userId: string,
+  articleId: number,
+): Promise<SavedArticle[]> {
+  const response = await fetch(
+    `${API_BASE_URL}/api/users/${userId}/articles/saved/${articleId}`,
+    {
+      method: 'DELETE',
+    },
+  );
 
-  await writeSavedArticles(nextSavedArticles);
+  if (!response.ok) {
+    throw new Error('article.savedArticles.error');
+  }
 
-  return nextSavedArticles;
+  return response.json() as Promise<SavedArticle[]>;
 }
 
 export function createSavedArticlesWithArticle(
@@ -94,24 +103,4 @@ function createArticleExtract(content: string): string {
   }
 
   return `${compactContent.slice(0, 177).trim()}...`;
-}
-
-async function writeSavedArticles(savedArticles: SavedArticle[]): Promise<void> {
-  await AsyncStorage.setItem(SAVED_ARTICLES_STORAGE_KEY, JSON.stringify(savedArticles));
-}
-
-function isStoredSavedArticle(value: unknown): value is SavedArticle {
-  if (!value || typeof value !== 'object') {
-    return false;
-  }
-
-  const article = value as Partial<SavedArticle>;
-
-  return (
-    typeof article.id === 'number' &&
-    typeof article.title === 'string' &&
-    typeof article.extract === 'string' &&
-    typeof article.url === 'string' &&
-    typeof article.savedAt === 'string'
-  );
 }

@@ -105,12 +105,17 @@ export type TableCell = {
 export type SimplifyArticleLevel = 'A1' | 'A2' | 'B1' | 'B2';
 
 export type SimplifyArticleTargetLength = 'short' | 'medium' | 'long';
-export type SimplifyArticleTargetPercent = 10 | 25 | 50;
+export type SimplifyArticleTargetPercent = 10 | 25 | 50 | 75 | 100;
 
 export type ArticleAdaptationSummary = {
   level: SimplifyArticleLevel;
   targetPercent: SimplifyArticleTargetPercent;
 };
+
+export type ArticleAdaptationsByArticleId = Record<
+  string,
+  ArticleAdaptationSummary[]
+>;
 
 export type ArticleQuizQuestionType =
   | 'single_choice'

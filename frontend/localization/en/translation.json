@@ -99,8 +99,7 @@
     "emptyFilterDescription": "Change or clear the filters to see more articles.",
     "loadMore": "Load more",
     "loadingMore": "Loading more...",
-    "adaptationsAvailable": "Adapted versions ready",
-    "adaptationsHint": "You can always adapt this text for yourself.",
+    "adaptationsAvailable": "Already adapted for",
     "showAdaptations": "Show adapted versions",
     "saved": {
       "label": "Saved",
@@ -237,10 +236,11 @@
       "B2": "B2 - upper-intermediate"
     },
     "lengths": {
-      "original": "Original (no adaptation)",
+      "original": "Original length (simplify only)",
       "percent10": "About 10% of the original",
       "percent25": "About 25% of the original",
-      "percent50": "About 50% of the original"
+      "percent50": "About 50% of the original",
+      "percent75": "About 75% of the original"
     },
     "reinforceKnowledge": "Reinforce knowledge",
     "textMode": {
@@ -251,7 +251,8 @@
       "original": "Original",
       "percent10": "10%",
       "percent25": "25%",
-      "percent50": "50%"
+      "percent50": "50%",
+      "percent75": "75%"
     },
     "configureText": "Configure text",
     "savedArticles": {

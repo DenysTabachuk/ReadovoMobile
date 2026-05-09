@@ -3,6 +3,7 @@ import {
   Injectable,
   InternalServerErrorException,
   Logger,
+  NotFoundException,
 } from '@nestjs/common';
 import { createHash } from 'node:crypto';
 import { createRequire } from 'node:module';
@@ -19,6 +20,7 @@ import {
   type ArticleQuizQuestion,
   type ArticleQuizQuestionOption,
   type ArticleQuizQuestionType,
+  type ArticleAdaptationsByArticleId,
   type ArticleSimplificationTargetPercent,
   type ArticleSimplificationLevel,
   type ArticleSimplificationTargetLength,
@@ -26,6 +28,9 @@ import {
   type GetWikipediaArticlesParams,
   type SimplifiedArticleCacheRow,
   type SimplifyArticleResponse,
+  type TableCell,
+  type UserRecentArticle,
+  type UserSavedArticle,
   type WikipediaApiResponse,
   type WikipediaArticle,
   type WikipediaArticleCategory,
@@ -40,7 +45,7 @@ const DEFAULT_TARGET_LENGTH: ArticleSimplificationTargetLength = 'short';
 const DEFAULT_TARGET_PERCENT: ArticleSimplificationTargetPercent = 25;
 const GROQ_MODEL = 'llama-3.3-70b-versatile';
 const GROQ_REQUEST_TIMEOUT_MS = 45000;
-const MAX_SIMPLIFICATION_CHUNK_CHARS = 12000;
+const MAX_SIMPLIFICATION_CHUNK_CHARS = 50000;
 const MAX_SIMPLIFICATION_CHUNK_COMPLETION_TOKENS = 1400;
 const MAX_SIMPLIFICATION_COMPLETION_TOKENS = 2048;
 const MAX_ARTICLE_LIMIT = 50;
@@ -92,7 +97,7 @@ const WIKIPEDIA_EXCLUDED_TITLE_PATTERNS = [
   /\(disambiguation\)$/i,
 ];
 const SIMPLIFICATION_TARGET_PERCENTS: ArticleSimplificationTargetPercent[] = [
-  10, 25, 50,
+  10, 25, 50, 75, 100,
 ];
 const RECOMMENDED_ARTICLE_TITLES: Record<
   Exclude<WikipediaArticleCategory, 'all'>,
@@ -358,6 +363,16 @@ type SimplificationModelResponse = {
   questions?: ArticleQuizQuestion[];
 };
 
+type UserArticleRow = {
+  article_id: number;
+  extract: string;
+  opened_at?: Date | string;
+  saved_at?: Date | string;
+  thumbnail_url?: string;
+  title: string;
+  url: string;
+};
+
 @Injectable()
 export class ArticlesService {
   private readonly logger = new Logger(ArticlesService.name);
@@ -590,9 +605,9 @@ export class ArticlesService {
     };
   }
 
-  private async attachAvailableAdaptations(
-    articles: WikipediaArticle[],
-  ): Promise<WikipediaArticle[]> {
+  private async attachAvailableAdaptations<T extends WikipediaArticle>(
+    articles: T[],
+  ): Promise<T[]> {
     if (articles.length === 0) {
       return articles;
     }
@@ -639,9 +654,254 @@ export class ArticlesService {
       const availableAdaptations = adaptationsByArticleId.get(article.id);
 
       return availableAdaptations?.length
-        ? { ...article, availableAdaptations }
+        ? ({ ...article, availableAdaptations } as T)
         : article;
     });
+  }
+
+  async getSavedArticles(userId: string): Promise<UserSavedArticle[]> {
+    await this.ensureUserExists(userId);
+
+    const result = await this.databaseService.query<UserArticleRow>(
+      `
+        SELECT article_id,
+               title,
+               extract,
+               url,
+               thumbnail_url,
+               saved_at
+        FROM user_saved_articles
+        WHERE user_id = $1
+        ORDER BY saved_at DESC
+      `,
+      [userId],
+    );
+    const articles = result.rows.map((row) => this.mapSavedArticleRow(row));
+
+    return this.attachAvailableAdaptations(articles);
+  }
+
+  async saveArticleForUser(
+    userId: string,
+    article: WikipediaArticle,
+  ): Promise<UserSavedArticle[]> {
+    await this.ensureUserExists(userId);
+
+    await this.databaseService.query(
+      `
+        INSERT INTO user_saved_articles (
+          user_id,
+          article_id,
+          title,
+          extract,
+          url,
+          thumbnail_url,
+          saved_at
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, now())
+        ON CONFLICT (user_id, article_id) DO UPDATE
+        SET title = EXCLUDED.title,
+            extract = EXCLUDED.extract,
+            url = EXCLUDED.url,
+            thumbnail_url = EXCLUDED.thumbnail_url,
+            saved_at = EXCLUDED.saved_at
+      `,
+      [
+        userId,
+        article.id,
+        article.title,
+        article.extract,
+        article.url,
+        article.thumbnailUrl ?? null,
+      ],
+    );
+
+    return this.getSavedArticles(userId);
+  }
+
+  async removeSavedArticleForUser(
+    userId: string,
+    articleId: number,
+  ): Promise<UserSavedArticle[]> {
+    await this.ensureUserExists(userId);
+
+    await this.databaseService.query(
+      `
+        DELETE FROM user_saved_articles
+        WHERE user_id = $1
+          AND article_id = $2
+      `,
+      [userId, articleId],
+    );
+
+    return this.getSavedArticles(userId);
+  }
+
+  async getRecentArticles(userId: string): Promise<UserRecentArticle[]> {
+    await this.ensureUserExists(userId);
+
+    const result = await this.databaseService.query<UserArticleRow>(
+      `
+        SELECT article_id,
+               title,
+               extract,
+               url,
+               thumbnail_url,
+               opened_at
+        FROM user_recent_articles
+        WHERE user_id = $1
+        ORDER BY opened_at DESC
+        LIMIT 50
+      `,
+      [userId],
+    );
+    const articles = result.rows.map((row) => this.mapRecentArticleRow(row));
+
+    return this.attachAvailableAdaptations(articles);
+  }
+
+  async recordRecentArticleForUser(
+    userId: string,
+    article: WikipediaArticle,
+  ): Promise<UserRecentArticle[]> {
+    await this.ensureUserExists(userId);
+
+    await this.databaseService.query(
+      `
+        INSERT INTO user_recent_articles (
+          user_id,
+          article_id,
+          title,
+          extract,
+          url,
+          thumbnail_url,
+          opened_at
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, now())
+        ON CONFLICT (user_id, article_id) DO UPDATE
+        SET title = EXCLUDED.title,
+            extract = EXCLUDED.extract,
+            url = EXCLUDED.url,
+            thumbnail_url = EXCLUDED.thumbnail_url,
+            opened_at = EXCLUDED.opened_at
+      `,
+      [
+        userId,
+        article.id,
+        article.title,
+        article.extract,
+        article.url,
+        article.thumbnailUrl ?? null,
+      ],
+    );
+
+    await this.databaseService.query(
+      `
+        DELETE FROM user_recent_articles
+        WHERE user_id = $1
+          AND article_id NOT IN (
+            SELECT article_id
+            FROM user_recent_articles
+            WHERE user_id = $1
+            ORDER BY opened_at DESC
+            LIMIT 50
+          )
+      `,
+      [userId],
+    );
+
+    return this.getRecentArticles(userId);
+  }
+
+  async getAvailableAdaptationsByArticleIds(
+    articleIds: number[],
+  ): Promise<ArticleAdaptationsByArticleId> {
+    if (articleIds.length === 0) {
+      return {};
+    }
+
+    const result = await this.databaseService.query<{
+      article_id: number;
+      level: string;
+      target_percent: number;
+    }>(
+      `
+        SELECT DISTINCT article_id, level, target_percent
+        FROM article_simplifications
+        WHERE article_id = ANY($1::int[])
+          AND target_percent IS NOT NULL
+          AND adapted_blocks IS NOT NULL
+        ORDER BY article_id, level, target_percent
+      `,
+      [Array.from(new Set(articleIds))],
+    );
+    const adaptationsByArticleId: ArticleAdaptationsByArticleId = {};
+
+    for (const row of result.rows) {
+      const targetPercent = this.normalizeTargetPercent(row.target_percent);
+
+      if (!targetPercent || !this.isSimplificationLevel(row.level)) {
+        continue;
+      }
+
+      const articleId = String(row.article_id);
+
+      adaptationsByArticleId[articleId] = [
+        ...(adaptationsByArticleId[articleId] ?? []),
+        {
+          level: row.level,
+          targetPercent,
+        },
+      ];
+    }
+
+    return adaptationsByArticleId;
+  }
+
+  private async ensureUserExists(userId: string): Promise<void> {
+    const result = await this.databaseService.query(
+      `
+        SELECT id
+        FROM users
+        WHERE id = $1
+        LIMIT 1
+      `,
+      [userId],
+    );
+
+    if (!result.rows[0]) {
+      throw new NotFoundException('User not found.');
+    }
+  }
+
+  private mapSavedArticleRow(row: UserArticleRow): UserSavedArticle {
+    return {
+      extract: row.extract,
+      id: row.article_id,
+      savedAt: this.serializeTimestamp(row.saved_at),
+      thumbnailUrl: row.thumbnail_url ?? undefined,
+      title: row.title,
+      url: row.url,
+    };
+  }
+
+  private mapRecentArticleRow(row: UserArticleRow): UserRecentArticle {
+    return {
+      extract: row.extract,
+      id: row.article_id,
+      openedAt: this.serializeTimestamp(row.opened_at),
+      thumbnailUrl: row.thumbnail_url ?? undefined,
+      title: row.title,
+      url: row.url,
+    };
+  }
+
+  private serializeTimestamp(value: Date | string | undefined): string {
+    if (value instanceof Date) {
+      return value.toISOString();
+    }
+
+    return value ?? new Date().toISOString();
   }
 
   async simplifyArticle(params: {
@@ -1607,7 +1867,7 @@ export class ArticlesService {
     }
 
     if (block.type === 'table') {
-      return block.rows
+      return this.normalizeTableRows(block.rows)
         .map((row) => row.map((cell) => cell.text.trim()).join(' | '))
         .join('\n');
     }
@@ -1652,7 +1912,7 @@ export class ArticlesService {
 Article title: ${params.title}
 Chunk: ${params.chunk.index} of ${params.chunk.total}
 Learner level: ${params.level}
-Final target length: about ${params.targetPercent}% of the original article
+${this.getSimplificationTargetLengthRule(params.targetPercent)}
 
 Rules:
 - Preserve meaning and local context.
@@ -1660,7 +1920,7 @@ Rules:
 - Do not cut a sentence in the middle.
 - Keep related ideas together.
 - Use simple, natural English for level ${params.level}.
-- Keep this chunk compact because all simplified chunks will be joined into one article that is about ${params.targetPercent}% of the original.
+- Keep this chunk aligned with the final target length rule above.
 - Return ONLY valid JSON with this schema:
   {
     "adaptedBlocks": ArticleBlock[]
@@ -1714,7 +1974,7 @@ Rules:
 - Avoid complex academic words where possible.
 - If a difficult word is important, keep it but explain it simply.
 - Make the text coherent, not just a list of sentences.
-- Target length: about ${params.targetPercent}% of the original article.
+- ${this.getSimplificationTargetLengthRule(params.targetPercent)}
 - Return a valid JSON object only, without markdown fences or extra text.
 - JSON schema:
   {
@@ -1813,6 +2073,16 @@ Text:
 ${params.text}`;
   }
 
+  private getSimplificationTargetLengthRule(
+    targetPercent: ArticleSimplificationTargetPercent,
+  ): string {
+    if (targetPercent === 100) {
+      return 'Target length: keep approximately the original length. Preserve all important content and simplify vocabulary, grammar, and sentence structure without summarizing.';
+    }
+
+    return `Target length: about ${targetPercent}% of the original article.`;
+  }
+
   private parseSimplificationModelResponse(
     rawResponse: string,
   ): SimplificationModelResponse {
@@ -1831,9 +2101,7 @@ ${params.text}`;
         adaptedBlocks?: unknown;
         questions?: unknown;
       };
-      const adaptedBlocks = Array.isArray(parsed.adaptedBlocks)
-        ? (parsed.adaptedBlocks as ArticleBlock[])
-        : [];
+      const adaptedBlocks = this.normalizeArticleBlocks(parsed.adaptedBlocks);
       const questions = this.normalizeQuestions(parsed.questions);
 
       if (adaptedBlocks.length > 0) {
@@ -1847,6 +2115,181 @@ ${params.text}`;
     }
 
     return { adaptedBlocks: [] };
+  }
+
+  private normalizeArticleBlocks(rawBlocks: unknown): ArticleBlock[] {
+    if (!Array.isArray(rawBlocks)) {
+      return [];
+    }
+
+    return rawBlocks
+      .map((block) => this.normalizeArticleBlock(block))
+      .filter((block): block is ArticleBlock => block !== null);
+  }
+
+  private normalizeArticleBlock(rawBlock: unknown): ArticleBlock | null {
+    if (!rawBlock || typeof rawBlock !== 'object') {
+      return null;
+    }
+
+    const candidate = rawBlock as Record<string, unknown>;
+    const type = candidate.type;
+
+    if (type === 'heading') {
+      const text = this.getStringValue(candidate.text);
+      const level =
+        candidate.level === 1 || candidate.level === 2 || candidate.level === 3
+          ? candidate.level
+          : 2;
+
+      return text ? { level, text, type } : null;
+    }
+
+    if (type === 'paragraph') {
+      const children = this.normalizeInlineNodes(candidate.children);
+      const fallbackText = this.getStringValue(candidate.text);
+
+      if (children.length > 0) {
+        return { children, type };
+      }
+
+      return fallbackText
+        ? { children: this.createPlainTextInlineNodes(fallbackText), type }
+        : null;
+    }
+
+    if (type === 'list') {
+      const rawItems = Array.isArray(candidate.items) ? candidate.items : [];
+      const items = rawItems
+        .map((item) => this.normalizeInlineNodes(item))
+        .filter((item) => item.length > 0);
+
+      return items.length > 0
+        ? { items, ordered: candidate.ordered === true, type }
+        : null;
+    }
+
+    if (type === 'table') {
+      const rows = this.normalizeTableRows(candidate.rows);
+
+      return rows.length > 0 ? { rows, type } : null;
+    }
+
+    if (type === 'formula') {
+      const altText = this.getStringValue(candidate.altText);
+
+      return altText
+        ? {
+            altText,
+            display: candidate.display !== false,
+            type,
+          }
+        : null;
+    }
+
+    if (type === 'image') {
+      const src = this.getStringValue(candidate.src);
+
+      return src
+        ? {
+            alt: this.getStringValue(candidate.alt) || undefined,
+            caption: this.getStringValue(candidate.caption) || undefined,
+            src,
+            type,
+          }
+        : null;
+    }
+
+    return null;
+  }
+
+  private normalizeInlineNodes(rawNodes: unknown): { text: string; type: 'text' }[] {
+    if (typeof rawNodes === 'string') {
+      return this.createPlainTextInlineNodes(rawNodes);
+    }
+
+    if (!Array.isArray(rawNodes)) {
+      return [];
+    }
+
+    return rawNodes
+      .map((node) => {
+        if (typeof node === 'string') {
+          return { text: node.trim(), type: 'text' as const };
+        }
+
+        if (!node || typeof node !== 'object') {
+          return null;
+        }
+
+        const text = this.getStringValue((node as Record<string, unknown>).text);
+
+        return text ? { text, type: 'text' as const } : null;
+      })
+      .filter((node): node is { text: string; type: 'text' } => node !== null);
+  }
+
+  private normalizeTableRows(rawRows: unknown): TableCell[][] {
+    if (!Array.isArray(rawRows)) {
+      return [];
+    }
+
+    return rawRows
+      .map((row) => this.normalizeTableRow(row))
+      .filter((row) => row.length > 0);
+  }
+
+  private normalizeTableRow(rawRow: unknown): TableCell[] {
+    if (Array.isArray(rawRow)) {
+      return rawRow
+        .map((cell) => this.normalizeTableCell(cell))
+        .filter((cell): cell is TableCell => cell !== null);
+    }
+
+    if (!rawRow || typeof rawRow !== 'object') {
+      const cell = this.normalizeTableCell(rawRow);
+
+      return cell ? [cell] : [];
+    }
+
+    const candidate = rawRow as Record<string, unknown>;
+
+    if (Array.isArray(candidate.cells)) {
+      return this.normalizeTableRow(candidate.cells);
+    }
+
+    return Object.values(candidate)
+      .map((cell) => this.normalizeTableCell(cell))
+      .filter((cell): cell is TableCell => cell !== null);
+  }
+
+  private normalizeTableCell(rawCell: unknown): TableCell | null {
+    const text =
+      typeof rawCell === 'string' || typeof rawCell === 'number'
+        ? String(rawCell).trim()
+        : rawCell && typeof rawCell === 'object'
+          ? this.getStringValue(
+              (rawCell as Record<string, unknown>).text ??
+                (rawCell as Record<string, unknown>).value ??
+                (rawCell as Record<string, unknown>).content,
+            )
+          : '';
+
+    if (!text) {
+      return null;
+    }
+
+    return {
+      header:
+        rawCell && typeof rawCell === 'object'
+          ? (rawCell as Record<string, unknown>).header === true || undefined
+          : undefined,
+      text,
+    };
+  }
+
+  private getStringValue(value: unknown): string {
+    return typeof value === 'string' ? value.trim() : '';
   }
 
   private parseQuizModelResponse(rawResponse: string): ArticleQuizQuestion[] {
@@ -2070,37 +2513,7 @@ ${params.text}`;
     sourceHash: string;
     title: string;
   }): Promise<ArticleSimplificationTargetPercent[]> {
-    const missingTargetPercents: ArticleSimplificationTargetPercent[] = [];
-
-    const targetPercents = params.articleId
-      ? SIMPLIFICATION_TARGET_PERCENTS
-      : [params.requestedTargetPercent];
-
-    for (const targetPercent of targetPercents) {
-      const cacheKey = this.createSimplificationCacheKey({
-        articleId: params.articleId,
-        level: params.level,
-        sourceHash: params.sourceHash,
-        targetPercent,
-        title: params.title,
-      });
-      const cachedResponse = await this.getCachedSimplification(cacheKey);
-
-      if (!cachedResponse) {
-        missingTargetPercents.push(targetPercent);
-      }
-    }
-
-    if (
-      !missingTargetPercents.includes(params.requestedTargetPercent) &&
-      missingTargetPercents.length > 0
-    ) {
-      return missingTargetPercents;
-    }
-
-    return missingTargetPercents.length > 0
-      ? missingTargetPercents
-      : [params.requestedTargetPercent];
+    return [params.requestedTargetPercent];
   }
 
   private async getCachedSimplification(
@@ -2192,7 +2605,7 @@ ${params.text}`;
           questions,
           adapted_length
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, $10::jsonb, $11)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb, $11::jsonb, $12)
         ON CONFLICT (cache_key) DO UPDATE
         SET
           title = EXCLUDED.title,
@@ -2229,7 +2642,13 @@ ${params.text}`;
   private normalizeTargetPercent(
     targetPercent: number | undefined,
   ): ArticleSimplificationTargetPercent | null {
-    if (targetPercent === 10 || targetPercent === 25 || targetPercent === 50) {
+    if (
+      targetPercent === 10 ||
+      targetPercent === 25 ||
+      targetPercent === 50 ||
+      targetPercent === 75 ||
+      targetPercent === 100
+    ) {
       return targetPercent;
     }
 

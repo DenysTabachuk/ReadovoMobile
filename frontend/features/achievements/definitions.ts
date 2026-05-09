@@ -3,7 +3,7 @@ import { type ImageSourcePropType } from 'react-native';
 import { type AchievementStatus } from './types';
 
 const achievementBadges: Record<string, ImageSourcePropType> = {
-  'first-test-completed': require('@/assets/images/first-test-completed-badge.png'),
+  'first-test-completed': require('../../assets/images/first-test-completed-badge.png'),
 };
 
 export function getAchievementBadge(badgeKey: string): ImageSourcePropType {

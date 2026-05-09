@@ -22,6 +22,21 @@ type TestResultProps = {
 
 type ResultTier = 'good' | 'normal' | 'poor';
 
+const animations = {
+  good: {
+    dark: require('../../assets/images/happy-octopus-dark-theme.mp4'),
+    light: require('../../assets/images/happy-octopus-light-theme.mp4'),
+  },
+  normal: {
+    dark: require('../../assets/images/waving-octopus-dark-theme.mp4'),
+    light: require('../../assets/images/waving-octopus-light-theme.mp4'),
+  },
+  poor: {
+    dark: require('../../assets/images/crying-octopus-dark-theme.mp4'),
+    light: require('../../assets/images/crying-octopus-light-theme.mp4'),
+  },
+};
+
 export function TestResult({
   onDone,
   onRetry,
@@ -117,21 +132,7 @@ function resolveAnimationSource(
 ) {
   const isDark = colorScheme === 'dark';
 
-  if (tier === 'good') {
-    return isDark
-      ? require('@/assets/images/happy-octopus-dark-theme.mp4')
-      : require('@/assets/images/happy-octopus-light-theme.mp4');
-  }
-
-  if (tier === 'normal') {
-    return isDark
-      ? require('@/assets/images/waving-octopus-dark-theme.mp4')
-      : require('@/assets/images/waving-octopus-light-theme.mp4');
-  }
-
-  return isDark
-    ? require('@/assets/images/crying-octopus-dark-theme.mp4')
-    : require('@/assets/images/crying-octopus-light-theme.mp4');
+  return animations[tier][isDark ? 'dark' : 'light'];
 }
 
 function resolveResultMessage(

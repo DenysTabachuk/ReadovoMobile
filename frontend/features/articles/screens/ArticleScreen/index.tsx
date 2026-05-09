@@ -42,6 +42,7 @@ import {
 } from '@/features/articles';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { useAuth } from '@/providers/authProvider';
 
 import { InteractiveArticleText } from './components/interactiveArticleText';
 import { WordTranslationSheet } from './components/wordTranslationSheet';
@@ -52,7 +53,7 @@ type SelectedWord = {
   tokenKey: string;
   word: string;
 };
-type ArticleTextLengthOption = '10' | '25' | '50' | 'original';
+type ArticleTextLengthOption = '10' | '25' | '50' | '75' | 'original';
 
 const DEFAULT_SIMPLIFICATION_LEVEL: SimplifyArticleLevel = 'A2';
 const DEFAULT_TARGET_PERCENT: ArticleTextLengthOption = '25';
@@ -61,6 +62,7 @@ export default function ArticleScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { currentUser } = useAuth();
   const colorScheme = useColorScheme();
   const iconColor = useThemeColor({}, 'icon');
   const tintColor = Colors[colorScheme ?? 'light'].tint;
@@ -128,8 +130,9 @@ export default function ArticleScreen() {
     ],
   });
   const { data: savedArticles } = useQuery({
-    queryFn: readSavedArticles,
-    queryKey: SAVED_ARTICLES_QUERY_KEY,
+    enabled: Boolean(currentUser?.id),
+    queryFn: () => readSavedArticles(currentUser?.id ?? ''),
+    queryKey: [...SAVED_ARTICLES_QUERY_KEY, currentUser?.id],
   });
   const isCurrentArticleSaved = isArticleSaved(articleId, savedArticles);
   const simplifyMutation = useMutation({
@@ -140,8 +143,8 @@ export default function ArticleScreen() {
 
       const targetPercent =
         selectedTargetLength === 'original'
-          ? undefined
-          : (Number(selectedTargetLength) as 10 | 25 | 50);
+          ? 100
+          : (Number(selectedTargetLength) as 10 | 25 | 50 | 75);
 
       return simplifyWikipediaArticle({
         articleId: article.id,
@@ -165,6 +168,15 @@ export default function ArticleScreen() {
       setAdaptedArticle(response);
       setShowAdaptedText(true);
       setSelectedWord(null);
+      void queryClient.invalidateQueries({
+        queryKey: [...RECENT_ARTICLES_QUERY_KEY, currentUser?.id],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: [...SAVED_ARTICLES_QUERY_KEY, currentUser?.id],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: ['wikipedia', 'article-adaptations'],
+      });
       void queryClient.invalidateQueries({ queryKey: ['wikipedia', 'articles'] });
     },
   });
@@ -192,8 +204,15 @@ export default function ArticleScreen() {
 
       const savedArticle = createSavedArticleFromDetail(article);
 
+      if (!currentUser?.id) {
+        throw new Error('auth.required');
+      }
+
       if (isCurrentArticleSaved) {
-        const nextSavedArticles = await removeSavedArticle(article.id);
+        const nextSavedArticles = await removeSavedArticle(
+          currentUser.id,
+          article.id,
+        );
 
         return {
           saved: false,
@@ -201,7 +220,10 @@ export default function ArticleScreen() {
         };
       }
 
-      const nextSavedArticles = await saveArticleForLater(savedArticle);
+      const nextSavedArticles = await saveArticleForLater(
+        currentUser.id,
+        savedArticle,
+      );
 
       return {
         saved: true,
@@ -211,7 +233,7 @@ export default function ArticleScreen() {
     onError: (_error, _variables, context) => {
       if (context?.previousSavedArticles) {
         queryClient.setQueryData(
-          SAVED_ARTICLES_QUERY_KEY,
+          [...SAVED_ARTICLES_QUERY_KEY, currentUser?.id],
           context.previousSavedArticles,
         );
       }
@@ -226,10 +248,15 @@ export default function ArticleScreen() {
         return {};
       }
 
-      await queryClient.cancelQueries({ queryKey: SAVED_ARTICLES_QUERY_KEY });
+      await queryClient.cancelQueries({
+        queryKey: [...SAVED_ARTICLES_QUERY_KEY, currentUser?.id],
+      });
 
       const previousSavedArticles =
-        queryClient.getQueryData<SavedArticle[]>(SAVED_ARTICLES_QUERY_KEY) ?? [];
+        queryClient.getQueryData<SavedArticle[]>([
+          ...SAVED_ARTICLES_QUERY_KEY,
+          currentUser?.id,
+        ]) ?? [];
       const nextSavedArticles = isCurrentArticleSaved
         ? previousSavedArticles.filter((savedArticle) => savedArticle.id !== article.id)
         : createSavedArticlesWithArticle(
@@ -237,12 +264,18 @@ export default function ArticleScreen() {
             createSavedArticleFromDetail(article),
           );
 
-      queryClient.setQueryData(SAVED_ARTICLES_QUERY_KEY, nextSavedArticles);
+      queryClient.setQueryData(
+        [...SAVED_ARTICLES_QUERY_KEY, currentUser?.id],
+        nextSavedArticles,
+      );
 
       return { previousSavedArticles };
     },
     onSuccess: (response) => {
-      queryClient.setQueryData(SAVED_ARTICLES_QUERY_KEY, response.savedArticles);
+      queryClient.setQueryData(
+        [...SAVED_ARTICLES_QUERY_KEY, currentUser?.id],
+        response.savedArticles,
+      );
       showBanner({
         title: response.saved
           ? t('article.savedArticles.saved')
@@ -327,6 +360,12 @@ export default function ArticleScreen() {
           displayLabel: t('article.lengthsShort.percent50'),
           label: t('article.lengths.percent50'),
           value: '50' as const,
+        },
+        {
+          disabled: false,
+          displayLabel: t('article.lengthsShort.percent75'),
+          label: t('article.lengths.percent75'),
+          value: '75' as const,
         },
       ];
     },
@@ -459,16 +498,19 @@ export default function ArticleScreen() {
   }, [article?.thumbnailUrl]);
 
   useEffect(() => {
-    if (!article) {
+    if (!article || !currentUser?.id) {
       return;
     }
 
     const recentArticle = createRecentArticleFromDetail(article);
 
-    void recordRecentArticle(recentArticle).then((recentArticles) => {
-      queryClient.setQueryData(RECENT_ARTICLES_QUERY_KEY, recentArticles);
+    void recordRecentArticle(currentUser.id, recentArticle).then((recentArticles) => {
+      queryClient.setQueryData(
+        [...RECENT_ARTICLES_QUERY_KEY, currentUser.id],
+        recentArticles,
+      );
     });
-  }, [article, queryClient]);
+  }, [article, currentUser?.id, queryClient]);
 
   useEffect(() => {
     if (!isSelectedTargetLengthDisabled) {
@@ -585,15 +627,17 @@ export default function ArticleScreen() {
                         adaptedLength: adaptedArticle.adaptedLength,
                         level: adaptedArticle.level,
                         originalLength: adaptedArticle.originalLength,
-                        targetLength: t(
-                          `article.lengths.percent${adaptedArticle.targetPercent}`,
+                        targetLength: getAdaptedArticleTargetLengthLabel(
+                          adaptedArticle.targetPercent,
+                          t,
                         ),
                       })
                     : t('article.originalState', {
                         level: adaptedArticle.level,
                         originalLength: adaptedArticle.originalLength,
-                        targetLength: t(
-                          `article.lengths.percent${adaptedArticle.targetPercent}`,
+                        targetLength: getAdaptedArticleTargetLengthLabel(
+                          adaptedArticle.targetPercent,
+                          t,
                         ),
                       })}
                 </ThemedText>
@@ -786,5 +830,16 @@ function createSimplificationRequestBlocks(blocks: ArticleBlock[]): ArticleBlock
       type: 'formula',
     };
   });
+}
+
+function getAdaptedArticleTargetLengthLabel(
+  targetPercent: SimplifyArticleResponse['targetPercent'],
+  t: ReturnType<typeof useTranslation>['t'],
+): string {
+  if (targetPercent === 100) {
+    return t('article.lengths.original');
+  }
+
+  return t(`article.lengths.percent${targetPercent}`);
 }
 

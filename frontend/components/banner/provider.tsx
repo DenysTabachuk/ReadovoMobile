@@ -139,7 +139,7 @@ function BannerContent({ banner }: { banner: ShowBannerOptions }) {
             <Image
               accessibilityIgnoresInvertColors
               contentFit="contain"
-              source={require('@/assets/images/money.png')}
+              source={require('../../assets/images/money.png')}
               style={styles.achievementMoneyIcon}
             />
             <ThemedText style={styles.achievementRewardText}>
@@ -158,7 +158,7 @@ function BannerContent({ banner }: { banner: ShowBannerOptions }) {
       {shouldShowRewardIcon ? (
         <Image
           accessibilityIgnoresInvertColors
-          source={require('@/assets/images/money.png')}
+          source={require('../../assets/images/money.png')}
           style={styles.rewardIcon}
         />
       ) : null}

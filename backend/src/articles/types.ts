@@ -8,6 +8,14 @@ export type WikipediaArticle = {
   thumbnailUrl?: string;
 };
 
+export type UserSavedArticle = WikipediaArticle & {
+  savedAt: string;
+};
+
+export type UserRecentArticle = WikipediaArticle & {
+  openedAt: string;
+};
+
 export type GetWikipediaArticlesParams = {
   category?: WikipediaArticleCategory;
   excludeIds?: number[];
@@ -101,12 +109,17 @@ export type TableCell = {
 export type ArticleSimplificationLevel = 'A1' | 'A2' | 'B1' | 'B2';
 
 export type ArticleSimplificationTargetLength = 'short' | 'medium' | 'long';
-export type ArticleSimplificationTargetPercent = 10 | 25 | 50;
+export type ArticleSimplificationTargetPercent = 10 | 25 | 50 | 75 | 100;
 
 export type ArticleAdaptationSummary = {
   level: ArticleSimplificationLevel;
   targetPercent: ArticleSimplificationTargetPercent;
 };
+
+export type ArticleAdaptationsByArticleId = Record<
+  string,
+  ArticleAdaptationSummary[]
+>;
 
 export type ArticleQuizQuestionType =
   | 'single_choice'

@@ -3,6 +3,7 @@ import { API_BASE_URL } from '@/api/auth/constants';
 import { DEFAULT_ARTICLE_LIMIT } from './constants';
 import {
   type FetchWikipediaArticlesParams,
+  type ArticleAdaptationsByArticleId,
   type GenerateArticleQuizRequest,
   type GenerateArticleQuizResponse,
   type SimplifyArticleRequest,
@@ -16,6 +17,7 @@ const ARTICLE_QUIZ_GENERATION_TIMEOUT_MS = 60000;
 export type {
   ArticleBlock,
   ArticleAdaptationSummary,
+  ArticleAdaptationsByArticleId,
   ArticleQuizQuestion,
   ArticleQuizQuestionOption,
   ArticleQuizQuestionType,
@@ -93,6 +95,27 @@ export async function fetchWikipediaArticleDetail(
   }
 
   return response.json() as Promise<WikipediaArticleDetail>;
+}
+
+export async function fetchArticleAdaptations(
+  articleIds: number[],
+): Promise<ArticleAdaptationsByArticleId> {
+  if (articleIds.length === 0) {
+    return {};
+  }
+
+  const searchParams = new URLSearchParams({
+    articleIds: Array.from(new Set(articleIds)).join(','),
+  });
+  const response = await fetch(
+    `${API_BASE_URL}/api/articles/adaptations?${searchParams.toString()}`,
+  );
+
+  if (!response.ok) {
+    throw new Error('articles.errorDescription');
+  }
+
+  return response.json() as Promise<ArticleAdaptationsByArticleId>;
 }
 
 export async function simplifyWikipediaArticle(

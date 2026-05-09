@@ -7,6 +7,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { DatabaseModule } from './database/database.module';
 import { DictionaryModule } from './dictionary/dictionary.module';
+import { MascotModule } from './mascot/mascot.module';
 import { TranslationsModule } from './translations/translations.module';
 
 @Module({
@@ -17,6 +18,7 @@ import { TranslationsModule } from './translations/translations.module';
     ArticlesModule,
     TranslationsModule,
     DictionaryModule,
+    MascotModule,
   ],
   controllers: [AppController],
   providers: [AppService],

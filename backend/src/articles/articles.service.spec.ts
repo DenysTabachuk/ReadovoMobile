@@ -397,7 +397,7 @@ describe('ArticlesService', () => {
         model: 'llama-3.3-70b-versatile',
       }),
     );
-    expect(queryMock).toHaveBeenCalledTimes(3);
+    expect(queryMock).toHaveBeenCalledTimes(2);
     expect(response).toEqual({
       adaptedBlocks: [
         {
@@ -416,6 +416,48 @@ describe('ArticlesService', () => {
       targetPercent: 25,
       title: 'Solar System',
     });
+  });
+
+  it('keeps original length when target percent is 100', async () => {
+    queryMock
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] });
+    createChatCompletionMock.mockResolvedValue({
+      choices: [
+        {
+          message: {
+            content: JSON.stringify({
+              adaptedBlocks: [
+                {
+                  children: [
+                    {
+                      text: 'The Solar System has the Sun and planets.',
+                      type: 'text',
+                    },
+                  ],
+                  type: 'paragraph',
+                },
+              ],
+            }),
+          },
+        },
+      ],
+    });
+
+    const response = await service.simplifyArticle({
+      level: 'A2',
+      targetPercent: 100,
+      text: 'Long article text',
+      title: 'Solar System',
+    });
+    const request = createChatCompletionMock.mock.calls[0]?.[0] as {
+      messages: Array<{ content?: string }>;
+    };
+    const prompt = String(request.messages[1]?.content ?? '');
+
+    expect(prompt).toContain('keep approximately the original length');
+    expect(prompt).toContain('without summarizing');
+    expect(response.targetPercent).toBe(100);
   });
 
   it('parses structured simplification response with blocks and questions', async () => {
@@ -478,7 +520,62 @@ describe('ArticlesService', () => {
     ]);
   });
 
-  it('prepares all percent variants for persisted article adaptations', async () => {
+  it('normalizes table rows returned as row objects', async () => {
+    queryMock
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] });
+    createChatCompletionMock.mockResolvedValue({
+      choices: [
+        {
+          message: {
+            content: JSON.stringify({
+              adaptedBlocks: [
+                {
+                  rows: [
+                    {
+                      cells: [
+                        { header: true, text: 'Company' },
+                        { header: true, text: 'Industry' },
+                      ],
+                    },
+                    {
+                      cells: [
+                        { text: 'Electronic Arts' },
+                        { text: 'Video games' },
+                      ],
+                    },
+                  ],
+                  type: 'table',
+                },
+              ],
+            }),
+          },
+        },
+      ],
+    });
+
+    const response = await service.simplifyArticle({
+      level: 'A2',
+      targetPercent: 25,
+      text: 'Electronic Arts is a video game company.',
+      title: 'Electronic Arts',
+    });
+
+    expect(response.adaptedBlocks).toEqual([
+      {
+        rows: [
+          [
+            { header: true, text: 'Company' },
+            { header: true, text: 'Industry' },
+          ],
+          [{ text: 'Electronic Arts' }, { text: 'Video games' }],
+        ],
+        type: 'table',
+      },
+    ]);
+  });
+
+  it('prepares only the requested percent variant for persisted article adaptations', async () => {
     createChatCompletionMock.mockImplementation(
       (request: { messages: Array<{ content?: string }> }) => {
         const prompt = String(request.messages[1]?.content ?? '');
@@ -517,8 +614,8 @@ describe('ArticlesService', () => {
       title: 'Solar System',
     });
 
-    expect(createChatCompletionMock).toHaveBeenCalledTimes(3);
-    expect(queryMock).toHaveBeenCalledTimes(7);
+    expect(createChatCompletionMock).toHaveBeenCalledTimes(1);
+    expect(queryMock).toHaveBeenCalledTimes(2);
     expect(response.targetPercent).toBe(25);
     expect(response.adaptedBlocks[0]).toEqual({
       children: [{ text: 'Solar System summary 25%.', type: 'text' }],
@@ -528,9 +625,9 @@ describe('ArticlesService', () => {
 
   it('simplifies long structured articles in chunks and preserves selected media blocks', async () => {
     const firstParagraph =
-      `${'The Sun gives Earth light and heat. '.repeat(220)}`.trim();
+      `${'The Sun gives Earth light and heat. '.repeat(760)}`.trim();
     const secondParagraph =
-      `${'Planets move around the Sun in space. '.repeat(220)}`.trim();
+      `${'Planets move around the Sun in space. '.repeat(760)}`.trim();
     const text = `${firstParagraph}\n\n${secondParagraph}`;
 
     createChatCompletionMock

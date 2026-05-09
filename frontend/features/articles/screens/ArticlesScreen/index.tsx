@@ -7,13 +7,11 @@ import {
   type InfiniteData,
   type QueryKey,
 } from '@tanstack/react-query';
-import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
-  Pressable,
   RefreshControl,
   View,
   type ListRenderItem,
@@ -21,7 +19,7 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import {
-  type ArticleAdaptationSummary,
+  fetchArticleAdaptations,
   fetchWikipediaArticles,
   type WikipediaArticle,
   type WikipediaArticleCategory,
@@ -31,9 +29,9 @@ import { useBanner } from '@/components/banner';
 import { Button } from '@/components/button';
 import { ScreenContainer } from '@/components/screenContainer';
 import { ThemedText } from '@/components/themedText';
-import { IconSymbol } from '@/components/ui/iconSymbol';
 import { Colors } from '@/constants/theme';
 import {
+  ArticleCard,
   createSavedArticlesWithArticle,
   isArticleRecentlyOpened,
   isArticleSaved,
@@ -47,9 +45,9 @@ import {
 } from '@/features/articles';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { useAuth } from '@/providers/authProvider';
 
 import { styles } from './styles';
-import { ArticleThumbnail } from './components/articleThumbnail';
 import {
   ArticlesToolbar,
   type ArticleCategoryFilter,
@@ -62,12 +60,14 @@ const ARTICLE_SEARCH_DEBOUNCE_MS = 1200;
 export default function ArticlesScreen() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
+  const { currentUser } = useAuth();
   const colorScheme = useColorScheme();
   const iconColor = useThemeColor({}, 'icon');
   const tintColor = Colors[colorScheme ?? 'light'].tint;
   const savedAccentColor = colorScheme === 'dark' ? '#c4a7ff' : tintColor;
   const { showBanner } = useBanner();
   const borderColor = colorScheme === 'dark' ? '#2d3336' : '#d0d7de';
+  const userId = currentUser?.id;
   const [searchValue, setSearchValue] = useState('');
   const [debouncedSearchValue, setDebouncedSearchValue] = useState('');
   const [previewLengthFilter, setPreviewLengthFilter] =
@@ -131,12 +131,29 @@ export default function ArticlesScreen() {
     ],
   });
   const { data: savedArticles = [] } = useQuery({
-    queryFn: readSavedArticles,
-    queryKey: SAVED_ARTICLES_QUERY_KEY,
+    enabled: Boolean(userId),
+    queryFn: () => readSavedArticles(userId ?? ''),
+    queryKey: [...SAVED_ARTICLES_QUERY_KEY, userId],
   });
   const { data: recentArticles = [] } = useQuery({
-    queryFn: readRecentArticles,
-    queryKey: RECENT_ARTICLES_QUERY_KEY,
+    enabled: Boolean(userId),
+    queryFn: () => readRecentArticles(userId ?? ''),
+    queryKey: [...RECENT_ARTICLES_QUERY_KEY, userId],
+  });
+  const personalArticleIds = useMemo(() => {
+    const sourceArticles =
+      personalFilter === 'saved'
+        ? savedArticles
+        : personalFilter === 'recent'
+          ? recentArticles
+          : [];
+
+    return sourceArticles.map((article) => article.id);
+  }, [personalFilter, recentArticles, savedArticles]);
+  const { data: personalArticleAdaptations = {} } = useQuery({
+    enabled: personalArticleIds.length > 0,
+    queryFn: () => fetchArticleAdaptations(personalArticleIds),
+    queryKey: ['wikipedia', 'article-adaptations', personalArticleIds],
   });
   const savedArticleMutation = useMutation<
     { saved: boolean; savedArticles: SavedArticle[] },
@@ -151,9 +168,13 @@ export default function ArticlesScreen() {
       article: WikipediaArticle;
       saved: boolean;
     }) => {
+      if (!userId) {
+        throw new Error('auth.required');
+      }
+
       const nextSavedArticles = saved
-        ? await removeSavedArticle(article.id)
-        : await saveArticleForLater(article);
+        ? await removeSavedArticle(userId, article.id)
+        : await saveArticleForLater(userId, article);
 
       return {
         saved: !saved,
@@ -163,7 +184,7 @@ export default function ArticlesScreen() {
     onError: (_error, _variables, context) => {
       if (context?.previousSavedArticles) {
         queryClient.setQueryData(
-          SAVED_ARTICLES_QUERY_KEY,
+          [...SAVED_ARTICLES_QUERY_KEY, userId],
           context.previousSavedArticles,
         );
       }
@@ -174,20 +195,31 @@ export default function ArticlesScreen() {
       });
     },
     onMutate: async ({ article, saved }) => {
-      await queryClient.cancelQueries({ queryKey: SAVED_ARTICLES_QUERY_KEY });
+      await queryClient.cancelQueries({
+        queryKey: [...SAVED_ARTICLES_QUERY_KEY, userId],
+      });
 
       const previousSavedArticles =
-        queryClient.getQueryData<SavedArticle[]>(SAVED_ARTICLES_QUERY_KEY) ?? [];
+        queryClient.getQueryData<SavedArticle[]>([
+          ...SAVED_ARTICLES_QUERY_KEY,
+          userId,
+        ]) ?? [];
       const nextSavedArticles = saved
         ? previousSavedArticles.filter((savedArticle) => savedArticle.id !== article.id)
         : createSavedArticlesWithArticle(previousSavedArticles, article);
 
-      queryClient.setQueryData(SAVED_ARTICLES_QUERY_KEY, nextSavedArticles);
+      queryClient.setQueryData(
+        [...SAVED_ARTICLES_QUERY_KEY, userId],
+        nextSavedArticles,
+      );
 
       return { previousSavedArticles };
     },
     onSuccess: (response) => {
-      queryClient.setQueryData(SAVED_ARTICLES_QUERY_KEY, response.savedArticles);
+      queryClient.setQueryData(
+        [...SAVED_ARTICLES_QUERY_KEY, userId],
+        response.savedArticles,
+      );
       showBanner({
         title: response.saved
           ? t('article.savedArticles.saved')
@@ -205,12 +237,46 @@ export default function ArticlesScreen() {
 
     return Array.from(articleById.values());
   }, [data?.pages]);
-  const displayedArticles =
-    personalFilter === 'saved'
-      ? savedArticles
-      : personalFilter === 'recent'
-        ? recentArticles
-        : articles;
+  const availableAdaptationsByArticleId = useMemo(() => {
+    const adaptationsByArticleId = new Map<
+      number,
+      WikipediaArticle['availableAdaptations']
+    >();
+
+    articles.forEach((article) => {
+      if (article.availableAdaptations?.length) {
+        adaptationsByArticleId.set(article.id, article.availableAdaptations);
+      }
+    });
+
+    return adaptationsByArticleId;
+  }, [articles]);
+  const displayedArticles = useMemo(() => {
+    const sourceArticles =
+      personalFilter === 'saved'
+        ? savedArticles
+        : personalFilter === 'recent'
+          ? recentArticles
+          : articles;
+
+    return sourceArticles.map((article) => {
+      const availableAdaptations =
+        article.availableAdaptations ??
+        personalArticleAdaptations[String(article.id)] ??
+        availableAdaptationsByArticleId.get(article.id);
+
+      return availableAdaptations?.length
+        ? { ...article, availableAdaptations }
+        : article;
+    });
+  }, [
+    articles,
+    availableAdaptationsByArticleId,
+    personalFilter,
+    personalArticleAdaptations,
+    recentArticles,
+    savedArticles,
+  ]);
   const shouldShowInitialLoader =
     personalFilter === null && isLoading && articles.length === 0;
   const shouldShowErrorState =
@@ -311,96 +377,20 @@ export default function ArticlesScreen() {
       const wasOpened = isArticleRecentlyOpened(item.id, recentArticles);
 
       return (
-        <Pressable
-          style={({ pressed }) => [
-            styles.articleCard,
-            { borderColor },
-            pressed ? styles.articleCardPressed : null,
-          ]}
-          onPress={() => openArticle(item)}>
-          <ArticleThumbnail
-            borderColor={borderColor}
-            iconColor={iconColor}
-            thumbnailUrl={item.thumbnailUrl}
-            title={item.title}
-          />
-
-          <View style={styles.articleContent}>
-            <View style={styles.articleTitleRow}>
-              <ThemedText type="sectionTitle" style={styles.articleTitle}>
-                {item.title}
-              </ThemedText>
-            </View>
-            <ThemedText type="body" style={styles.articleExtract} numberOfLines={5}>
-              {item.extract}
-            </ThemedText>
-            {item.availableAdaptations?.length ? (
-              <View style={styles.adaptations}>
-                <Pressable
-                  onPress={(event) => {
-                    event.stopPropagation();
-                    toggleAdaptations(item.id);
-                  }}
-                  style={styles.adaptationsToggle}>
-                  <ThemedText type="bodyStrong" style={styles.adaptationsToggleText}>
-                    {t('articles.adaptationsAvailable')}
-                  </ThemedText>
-                  <Ionicons
-                    color={iconColor}
-                    name={
-                      expandedAdaptationArticleIds[item.id]
-                        ? 'chevron-up'
-                        : 'chevron-down'
-                    }
-                    size={16}
-                  />
-                </Pressable>
-                {expandedAdaptationArticleIds[item.id] ? (
-                  <View style={styles.adaptationsPanel}>
-                    {formatAdaptations(item.availableAdaptations).map((label) => (
-                      <ThemedText key={label} type="description" style={styles.adaptationLine}>
-                        {label}
-                      </ThemedText>
-                    ))}
-                    <ThemedText type="description" style={styles.adaptationsHint}>
-                      {t('articles.adaptationsHint')}
-                    </ThemedText>
-                  </View>
-                ) : null}
-              </View>
-            ) : null}
-          </View>
-          <View style={styles.articleActionsColumn}>
-            <Pressable
-              accessibilityLabel={
-                isSaved
-                  ? t('article.savedArticles.removeAction')
-                  : t('article.savedArticles.saveAction')
-              }
-              onPress={(event) => {
-                event.stopPropagation();
-                toggleSavedArticle(item);
-              }}
-              style={styles.cardBookmarkButton}>
-              <IconSymbol
-                color={isSaved ? savedAccentColor : iconColor}
-                name={isSaved ? 'bookmark.fill' : 'bookmark'}
-                size={22}
-              />
-            </Pressable>
-            {wasOpened ? (
-              <View
-                accessibilityLabel={t('articles.recent.openedIndicator')}
-                style={styles.openedIndicator}>
-                <Ionicons
-                  color={colorScheme === 'dark' ? '#9ba1a6' : '#687076'}
-                  name="eye-outline"
-                  size={16}
-                />
-              </View>
-            ) : null}
-          </View>
-        </Pressable>
+        <ArticleCard
+          article={item}
+          borderColor={borderColor}
+          colorScheme={colorScheme}
+          expandedAdaptations={Boolean(expandedAdaptationArticleIds[item.id])}
+          iconColor={iconColor}
+          isSaved={isSaved}
+          onOpen={openArticle}
+          onToggleAdaptations={toggleAdaptations}
+          onToggleSaved={toggleSavedArticle}
+          savedAccentColor={savedAccentColor}
+          tintColor={tintColor}
+          wasOpened={wasOpened}
+        />
       );
     },
     [
@@ -412,7 +402,7 @@ export default function ArticlesScreen() {
       recentArticles,
       savedArticles,
       savedAccentColor,
-      t,
+      tintColor,
       toggleAdaptations,
       toggleSavedArticle,
     ],
@@ -531,21 +521,4 @@ export default function ArticlesScreen() {
       />
     </ScreenContainer>
   );
-}
-
-function formatAdaptations(adaptations: ArticleAdaptationSummary[]): string[] {
-  const percentsByLevel = new Map<string, number[]>();
-
-  adaptations.forEach((adaptation) => {
-    const currentPercents = percentsByLevel.get(adaptation.level) ?? [];
-
-    currentPercents.push(adaptation.targetPercent);
-    percentsByLevel.set(adaptation.level, currentPercents);
-  });
-
-  return Array.from(percentsByLevel.entries()).map(([level, percents]) => {
-    const sortedPercents = Array.from(new Set(percents)).sort((left, right) => left - right);
-
-    return `${level} - ${sortedPercents.map((percent) => `${percent}%`).join(' ')}`;
-  });
 }

@@ -27,7 +27,7 @@ export default function AboutScreen() {
         </View>
 
         <Image
-          source={require('@/assets/images/octopus.png')}
+          source={require('../../assets/images/octopus.png')}
           style={styles.octopusImage}
           contentFit="contain"
         />
