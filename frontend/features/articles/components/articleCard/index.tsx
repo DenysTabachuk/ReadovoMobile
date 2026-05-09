@@ -75,10 +75,10 @@ export function ArticleCard({
                 onToggleAdaptations(article.id);
               }}
               style={styles.adaptationsToggle}>
-              <Ionicons color={tintColor} name="sparkles" size={15} />
               <ThemedText type="bodyStrong" style={styles.adaptationsToggleText}>
                 {t('articles.adaptationsAvailable')}
               </ThemedText>
+              <Ionicons color={tintColor} name="sparkles" size={15} />
               <Ionicons
                 color={iconColor}
                 name={expandedAdaptations ? 'chevron-up' : 'chevron-down'}
