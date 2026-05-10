@@ -69,6 +69,7 @@ export const styles = StyleSheet.create({
   itemMeta: {
     flex: 1,
     gap: Spacing.xs,
+    justifyContent: 'space-between',
   },
   itemPriceRow: {
     alignItems: 'center',
