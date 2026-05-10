@@ -201,6 +201,8 @@
       "title": "Dictionary test",
       "start": "Review",
       "loading": "Preparing test...",
+      "disabledTitle": "Add a few more words to start",
+      "disabledDescription": "The review button stays locked until you save {{count}} more word for a 4-option test.",
       "progress": "Question {{current}} of {{total}}",
       "questionLabel": "Choose the correct translation",
       "check": "Check answer",
@@ -349,5 +351,35 @@
       }
     },
     "balance": "My balance"
+  },
+  "mascot": {
+    "title": "Mascot wardrobe",
+    "loading": "Loading wardrobe...",
+    "errorTitle": "Wardrobe is unavailable",
+    "emptySlot": "No items in this category yet.",
+    "equipped": "Equipped",
+    "equip": "Equip",
+    "buy": "Buy",
+    "purchaseSuccessTitle": "Purchase successful",
+    "purchaseSuccessDescription": "{{itemName}} added to your wardrobe for {{price}} coins.",
+    "clearSlot": "Remove item",
+    "errors": {
+      "loadFailed": "Could not load wardrobe.",
+      "buyFailed": "Could not complete the purchase. Try again.",
+      "equipFailed": "Could not equip the item. Try again.",
+      "clearFailed": "Could not remove the item. Try again.",
+      "notEnoughCoins": "Not enough coins for this purchase.",
+      "itemNotOwned": "Buy this item before equipping it."
+    },
+    "slots": {
+      "head": "Head",
+      "eyes": "Eyes"
+    },
+    "items": {
+      "pirate-hat": "Pirate hat",
+      "bandanna": "Bandanna",
+      "glasses": "Glasses",
+      "eye-patch": "Eye patch"
+    }
   }
 }

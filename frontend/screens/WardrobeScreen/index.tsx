@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
+import { useBanner } from '@/components/banner';
 import { Button } from '@/components/button';
 import { Mascot } from '@/components/mascot';
 import { ScreenContainer } from '@/components/screenContainer';
@@ -22,6 +23,7 @@ import {
   buyMascotItem,
   clearMascotSlot,
   equipMascotItem,
+  getMascotCatalogItem,
   getMascotItemsBySlot,
   getMascotProfile,
   mascotAccessorySlots,
@@ -35,6 +37,7 @@ import { styles } from './styles';
 
 export default function WardrobeScreen() {
   const { t } = useTranslation();
+  const { showBanner } = useBanner();
   const { currentUser } = useAuth();
   const queryClient = useQueryClient();
   const colorScheme = useColorScheme();
@@ -73,7 +76,32 @@ export default function WardrobeScreen() {
 
   const buyMutation = useMutation({
     mutationFn: (itemId: string) => buyMascotItem(userId ?? '', itemId),
-    onSuccess: invalidateMascotState,
+    onError: (error) => {
+      const messageKey =
+        error instanceof Error ? error.message : 'mascot.errors.buyFailed';
+
+      showBanner({
+        title: t(messageKey, {
+          defaultValue: t('mascot.errors.buyFailed'),
+        }),
+        variant: 'error',
+      });
+    },
+    onSuccess: (_, itemId) => {
+      const item = getMascotCatalogItem(itemId);
+
+      invalidateMascotState();
+      showBanner({
+        description: item
+          ? t('mascot.purchaseSuccessDescription', {
+              itemName: t(item.labelKey),
+              price: item.price,
+            })
+          : undefined,
+        title: t('mascot.purchaseSuccessTitle'),
+        variant: 'success',
+      });
+    },
   });
   const equipMutation = useMutation({
     mutationFn: (itemId: string) => equipMascotItem(userId ?? '', itemId),
@@ -92,7 +120,7 @@ export default function WardrobeScreen() {
   const handleItemAction = (item: MascotCatalogItem) => {
     const isOwned = ownedItemIds.includes(item.id);
 
-    if (!isOwned && item.price > 0) {
+    if (!isOwned) {
       buyMutation.mutate(item.id);
       return;
     }
@@ -101,13 +129,12 @@ export default function WardrobeScreen() {
   };
 
   const renderItem: ListRenderItem<MascotCatalogItem> = ({ item }) => {
-    const isOwned = ownedItemIds.includes(item.id) || item.price === 0;
+    const isOwned = ownedItemIds.includes(item.id);
     const isEquipped = equippedItems[item.slot] === item.id;
     const isPending = buyMutation.isPending || equipMutation.isPending;
     const actionLabel = getItemActionLabel({
       isEquipped,
       isOwned,
-      price: item.price,
       t,
     });
 
@@ -123,9 +150,7 @@ export default function WardrobeScreen() {
               style={styles.balanceIcon}
             />
             <ThemedText>
-              {item.price === 0
-                ? t('mascot.free')
-                : item.price}
+              {item.price}
             </ThemedText>
           </View>
         </View>
@@ -267,19 +292,17 @@ function getSlotLabel(
 function getItemActionLabel({
   isEquipped,
   isOwned,
-  price,
   t,
 }: {
   isEquipped: boolean;
   isOwned: boolean;
-  price: number;
   t: ReturnType<typeof useTranslation>['t'];
 }): string {
   if (isEquipped) {
     return t('mascot.equipped');
   }
 
-  if (isOwned || price === 0) {
+  if (isOwned) {
     return t('mascot.equip');
   }
 

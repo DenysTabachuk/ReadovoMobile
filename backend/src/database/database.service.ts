@@ -183,8 +183,9 @@ export class DatabaseService implements OnModuleDestroy, OnModuleInit {
     await this.query(`
       CREATE TABLE IF NOT EXISTS dictionary_words (
         id uuid PRIMARY KEY,
+        user_id uuid REFERENCES users(id) ON DELETE CASCADE,
         word text NOT NULL,
-        normalized_word text NOT NULL UNIQUE,
+        normalized_word text NOT NULL,
         translation text NOT NULL,
         context text NOT NULL,
         progress text NOT NULL DEFAULT 'new',
@@ -195,8 +196,26 @@ export class DatabaseService implements OnModuleDestroy, OnModuleInit {
 
     await this.query(`
       ALTER TABLE dictionary_words
+      ADD COLUMN IF NOT EXISTS user_id uuid REFERENCES users(id) ON DELETE CASCADE,
       ADD COLUMN IF NOT EXISTS last_reviewed_at timestamptz,
       ADD COLUMN IF NOT EXISTS correct_answers_count integer NOT NULL DEFAULT 0;
+    `);
+
+    await this.query(`
+      ALTER TABLE dictionary_words
+      DROP CONSTRAINT IF EXISTS dictionary_words_normalized_word_key;
+    `);
+
+    await this.query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS dictionary_words_user_id_normalized_word_idx
+      ON dictionary_words (user_id, normalized_word)
+      WHERE user_id IS NOT NULL;
+    `);
+
+    await this.query(`
+      CREATE INDEX IF NOT EXISTS dictionary_words_user_id_created_at_idx
+      ON dictionary_words (user_id, created_at DESC)
+      WHERE user_id IS NOT NULL;
     `);
 
     await this.query(`

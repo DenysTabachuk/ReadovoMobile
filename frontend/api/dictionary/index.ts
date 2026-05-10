@@ -21,8 +21,8 @@ export type {
   UpdateDictionaryWordProgressRequest,
 } from './types';
 
-export async function fetchDictionaryWords(): Promise<DictionaryWord[]> {
-  const response = await fetch(`${API_BASE_URL}/api/dictionary/words`);
+export async function fetchDictionaryWords(userId: string): Promise<DictionaryWord[]> {
+  const response = await fetch(`${API_BASE_URL}/api/dictionary/users/${userId}/words`);
 
   if (!response.ok) {
     throw new Error('dictionary.error');
@@ -32,9 +32,10 @@ export async function fetchDictionaryWords(): Promise<DictionaryWord[]> {
 }
 
 export async function createDictionaryWord(
+  userId: string,
   request: CreateDictionaryWordRequest,
 ): Promise<DictionaryWord> {
-  const response = await fetch(`${API_BASE_URL}/api/dictionary/words`, {
+  const response = await fetch(`${API_BASE_URL}/api/dictionary/users/${userId}/words`, {
     body: JSON.stringify(request),
     headers: {
       'Content-Type': 'application/json',
@@ -49,8 +50,8 @@ export async function createDictionaryWord(
   return response.json() as Promise<DictionaryWord>;
 }
 
-export async function fetchDictionaryTest(): Promise<DictionaryTest> {
-  const response = await fetch(`${API_BASE_URL}/api/dictionary/test?limit=10`);
+export async function fetchDictionaryTest(userId: string): Promise<DictionaryTest> {
+  const response = await fetch(`${API_BASE_URL}/api/dictionary/users/${userId}/test?limit=10`);
 
   if (!response.ok) {
     throw new Error('dictionary.test.error');
@@ -60,9 +61,10 @@ export async function fetchDictionaryTest(): Promise<DictionaryTest> {
 }
 
 export async function submitDictionaryTestAnswer(
+  userId: string,
   request: SubmitDictionaryTestAnswerRequest,
 ): Promise<DictionaryTestAnswerResult> {
-  const response = await fetch(`${API_BASE_URL}/api/dictionary/test/answer`, {
+  const response = await fetch(`${API_BASE_URL}/api/dictionary/users/${userId}/test/answer`, {
     body: JSON.stringify(request),
     headers: {
       'Content-Type': 'application/json',
@@ -78,10 +80,11 @@ export async function submitDictionaryTestAnswer(
 }
 
 export async function updateDictionaryWordProgress(
+  userId: string,
   wordId: string,
   request: UpdateDictionaryWordProgressRequest,
 ): Promise<DictionaryWord> {
-  const response = await fetch(`${API_BASE_URL}/api/dictionary/words/${wordId}/progress`, {
+  const response = await fetch(`${API_BASE_URL}/api/dictionary/users/${userId}/words/${wordId}/progress`, {
     body: JSON.stringify(request),
     headers: {
       'Content-Type': 'application/json',

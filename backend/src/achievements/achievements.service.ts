@@ -123,7 +123,9 @@ export class AchievementsService {
           SELECT COUNT(*)::text AS count
           FROM dictionary_words
           WHERE progress = 'learned'
+            AND user_id = $1
         `,
+        [userId],
       ),
     ]);
 

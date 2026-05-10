@@ -207,7 +207,15 @@ export default function ArticleScreen() {
     },
   });
   const dictionaryMutation = useMutation({
-    mutationFn: createDictionaryWord,
+    mutationFn: ({
+      context,
+      translation,
+      word,
+    }: {
+      context: string;
+      translation: string;
+      word: string;
+    }) => createDictionaryWord(currentUser?.id ?? '', { context, translation, word }),
     onError: () => {
       showBanner({
         title: t('dictionary.saveError'),
@@ -215,7 +223,9 @@ export default function ArticleScreen() {
       });
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['dictionary', 'words'] });
+      void queryClient.invalidateQueries({
+        queryKey: ['dictionary', 'words', currentUser?.id],
+      });
       showBanner({
         title: t('dictionary.saved'),
         variant: 'success',
@@ -474,7 +484,7 @@ export default function ArticleScreen() {
   }, []);
 
   const handleAddToDictionary = useCallback(() => {
-    if (!selectedWord || !translation?.translation) {
+    if (!currentUser?.id || !selectedWord || !translation?.translation) {
       return;
     }
 
@@ -483,7 +493,7 @@ export default function ArticleScreen() {
       translation: translation.translation,
       word: selectedWord.word,
     });
-  }, [dictionaryMutation, selectedWord, translation?.translation]);
+  }, [currentUser?.id, dictionaryMutation, selectedWord, translation?.translation]);
 
   const handleOpenAdaptSettings = useCallback(() => {
     setIsAdaptSettingsOpen(true);

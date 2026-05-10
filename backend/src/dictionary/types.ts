@@ -9,6 +9,7 @@ export type DictionaryWord = {
   progress: DictionaryWordProgress;
   requiredCorrectAnswers: number;
   translation: string;
+  userId: string;
   word: string;
 };
 

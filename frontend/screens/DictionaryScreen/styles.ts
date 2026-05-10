@@ -135,6 +135,25 @@ export const styles = StyleSheet.create({
     paddingHorizontal: Spacing.xLg,
     paddingVertical: Spacing.xxLg,
   },
+  testHintCard: {
+    borderWidth: 1,
+    borderRadius: 8,
+    gap: Spacing.md,
+    marginTop: Spacing.sm,
+    padding: Spacing.md,
+  },
+  testHintHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: Spacing.sm,
+  },
+  testHintDescription: {
+    lineHeight: 20,
+  },
+  testHintTitle: {
+    flex: 1,
+    lineHeight: 22,
+  },
   testContainer: {
     flex: 1,
     gap: Spacing.lg,

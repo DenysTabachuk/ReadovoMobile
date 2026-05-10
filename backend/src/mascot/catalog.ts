@@ -3,22 +3,22 @@ import { type MascotCatalogItem } from './types';
 export const mascotCatalog: MascotCatalogItem[] = [
   {
     id: 'pirate-hat',
-    price: 0,
+    price: 300,
     slot: 'head',
   },
   {
     id: 'bandanna',
-    price: 0,
+    price: 200,
     slot: 'head',
   },
   {
     id: 'glasses',
-    price: 0,
+    price: 250,
     slot: 'eyes',
   },
   {
     id: 'eye-patch',
-    price: 0,
+    price: 350,
     slot: 'eyes',
   },
 ];

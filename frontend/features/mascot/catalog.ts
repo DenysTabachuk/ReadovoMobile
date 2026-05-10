@@ -15,7 +15,7 @@ export const mascotCatalog: MascotCatalogItem[] = [
       translateYRatio: -0.18,
       translateXRatio: 0.015,
     },
-    price: 0,
+    price: 300,
     slot: 'head',
   },
   {
@@ -28,7 +28,7 @@ export const mascotCatalog: MascotCatalogItem[] = [
       translateXRatio: 0.04,
       zIndex: 2,
     },
-    price: 0,
+    price: 200,
     slot: 'head',
   },
   {
@@ -40,7 +40,7 @@ export const mascotCatalog: MascotCatalogItem[] = [
       translateYRatio: -0.02,
       translateXRatio: 0.002,
     },
-    price: 0,
+    price: 250,
     slot: 'eyes',
   },
   {
@@ -52,7 +52,7 @@ export const mascotCatalog: MascotCatalogItem[] = [
       translateYRatio: -0.067,
       zIndex: 1,
     },
-    price: 0,
+    price: 350,
     slot: 'eyes',
   },
 ];

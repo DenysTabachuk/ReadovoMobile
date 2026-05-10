@@ -24,6 +24,7 @@ const MAPPING = {
   'person.fill': 'person',
   'sun.max.fill': 'wb-sunny',
   'moon.fill': 'nightlight-round',
+  'info.circle.fill': 'info',
   'chevron.left.forwardslash.chevron.right': 'code',
   'chevron.right': 'chevron-right',
 } as IconMapping;

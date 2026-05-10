@@ -25,24 +25,26 @@ import {
 export class DictionaryController {
   constructor(private readonly dictionaryService: DictionaryService) {}
 
-  @Get('words')
-  findAll(): Promise<DictionaryWord[]> {
-    return this.dictionaryService.findAll();
+  @Get('users/:userId/words')
+  findAll(@Param('userId') userId: string): Promise<DictionaryWord[]> {
+    return this.dictionaryService.findAll(userId);
   }
 
-  @Post('words')
+  @Post('users/:userId/words')
   createWord(
+    @Param('userId') userId: string,
     @Body() body: CreateDictionaryWordRequest,
   ): Promise<DictionaryWord> {
-    return this.dictionaryService.createWord(body);
+    return this.dictionaryService.createWord(userId, body);
   }
 
-  @Patch('words/:wordId/progress')
+  @Patch('users/:userId/words/:wordId/progress')
   updateWordProgress(
+    @Param('userId') userId: string,
     @Param('wordId') wordId: string,
     @Body() body: UpdateDictionaryWordProgressRequest,
   ): Promise<DictionaryWord> {
-    return this.dictionaryService.updateWordProgress(wordId, body);
+    return this.dictionaryService.updateWordProgress(userId, wordId, body);
   }
 
   @Post('embedding')
@@ -60,15 +62,19 @@ export class DictionaryController {
     return this.dictionaryService.generateQuizOptions(body);
   }
 
-  @Get('test')
-  createTest(@Query('limit') limit?: string): Promise<DictionaryTest> {
-    return this.dictionaryService.createTest(Number(limit ?? 10));
+  @Get('users/:userId/test')
+  createTest(
+    @Param('userId') userId: string,
+    @Query('limit') limit?: string,
+  ): Promise<DictionaryTest> {
+    return this.dictionaryService.createTest(userId, Number(limit ?? 10));
   }
 
-  @Post('test/answer')
+  @Post('users/:userId/test/answer')
   submitTestAnswer(
+    @Param('userId') userId: string,
     @Body() body: SubmitDictionaryTestAnswerRequest,
   ): Promise<DictionaryTestAnswerResult> {
-    return this.dictionaryService.submitTestAnswer(body);
+    return this.dictionaryService.submitTestAnswer(userId, body);
   }
 }

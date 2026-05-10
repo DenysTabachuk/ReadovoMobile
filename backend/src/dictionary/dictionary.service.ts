@@ -31,6 +31,7 @@ export class DictionaryService {
   ) {}
 
   async createWord(
+    userId: string,
     request: CreateDictionaryWordRequest,
   ): Promise<DictionaryWord> {
     const word = request.word?.trim();
@@ -57,12 +58,13 @@ export class DictionaryService {
       progress: 'new',
       requiredCorrectAnswers: REQUIRED_CORRECT_ANSWERS_TO_LEARN,
       translation,
+      userId,
       word,
     });
   }
 
-  findAll(): Promise<DictionaryWord[]> {
-    return this.dictionaryRepository.findAll();
+  findAll(userId: string): Promise<DictionaryWord[]> {
+    return this.dictionaryRepository.findAll(userId);
   }
 
   generateEmbedding(text: string): Promise<number[]> {
@@ -88,12 +90,13 @@ export class DictionaryService {
   }
 
   async createTest(
+    userId: string,
     limit = DEFAULT_DICTIONARY_TEST_LIMIT,
   ): Promise<DictionaryTest> {
     const normalizedLimit = Number.isFinite(limit)
       ? Math.max(1, Math.min(DEFAULT_DICTIONARY_TEST_LIMIT, Math.floor(limit)))
       : DEFAULT_DICTIONARY_TEST_LIMIT;
-    const words = await this.dictionaryRepository.findAll();
+    const words = await this.dictionaryRepository.findAll(userId);
 
     if (words.length < DICTIONARY_TEST_OPTION_COUNT) {
       throw new BadRequestException(
@@ -102,7 +105,7 @@ export class DictionaryService {
     }
 
     const reviewCandidates =
-      await this.dictionaryRepository.findReviewCandidates(normalizedLimit);
+      await this.dictionaryRepository.findReviewCandidates(userId, normalizedLimit);
     const questions = await Promise.all(
       reviewCandidates.map((word) => this.createTestQuestion(word, words)),
     );
@@ -111,6 +114,7 @@ export class DictionaryService {
   }
 
   async submitTestAnswer(
+    userId: string,
     request: SubmitDictionaryTestAnswerRequest,
   ): Promise<DictionaryTestAnswerResult> {
     const wordId = request.wordId?.trim();
@@ -124,7 +128,7 @@ export class DictionaryService {
       throw new BadRequestException('Selected option id is required.');
     }
 
-    const word = await this.dictionaryRepository.findById(wordId);
+    const word = await this.dictionaryRepository.findById(wordId, userId);
 
     if (!word) {
       throw new NotFoundException('Dictionary word was not found.');
@@ -138,6 +142,7 @@ export class DictionaryService {
     );
     const reviewedWord = await this.dictionaryRepository.updateReviewResult(
       word.id,
+      userId,
       nextReviewProgress.progress,
       nextReviewProgress.correctAnswersCount,
       new Date().toISOString(),
@@ -156,6 +161,7 @@ export class DictionaryService {
   }
 
   async updateWordProgress(
+    userId: string,
     wordId: string,
     request: UpdateDictionaryWordProgressRequest,
   ): Promise<DictionaryWord> {
@@ -167,7 +173,7 @@ export class DictionaryService {
       );
     }
 
-    const word = await this.dictionaryRepository.findById(wordId);
+    const word = await this.dictionaryRepository.findById(wordId, userId);
 
     if (!word) {
       throw new NotFoundException('Dictionary word was not found.');
@@ -175,6 +181,7 @@ export class DictionaryService {
 
     const updatedWord = await this.dictionaryRepository.updateProgress(
       word.id,
+      userId,
       progress,
       Math.min(word.correctAnswersCount, REQUIRED_CORRECT_ANSWERS_TO_LEARN - 1),
     );
@@ -191,9 +198,7 @@ export class DictionaryService {
       return wordList;
     }
 
-    const dictionaryWords = await this.dictionaryRepository.findAll();
-
-    return dictionaryWords.map((dictionaryWord) => dictionaryWord.word);
+    return [];
   }
 
   private async createTestQuestion(

@@ -32,6 +32,7 @@ import { FloatingActionButton } from '@/components/floatingActionButton';
 import { ScreenContainer } from '@/components/screenContainer';
 import { TestResult } from '@/components/testResult';
 import { ThemedText } from '@/components/themedText';
+import { IconSymbol } from '@/components/ui/iconSymbol';
 import { Colors } from '@/constants/theme';
 import {
   getAchievementBadge,
@@ -41,6 +42,7 @@ import {
 } from '@/features/achievements';
 import { calculateQuizReward } from '@/features/quizRewards';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useThemeColor } from '@/hooks/use-theme-color';
 import { useAuth } from '@/providers/authProvider';
 
 import { styles } from './styles';
@@ -52,9 +54,26 @@ export default function DictionaryScreen() {
   const { currentUser } = useAuth();
   const colorScheme = useColorScheme();
   const borderColor = colorScheme === 'dark' ? '#2d3336' : '#d0d7de';
+  const hintIconColor = useThemeColor(
+    { dark: '#7ccce6', light: '#0a7ea4' },
+    'tint',
+  );
+  const testHintBackgroundColor = useThemeColor(
+    { dark: '#151718', light: '#ffffff' },
+    'background',
+  );
+  const testHintBorderColor = useThemeColor(
+    { dark: '#2d3336', light: '#d0d7de' },
+    'icon',
+  );
+  const testHintDescriptionColor = useThemeColor(
+    { dark: '#9ba1a6', light: '#687076' },
+    'text',
+  );
   const [test, setTest] = useState<DictionaryTest>();
   const [testResult, setTestResult] = useState<QuizSessionResult | null>(null);
   const [openProgressMenuWordId, setOpenProgressMenuWordId] = useState<string | null>(null);
+  const userId = currentUser?.id;
 
   const {
     data,
@@ -63,10 +82,12 @@ export default function DictionaryScreen() {
     isLoading,
     refetch,
   } = useQuery({
-    queryFn: fetchDictionaryWords,
-    queryKey: ['dictionary', 'words'],
+    enabled: Boolean(userId),
+    queryFn: () => fetchDictionaryWords(userId ?? ''),
+    queryKey: ['dictionary', 'words', userId],
   });
   const words = data ?? [];
+  const remainingWordsForTest = Math.max(0, 4 - words.length);
   const shouldShowInitialLoader = isLoading && words.length === 0;
   const shouldShowErrorState = Boolean(error) && words.length === 0;
   const quizQuestions = useMemo<QuizQuestion[]>(() => {
@@ -86,16 +107,17 @@ export default function DictionaryScreen() {
   }, [t, test]);
 
   const testMutation = useMutation({
-    mutationFn: fetchDictionaryTest,
+    mutationFn: () => fetchDictionaryTest(userId ?? ''),
     onSuccess: (nextTest) => {
       setTest(nextTest);
     },
   });
 
   const answerMutation = useMutation({
-    mutationFn: submitDictionaryTestAnswer,
+    mutationFn: (request: { selectedOptionId: string; wordId: string }) =>
+      submitDictionaryTestAnswer(userId ?? '', request),
     onSuccess: (result) => {
-      void queryClient.invalidateQueries({ queryKey: ['dictionary', 'words'] });
+      void queryClient.invalidateQueries({ queryKey: ['dictionary', 'words', userId] });
     },
   });
   const wordProgressMutation = useMutation({
@@ -105,7 +127,7 @@ export default function DictionaryScreen() {
     }: {
       progress: DictionaryWordProgress;
       wordId: string;
-    }) => updateDictionaryWordProgress(wordId, { progress }),
+    }) => updateDictionaryWordProgress(userId ?? '', wordId, { progress }),
     onError: () => {
       showBanner({
         description: t('dictionary.progressUpdateErrorDescription'),
@@ -116,7 +138,7 @@ export default function DictionaryScreen() {
     },
     onSuccess: () => {
       setOpenProgressMenuWordId(null);
-      void queryClient.invalidateQueries({ queryKey: ['dictionary', 'words'] });
+      void queryClient.invalidateQueries({ queryKey: ['dictionary', 'words', userId] });
       if (currentUser?.id) {
         void queryClient.invalidateQueries({
           queryKey: ['achievements-profile', currentUser.id],
@@ -126,11 +148,11 @@ export default function DictionaryScreen() {
   });
   const progressMutation = useMutation({
     mutationFn: async (result: QuizSessionResult) => {
-      if (!currentUser?.id) {
+      if (!userId) {
         return null;
       }
 
-      const profile = await getAchievementsProfile(currentUser.id);
+      const profile = await getAchievementsProfile(userId);
       const rewardCoins = calculateQuizReward({
         isFirstTestCompleted: profile.progress.testsCompleted === 0,
         percentage: result.percentage,
@@ -151,12 +173,12 @@ export default function DictionaryScreen() {
       };
     },
     onSuccess: (response) => {
-      if (!currentUser?.id) {
+      if (!userId) {
         return;
       }
 
       void queryClient.invalidateQueries({
-        queryKey: ['achievements-profile', currentUser.id],
+        queryKey: ['achievements-profile', userId],
       });
 
       const achievement = response?.newlyUnlockedAchievements[0];
@@ -288,10 +310,10 @@ export default function DictionaryScreen() {
     [
       borderColor,
       colorScheme,
-      currentUser?.id,
       openProgressMenuWordId,
       queryClient,
       t,
+      userId,
       wordProgressMutation,
     ],
   );
@@ -428,6 +450,39 @@ export default function DictionaryScreen() {
             ) : null}
           </View>
         }
+        ListFooterComponent={
+          words.length > 0 && words.length < 4 ? (
+            <View
+              style={[
+                styles.testHintCard,
+                {
+                  backgroundColor: testHintBackgroundColor,
+                  borderColor: testHintBorderColor,
+                },
+              ]}>
+              <View style={styles.testHintHeader}>
+                <IconSymbol
+                  color={hintIconColor}
+                  name="info.circle.fill"
+                  size={18}
+                />
+                <ThemedText type="bodyStrong" style={styles.testHintTitle}>
+                  {t('dictionary.test.disabledTitle')}
+                </ThemedText>
+              </View>
+              <ThemedText
+                type="body"
+                style={[
+                  styles.testHintDescription,
+                  { color: testHintDescriptionColor },
+                ]}>
+                {t('dictionary.test.disabledDescription', {
+                  count: remainingWordsForTest,
+                })}
+              </ThemedText>
+            </View>
+          ) : null
+        }
         refreshControl={
           <RefreshControl
             onRefresh={refetch}
@@ -438,14 +493,16 @@ export default function DictionaryScreen() {
         renderItem={renderWord}
         showsVerticalScrollIndicator={false}
       />
-      <FloatingActionButton
-        bottomOffset={8}
-        disabled={words.length < 4 || testMutation.isPending}
-        onPress={handleStartTest}>
-        {testMutation.isPending
-          ? t('dictionary.test.loading')
-          : t('dictionary.test.start')}
-      </FloatingActionButton>
+      {words.length > 0 ? (
+        <FloatingActionButton
+          bottomOffset={8}
+          disabled={words.length < 4 || testMutation.isPending}
+          onPress={handleStartTest}>
+          {testMutation.isPending
+            ? t('dictionary.test.loading')
+            : t('dictionary.test.start')}
+        </FloatingActionButton>
+      ) : null}
     </ScreenContainer>
   );
 }

@@ -90,14 +90,10 @@ export class MascotService {
     }
 
     await this.ensureUserExists(userId);
-    let profile = await this.ensureMascotProfile(userId);
+    const profile = await this.ensureMascotProfile(userId);
 
     if (!profile.owned_item_ids.includes(itemId)) {
-      if (item.price > 0) {
-        throw new BadRequestException('Mascot item is not owned.');
-      }
-
-      profile = await this.addOwnedItem(userId, itemId);
+      throw new BadRequestException('Mascot item is not owned.');
     }
 
     const updatedProfile = await this.databaseService.query<MascotProfileRow>(
