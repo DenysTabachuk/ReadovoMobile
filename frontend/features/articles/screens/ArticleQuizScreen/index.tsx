@@ -13,10 +13,11 @@ import { Colors } from '@/constants/theme';
 import { getArticleQuizSessionKey } from '@/features/articles';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useAuth } from '@/providers/authProvider';
-import { type GenerateArticleQuizResponse } from '@/api/wikipedia';
+import { type ArticleQuizSessionResponse } from '@/api/wikipedia';
 
 import {
   normalizeLevel,
+  normalizeMode,
   normalizeTargetLength,
 } from './articleQuizParams';
 import { DEFAULT_LENGTH, DEFAULT_LEVEL } from './constants';
@@ -35,16 +36,19 @@ export default function ArticleQuizScreen() {
   const params = useLocalSearchParams<{
     id?: string | string[];
     level?: string | string[];
+    mode?: string | string[];
     targetLength?: string | string[];
   }>();
   const rawArticleId = Array.isArray(params.id) ? params.id[0] : params.id;
   const rawLevel = Array.isArray(params.level) ? params.level[0] : params.level;
+  const rawMode = Array.isArray(params.mode) ? params.mode[0] : params.mode;
   const rawTargetLength = Array.isArray(params.targetLength)
     ? params.targetLength[0]
     : params.targetLength;
   const parsedArticleId = Number(rawArticleId);
   const articleId = Number.isFinite(parsedArticleId) ? parsedArticleId : null;
   const quizLevel = normalizeLevel(rawLevel) ?? DEFAULT_LEVEL;
+  const quizMode = normalizeMode(rawMode) ?? 'article';
   const quizTargetLength =
     normalizeTargetLength(rawTargetLength) ?? DEFAULT_LENGTH;
   const quizSessionTargetLength =
@@ -60,10 +64,15 @@ export default function ArticleQuizScreen() {
   });
 
   const quizSession = useMemo(() => {
-    return queryClient.getQueryData<GenerateArticleQuizResponse>(
-      getArticleQuizSessionKey(articleId, quizLevel, quizSessionTargetLength),
+    return queryClient.getQueryData<ArticleQuizSessionResponse>(
+      getArticleQuizSessionKey(
+        articleId,
+        quizMode,
+        quizLevel,
+        quizSessionTargetLength,
+      ),
     );
-  }, [articleId, queryClient, quizLevel, quizSessionTargetLength]);
+  }, [articleId, queryClient, quizLevel, quizMode, quizSessionTargetLength]);
   const progressMutation = useCompleteArticleQuiz({
     article,
     currentUserId: currentUser?.id ?? undefined,
@@ -98,7 +107,14 @@ export default function ArticleQuizScreen() {
   if (isLoading) {
     return (
       <ScreenContainer>
-        <Stack.Screen options={{ title: t('article.reinforceKnowledge') }} />
+        <Stack.Screen
+          options={{
+            title:
+              quizMode === 'vocabulary'
+                ? t('article.quiz.vocabularyKnowledge')
+                : t('article.quiz.articleKnowledge'),
+          }}
+        />
         <View style={styles.centerState}>
           <ActivityIndicator color={Colors[colorScheme ?? 'light'].tint} size="large" />
           <ThemedText type="body">{t('article.loading')}</ThemedText>
@@ -114,7 +130,14 @@ export default function ArticleQuizScreen() {
   if (!article) {
     return (
       <ScreenContainer>
-        <Stack.Screen options={{ title: t('article.reinforceKnowledge') }} />
+        <Stack.Screen
+          options={{
+            title:
+              quizMode === 'vocabulary'
+                ? t('article.quiz.vocabularyKnowledge')
+                : t('article.quiz.articleKnowledge'),
+          }}
+        />
         <View style={styles.centerState}>
           <ThemedText type="screenTitle" style={styles.centerTitle}>
             {t('article.errorTitle')}
@@ -130,7 +153,14 @@ export default function ArticleQuizScreen() {
 
   return (
     <ScreenContainer style={styles.container}>
-      <Stack.Screen options={{ title: t('article.reinforceKnowledge') }} />
+      <Stack.Screen
+        options={{
+          title:
+            quizMode === 'vocabulary'
+              ? t('article.quiz.vocabularyKnowledge')
+              : t('article.quiz.articleKnowledge'),
+        }}
+      />
       {quizResult ? (
         <TestResult
           onDone={() => router.back()}
@@ -140,7 +170,11 @@ export default function ArticleQuizScreen() {
           }}
           result={quizResult}
           shouldShowTitle={false}
-          title={t('article.reinforceKnowledge')}
+          title={
+            quizMode === 'vocabulary'
+              ? t('article.quiz.vocabularyKnowledge')
+              : t('article.quiz.articleKnowledge')
+          }
         />
       ) : quizSession?.questions?.length ? (
         <ArticleQuizRunner

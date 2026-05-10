@@ -6,6 +6,9 @@ import {
   type ArticleAdaptationsByArticleId,
   type GenerateArticleQuizRequest,
   type GenerateArticleQuizResponse,
+  type GenerateArticleVocabularyQuizRequest,
+  type GenerateArticleVocabularyQuizResponse,
+  type ArticleQuizSessionResponse,
   type SimplifyArticleRequest,
   type SimplifyArticleResponse,
   type WikipediaArticle,
@@ -21,11 +24,16 @@ export type {
   ArticleQuizQuestion,
   ArticleQuizQuestionOption,
   ArticleQuizQuestionType,
+  ArticleQuizSessionResponse,
+  ArticleVocabularyQuizQuestion,
+  ArticleVocabularyQuizQuestionFormat,
   FetchWikipediaArticlesParams,
   InlineNode,
   SimplifyArticleLevel,
   GenerateArticleQuizRequest,
   GenerateArticleQuizResponse,
+  GenerateArticleVocabularyQuizRequest,
+  GenerateArticleVocabularyQuizResponse,
   SimplifyArticleRequest,
   SimplifyArticleResponse,
   SimplifyArticleTargetLength,
@@ -156,6 +164,19 @@ export async function simplifyWikipediaArticle(
 export async function generateArticleQuiz(
   request: GenerateArticleQuizRequest
 ): Promise<GenerateArticleQuizResponse> {
+  return generateArticleQuizRequest('/api/articles/quiz', request);
+}
+
+export async function generateArticleVocabularyQuiz(
+  request: GenerateArticleVocabularyQuizRequest
+): Promise<GenerateArticleVocabularyQuizResponse> {
+  return generateArticleQuizRequest('/api/articles/vocabulary-quiz', request);
+}
+
+async function generateArticleQuizRequest<
+  TRequest extends GenerateArticleQuizRequest | GenerateArticleVocabularyQuizRequest,
+  TResponse extends ArticleQuizSessionResponse,
+>(path: string, request: TRequest): Promise<TResponse> {
   const controller = new AbortController();
   const timeoutId = setTimeout(
     () => controller.abort(),
@@ -165,7 +186,7 @@ export async function generateArticleQuiz(
   let response: Response;
 
   try {
-    response = await fetch(`${API_BASE_URL}/api/articles/quiz`, {
+    response = await fetch(`${API_BASE_URL}${path}`, {
       body: JSON.stringify(request),
       headers: {
         'Content-Type': 'application/json',
@@ -183,5 +204,5 @@ export async function generateArticleQuiz(
     throw new Error('article.quiz.error');
   }
 
-  return response.json() as Promise<GenerateArticleQuizResponse>;
+  return response.json() as Promise<TResponse>;
 }

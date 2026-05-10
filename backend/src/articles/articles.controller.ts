@@ -15,6 +15,8 @@ import {
   type ArticleSimplificationTargetPercent,
   type ArticleSimplificationTargetLength,
   type ArticleAdaptationsByArticleId,
+  type GenerateArticleVocabularyQuizRequest,
+  type GenerateArticleVocabularyQuizResponse,
   type UserRecentArticle,
   type UserSavedArticle,
   type GenerateArticleQuizRequest,
@@ -34,6 +36,7 @@ const SIMPLIFICATION_LEVELS: ArticleSimplificationLevel[] = [
   'A2',
   'B1',
   'B2',
+  'C1',
 ];
 const ARTICLE_CATEGORIES: WikipediaArticleCategory[] = [
   'all',
@@ -349,5 +352,30 @@ export class ArticlesController {
     });
 
     return { questions };
+  }
+
+  @Post('api/articles/vocabulary-quiz')
+  async generateArticleVocabularyQuiz(
+    @Body() body: GenerateArticleVocabularyQuizRequest,
+  ): Promise<GenerateArticleVocabularyQuizResponse> {
+    const text = body.text?.trim();
+    const title = body.title?.trim();
+    const level = body.level?.trim().toUpperCase() as
+      | ArticleSimplificationLevel
+      | undefined;
+
+    if (!text) {
+      throw new BadRequestException('Article text is required.');
+    }
+
+    if (level && !SIMPLIFICATION_LEVELS.includes(level)) {
+      throw new BadRequestException('Article level is invalid.');
+    }
+
+    return this.articlesService.generateArticleVocabularyQuiz({
+      level,
+      text,
+      title,
+    });
   }
 }

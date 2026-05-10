@@ -24,7 +24,11 @@ import {
   type ArticleSimplificationTargetPercent,
   type ArticleSimplificationLevel,
   type ArticleSimplificationTargetLength,
+  type ArticleVocabularyQuizQuestion,
+  type ArticleVocabularyQuizQuestionFormat,
+  type ArticleVocabularyQuizTermKind,
   type FormulaBlock,
+  type GenerateArticleVocabularyQuizResponse,
   type GetWikipediaArticlesParams,
   type SimplifiedArticleCacheRow,
   type SimplifyArticleResponse,
@@ -48,6 +52,7 @@ const GROQ_REQUEST_TIMEOUT_MS = 45000;
 const MAX_SIMPLIFICATION_CHUNK_CHARS = 50000;
 const MAX_SIMPLIFICATION_CHUNK_COMPLETION_TOKENS = 1400;
 const MAX_SIMPLIFICATION_COMPLETION_TOKENS = 2048;
+const MAX_VOCABULARY_QUIZ_COMPLETION_TOKENS = 2400;
 const MAX_ARTICLE_LIMIT = 50;
 const MIN_BROWSE_EXTRACT_LENGTH = 90;
 const MIN_BROWSE_PAGE_LENGTH = 5000;
@@ -99,6 +104,64 @@ const WIKIPEDIA_EXCLUDED_TITLE_PATTERNS = [
 const SIMPLIFICATION_TARGET_PERCENTS: ArticleSimplificationTargetPercent[] = [
   10, 25, 50, 75, 100,
 ];
+const VOCABULARY_QUIZ_STOPWORDS = new Set([
+  'a',
+  'an',
+  'and',
+  'are',
+  'as',
+  'at',
+  'be',
+  'been',
+  'being',
+  'but',
+  'by',
+  'for',
+  'from',
+  'had',
+  'has',
+  'have',
+  'he',
+  'her',
+  'hers',
+  'him',
+  'his',
+  'i',
+  'if',
+  'in',
+  'into',
+  'is',
+  'it',
+  'its',
+  'me',
+  'more',
+  'most',
+  'my',
+  'of',
+  'on',
+  'or',
+  'our',
+  'she',
+  'than',
+  'that',
+  'the',
+  'their',
+  'them',
+  'there',
+  'they',
+  'this',
+  'to',
+  'was',
+  'were',
+  'what',
+  'when',
+  'which',
+  'who',
+  'will',
+  'with',
+  'you',
+  'your',
+]);
 const RECOMMENDED_ARTICLE_TITLES: Record<
   Exclude<WikipediaArticleCategory, 'all'>,
   string[]
@@ -1127,6 +1190,83 @@ export class ArticlesService {
     }
   }
 
+  async generateArticleVocabularyQuiz(params: {
+    level?: ArticleSimplificationLevel;
+    text: string;
+    title?: string;
+  }): Promise<GenerateArticleVocabularyQuizResponse> {
+    const title = params.title?.trim() || 'Untitled article';
+    const text = params.text.trim();
+    const apiKey = process.env.GROQ_API_KEY;
+
+    if (!apiKey) {
+      this.logger.error(
+        `Groq key is missing for article vocabulary quiz: title="${title}"`,
+      );
+      throw new InternalServerErrorException(
+        'Article vocabulary quiz generation service is not configured.',
+      );
+    }
+
+    const targetQuestionCount = this.getVocabularyQuestionTarget(text);
+    const prompt = this.createVocabularyQuizPrompt({
+      level: params.level,
+      targetQuestionCount,
+      text,
+      title,
+    });
+
+    try {
+      const client = new Groq({ apiKey });
+      const rawResponse = await this.createGroqTextCompletion({
+        client,
+        maxCompletionTokens: MAX_VOCABULARY_QUIZ_COMPLETION_TOKENS,
+        prompt,
+        systemMessage:
+          'You create vocabulary quizzes from article texts for English learners.',
+      });
+      const parsedResponse = this.parseVocabularyQuizModelResponse({
+        rawResponse,
+        requestedLevel: params.level,
+        sourceText: text,
+        targetQuestionCount,
+      });
+
+      if (parsedResponse.questions.length === 0) {
+        this.logger.warn(
+          [
+            `Vocabulary quiz generation returned no valid questions: title="${title}", requestedLevel="${params.level ?? 'auto'}", resolvedLevel="${parsedResponse.resolvedLevel}"`,
+            `Diagnostics: ${parsedResponse.diagnostics.join(' | ') || 'none'}`,
+            `Raw AI response: ${this.truncateForLog(rawResponse)}`,
+          ].join('\n'),
+        );
+        throw new BadGatewayException(
+          'Article vocabulary quiz generation is unavailable.',
+        );
+      }
+
+      return {
+        questions: parsedResponse.questions,
+        resolvedLevel: parsedResponse.resolvedLevel,
+      };
+    } catch (error) {
+      if (error instanceof BadGatewayException) {
+        throw error;
+      }
+
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown Groq error';
+      const errorStack = error instanceof Error ? error.stack : undefined;
+
+      this.logger.error(
+        `Groq vocabulary quiz request failed: title="${title}", model=${GROQ_MODEL}, reason="${errorMessage}"`,
+        errorStack,
+      );
+
+      throw new BadGatewayException('Failed to generate article vocabulary quiz.');
+    }
+  }
+
   private async simplifySingleArticleInput(params: {
     client: Groq;
     level: ArticleSimplificationLevel;
@@ -1971,6 +2111,7 @@ Rules:
 - For A1/A2: use short sentences and common words.
 - For B1: use moderately simple sentences.
 - For B2: keep more details, but make the text clear.
+- For C1: keep nuance and precision, but still improve readability.
 - Avoid complex academic words where possible.
 - If a difficult word is important, keep it but explain it simply.
 - Make the text coherent, not just a list of sentences.
@@ -2003,7 +2144,7 @@ Rules:
   - "multiple_choice": 2 or more correct options.
   - "true_false": exactly 2 options ("True", "False"), exactly 1 correct option.
 - Questions must match learner level ${params.level}.
-- Keep wording simple for A1/A2, moderate for B1, richer but clear for B2.
+- Keep wording simple for A1/A2, moderate for B1, richer but clear for B2, and nuanced but natural for C1.
 - Every question must be answerable only from adapted text.
 - Extend JSON schema with:
   "questions": [
@@ -2051,7 +2192,7 @@ Rules:
 - Questions must be answerable from the article text only.
 - Do not invent facts.
 - For A1/A2 use simpler vocabulary and shorter prompts.
-- For B1 moderate complexity; for B2 richer but clear wording.
+- For B1 moderate complexity; for B2 richer but clear wording; for C1 allow more nuance while staying clear.
 - Return ONLY valid JSON:
 {
   "questions": [
@@ -2059,6 +2200,68 @@ Rules:
       "id": string,
       "type": "single_choice" | "multiple_choice" | "true_false",
       "prompt": string,
+      "options": [{ "id": string, "text": string }],
+      "correctOptionIds": string[],
+      "explanation"?: string
+    }
+  ]
+}
+
+Title:
+${params.title}
+
+Text:
+${params.text}`;
+  }
+
+  private createVocabularyQuizPrompt(params: {
+    level?: ArticleSimplificationLevel;
+    targetQuestionCount: number;
+    text: string;
+    title: string;
+  }): string {
+    const learnerLevelRule = params.level
+      ? `- Learner level is fixed at ${params.level}. Set "resolvedLevel" to "${params.level}".`
+      : '- If learner level is not provided, estimate it and set "resolvedLevel" to one of "A1", "A2", "B1", "B2", "C1".';
+
+    return `Generate a vocabulary quiz from the article below.
+
+Rules:
+- Focus on vocabulary that is important for understanding the article's topic, process, or main ideas.
+- Select target terms only from the source text. Each target term must appear verbatim in the text.
+- Prefer meaningful topic words and short useful phrases or phrasal expressions.
+- Do not select articles, pronouns, prepositions, auxiliary verbs, isolated numbers, obvious function words, or proper names unless a name is essential to understanding the topic.
+- Allowed target terms: one word or one short phrase of up to 5 words.
+${learnerLevelRule}
+- Respect learner level when choosing target terms. For lower levels, prefer simpler but still meaningful vocabulary from the text.
+- Aim for ${params.targetQuestionCount} questions. Use fewer only if the text truly has too few suitable target terms. Never exceed ${params.targetQuestionCount}.
+- Minimum quality matters more than quantity.
+- Each question must test exactly one target term.
+- Use only "single_choice" questions with exactly 4 options and exactly 1 correct option.
+- Use a natural mix of these formats when appropriate:
+  - "translation": choose the best Ukrainian translation of the target term.
+  - "definition": choose the English definition that best matches the term in this text.
+  - "cloze": complete a sentence from the text or a very similar context with the correct term.
+  - "synonym": choose the closest English synonym or near-meaning when that is natural.
+- Do not force all formats if they do not fit the selected vocabulary.
+- Wrong options must be plausible, not silly.
+- Do not invent target terms that are missing from the text. Only distractors may be invented.
+- For "cloze", hide the term with "____".
+- Keep prompts concise.
+- Keep option texts short where possible.
+- "sourceExcerpt" should be a short excerpt from the source text that contains the term, ideally no more than 12 words.
+- Return ONLY valid JSON:
+{
+  "resolvedLevel": "A1" | "A2" | "B1" | "B2" | "C1",
+  "questions": [
+    {
+      "id": string,
+      "type": "single_choice",
+      "format": "translation" | "definition" | "cloze" | "synonym",
+      "term": string,
+      "termKind": "word" | "phrase",
+      "prompt": string,
+      "sourceExcerpt": string,
       "options": [{ "id": string, "text": string }],
       "correctOptionIds": string[],
       "explanation"?: string
@@ -2297,11 +2500,7 @@ ${params.text}`;
       return [];
     }
 
-    const normalized = rawResponse
-      .replace(/^```json\s*/i, '')
-      .replace(/^```\s*/i, '')
-      .replace(/\s*```$/, '')
-      .trim();
+    const normalized = this.stripJsonMarkdownFences(rawResponse);
 
     try {
       const parsed = JSON.parse(normalized) as { questions?: unknown };
@@ -2309,6 +2508,325 @@ ${params.text}`;
     } catch {
       return [];
     }
+  }
+
+  private parseVocabularyQuizModelResponse(params: {
+    rawResponse: string;
+    requestedLevel?: ArticleSimplificationLevel;
+    sourceText: string;
+    targetQuestionCount: number;
+  }): GenerateArticleVocabularyQuizResponse & { diagnostics: string[] } {
+    const fallbackLevel =
+      params.requestedLevel ?? this.inferLevelFromText(params.sourceText);
+
+    if (!params.rawResponse) {
+      return {
+        diagnostics: ['AI response was empty.'],
+        questions: [],
+        resolvedLevel: fallbackLevel,
+      };
+    }
+
+    const parsedJson = this.parseJsonObject<{
+      questions?: unknown;
+      resolvedLevel?: unknown;
+    }>(params.rawResponse);
+
+    if (!parsedJson.parsed) {
+      return {
+        diagnostics: parsedJson.diagnostics,
+        questions: [],
+        resolvedLevel: fallbackLevel,
+      };
+    }
+
+    const parsed = parsedJson.parsed;
+    const resolvedLevel =
+      params.requestedLevel ??
+      this.normalizeResolvedLevel(parsed.resolvedLevel) ??
+      fallbackLevel;
+    const normalizedQuestions = this.normalizeVocabularyQuestions(
+      parsed.questions,
+      {
+        sourceText: params.sourceText,
+        targetQuestionCount: params.targetQuestionCount,
+      },
+    );
+
+    return {
+      diagnostics: [
+        ...parsedJson.diagnostics,
+        typeof parsed.resolvedLevel === 'string'
+          ? `AI resolvedLevel="${parsed.resolvedLevel}".`
+          : 'AI resolvedLevel is missing or invalid.',
+        ...normalizedQuestions.diagnostics,
+      ],
+      questions: normalizedQuestions.questions,
+      resolvedLevel,
+    };
+  }
+
+  private stripJsonMarkdownFences(value: string): string {
+    return value
+      .replace(/^```json\s*/i, '')
+      .replace(/^```\s*/i, '')
+      .replace(/\s*```$/, '')
+      .trim();
+  }
+
+  private parseJsonObject<T>(rawResponse: string): {
+    diagnostics: string[];
+    parsed?: T;
+  } {
+    const normalized = this.stripJsonMarkdownFences(rawResponse);
+
+    try {
+      return {
+        diagnostics: [],
+        parsed: JSON.parse(normalized) as T,
+      };
+    } catch (error) {
+      const diagnostics = [
+        `Failed to parse AI response as JSON: ${error instanceof Error ? error.message : 'Unknown parse error'}.`,
+        this.describeJsonParseError(error, normalized),
+      ].filter(Boolean) as string[];
+      const repaired = this.repairCommonJsonIssues(normalized);
+
+      if (repaired !== normalized) {
+        try {
+          return {
+            diagnostics: [
+              ...diagnostics,
+              'Applied JSON repair: removed trailing commas before closing brackets/braces.',
+            ],
+            parsed: JSON.parse(repaired) as T,
+          };
+        } catch (repairError) {
+          const partialRecovery = this.tryRecoverVocabularyQuizFromPartialJson<T>(
+            repaired,
+          );
+
+          if (partialRecovery.parsed) {
+            return {
+              diagnostics: [
+                ...diagnostics,
+                `JSON repair parse still failed: ${repairError instanceof Error ? repairError.message : 'Unknown parse error'}.`,
+                this.describeJsonParseError(repairError, repaired) ?? '',
+                ...partialRecovery.diagnostics,
+              ].filter(Boolean) as string[],
+              parsed: partialRecovery.parsed,
+            };
+          }
+
+          return {
+            diagnostics: [
+              ...diagnostics,
+              `JSON repair parse still failed: ${repairError instanceof Error ? repairError.message : 'Unknown parse error'}.`,
+              this.describeJsonParseError(repairError, repaired),
+            ].filter(Boolean) as string[],
+          };
+        }
+      }
+
+      const partialRecovery =
+        this.tryRecoverVocabularyQuizFromPartialJson<T>(normalized);
+
+      if (partialRecovery.parsed) {
+        return {
+          diagnostics: [...diagnostics, ...partialRecovery.diagnostics],
+          parsed: partialRecovery.parsed,
+        };
+      }
+
+      return { diagnostics };
+    }
+  }
+
+  private tryRecoverVocabularyQuizFromPartialJson<T>(value: string): {
+    diagnostics: string[];
+    parsed?: T;
+  } {
+    const resolvedLevel = this.extractResolvedLevelFromRawResponse(value);
+    const questionObjects = this.extractCompleteQuestionObjects(value);
+
+    if (questionObjects.length === 0) {
+      return {
+        diagnostics: [
+          'Partial JSON recovery failed: no complete question objects were found.',
+        ],
+      };
+    }
+
+    const parsedQuestions = questionObjects.flatMap((questionObject, index) => {
+      try {
+        return [JSON.parse(questionObject) as Record<string, unknown>];
+      } catch (error) {
+        this.logger.warn(
+          `Skipped partially recovered question ${index + 1}: ${error instanceof Error ? error.message : 'Unknown parse error'}`,
+        );
+        return [];
+      }
+    });
+
+    if (parsedQuestions.length === 0) {
+      return {
+        diagnostics: [
+          'Partial JSON recovery failed: complete question objects were found, but none parsed successfully.',
+        ],
+      };
+    }
+
+    return {
+      diagnostics: [
+        `Recovered ${parsedQuestions.length} complete question objects from truncated AI response.`,
+        resolvedLevel
+          ? `Recovered resolvedLevel="${resolvedLevel}" from truncated AI response.`
+          : 'Could not recover resolvedLevel from truncated AI response.',
+      ],
+      parsed: {
+        questions: parsedQuestions,
+        resolvedLevel,
+      } as T,
+    };
+  }
+
+  private repairCommonJsonIssues(value: string): string {
+    return value
+      .replace(/,\s*([}\]])/g, '$1')
+      .trim();
+  }
+
+  private extractResolvedLevelFromRawResponse(
+    value: string,
+  ): ArticleSimplificationLevel | null {
+    const match = value.match(/"resolvedLevel"\s*:\s*"(A1|A2|B1|B2|C1)"/i);
+
+    if (!match) {
+      return null;
+    }
+
+    const candidateLevel = match[1]?.toUpperCase();
+    return candidateLevel && this.isSimplificationLevel(candidateLevel)
+      ? candidateLevel
+      : null;
+  }
+
+  private extractCompleteQuestionObjects(value: string): string[] {
+    const questionsKeyIndex = value.indexOf('"questions"');
+
+    if (questionsKeyIndex < 0) {
+      return [];
+    }
+
+    const arrayStartIndex = value.indexOf('[', questionsKeyIndex);
+
+    if (arrayStartIndex < 0) {
+      return [];
+    }
+
+    const questionObjects: string[] = [];
+    let inString = false;
+    let isEscaped = false;
+    let objectDepth = 0;
+    let objectStartIndex = -1;
+
+    for (let index = arrayStartIndex + 1; index < value.length; index += 1) {
+      const character = value[index];
+
+      if (isEscaped) {
+        isEscaped = false;
+        continue;
+      }
+
+      if (character === '\\') {
+        isEscaped = true;
+        continue;
+      }
+
+      if (character === '"') {
+        inString = !inString;
+        continue;
+      }
+
+      if (inString) {
+        continue;
+      }
+
+      if (character === '{') {
+        if (objectDepth === 0) {
+          objectStartIndex = index;
+        }
+
+        objectDepth += 1;
+        continue;
+      }
+
+      if (character === '}') {
+        if (objectDepth === 0) {
+          continue;
+        }
+
+        objectDepth -= 1;
+
+        if (objectDepth === 0 && objectStartIndex >= 0) {
+          questionObjects.push(value.slice(objectStartIndex, index + 1));
+          objectStartIndex = -1;
+        }
+
+        continue;
+      }
+
+      if (character === ']' && objectDepth === 0) {
+        break;
+      }
+    }
+
+    return questionObjects;
+  }
+
+  private describeJsonParseError(error: unknown, value: string): string | null {
+    if (!(error instanceof Error)) {
+      return null;
+    }
+
+    const positionMatch = error.message.match(/position (\d+)/i);
+    const position = positionMatch ? Number(positionMatch[1]) : NaN;
+
+    if (!Number.isFinite(position)) {
+      return null;
+    }
+
+    const contextRadius = 120;
+    const start = Math.max(0, position - contextRadius);
+    const end = Math.min(value.length, position + contextRadius);
+    const snippet = value
+      .slice(start, end)
+      .replace(/\r/g, '\\r')
+      .replace(/\n/g, '\\n');
+
+    return `JSON parse context around position ${position}: ${snippet}`;
+  }
+
+  private getVocabularyQuestionTarget(text: string): number {
+    const wordCount = this.countWords(text);
+
+    if (wordCount <= 180) {
+      return 5;
+    }
+
+    if (wordCount <= 420) {
+      return 7;
+    }
+
+    if (wordCount <= 750) {
+      return 10;
+    }
+
+    if (wordCount <= 1100) {
+      return 12;
+    }
+
+    return 15;
   }
 
   private getQuestionCountRule(
@@ -2413,6 +2931,194 @@ ${params.text}`;
     };
   }
 
+  private normalizeVocabularyQuestions(
+    rawQuestions: unknown,
+    params: {
+      sourceText: string;
+      targetQuestionCount: number;
+    },
+  ): {
+    diagnostics: string[];
+    questions: ArticleVocabularyQuizQuestion[];
+  } {
+    if (!Array.isArray(rawQuestions)) {
+      return {
+        diagnostics: ['`questions` is not an array.'],
+        questions: [],
+      };
+    }
+
+    const usedTerms = new Set<string>();
+    const diagnostics: string[] = [];
+    const questions: ArticleVocabularyQuizQuestion[] = [];
+
+    rawQuestions.forEach((question, index) => {
+      const normalizedQuestion = this.normalizeVocabularyQuestion(
+        question,
+        index,
+        params.sourceText,
+      );
+
+      if (!normalizedQuestion) {
+        diagnostics.push(`Question ${index + 1} was rejected.`);
+        return;
+      }
+
+      if ('reason' in normalizedQuestion) {
+        diagnostics.push(
+          `Question ${index + 1} was rejected: ${normalizedQuestion.reason}`,
+        );
+        return;
+      }
+
+      const normalizedTerm = this.normalizeTextForSourceMatch(
+        normalizedQuestion.question.term,
+      );
+
+      if (usedTerms.has(normalizedTerm)) {
+        diagnostics.push(
+          `Question ${index + 1} was rejected because term "${normalizedQuestion.question.term}" is duplicated.`,
+        );
+        return;
+      }
+
+      usedTerms.add(normalizedTerm);
+      questions.push(normalizedQuestion.question);
+    });
+
+    if (questions.length > params.targetQuestionCount) {
+      diagnostics.push(
+        `AI returned ${questions.length} valid questions, trimmed to ${params.targetQuestionCount}.`,
+      );
+    }
+
+    return {
+      diagnostics,
+      questions: questions.slice(0, params.targetQuestionCount),
+    };
+  }
+
+  private normalizeVocabularyQuestion(
+    rawQuestion: unknown,
+    index: number,
+    sourceText: string,
+  ): {
+    question: ArticleVocabularyQuizQuestion;
+  } | {
+    reason: string;
+  } | null {
+    if (!rawQuestion || typeof rawQuestion !== 'object') {
+      return { reason: 'question is not an object' };
+    }
+
+    const candidate = rawQuestion as {
+      correctOptionIds?: unknown;
+      explanation?: unknown;
+      format?: unknown;
+      id?: unknown;
+      options?: unknown;
+      prompt?: unknown;
+      sourceExcerpt?: unknown;
+      term?: unknown;
+      termKind?: unknown;
+      type?: unknown;
+    };
+    const prompt = this.getStringValue(candidate.prompt);
+    const term = this.getStringValue(candidate.term);
+    const format = this.normalizeVocabularyQuestionFormat(candidate.format);
+    const inferredTermKind =
+      this.normalizeVocabularyTermKind(candidate.termKind) ??
+      (term.includes(' ') ? 'phrase' : 'word');
+    const sourceExcerpt = this.getStringValue(candidate.sourceExcerpt);
+    const type =
+      candidate.type === 'single_choice' || candidate.type === undefined
+        ? 'single_choice'
+        : null;
+    const options = this.normalizeQuestionOptions(candidate.options);
+    const correctOptionIds = this.normalizeCorrectOptionIds(
+      candidate.correctOptionIds,
+      options,
+      type,
+    );
+
+    if (!prompt) {
+      return { reason: 'prompt is empty' };
+    }
+
+    if (!term) {
+      return { reason: 'term is empty' };
+    }
+
+    if (!format) {
+      return { reason: 'format is missing or invalid' };
+    }
+
+    if (!type) {
+      return { reason: 'type must be "single_choice"' };
+    }
+
+    if (options.length !== 4) {
+      return {
+        reason: `expected exactly 4 options, got ${options.length}`,
+      };
+    }
+
+    if (correctOptionIds.length !== 1) {
+      return {
+        reason: `expected exactly 1 correct option id, got ${correctOptionIds.length}`,
+      };
+    }
+
+    if (!this.isUsefulVocabularyTerm(term)) {
+      return {
+        reason: `term "${term}" is not useful vocabulary for the quiz`,
+      };
+    }
+
+    if (!this.sourceTextContainsTerm(sourceText, term)) {
+      return {
+        reason: `term "${term}" is not present in the source text`,
+      };
+    }
+
+    if (this.hasDuplicateOptionTexts(options)) {
+      return {
+        reason: `options contain duplicate texts for term "${term}"`,
+      };
+    }
+
+    const id =
+      typeof candidate.id === 'string' && candidate.id.trim()
+        ? candidate.id.trim()
+        : `vq-${index + 1}`;
+    const explanation =
+      typeof candidate.explanation === 'string' &&
+      candidate.explanation.trim().length > 0
+        ? candidate.explanation.trim()
+        : undefined;
+
+    return {
+      question: {
+        correctOptionIds,
+        explanation,
+        format,
+        id,
+        options,
+        prompt,
+        sourceExcerpt: sourceExcerpt || undefined,
+        term,
+        termKind: inferredTermKind,
+        type,
+      },
+    };
+  }
+
+  private truncateForLog(value: string, maxLength = 4000): string {
+    return value.length > maxLength
+      ? `${value.slice(0, maxLength)}... [truncated ${value.length - maxLength} chars]`
+      : value;
+  }
+
   private normalizeQuestionType(type: unknown): ArticleQuizQuestionType | null {
     if (
       type === 'single_choice' ||
@@ -2476,6 +3182,133 @@ ${params.text}`;
     );
 
     return uniqueValidIds;
+  }
+
+  private normalizeVocabularyQuestionFormat(
+    format: unknown,
+  ): ArticleVocabularyQuizQuestionFormat | null {
+    if (
+      format === 'translation' ||
+      format === 'definition' ||
+      format === 'cloze' ||
+      format === 'synonym'
+    ) {
+      return format;
+    }
+
+    return null;
+  }
+
+  private normalizeVocabularyTermKind(
+    termKind: unknown,
+  ): ArticleVocabularyQuizTermKind | null {
+    if (termKind === 'word' || termKind === 'phrase') {
+      return termKind;
+    }
+
+    return null;
+  }
+
+  private normalizeResolvedLevel(
+    level: unknown,
+  ): ArticleSimplificationLevel | null {
+    if (typeof level !== 'string') {
+      return null;
+    }
+
+    const normalizedLevel = level.trim().toUpperCase();
+
+    return this.isSimplificationLevel(normalizedLevel) ? normalizedLevel : null;
+  }
+
+  private isUsefulVocabularyTerm(term: string): boolean {
+    const normalizedTerm = this.normalizeTextForSourceMatch(term);
+
+    if (!normalizedTerm || normalizedTerm.length < 2) {
+      return false;
+    }
+
+    const tokens = normalizedTerm.split(' ').filter(Boolean);
+
+    if (tokens.length === 0 || tokens.length > 5) {
+      return false;
+    }
+
+    if (!/[a-z]/.test(normalizedTerm)) {
+      return false;
+    }
+
+    if (tokens.every((token) => VOCABULARY_QUIZ_STOPWORDS.has(token))) {
+      return false;
+    }
+
+    return true;
+  }
+
+  private hasDuplicateOptionTexts(options: ArticleQuizQuestionOption[]): boolean {
+    const normalizedOptions = options.map((option) =>
+      option.text.trim().toLowerCase(),
+    );
+
+    return new Set(normalizedOptions).size !== normalizedOptions.length;
+  }
+
+  private sourceTextContainsTerm(sourceText: string, term: string): boolean {
+    const normalizedSource = ` ${this.normalizeTextForSourceMatch(sourceText)} `;
+    const normalizedTerm = this.normalizeTextForSourceMatch(term);
+
+    if (!normalizedTerm) {
+      return false;
+    }
+
+    return normalizedSource.includes(` ${normalizedTerm} `);
+  }
+
+  private normalizeTextForSourceMatch(text: string): string {
+    return text
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9'\s-]+/g, ' ')
+      .replace(/[-\s]+/g, ' ')
+      .trim();
+  }
+
+  private countWords(text: string): number {
+    const matches = text.match(/[A-Za-z]+(?:'[A-Za-z]+)?/g);
+    return matches?.length ?? 0;
+  }
+
+  private inferLevelFromText(text: string): ArticleSimplificationLevel {
+    const words: string[] = text.match(/[A-Za-z]+(?:'[A-Za-z]+)?/g) ?? [];
+    const sentences = text
+      .split(/[.!?]+/)
+      .map((sentence) => sentence.trim())
+      .filter(Boolean);
+    const wordCount = words.length;
+    const averageWordLength =
+      wordCount > 0
+        ? words.reduce((total, word) => total + word.length, 0) / wordCount
+        : 0;
+    const averageSentenceLength =
+      sentences.length > 0 ? wordCount / sentences.length : wordCount;
+
+    if (averageSentenceLength <= 10 && averageWordLength <= 4.3) {
+      return 'A1';
+    }
+
+    if (averageSentenceLength <= 13 && averageWordLength <= 4.8) {
+      return 'A2';
+    }
+
+    if (averageSentenceLength <= 18 && averageWordLength <= 5.4) {
+      return 'B1';
+    }
+
+    if (averageSentenceLength <= 24 && averageWordLength <= 6) {
+      return 'B2';
+    }
+
+    return 'C1';
   }
 
   private createSimplificationCacheKey(params: {
@@ -2658,6 +3491,12 @@ ${params.text}`;
   private isSimplificationLevel(
     level: string,
   ): level is ArticleSimplificationLevel {
-    return level === 'A1' || level === 'A2' || level === 'B1' || level === 'B2';
+    return (
+      level === 'A1' ||
+      level === 'A2' ||
+      level === 'B1' ||
+      level === 'B2' ||
+      level === 'C1'
+    );
   }
 }

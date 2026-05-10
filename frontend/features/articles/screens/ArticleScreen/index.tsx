@@ -14,6 +14,7 @@ import {
   fetchArticleAdaptations,
   fetchWikipediaArticleDetail,
   generateArticleQuiz,
+  generateArticleVocabularyQuiz,
   type SimplifyArticleLevel,
   type SimplifyArticleTargetPercent,
   simplifyWikipediaArticle,
@@ -41,6 +42,7 @@ import {
   saveArticleForLater,
   SAVED_ARTICLES_QUERY_KEY,
   getArticleQuizSessionKey,
+  type ArticleQuizMode,
   type SavedArticle,
 } from '@/features/articles';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -321,17 +323,37 @@ export default function ArticleScreen() {
     },
   });
   const quizMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (mode: ArticleQuizMode) => {
       if (!article) {
         throw new Error('article.errorDescription');
       }
 
-      return generateArticleQuiz({
+      if (mode === 'vocabulary') {
+        const response = await generateArticleVocabularyQuiz({
+          level: selectedLevel,
+          text: article.content,
+          title: article.title,
+        });
+
+        return {
+          mode,
+          response,
+          resolvedLevel: selectedLevel,
+        };
+      }
+
+      const response = await generateArticleQuiz({
         level: selectedLevel,
         targetLength: 'medium',
         text: article.content,
         title: article.title,
       });
+
+      return {
+        mode,
+        response,
+        resolvedLevel: selectedLevel,
+      };
     },
     onError: () => {
       showBanner({
@@ -339,20 +361,21 @@ export default function ArticleScreen() {
         variant: 'error',
       });
     },
-    onSuccess: (response) => {
+    onSuccess: ({ mode, response, resolvedLevel }) => {
       if (articleId === null) {
         return;
       }
 
       queryClient.setQueryData(
-        getArticleQuizSessionKey(articleId, selectedLevel, 'medium'),
+        getArticleQuizSessionKey(articleId, mode, resolvedLevel, 'medium'),
         response,
       );
       setIsQuizModePickerOpen(false);
       router.push({
         params: {
           id: String(articleId),
-          level: selectedLevel,
+          level: resolvedLevel,
+          mode,
           targetLength: 'medium',
         },
         pathname: '/article-quiz/[id]',
@@ -517,7 +540,11 @@ export default function ArticleScreen() {
   }, [quizMutation.isPending]);
 
   const handleGenerateArticleQuiz = useCallback(() => {
-    quizMutation.mutate();
+    quizMutation.mutate('article');
+  }, [quizMutation]);
+
+  const handleGenerateVocabularyQuiz = useCallback(() => {
+    quizMutation.mutate('vocabulary');
   }, [quizMutation]);
 
   const handleAdaptFromModal = useCallback(() => {
@@ -858,7 +885,7 @@ export default function ArticleScreen() {
             <Button onPress={handleGenerateArticleQuiz} variant="primary">
               {t('article.quiz.articleKnowledge')}
             </Button>
-            <Button onPress={() => undefined} variant="secondary">
+            <Button onPress={handleGenerateVocabularyQuiz} variant="secondary">
               {t('article.quiz.vocabularyKnowledge')}
             </Button>
           </View>

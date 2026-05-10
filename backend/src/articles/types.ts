@@ -106,7 +106,7 @@ export type TableCell = {
   text: string;
 };
 
-export type ArticleSimplificationLevel = 'A1' | 'A2' | 'B1' | 'B2';
+export type ArticleSimplificationLevel = 'A1' | 'A2' | 'B1' | 'B2' | 'C1';
 
 export type ArticleSimplificationTargetLength = 'short' | 'medium' | 'long';
 export type ArticleSimplificationTargetPercent = 10 | 25 | 50 | 75 | 100;
@@ -140,6 +140,22 @@ export type ArticleQuizQuestion = {
   type: ArticleQuizQuestionType;
 };
 
+export type ArticleVocabularyQuizQuestionFormat =
+  | 'translation'
+  | 'definition'
+  | 'cloze'
+  | 'synonym';
+
+export type ArticleVocabularyQuizTermKind = 'word' | 'phrase';
+
+export type ArticleVocabularyQuizQuestion = ArticleQuizQuestion & {
+  format: ArticleVocabularyQuizQuestionFormat;
+  sourceExcerpt?: string;
+  term: string;
+  termKind: ArticleVocabularyQuizTermKind;
+  type: 'single_choice';
+};
+
 export type SimplifyArticleRequest = {
   articleId?: number;
   blocks?: ArticleBlock[];
@@ -154,6 +170,17 @@ export type GenerateArticleQuizRequest = {
   targetLength?: string;
   text?: string;
   title?: string;
+};
+
+export type GenerateArticleVocabularyQuizRequest = {
+  level?: string;
+  text?: string;
+  title?: string;
+};
+
+export type GenerateArticleVocabularyQuizResponse = {
+  questions: ArticleVocabularyQuizQuestion[];
+  resolvedLevel: ArticleSimplificationLevel;
 };
 
 export type SimplifyArticleResponse = {

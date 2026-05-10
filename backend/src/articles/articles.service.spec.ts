@@ -753,4 +753,326 @@ describe('ArticlesService', () => {
     );
     expect(response.questions).toHaveLength(1);
   });
+
+  it('generates a structured vocabulary quiz from article text', async () => {
+    createChatCompletionMock.mockResolvedValue({
+      choices: [
+        {
+          message: {
+            content: JSON.stringify({
+              questions: [
+                {
+                  correctOptionIds: ['a'],
+                  format: 'definition',
+                  id: 'vq-1',
+                  options: [
+                    { id: 'a', text: 'a sudden event when a volcano throws out lava' },
+                    { id: 'b', text: 'a machine that measures wind speed' },
+                    { id: 'c', text: 'a flat area near a river' },
+                    { id: 'd', text: 'a person who climbs mountains for sport' },
+                  ],
+                  prompt: 'Which definition best matches "eruption" in the text?',
+                  sourceExcerpt:
+                    'Scientists study volcanoes. Lava flows down the mountain during an eruption.',
+                  term: 'eruption',
+                  termKind: 'word',
+                  type: 'single_choice',
+                },
+              ],
+              resolvedLevel: 'B1',
+            }),
+          },
+        },
+      ],
+    });
+
+    const response = await service.generateArticleVocabularyQuiz({
+      text: 'Scientists study volcanoes. Lava flows down the mountain during an eruption.',
+      title: 'Volcanoes',
+    });
+    const request = createChatCompletionMock.mock.calls[0]?.[0] as {
+      messages: Array<{ content?: string }>;
+    };
+    const prompt = String(request.messages[1]?.content ?? '');
+
+    expect(prompt).toContain('Aim for 5 questions');
+    expect(response).toEqual({
+      questions: [
+        {
+          correctOptionIds: ['a'],
+          format: 'definition',
+          id: 'vq-1',
+          options: [
+            { id: 'a', text: 'a sudden event when a volcano throws out lava' },
+            { id: 'b', text: 'a machine that measures wind speed' },
+            { id: 'c', text: 'a flat area near a river' },
+            { id: 'd', text: 'a person who climbs mountains for sport' },
+          ],
+          prompt: 'Which definition best matches "eruption" in the text?',
+          sourceExcerpt:
+            'Scientists study volcanoes. Lava flows down the mountain during an eruption.',
+          term: 'eruption',
+          termKind: 'word',
+          type: 'single_choice',
+        },
+      ],
+      resolvedLevel: 'B1',
+    });
+  });
+
+  it('filters out vocabulary quiz questions with invalid target terms', async () => {
+    createChatCompletionMock.mockResolvedValue({
+      choices: [
+        {
+          message: {
+            content: JSON.stringify({
+              questions: [
+                {
+                  correctOptionIds: ['a'],
+                  format: 'translation',
+                  id: 'vq-1',
+                  options: [
+                    { id: 'a', text: 'таємничий' },
+                    { id: 'b', text: 'прозорий' },
+                    { id: 'c', text: 'швидкий' },
+                    { id: 'd', text: 'гарячий' },
+                  ],
+                  prompt: 'Choose the best Ukrainian translation of "mysterious".',
+                  sourceExcerpt: 'The forest canopy protects many insects.',
+                  term: 'mysterious',
+                  termKind: 'word',
+                  type: 'single_choice',
+                },
+                {
+                  correctOptionIds: ['a'],
+                  format: 'translation',
+                  id: 'vq-2',
+                  options: [
+                    { id: 'a', text: 'це' },
+                    { id: 'b', text: 'вони' },
+                    { id: 'c', text: 'вона' },
+                    { id: 'd', text: 'він' },
+                  ],
+                  prompt: 'Choose the best Ukrainian translation of "the".',
+                  sourceExcerpt: 'The forest canopy protects many insects.',
+                  term: 'the',
+                  termKind: 'word',
+                  type: 'single_choice',
+                },
+                {
+                  correctOptionIds: ['b'],
+                  format: 'translation',
+                  id: 'vq-3',
+                  options: [
+                    { id: 'a', text: 'лісова стежка' },
+                    { id: 'b', text: 'лісовий полог' },
+                    { id: 'c', text: 'гірський схил' },
+                    { id: 'd', text: 'нічний вітер' },
+                  ],
+                  prompt:
+                    'Choose the best Ukrainian translation of "forest canopy" as used in the text.',
+                  sourceExcerpt: 'The forest canopy protects many insects.',
+                  term: 'forest canopy',
+                  termKind: 'phrase',
+                  type: 'single_choice',
+                },
+              ],
+              resolvedLevel: 'A2',
+            }),
+          },
+        },
+      ],
+    });
+
+    const response = await service.generateArticleVocabularyQuiz({
+      text: 'The forest canopy protects many insects.',
+      title: 'Forests',
+    });
+
+    expect(response.questions).toEqual([
+      {
+        correctOptionIds: ['b'],
+        format: 'translation',
+        id: 'vq-3',
+        options: [
+          { id: 'a', text: 'лісова стежка' },
+          { id: 'b', text: 'лісовий полог' },
+          { id: 'c', text: 'гірський схил' },
+          { id: 'd', text: 'нічний вітер' },
+        ],
+        prompt:
+          'Choose the best Ukrainian translation of "forest canopy" as used in the text.',
+        sourceExcerpt: 'The forest canopy protects many insects.',
+        term: 'forest canopy',
+        termKind: 'phrase',
+        type: 'single_choice',
+      },
+    ]);
+  });
+
+  it('preserves requested C1 level for vocabulary quiz generation', async () => {
+    createChatCompletionMock.mockResolvedValue({
+      choices: [
+        {
+          message: {
+            content: JSON.stringify({
+              questions: [
+                {
+                  correctOptionIds: ['c'],
+                  format: 'synonym',
+                  id: 'vq-1',
+                  options: [
+                    { id: 'a', text: 'refusal' },
+                    { id: 'b', text: 'delay' },
+                    { id: 'c', text: 'uncertainty' },
+                    { id: 'd', text: 'victory' },
+                  ],
+                  prompt: 'Which word is closest in meaning to "ambiguity" in the text?',
+                  sourceExcerpt:
+                    'The policy language created ambiguity for both investors and regulators.',
+                  term: 'ambiguity',
+                  termKind: 'word',
+                  type: 'single_choice',
+                },
+              ],
+              resolvedLevel: 'B2',
+            }),
+          },
+        },
+      ],
+    });
+
+    const response = await service.generateArticleVocabularyQuiz({
+      level: 'C1',
+      text: 'The policy language created ambiguity for both investors and regulators.',
+      title: 'Policy Language',
+    });
+    const request = createChatCompletionMock.mock.calls[0]?.[0] as {
+      messages: Array<{ content?: string }>;
+    };
+    const prompt = String(request.messages[1]?.content ?? '');
+
+    expect(prompt).toContain('Learner level is fixed at C1.');
+    expect(prompt).toContain('Set "resolvedLevel" to "C1"');
+    expect(response.resolvedLevel).toBe('C1');
+  });
+
+  it('recovers complete vocabulary questions from truncated AI JSON', async () => {
+    createChatCompletionMock.mockResolvedValue({
+      choices: [
+        {
+          message: {
+            content: `\`\`\`json
+{
+  "resolvedLevel": "A2",
+  "questions": [
+    {
+      "id": "q1",
+      "type": "single_choice",
+      "format": "definition",
+      "term": "mathematician",
+      "termKind": "word",
+      "prompt": "A person who works with numbers is called",
+      "sourceExcerpt": "Alan Turing was an English mathematician.",
+      "options": [
+        { "id": "o1", "text": "mathematician" },
+        { "id": "o2", "text": "chemist" },
+        { "id": "o3", "text": "pilot" },
+        { "id": "o4", "text": "artist" }
+      ],
+      "correctOptionIds": ["o1"]
+    },
+    {
+      "id": "q2",
+      "type": "single_choice",
+      "format": "definition",
+      "term": "algorithm",
+      "termKind": "word",
+      "prompt": "A set of steps for solving a problem is called",
+      "sourceExcerpt": "The machine could follow an algorithm.",
+      "options": [
+        { "id": "o1", "text": "poem" },
+        { "id": "o2", "text": "algorithm" },
+        { "id": "o3", "text": "bridge" },
+        { "id": "o4", "text": "painting" }
+      ],
+      "correctOptionIds": ["o2"]
+    },
+    {
+      "id": "q3",
+      "type": "single_choice",
+      "format": "definition",
+      "term": "computer science",
+      "termKind": "phrase",
+      "prompt": "The study of computers is called",
+      "sourceExcerpt": "He helped develop theoretical computer science.",
+      "options": [
+        { "id": "o1", "text": "biology" },
+        { "id": "o2", "text": "history" },
+        { "id": "o3", "text": "computer science" },
+        { "id": "o4", "text": "music" }
+      ],
+      "correctOptionIds": ["o3"]
+    },
+    {
+      "id": "q4",
+      "type": "single_choice",
+      "format": "definition",
+      "term": "artificial intelligence",
+      "termKind": "phrase",
+      "prompt": "Machines that try to think like humans use",
+      "sourceExcerpt": "Turing wrote about artificial intelligence.",
+      "options": [
+        { "id": "o1", "text": "robotics" },
+        { "id": "o2", "text": "artificial intelligence" },
+        { "id": "o3", "text": "geography" },
+        { "id": "o4", "text": "chemistry" }
+      ],
+      "correctOptionIds": ["o2"]
+    },
+    {
+      "id": "q5",
+      "type": "single_choice",
+      "format": "definition",
+      "term": "codebreaking",
+      "termKind": "word",
+      "prompt": "Finding the meaning of secret messages is called",
+      "sourceExcerpt": "He worked at Britain's codebreaking centre.",
+      "options": [
+        { "id": "o1", "text": "gardening" },
+        { "id": "o2", "text": "cooking" },
+        { "id": "o3", "text": "codebreaking" },
+        { "id": "o4", "text": "drawing" }
+      ],
+      "correctOptionIds": ["o3"]
+    },
+    {
+      "id": "q6",
+      "type": "single_choice",
+      "format": "definition",
+      "term": "chemical basis",
+      "termKind": "phrase",
+      "prompt": "The study of chemical processes is called`,
+          },
+        },
+      ],
+    });
+
+    const response = await service.generateArticleVocabularyQuiz({
+      level: 'A2',
+      text:
+        'Alan Turing was an English mathematician. The machine could follow an algorithm. He helped develop theoretical computer science. Turing wrote about artificial intelligence. He worked at Britain\'s codebreaking centre.',
+      title: 'Alan Turing',
+    });
+
+    expect(response.resolvedLevel).toBe('A2');
+    expect(response.questions).toHaveLength(5);
+    expect(response.questions.map((question) => question.term)).toEqual([
+      'mathematician',
+      'algorithm',
+      'computer science',
+      'artificial intelligence',
+      'codebreaking',
+    ]);
+  });
 });
