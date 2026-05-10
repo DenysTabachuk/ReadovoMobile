@@ -19,6 +19,7 @@ const MAPPING = {
   'book.fill': 'menu-book',
   bookmark: 'bookmark-border',
   'bookmark.fill': 'bookmark',
+  'speaker.wave.2.fill': 'volume-up',
   'gearshape.fill': 'settings',
   'person.fill': 'person',
   'sun.max.fill': 'wb-sunny',

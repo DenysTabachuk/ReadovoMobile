@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/button';
 import { ModalSheet } from '@/components/modalSheet';
+import { PronunciationButton } from '@/components/pronunciationButton';
 import { ThemedText } from '@/components/themedText';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -54,6 +55,8 @@ export function WordTranslationSheet({
       open={open}
       showHandle
       title={word ?? t('translation.titleFallback')}>
+      <PronunciationButton word={word} />
+
       {context ? (
         <ThemedText type="body" style={styles.contextText}>
           {context}

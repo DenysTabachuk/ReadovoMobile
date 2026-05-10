@@ -26,6 +26,7 @@ import {
   type QuizSessionResult,
 } from '@/components/articleQuizRunner';
 import { Button } from '@/components/button';
+import { PronunciationButton } from '@/components/pronunciationButton';
 import { useBanner } from '@/components/banner';
 import { FloatingActionButton } from '@/components/floatingActionButton';
 import { ScreenContainer } from '@/components/screenContainer';
@@ -210,11 +211,11 @@ export default function DictionaryScreen() {
             <View style={styles.progressControl}>
               <Pressable
                 disabled={item.progress !== 'learned'}
-                onPress={() =>
+                onPress={() => {
                   setOpenProgressMenuWordId((current) =>
                     current === item.id ? null : item.id,
-                  )
-                }
+                  );
+                }}
                 style={[
                   styles.progressBadge,
                   { backgroundColor: progressColors.backgroundColor },
@@ -240,12 +241,12 @@ export default function DictionaryScreen() {
                   </ThemedText>
                   <Pressable
                     disabled={wordProgressMutation.isPending}
-                    onPress={() =>
+                    onPress={() => {
                       wordProgressMutation.mutate({
                         progress: 'in_progress',
                         wordId: item.id,
-                      })
-                    }
+                      });
+                    }}
                     style={[
                       styles.progressBadge,
                       styles.progressMenuBadge,
@@ -264,7 +265,7 @@ export default function DictionaryScreen() {
               ) : null}
             </View>
           </View>
-
+          <PronunciationButton word={item.word} />
           <ThemedText type="body" style={styles.contextText}>
             {item.context}
           </ThemedText>

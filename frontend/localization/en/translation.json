@@ -309,6 +309,9 @@
     "loading": "Loading translation...",
     "error": "Could not get the translation. Try again.",
     "addToDictionary": "Add to dictionary",
+    "pronounce": "Listen to pronunciation",
+    "pronouncing": "Playing pronunciation...",
+    "pronounceAction": "Play pronunciation for {{word}}",
     "close": "Close",
     "dictionaryComingSoon": "Dictionary will be added next."
   },
