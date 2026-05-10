@@ -28,14 +28,16 @@ export class AchievementsService {
   constructor(private readonly databaseService: DatabaseService) {}
 
   async getProfile(userId: string): Promise<AchievementsProfileResponse> {
-    const progress = await this.getUserProgress(userId);
-    const unlockedRows = await this.getUnlockedRows(userId);
+    let progress = await this.getUserProgress(userId);
+    let unlockedRows = await this.getUnlockedRows(userId);
 
-    await this.persistNewUnlocks(userId, progress, unlockedRows);
+    while (await this.persistNewUnlocks(userId, progress, unlockedRows)) {
+      progress = await this.getUserProgress(userId);
+      unlockedRows = await this.getUnlockedRows(userId);
+    }
 
-    const refreshedUnlockedRows = await this.getUnlockedRows(userId);
     const unlockedMap = new Map(
-      refreshedUnlockedRows.map((row) => [row.achievement_id, row]),
+      unlockedRows.map((row) => [row.achievement_id, row]),
     );
 
     const achievements: AchievementStatus[] = achievementDefinitions.map(
@@ -160,31 +162,68 @@ export class AchievementsService {
     userId: string,
     progress: UserProgress,
     unlockedRows: UserAchievementRow[],
-  ): Promise<void> {
+  ): Promise<boolean> {
     const unlockedIds = new Set(unlockedRows.map((row) => row.achievement_id));
-    const newUnlockIds = achievementDefinitions
-      .filter(
-        (definition) =>
-          definition.isUnlocked(progress) && !unlockedIds.has(definition.id),
-      )
-      .map((definition) => definition.id);
+    const newUnlockDefinitions = achievementDefinitions.filter(
+      (definition) =>
+        definition.isUnlocked(progress) && !unlockedIds.has(definition.id),
+    );
 
-    if (newUnlockIds.length === 0) {
-      return;
+    if (newUnlockDefinitions.length === 0) {
+      return false;
     }
 
-    await Promise.all(
-      newUnlockIds.map((achievementId) =>
-        this.databaseService.query(
-          `
-            INSERT INTO user_achievements (user_id, achievement_id, unlocked_at)
-            VALUES ($1, $2, now())
-            ON CONFLICT (user_id, achievement_id) DO NOTHING
-          `,
-          [userId, achievementId],
-        ),
-      ),
+    const insertedAchievementIds = (
+      await Promise.all(
+        newUnlockDefinitions.map(async (definition) => {
+          const result = await this.databaseService.query<{
+            achievement_id: AchievementId;
+          }>(
+            `
+              INSERT INTO user_achievements (
+                user_id,
+                achievement_id,
+                unlocked_at,
+                claimed_at
+              )
+              VALUES ($1, $2, now(), now())
+              ON CONFLICT (user_id, achievement_id) DO NOTHING
+              RETURNING achievement_id
+            `,
+            [userId, definition.id],
+          );
+
+          return result.rows[0]?.achievement_id;
+        }),
+      )
+    ).filter((achievementId): achievementId is AchievementId =>
+      Boolean(achievementId),
     );
+
+    if (insertedAchievementIds.length === 0) {
+      return false;
+    }
+
+    const rewardByAchievementId = new Map(
+      achievementDefinitions.map((definition) => [definition.id, definition.coinsReward]),
+    );
+    const totalCoinsReward = insertedAchievementIds.reduce(
+      (sum, achievementId) => sum + (rewardByAchievementId.get(achievementId) ?? 0),
+      0,
+    );
+
+    if (totalCoinsReward > 0) {
+      await this.databaseService.query(
+        `
+          UPDATE users
+          SET balance = balance + $2
+          WHERE id = $1
+        `,
+        [userId, totalCoinsReward],
+      );
+    }
+
+    return true;
   }
 
   private resolveProgressValue(
