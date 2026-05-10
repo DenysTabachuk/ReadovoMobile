@@ -124,91 +124,95 @@ export default function LoginScreen() {
   return (
     <ScreenContainer>
       <View style={styles.content}>
-        <View style={styles.textBlock}>
-          <ThemedText type="heroTitle">{t('auth.title')}</ThemedText>
-          <ThemedText type="paragraph">{t('auth.description')}</ThemedText>
-        </View>
+        <View>
+          <View style={styles.textBlock}>
+            <ThemedText type="heroTitle">{t('auth.title')}</ThemedText>
+            <ThemedText type="paragraph">{t('auth.description')}</ThemedText>
+          </View>
 
-        <View style={styles.form}>
-          <FormTextInput
-            autoCapitalize="none"
-            autoComplete="email"
-            keyboardType="email-address"
-            label={t('auth.emailLabel')}
-            onChangeText={setEmail}
-            placeholder={t('auth.emailPlaceholder')}
-            textContentType="emailAddress"
-            value={email}
-          />
+          <View style={styles.form}>
+            <FormTextInput
+              autoCapitalize="none"
+              autoComplete="email"
+              keyboardType="email-address"
+              label={t('auth.emailLabel')}
+              onChangeText={setEmail}
+              placeholder={t('auth.emailPlaceholder')}
+              textContentType="emailAddress"
+              value={email}
+            />
 
-          <PasswordTextInput
-            label={t('auth.passwordLabel')}
-            onChangeText={setPassword}
-            placeholder={t('auth.passwordPlaceholder')}
-            textContentType="password"
-            value={password}
-          />
+            <PasswordTextInput
+              label={t('auth.passwordLabel')}
+              onChangeText={setPassword}
+              placeholder={t('auth.passwordPlaceholder')}
+              textContentType="password"
+              value={password}
+            />
 
-          <CheckboxRow
-            checked={rememberMe}
-            label={t('auth.rememberMe')}
-            onPress={async () => {
-              const nextValue = !rememberMe;
-              setRememberMe(nextValue);
-              await setRememberMePreference(nextValue);
-            }}
-          />
+            <CheckboxRow
+              checked={rememberMe}
+              label={t('auth.rememberMe')}
+              onPress={async () => {
+                const nextValue = !rememberMe;
+                setRememberMe(nextValue);
+                await setRememberMePreference(nextValue);
+              }}
+            />
+
+            <Pressable
+              hitSlop={8}
+              style={styles.forgotPasswordButton}
+              onPress={() =>
+                router.push({
+                  pathname: '/forgot-password',
+                  params: {
+                    email: email.trim().toLowerCase(),
+                  },
+                })
+              }
+            >
+              <ThemedText type="bodyStrong" style={styles.forgotPasswordText}>
+                {t('auth.forgotPassword')}
+              </ThemedText>
+            </Pressable>
+
+            <Button
+              disabled={isLoading}
+              style={styles.signInButton}
+              onPress={handleSignIn}
+            >
+              {isLoading ? t('auth.signingIn') : t('auth.signInButton')}
+            </Button>
+
+            <ThemedText type="bodyStrong" style={styles.orText}>
+              {t('auth.orDivider')}
+            </ThemedText>
+          </View>
 
           <Pressable
-            hitSlop={8}
-            style={styles.forgotPasswordButton}
-            onPress={() =>
-              router.push({
-                pathname: '/forgot-password',
-                params: {
-                  email: email.trim().toLowerCase(),
-                },
-              })
-            }
+            disabled={isLoading}
+            style={[
+              styles.googleButton,
+              isLoading && styles.googleButtonDisabled,
+            ]}
+            onPress={handleGoogleSignIn}
           >
-            <ThemedText type="bodyStrong" style={styles.forgotPasswordText}>
-              {t('auth.forgotPassword')}
+            <Ionicons name="logo-google" size={32} color="#4285F4" />
+            <ThemedText type="buttonLabel" style={styles.googleButtonText}>
+              {isLoading ? t('auth.signingIn') : t('auth.googleButton')}
             </ThemedText>
           </Pressable>
-
-          <Button
-            disabled={isLoading}
-            style={styles.signInButton}
-            onPress={handleSignIn}
-          >
-            {isLoading ? t('auth.signingIn') : t('auth.signInButton')}
-          </Button>
-
-          <ThemedText type="bodyStrong" style={styles.orText}>
-            {t('auth.orDivider')}
-          </ThemedText>
         </View>
 
-        <Pressable
-          disabled={isLoading}
-          style={[
-            styles.googleButton,
-            isLoading && styles.googleButtonDisabled,
-          ]}
-          onPress={handleGoogleSignIn}
-        >
-          <Ionicons name="logo-google" size={32} color="#4285F4" />
-          <ThemedText type="buttonLabel" style={styles.googleButtonText}>
-            {isLoading ? t('auth.signingIn') : t('auth.googleButton')}
-          </ThemedText>
-        </Pressable>
 
         <Pressable
           hitSlop={8}
           style={styles.createAccountButton}
           onPress={() => router.push('/register')}
         >
-          <ThemedText type="bodyStrong" style={styles.createAccountText}>
+
+          <ThemedText type="sectionTitle" style={styles.createAccountText}>
             {t('auth.createAccount')}
           </ThemedText>
         </Pressable>

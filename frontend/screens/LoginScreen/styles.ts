@@ -5,6 +5,7 @@ import { Spacing } from '@/constants/spacing';
 export const styles = StyleSheet.create({
   content: {
     flex: 1,
+    justifyContent: 'space-between',
   },
   textBlock: {
     gap: Spacing.lg,
