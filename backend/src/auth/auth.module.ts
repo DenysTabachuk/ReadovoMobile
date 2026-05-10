@@ -4,6 +4,7 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { EmailVerificationService } from './email-verification.service';
 import { PendingRegistrationsRepository } from './pending-registrations.repository';
+import { PasswordResetRequestsRepository } from './password-reset-requests.repository';
 import { UsersRepository } from './users.repository';
 
 @Module({
@@ -12,6 +13,7 @@ import { UsersRepository } from './users.repository';
     AuthService,
     EmailVerificationService,
     PendingRegistrationsRepository,
+    PasswordResetRequestsRepository,
     UsersRepository,
   ],
 })

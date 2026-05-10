@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
 import { loginUser } from '@/api/auth';
@@ -18,12 +18,17 @@ import { styles } from './styles';
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+function getParamValue(param: string | string[] | undefined): string {
+  return Array.isArray(param) ? param[0] ?? '' : param ?? '';
+}
+
 export default function LoginScreen() {
   const { t } = useTranslation();
   const { showBanner } = useBanner();
   const { rememberMePreference, setRememberMePreference, signIn } = useAuth();
+  const params = useLocalSearchParams<{ email?: string }>();
   const [isLoading, setIsLoading] = useState(false);
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(getParamValue(params.email));
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(rememberMePreference);
 
@@ -154,7 +159,18 @@ export default function LoginScreen() {
             }}
           />
 
-          <Pressable hitSlop={8} style={styles.forgotPasswordButton}>
+          <Pressable
+            hitSlop={8}
+            style={styles.forgotPasswordButton}
+            onPress={() =>
+              router.push({
+                pathname: '/forgot-password',
+                params: {
+                  email: email.trim().toLowerCase(),
+                },
+              })
+            }
+          >
             <ThemedText type="bodyStrong" style={styles.forgotPasswordText}>
               {t('auth.forgotPassword')}
             </ThemedText>

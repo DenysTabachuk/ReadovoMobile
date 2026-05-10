@@ -44,6 +44,34 @@ export class EmailVerificationService {
   }
 
   async sendVerificationCode(email: string, code: string): Promise<void> {
+    await this.sendCode({
+      code,
+      email,
+      subject: 'Readovo email verification code',
+      text: `Your Readovo verification code is ${code}. It expires in ${codeTtlMinutes} minutes.`,
+    });
+  }
+
+  async sendPasswordResetCode(email: string, code: string): Promise<void> {
+    await this.sendCode({
+      code,
+      email,
+      subject: 'Readovo password reset code',
+      text: `Your Readovo password reset code is ${code}. It expires in ${codeTtlMinutes} minutes.`,
+    });
+  }
+
+  private async sendCode({
+    code,
+    email,
+    subject,
+    text,
+  }: {
+    code: string;
+    email: string;
+    subject: string;
+    text: string;
+  }): Promise<void> {
     const host = process.env.SMTP_HOST;
     const password = process.env.SMTP_PASSWORD;
     const port = Number(process.env.SMTP_PORT ?? defaultSmtpPort);
@@ -53,7 +81,7 @@ export class EmailVerificationService {
 
     if (!host || !password || !user || !from) {
       this.logger.warn(
-        `SMTP is not configured. Verification code for ${email}: ${code}`,
+        `SMTP is not configured. Email code for ${email}: ${code}`,
       );
       return;
     }
@@ -72,12 +100,12 @@ export class EmailVerificationService {
       await transporter.sendMail({
         from,
         to: email,
-        subject: 'Readovo email verification code',
-        text: `Your Readovo verification code is ${code}. It expires in ${codeTtlMinutes} minutes.`,
+        subject,
+        text,
       });
     } catch (error) {
-      this.logger.error(`Failed to send verification email to ${email}`, error);
-      throw new Error('Could not send verification email.');
+      this.logger.error(`Failed to send email code to ${email}`, error);
+      throw new Error('Could not send email code.');
     }
   }
 

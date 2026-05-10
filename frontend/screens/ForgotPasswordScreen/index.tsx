@@ -1,37 +1,46 @@
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
-import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
-import { registerUser, resendVerificationCode, verifyEmail } from '@/api/auth';
+import {
+  requestPasswordReset,
+  verifyPasswordResetCode,
+} from '@/api/auth';
 import { Button } from '@/components/button';
 import { useBanner } from '@/components/banner';
 import { FormTextInput } from '@/components/formTextInput';
-import { PasswordTextInput } from '@/components/passwordTextInput';
 import { ScreenContainer } from '@/components/screenContainer';
 import { ThemedText } from '@/components/themedText';
 import { VerificationCodeModal } from '@/components/verificationCodeModal';
+import { useThemeColor } from '@/hooks/use-theme-color';
 
 import { styles } from './styles';
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const minPasswordLength = 8;
 const verificationCodePattern = /^\d{6}$/;
 
-export default function RegisterScreen() {
+function getParamValue(param: string | string[] | undefined): string {
+  return Array.isArray(param) ? param[0] ?? '' : param ?? '';
+}
+
+export default function ForgotPasswordScreen() {
   const { t } = useTranslation();
   const { showBanner } = useBanner();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [passwordConfirmation, setPasswordConfirmation] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [isResendingCode, setIsResendingCode] = useState(false);
-  const [isVerifyingEmail, setIsVerifyingEmail] = useState(false);
+  const iconColor = useThemeColor({}, 'icon');
+  const params = useLocalSearchParams<{ email?: string }>();
+  const [email, setEmail] = useState(getParamValue(params.email));
   const [pendingEmail, setPendingEmail] = useState('');
   const [verificationExpiresAt, setVerificationExpiresAt] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
+  const [isVerificationModalOpen, setIsVerificationModalOpen] =
+    useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isResendingCode, setIsResendingCode] = useState(false);
+  const [isVerifyingCode, setIsVerifyingCode] = useState(false);
 
-  const handleRegister = async () => {
+  const handleRequestReset = async () => {
     const normalizedEmail = email.trim().toLowerCase();
 
     if (!emailPattern.test(normalizedEmail)) {
@@ -42,48 +51,36 @@ export default function RegisterScreen() {
       return;
     }
 
-    if (password.length < minPasswordLength) {
-      showBanner({
-        title: t('auth.errors.passwordTooShort'),
-        variant: 'error',
-      });
-      return;
-    }
-
-    if (password !== passwordConfirmation) {
-      showBanner({
-        title: t('auth.errors.passwordsDoNotMatch'),
-        variant: 'error',
-      });
+    if (pendingEmail === normalizedEmail) {
+      setIsVerificationModalOpen(true);
       return;
     }
 
     try {
       setIsLoading(true);
 
-      const response = await registerUser({
+      const response = await requestPasswordReset({
         email: normalizedEmail,
-        password,
-        passwordConfirmation,
       });
 
       setPendingEmail(response.email);
       setVerificationExpiresAt(response.verificationExpiresAt);
       setVerificationCode('');
+      setIsVerificationModalOpen(true);
 
       showBanner({
-        title: t('auth.verificationCodeSent'),
+        title: t('auth.passwordResetCodeSent'),
         variant: 'success',
       });
     } catch (error) {
       const messageKey =
         error instanceof Error
           ? error.message
-          : 'auth.errors.registrationFailed';
+          : 'auth.errors.requestPasswordResetFailed';
 
       showBanner({
         title: t(messageKey, {
-          defaultValue: t('auth.errors.registrationFailed'),
+          defaultValue: t('auth.errors.requestPasswordResetFailed'),
         }),
         variant: 'error',
       });
@@ -92,7 +89,7 @@ export default function RegisterScreen() {
     }
   };
 
-  const handleVerifyEmail = async () => {
+  const handleVerifyCode = async () => {
     const code = verificationCode.trim();
 
     if (!verificationCodePattern.test(code)) {
@@ -104,35 +101,38 @@ export default function RegisterScreen() {
     }
 
     try {
-      setIsVerifyingEmail(true);
+      setIsVerifyingCode(true);
 
-      await verifyEmail({
+      const response = await verifyPasswordResetCode({
         code,
         email: pendingEmail,
       });
 
-      showBanner({
-        title: t('auth.registrationSuccess.title'),
-        variant: 'success',
-      });
       setPendingEmail('');
       setVerificationExpiresAt('');
       setVerificationCode('');
-      router.replace('/login');
+      setIsVerificationModalOpen(false);
+      router.push({
+        pathname: '/reset-password',
+        params: {
+          email: response.email,
+          resetToken: response.resetToken,
+        },
+      });
     } catch (error) {
       const messageKey =
         error instanceof Error
           ? error.message
-          : 'auth.errors.emailVerificationFailed';
+          : 'auth.errors.verifyPasswordResetCodeFailed';
 
       showBanner({
         title: t(messageKey, {
-          defaultValue: t('auth.errors.emailVerificationFailed'),
+          defaultValue: t('auth.errors.verifyPasswordResetCodeFailed'),
         }),
         variant: 'error',
       });
     } finally {
-      setIsVerifyingEmail(false);
+      setIsVerifyingCode(false);
     }
   };
 
@@ -140,27 +140,28 @@ export default function RegisterScreen() {
     try {
       setIsResendingCode(true);
 
-      const response = await resendVerificationCode({
+      const response = await requestPasswordReset({
         email: pendingEmail,
       });
 
       setPendingEmail(response.email);
       setVerificationExpiresAt(response.verificationExpiresAt);
       setVerificationCode('');
+      setIsVerificationModalOpen(true);
 
       showBanner({
-        title: t('auth.verificationCodeSent'),
+        title: t('auth.passwordResetCodeSent'),
         variant: 'success',
       });
     } catch (error) {
       const messageKey =
         error instanceof Error
           ? error.message
-          : 'auth.errors.resendVerificationCodeFailed';
+          : 'auth.errors.requestPasswordResetFailed';
 
       showBanner({
         title: t(messageKey, {
-          defaultValue: t('auth.errors.resendVerificationCodeFailed'),
+          defaultValue: t('auth.errors.requestPasswordResetFailed'),
         }),
         variant: 'error',
       });
@@ -169,16 +170,28 @@ export default function RegisterScreen() {
     }
   };
 
-  const isVerificationModalOpen = pendingEmail.length > 0;
-  const isVerificationBusy = isVerifyingEmail || isResendingCode;
+  const isVerificationBusy = isVerifyingCode || isResendingCode;
+  const normalizedEmail = email.trim().toLowerCase();
+  const hasRequestedCodeForCurrentEmail = pendingEmail === normalizedEmail;
 
   return (
     <ScreenContainer>
       <View style={styles.content}>
+        <Pressable
+          accessibilityLabel={t('auth.backToSignIn')}
+          hitSlop={8}
+          style={styles.backButton}
+          onPress={() => router.replace({ pathname: '/login', params: { email } })}
+        >
+          <Ionicons name="arrow-back" size={24} color={iconColor} />
+        </Pressable>
+
         <View style={styles.textBlock}>
-          <ThemedText type="heroTitle">{t('auth.registerTitle')}</ThemedText>
+          <ThemedText type="heroTitle">
+            {t('auth.forgotPasswordTitle')}
+          </ThemedText>
           <ThemedText type="paragraph">
-            {t('auth.registerDescription')}
+            {t('auth.forgotPasswordDescription')}
           </ThemedText>
         </View>
 
@@ -194,61 +207,40 @@ export default function RegisterScreen() {
             value={email}
           />
 
-          <PasswordTextInput
-            label={t('auth.passwordLabel')}
-            onChangeText={setPassword}
-            placeholder={t('auth.passwordPlaceholder')}
-            textContentType="newPassword"
-            value={password}
-          />
-
-          <PasswordTextInput
-            label={t('auth.passwordConfirmationLabel')}
-            onChangeText={setPasswordConfirmation}
-            placeholder={t('auth.passwordConfirmationPlaceholder')}
-            textContentType="newPassword"
-            value={passwordConfirmation}
-          />
-
           <Button
             disabled={isLoading}
-            style={styles.registerButton}
-            onPress={handleRegister}
+            style={styles.submitButton}
+            onPress={handleRequestReset}
           >
-            {isLoading ? t('auth.creatingAccount') : t('auth.registerButton')}
+            {isLoading && !hasRequestedCodeForCurrentEmail
+              ? t('auth.sendingPasswordResetCode')
+              : hasRequestedCodeForCurrentEmail
+                ? t('auth.enterPasswordResetCode')
+                : t('auth.sendPasswordResetCode')}
           </Button>
 
-          <Pressable
-            hitSlop={8}
-            style={styles.signInLink}
-            onPress={() => router.replace('/login')}
-          >
-            <ThemedText type="bodyStrong" style={styles.signInText}>
-              {t('auth.haveAccount')}
-            </ThemedText>
-          </Pressable>
         </View>
       </View>
 
       <VerificationCodeModal
         code={verificationCode}
-        description={t('auth.verifyEmailDescription', { email: pendingEmail })}
+        description={t('auth.passwordResetCodeDescription', {
+          email: pendingEmail,
+        })}
         emailHelpDescription={t('auth.emailHelpDescription')}
         emailHelpTitle={t('auth.emailHelpTitle')}
         isBusy={isVerificationBusy}
         isOpen={isVerificationModalOpen}
         isResending={isResendingCode}
-        isVerifying={isVerifyingEmail}
+        isVerifying={isVerifyingCode}
         onChangeCode={setVerificationCode}
         onClose={() => {
           if (!isVerificationBusy) {
-            setPendingEmail('');
-            setVerificationExpiresAt('');
-            setVerificationCode('');
+            setIsVerificationModalOpen(false);
           }
         }}
         onResend={handleResendCode}
-        onVerify={handleVerifyEmail}
+        onVerify={handleVerifyCode}
         resendCountdownLabel={(seconds) =>
           t('auth.resendVerificationCodeCountdown', { seconds })
         }
@@ -256,11 +248,11 @@ export default function RegisterScreen() {
         resendingLabel={t('auth.resendingVerificationCode')}
         expirationLabel={t('auth.codeExpirationLabel')}
         expiresAt={verificationExpiresAt}
-        title={t('auth.verifyEmailTitle')}
-        verificationButtonLabel={t('auth.verifyEmailButton')}
+        title={t('auth.passwordResetCodeTitle')}
+        verificationButtonLabel={t('auth.verifyPasswordResetCodeButton')}
         verificationCodeLabel={t('auth.verificationCodeLabel')}
         verificationCodePlaceholder={t('auth.verificationCodePlaceholder')}
-        verifyingLabel={t('auth.verifyingEmail')}
+        verifyingLabel={t('auth.verifyingPasswordResetCode')}
       />
     </ScreenContainer>
   );

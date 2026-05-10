@@ -4,8 +4,14 @@ import {
   type LoginUserResponse,
   type RegisterUserRequest,
   type RegisterUserResponse,
+  type RequestPasswordResetRequest,
+  type RequestPasswordResetResponse,
+  type ResetPasswordRequest,
+  type ResetPasswordResponse,
   type ResendVerificationCodeRequest,
   type ResendVerificationCodeResponse,
+  type VerifyPasswordResetCodeRequest,
+  type VerifyPasswordResetCodeResponse,
   type VerifyEmailRequest,
   type VerifyEmailResponse,
 } from './types';
@@ -16,8 +22,14 @@ export type {
   LoginUserResponse,
   RegisterUserRequest,
   RegisterUserResponse,
+  RequestPasswordResetRequest,
+  RequestPasswordResetResponse,
+  ResetPasswordRequest,
+  ResetPasswordResponse,
   ResendVerificationCodeRequest,
   ResendVerificationCodeResponse,
+  VerifyPasswordResetCodeRequest,
+  VerifyPasswordResetCodeResponse,
   VerifyEmailRequest,
   VerifyEmailResponse,
 } from './types';
@@ -123,4 +135,70 @@ export async function resendVerificationCode(
   }
 
   return response.json() as Promise<ResendVerificationCodeResponse>;
+}
+
+export async function requestPasswordReset(
+  request: RequestPasswordResetRequest,
+): Promise<RequestPasswordResetResponse> {
+  const response = await fetch(`${API_BASE_URL}/auth/request-password-reset`, {
+    body: JSON.stringify(request),
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    method: 'POST',
+  });
+
+  if (response.status === 400) {
+    throw new Error('auth.errors.invalidEmail');
+  }
+
+  if (!response.ok) {
+    throw new Error('auth.errors.requestPasswordResetFailed');
+  }
+
+  return response.json() as Promise<RequestPasswordResetResponse>;
+}
+
+export async function verifyPasswordResetCode(
+  request: VerifyPasswordResetCodeRequest,
+): Promise<VerifyPasswordResetCodeResponse> {
+  const response = await fetch(`${API_BASE_URL}/auth/verify-password-reset-code`, {
+    body: JSON.stringify(request),
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    method: 'POST',
+  });
+
+  if (response.status === 400) {
+    throw new Error('auth.errors.invalidOrExpiredVerificationCode');
+  }
+
+  if (!response.ok) {
+    throw new Error('auth.errors.verifyPasswordResetCodeFailed');
+  }
+
+  return response.json() as Promise<VerifyPasswordResetCodeResponse>;
+}
+
+export async function resetPassword(
+  request: ResetPasswordRequest,
+): Promise<ResetPasswordResponse> {
+  const response = await fetch(`${API_BASE_URL}/auth/reset-password`, {
+    body: JSON.stringify(request),
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    method: 'POST',
+  });
+
+  if (response.status === 400) {
+    throw new Error('auth.errors.resetPasswordInvalidOrExpired');
+  }
+
+  if (!response.ok) {
+    throw new Error('auth.errors.resetPasswordFailed');
+  }
+
+  return response.json() as Promise<ResetPasswordResponse>;
 }

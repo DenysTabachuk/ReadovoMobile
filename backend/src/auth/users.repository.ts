@@ -70,6 +70,22 @@ export class UsersRepository {
     return this.toStoredUser(result.rows[0]);
   }
 
+  async updatePassword(
+    email: string,
+    passwordHash: string,
+    passwordSalt: string,
+  ): Promise<void> {
+    await this.databaseService.query(
+      `
+        UPDATE users
+        SET password_hash = $2,
+            password_salt = $3
+        WHERE email = $1
+      `,
+      [email, passwordHash, passwordSalt],
+    );
+  }
+
   private toStoredUser(user: UserRow): StoredUser {
     return {
       createdAt: user.created_at.toISOString(),

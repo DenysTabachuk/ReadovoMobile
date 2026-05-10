@@ -4,6 +4,7 @@ import {
   type PressableProps,
   type StyleProp,
   type TextStyle,
+  View,
   type ViewStyle,
 } from 'react-native';
 
@@ -15,6 +16,7 @@ type ButtonVariant = 'primary' | 'secondary';
 
 type ButtonProps = Omit<PressableProps, 'children' | 'style'> & {
   children: ReactNode;
+  leftAccessory?: ReactNode;
   style?: StyleProp<ViewStyle>;
   textStyle?: StyleProp<TextStyle>;
   variant?: ButtonVariant;
@@ -23,6 +25,7 @@ type ButtonProps = Omit<PressableProps, 'children' | 'style'> & {
 export function Button({
   children,
   disabled,
+  leftAccessory,
   style,
   textStyle,
   variant = 'primary',
@@ -42,9 +45,18 @@ export function Button({
         style,
       ]}
       {...props}>
-      <ThemedText type="buttonLabel" style={[styles.text, variantTextStyle, textStyle]}>
-        {children}
-      </ThemedText>
+      <View style={styles.content}>
+        {leftAccessory ? (
+          <View style={styles.leftAccessory}>{leftAccessory}</View>
+        ) : null}
+
+        <ThemedText
+          type="buttonLabel"
+          style={[styles.text, variantTextStyle, textStyle]}
+        >
+          {children}
+        </ThemedText>
+      </View>
     </Pressable>
   );
 }

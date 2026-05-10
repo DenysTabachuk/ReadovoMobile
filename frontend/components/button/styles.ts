@@ -13,6 +13,16 @@ export const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.lg,
   },
+  content: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    justifyContent: 'center',
+  },
+  leftAccessory: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   primary: {
     backgroundColor: buttonBlue,
     borderColor: buttonBlue,

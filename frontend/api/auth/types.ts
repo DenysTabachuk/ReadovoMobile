@@ -18,6 +18,22 @@ export type LoginUserRequest = {
   password: string;
 };
 
+export type RequestPasswordResetRequest = {
+  email: string;
+};
+
+export type VerifyPasswordResetCodeRequest = {
+  code: string;
+  email: string;
+};
+
+export type ResetPasswordRequest = {
+  email: string;
+  password: string;
+  passwordConfirmation: string;
+  resetToken: string;
+};
+
 export type AuthUser = {
   balance: number;
   createdAt: string;
@@ -44,4 +60,18 @@ export type VerifyEmailResponse = {
 export type ResendVerificationCodeResponse = {
   email: string;
   verificationExpiresAt: string;
+};
+
+export type RequestPasswordResetResponse = {
+  email: string;
+  verificationExpiresAt: string;
+};
+
+export type VerifyPasswordResetCodeResponse = {
+  email: string;
+  resetToken: string;
+};
+
+export type ResetPasswordResponse = {
+  email: string;
 };

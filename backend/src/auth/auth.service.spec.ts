@@ -9,7 +9,12 @@ import { pbkdf2Sync } from 'node:crypto';
 import { AuthService } from './auth.service';
 import { EmailVerificationService } from './email-verification.service';
 import { PendingRegistrationsRepository } from './pending-registrations.repository';
-import { type PendingUserRegistration, type StoredUser } from './types';
+import { PasswordResetRequestsRepository } from './password-reset-requests.repository';
+import {
+  type PasswordResetRequest,
+  type PendingUserRegistration,
+  type StoredUser,
+} from './types';
 import { UsersRepository } from './users.repository';
 
 describe('AuthService', () => {
@@ -17,7 +22,10 @@ describe('AuthService', () => {
   let emailVerificationService: jest.Mocked<
     Pick<
       EmailVerificationService,
-      'createVerificationCode' | 'isCodeValid' | 'sendVerificationCode'
+      | 'createVerificationCode'
+      | 'isCodeValid'
+      | 'sendPasswordResetCode'
+      | 'sendVerificationCode'
     >
   >;
   let pendingRegistrationsRepository: jest.Mocked<
@@ -27,7 +35,13 @@ describe('AuthService', () => {
     >
   >;
   let usersRepository: jest.Mocked<
-    Pick<UsersRepository, 'create' | 'findByEmail'>
+    Pick<UsersRepository, 'create' | 'findByEmail' | 'updatePassword'>
+  >;
+  let passwordResetRequestsRepository: jest.Mocked<
+    Pick<
+      PasswordResetRequestsRepository,
+      'deleteByEmail' | 'findByEmail' | 'updateResetToken' | 'upsert'
+    >
   >;
 
   beforeEach(async () => {
@@ -39,6 +53,7 @@ describe('AuthService', () => {
         salt: 'verification-code-salt',
       }),
       isCodeValid: jest.fn(),
+      sendPasswordResetCode: jest.fn().mockResolvedValue(undefined),
       sendVerificationCode: jest.fn().mockResolvedValue(undefined),
     };
     pendingRegistrationsRepository = {
@@ -50,6 +65,13 @@ describe('AuthService', () => {
     usersRepository = {
       create: jest.fn(),
       findByEmail: jest.fn(),
+      updatePassword: jest.fn().mockResolvedValue(undefined),
+    };
+    passwordResetRequestsRepository = {
+      deleteByEmail: jest.fn().mockResolvedValue(undefined),
+      findByEmail: jest.fn(),
+      updateResetToken: jest.fn().mockResolvedValue(undefined),
+      upsert: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -62,6 +84,10 @@ describe('AuthService', () => {
         {
           provide: PendingRegistrationsRepository,
           useValue: pendingRegistrationsRepository,
+        },
+        {
+          provide: PasswordResetRequestsRepository,
+          useValue: passwordResetRequestsRepository,
         },
         {
           provide: EmailVerificationService,
@@ -218,6 +244,115 @@ describe('AuthService', () => {
       }),
     ).rejects.toBeInstanceOf(BadRequestException);
   });
+
+  it('requests password reset without revealing missing accounts', async () => {
+    usersRepository.findByEmail.mockResolvedValue(undefined);
+
+    const response = await service.requestPasswordReset({
+      email: ' Missing@Example.com ',
+    });
+
+    expect(response).toEqual({
+      email: 'missing@example.com',
+      verificationExpiresAt: '2026-04-22T00:15:00.000Z',
+    });
+    expect(passwordResetRequestsRepository.upsert).not.toHaveBeenCalled();
+    expect(
+      emailVerificationService.sendPasswordResetCode,
+    ).not.toHaveBeenCalled();
+  });
+
+  it('sends a password reset code for an existing account', async () => {
+    usersRepository.findByEmail.mockResolvedValue(
+      createStoredUser('user@example.com', 'password123'),
+    );
+    passwordResetRequestsRepository.upsert.mockImplementation((request) =>
+      Promise.resolve(request),
+    );
+
+    await service.requestPasswordReset({
+      email: ' User@Example.com ',
+    });
+
+    expect(passwordResetRequestsRepository.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        email: 'user@example.com',
+        verificationCodeHash: 'verification-code-hash',
+        verificationCodeSalt: 'verification-code-salt',
+      }),
+    );
+    expect(emailVerificationService.sendPasswordResetCode).toHaveBeenCalledWith(
+      'user@example.com',
+      '123456',
+    );
+  });
+
+  it('verifies a password reset code and returns a reset token', async () => {
+    const request = createPasswordResetRequest('user@example.com');
+
+    passwordResetRequestsRepository.findByEmail.mockResolvedValue(request);
+    emailVerificationService.isCodeValid.mockReturnValue(true);
+
+    const response = await service.verifyPasswordResetCode({
+      code: '123456',
+      email: ' User@Example.com ',
+    });
+
+    expect(emailVerificationService.isCodeValid).toHaveBeenCalledWith(
+      '123456',
+      request.verificationCodeHash,
+      request.verificationCodeSalt,
+    );
+    expect(
+      passwordResetRequestsRepository.updateResetToken,
+    ).toHaveBeenCalledWith(
+      'user@example.com',
+      expect.any(String),
+      expect.any(String),
+      expect.any(String),
+    );
+    expect(response.email).toBe('user@example.com');
+    expect(response.resetToken).toEqual(expect.any(String));
+  });
+
+  it('resets password with a valid reset token', async () => {
+    const resetToken = 'reset-token';
+    const resetTokenSalt = 'reset-token-salt';
+    const request = {
+      ...createPasswordResetRequest('user@example.com'),
+      resetTokenExpiresAt: '2099-04-22T00:15:00.000Z',
+      resetTokenHash: pbkdf2Sync(
+        resetToken,
+        resetTokenSalt,
+        100_000,
+        64,
+        'sha512',
+      ).toString('hex'),
+      resetTokenSalt,
+    };
+
+    passwordResetRequestsRepository.findByEmail.mockResolvedValue(request);
+    usersRepository.findByEmail.mockResolvedValue(
+      createStoredUser('user@example.com', 'password123'),
+    );
+
+    const response = await service.resetPassword({
+      email: 'user@example.com',
+      password: 'new-password123',
+      passwordConfirmation: 'new-password123',
+      resetToken,
+    });
+
+    expect(usersRepository.updatePassword).toHaveBeenCalledWith(
+      'user@example.com',
+      expect.any(String),
+      expect.any(String),
+    );
+    expect(passwordResetRequestsRepository.deleteByEmail).toHaveBeenCalledWith(
+      'user@example.com',
+    );
+    expect(response).toEqual({ email: 'user@example.com' });
+  });
 });
 
 function createStoredUser(email: string, password: string): StoredUser {
@@ -250,6 +385,20 @@ function createPendingRegistration(email: string): PendingUserRegistration {
     id: 'test-pending-registration-id',
     passwordHash: 'pending-password-hash',
     passwordSalt: 'pending-password-salt',
+    verificationCodeHash: 'verification-code-hash',
+    verificationCodeSalt: 'verification-code-salt',
+    verificationExpiresAt: '2099-04-22T00:15:00.000Z',
+  };
+}
+
+function createPasswordResetRequest(email: string): PasswordResetRequest {
+  return {
+    createdAt: '2026-04-22T00:00:00.000Z',
+    email,
+    id: 'test-password-reset-request-id',
+    resetTokenExpiresAt: null,
+    resetTokenHash: null,
+    resetTokenSalt: null,
     verificationCodeHash: 'verification-code-hash',
     verificationCodeSalt: 'verification-code-salt',
     verificationExpiresAt: '2099-04-22T00:15:00.000Z',
