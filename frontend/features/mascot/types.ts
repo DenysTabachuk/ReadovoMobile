@@ -13,7 +13,7 @@ export type MascotProfile = {
 export type MascotCatalogItem = {
   asset: ImageSourcePropType;
   id: string;
-  label: string;
+  labelKey: string;
   placement?: {
     scale?: number;
     translateYRatio?: number;

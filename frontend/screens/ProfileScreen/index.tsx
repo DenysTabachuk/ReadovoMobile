@@ -88,9 +88,7 @@ export default function ProfileScreen() {
             <ThemedText type="sectionTitle">{displayName}</ThemedText>
             <ThemedText style={styles.profileSubtitle}>{t('profile.subtitle')}</ThemedText>
             <ThemedText style={styles.mascotHint}>
-              {t('profile.customizeMascotHint', {
-                defaultValue: 'Tap the mascot to change its look',
-              })}
+              {t('profile.customizeMascotHint')}
             </ThemedText>
             <View style={styles.walletRow}>
               <View style={styles.walletItem}>

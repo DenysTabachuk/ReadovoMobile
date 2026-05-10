@@ -9,7 +9,7 @@ export const mascotCatalog: MascotCatalogItem[] = [
   {
     asset: require('../../assets/mascot/accessories/hats/pirate-hat.png'),
     id: 'pirate-hat',
-    label: 'Pirate hat',
+    labelKey: 'mascot.items.pirate-hat',
     placement: {
       scale: 0.65,
       translateYRatio: -0.18,
@@ -21,7 +21,7 @@ export const mascotCatalog: MascotCatalogItem[] = [
   {
     asset: require('../../assets/mascot/accessories/hats/bandanna.png'),
     id: 'bandanna',
-    label: 'Bandanna',
+    labelKey: 'mascot.items.bandanna',
     placement: {
       scale: 0.7,
       translateYRatio: -0.10,
@@ -34,7 +34,7 @@ export const mascotCatalog: MascotCatalogItem[] = [
   {
     asset: require('../../assets/mascot/accessories/glasses/glasses.png'),
     id: 'glasses',
-    label: 'Glasses',
+    labelKey: 'mascot.items.glasses',
     placement: {
       scale: 0.55,
       translateYRatio: -0.02,
@@ -46,7 +46,7 @@ export const mascotCatalog: MascotCatalogItem[] = [
   {
     asset: require('../../assets/mascot/accessories/glasses/eye-patch.png'),
     id: 'eye-patch',
-    label: 'Eye patch',
+    labelKey: 'mascot.items.eye-patch',
     placement: {
       scale: 0.445,
       translateYRatio: -0.067,

@@ -115,7 +115,7 @@ export default function WardrobeScreen() {
       <View style={[styles.itemCard, isEquipped ? styles.selectedCard : null]}>
         <Image contentFit="contain" source={item.asset} style={styles.itemImage} />
         <View style={styles.itemMeta}>
-          <ThemedText style={styles.itemTitle}>{item.label}</ThemedText>
+          <ThemedText style={styles.itemTitle}>{t(item.labelKey)}</ThemedText>
           <View style={styles.itemPriceRow}>
             <Image
               contentFit="contain"
@@ -124,7 +124,7 @@ export default function WardrobeScreen() {
             />
             <ThemedText>
               {item.price === 0
-                ? t('mascot.free', { defaultValue: 'Free' })
+                ? t('mascot.free')
                 : item.price}
             </ThemedText>
           </View>
@@ -147,7 +147,7 @@ export default function WardrobeScreen() {
       <ScreenContainer>
         <View style={styles.previewBlock}>
           <ActivityIndicator color={palette.tint} size="large" />
-          <ThemedText>{t('mascot.loading', { defaultValue: 'Loading wardrobe...' })}</ThemedText>
+          <ThemedText>{t('mascot.loading')}</ThemedText>
         </View>
       </ScreenContainer>
     );
@@ -158,10 +158,10 @@ export default function WardrobeScreen() {
       <ScreenContainer>
         <View style={styles.previewBlock}>
           <ThemedText type="screenTitle">
-            {t('mascot.errorTitle', { defaultValue: 'Wardrobe is unavailable' })}
+            {t('mascot.errorTitle')}
           </ThemedText>
           <Button onPress={() => mascotQuery.refetch()}>
-            {t('dictionary.retry', { defaultValue: 'Try again' })}
+            {t('dictionary.retry')}
           </Button>
         </View>
       </ScreenContainer>
@@ -175,16 +175,27 @@ export default function WardrobeScreen() {
         data={selectedItems}
         keyExtractor={(item) => item.id}
         ListEmptyComponent={
-          <ThemedText style={styles.emptyText}>
-            {t('mascot.emptySlot', {
-              defaultValue: 'No items in this category yet.',
-            })}
+          <ThemedText>
+            {t('mascot.emptySlot')}
           </ThemedText>
+        }
+        ListFooterComponent={
+          equippedItems[selectedSlot] ? (
+            <View style={styles.footer}>
+              <Button
+                disabled={clearMutation.isPending}
+                onPress={() => clearMutation.mutate(selectedSlot)}
+                style={{ width: '100%' }}
+                variant="secondary">
+                {t('mascot.clearSlot')}
+              </Button>
+            </View>
+          ) : null
         }
         ListHeaderComponent={
           <View style={styles.header}>
             <ThemedText style={styles.title}>
-              {t('mascot.title', { defaultValue: 'Mascot wardrobe' })}
+              {t('mascot.title')}
             </ThemedText>
             <View style={styles.previewBlock}>
               <View style={styles.walletRow}>
@@ -195,7 +206,7 @@ export default function WardrobeScreen() {
                     style={styles.walletIcon}
                   />
                   <ThemedText style={styles.walletText}>
-                    {t('profile.balance', { defaultValue: 'My balance' })}: {balance}
+                    {t('profile.balance')}: {balance}
                   </ThemedText>
                 </View>
               </View>
@@ -224,16 +235,6 @@ export default function WardrobeScreen() {
                 );
               })}
             </ScrollView>
-            {equippedItems[selectedSlot] ? (
-              <Pressable
-                disabled={clearMutation.isPending}
-                onPress={() => clearMutation.mutate(selectedSlot)}
-                style={styles.clearButton}>
-                <ThemedText style={styles.clearButtonText}>
-                  {t('mascot.clearSlot', { defaultValue: 'Remove item' })}
-                </ThemedText>
-              </Pressable>
-            ) : null}
           </View>
         }
         numColumns={2}
@@ -256,8 +257,8 @@ function getSlotLabel(
   t: ReturnType<typeof useTranslation>['t'],
 ): string {
   const labels: Record<MascotAccessorySlot, string> = {
-    eyes: t('mascot.slots.eyes', { defaultValue: 'Eyes' }),
-    head: t('mascot.slots.head', { defaultValue: 'Head' }),
+    eyes: t('mascot.slots.eyes'),
+    head: t('mascot.slots.head'),
   };
 
   return labels[slot];
@@ -275,12 +276,12 @@ function getItemActionLabel({
   t: ReturnType<typeof useTranslation>['t'];
 }): string {
   if (isEquipped) {
-    return t('mascot.equipped', { defaultValue: 'Equipped' });
+    return t('mascot.equipped');
   }
 
   if (isOwned || price === 0) {
-    return t('mascot.equip', { defaultValue: 'Equip' });
+    return t('mascot.equip');
   }
 
-  return t('mascot.buy', { defaultValue: 'Buy' });
+  return t('mascot.buy');
 }

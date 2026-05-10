@@ -32,10 +32,9 @@ export const styles = StyleSheet.create({
   container: {
     paddingBottom: 0,
   },
-  emptyText: {
-    color: '#687076',
-    paddingVertical: Spacing.xLg,
-    textAlign: 'center',
+  footer: {
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.xxLg,
   },
   header: {
     gap: Spacing.md,
