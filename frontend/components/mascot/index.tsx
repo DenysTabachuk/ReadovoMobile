@@ -27,6 +27,18 @@ export function Mascot({ equippedItems = {}, style }: MascotProps) {
     setStageHeight(event.nativeEvent.layout.height);
   };
 
+  const equippedCatalogItems = mascotAccessorySlots
+    .map((slot) => {
+      const itemId = equippedItems[slot];
+      const item = itemId ? getMascotCatalogItem(itemId) : undefined;
+
+      return item ? { slot, item } : null;
+    })
+    .filter((item) => item !== null)
+    .sort((a, b) => {
+      return (a.item.placement?.zIndex ?? 0) - (b.item.placement?.zIndex ?? 0);
+    });
+
   return (
     <View onLayout={handleLayout} style={[styles.stage, style]}>
       <Image
@@ -34,19 +46,9 @@ export function Mascot({ equippedItems = {}, style }: MascotProps) {
         source={require('../../assets/mascot/base/octopus.png')}
         style={styles.base}
       />
-      {mascotAccessorySlots.map((slot) => {
-        const itemId = equippedItems[slot];
-        const item = itemId ? getMascotCatalogItem(itemId) : undefined;
-
-        if (!item) {
-          return null;
-        }
-
-        const translateY =
-          stageHeight * (item.placement?.translateYRatio ?? 0);
-
-        const translateX =
-          stageHeight * (item.placement?.translateXRatio ?? 0);
+      {equippedCatalogItems.map(({ slot, item }) => {
+        const translateY = stageHeight * (item.placement?.translateYRatio ?? 0);
+        const translateX = stageHeight * (item.placement?.translateXRatio ?? 0);
 
         return (
           <View
@@ -55,19 +57,16 @@ export function Mascot({ equippedItems = {}, style }: MascotProps) {
             style={[
               styles.accessoryLayer,
               {
+                zIndex: item.placement?.zIndex ?? 0,
                 transform: [
                   { translateY },
-                  {translateX},
+                  { translateX },
                   { scale: item.placement?.scale ?? 1 },
                 ],
               },
             ]}
           >
-            <Image
-              contentFit="contain"
-              source={item.asset}
-              style={styles.accessory}
-            />
+            <Image contentFit="contain" source={item.asset} style={styles.accessory} />
           </View>
         );
       })}

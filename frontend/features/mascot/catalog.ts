@@ -26,6 +26,7 @@ export const mascotCatalog: MascotCatalogItem[] = [
       scale: 0.7,
       translateYRatio: -0.10,
       translateXRatio: 0.04,
+      zIndex: 2,
     },
     price: 0,
     slot: 'head',
@@ -36,7 +37,8 @@ export const mascotCatalog: MascotCatalogItem[] = [
     label: 'Glasses',
     placement: {
       scale: 0.55,
-      translateYRatio: -0.12,
+      translateYRatio: -0.02,
+      translateXRatio: 0.002,
     },
     price: 0,
     slot: 'eyes',
@@ -46,7 +48,9 @@ export const mascotCatalog: MascotCatalogItem[] = [
     id: 'eye-patch',
     label: 'Eye patch',
     placement: {
-      translateYRatio: -0.12,
+      scale: 0.445,
+      translateYRatio: -0.067,
+      zIndex: 1,
     },
     price: 0,
     slot: 'eyes',

@@ -18,6 +18,7 @@ export type MascotCatalogItem = {
     scale?: number;
     translateYRatio?: number;
     translateXRatio?: number;
+    zIndex?: number;
   };
   price: number;
   slot: MascotAccessorySlot;
