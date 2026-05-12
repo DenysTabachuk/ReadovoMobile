@@ -98,6 +98,12 @@ export const styles = StyleSheet.create({
   textActionButtons: {
     gap: Spacing.md,
   },
+  textModeCaption: {
+    opacity: 0.7,
+  },
+  textModeSection: {
+    gap: Spacing.sm,
+  },
   wikipediaLink: {
     textDecorationLine: 'underline',
   },

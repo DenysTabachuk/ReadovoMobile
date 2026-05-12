@@ -287,9 +287,14 @@
     },
     "reinforceKnowledge": "Закріпити знання",
     "textMode": {
-      "summary": "Стислий виклад",
+      "summary": "Сумаризований",
       "adapted": "Адаптований",
       "original": "Оригінал"
+    },
+    "textModeShort": {
+      "summary": "Сумар.",
+      "adapted": "Адапт.",
+      "original": "Ориг."
     },
     "lengthsShort": {
       "original": "100%",

@@ -63,6 +63,11 @@ type SelectedWord = {
 const DEFAULT_SIMPLIFICATION_LEVEL: SimplifyArticleLevel = 'A2';
 const TEXT_VIEW_MODES = ['original', 'adaptation', 'summary'] as const;
 type ArticleTextViewMode = (typeof TEXT_VIEW_MODES)[number];
+const TEXT_MODE_LABEL_KEYS: Record<ArticleTextViewMode, 'original' | 'adapted' | 'summary'> = {
+  adaptation: 'adapted',
+  original: 'original',
+  summary: 'summary',
+};
 
 export default function ArticleScreen() {
   const { t } = useTranslation();
@@ -433,28 +438,30 @@ export default function ArticleScreen() {
     const options: Array<{
       label: string;
       value: ArticleTextViewMode;
-    }> = [{ label: t('article.textMode.original'), value: 'original' }];
+    }> = [{ label: t('article.textModeShort.original'), value: 'original' }];
 
-    if (generatedArticles.adaptation) {
+    if (generatedArticles.adaptation || isSelectedAdaptationAvailable) {
       options.push({
-        label: t('article.textMode.adapted'),
+        label: t('article.textModeShort.adapted'),
         value: 'adaptation',
       });
     }
 
-    if (generatedArticles.summary) {
+    if (generatedArticles.summary || isSelectedSummaryAvailable) {
       options.push({
-        label: t('article.textMode.summary'),
+        label: t('article.textModeShort.summary'),
         value: 'summary',
       });
     }
 
     return options;
-  }, [generatedArticles.adaptation, generatedArticles.summary, t]);
-  const hasLoadedSelectedAdaptation =
-    generatedArticles.adaptation?.level === selectedLevel;
-  const hasLoadedSelectedSummary = generatedArticles.summary?.level === selectedLevel;
-
+  }, [
+    generatedArticles.adaptation,
+    generatedArticles.summary,
+    isSelectedAdaptationAvailable,
+    isSelectedSummaryAvailable,
+    t,
+  ]);
   const handleWordPress = useCallback((selection: SelectedWord) => {
     setSelectedWord(selection);
   }, []);
@@ -512,40 +519,6 @@ export default function ArticleScreen() {
     simplifyMutation.mutate('summary');
     setIsAdaptSettingsOpen(false);
   }, [simplifyMutation]);
-  const handleShowAdaptedFromModal = useCallback(() => {
-    setSelectedWord(null);
-
-    if (hasLoadedSelectedAdaptation) {
-      setSelectedTextViewMode('adaptation');
-      setIsAdaptSettingsOpen(false);
-      return;
-    }
-
-    if (isSelectedAdaptationAvailable) {
-      simplifyMutation.mutate('adaptation');
-    }
-
-    setIsAdaptSettingsOpen(false);
-  }, [
-    hasLoadedSelectedAdaptation,
-    isSelectedAdaptationAvailable,
-    simplifyMutation,
-  ]);
-  const handleShowSummaryFromModal = useCallback(() => {
-    setSelectedWord(null);
-
-    if (hasLoadedSelectedSummary) {
-      setSelectedTextViewMode('summary');
-      setIsAdaptSettingsOpen(false);
-      return;
-    }
-
-    if (isSelectedSummaryAvailable) {
-      simplifyMutation.mutate('summary');
-    }
-
-    setIsAdaptSettingsOpen(false);
-  }, [hasLoadedSelectedSummary, isSelectedSummaryAvailable, simplifyMutation]);
 
   const handleShowOriginalPress = useCallback(() => {
     setSelectedWord(null);
@@ -554,12 +527,38 @@ export default function ArticleScreen() {
 
   const handleShowAdaptedPress = useCallback(() => {
     setSelectedWord(null);
-    setSelectedTextViewMode('adaptation');
-  }, []);
+
+    if (generatedArticles.adaptation?.level === selectedLevel || generatedArticles.adaptation) {
+      setSelectedTextViewMode('adaptation');
+      return;
+    }
+
+    if (isSelectedAdaptationAvailable) {
+      simplifyMutation.mutate('adaptation');
+    }
+  }, [
+    generatedArticles.adaptation,
+    isSelectedAdaptationAvailable,
+    selectedLevel,
+    simplifyMutation,
+  ]);
   const handleShowSummaryPress = useCallback(() => {
     setSelectedWord(null);
-    setSelectedTextViewMode('summary');
-  }, []);
+
+    if (generatedArticles.summary?.level === selectedLevel || generatedArticles.summary) {
+      setSelectedTextViewMode('summary');
+      return;
+    }
+
+    if (isSelectedSummaryAvailable) {
+      simplifyMutation.mutate('summary');
+    }
+  }, [
+    generatedArticles.summary,
+    isSelectedSummaryAvailable,
+    selectedLevel,
+    simplifyMutation,
+  ]);
   const handleToggleSavedArticle = useCallback(() => {
     if (savedArticleMutation.isPending) {
       return;
@@ -804,23 +803,28 @@ export default function ArticleScreen() {
         open={isAdaptSettingsOpen}
         title={t('article.configureText')}>
         {generatedTextModeOptions.length > 1 ? (
-          <SegmentedToggle
-            onChange={(value) => {
-              if (value === 'adaptation') {
-                handleShowAdaptedPress();
-                return;
-              }
+          <View style={styles.textModeSection}>
+            <ThemedText type="description" style={styles.textModeCaption}>
+              {t(`article.textMode.${TEXT_MODE_LABEL_KEYS[selectedTextViewMode]}`)}
+            </ThemedText>
+            <SegmentedToggle
+              onChange={(value) => {
+                if (value === 'adaptation') {
+                  handleShowAdaptedPress();
+                  return;
+                }
 
-              if (value === 'summary') {
-                handleShowSummaryPress();
-                return;
-              }
+                if (value === 'summary') {
+                  handleShowSummaryPress();
+                  return;
+                }
 
-              handleShowOriginalPress();
-            }}
-            options={generatedTextModeOptions}
-            selectedValue={selectedTextViewMode}
-          />
+                handleShowOriginalPress();
+              }}
+              options={generatedTextModeOptions}
+              selectedValue={selectedTextViewMode}
+            />
+          </View>
         ) : null}
         <View style={styles.adaptModalFields}>
           <View style={styles.adaptModalPickerField}>
@@ -870,14 +874,6 @@ export default function ArticleScreen() {
           </View>
         ) : null}
         <View style={styles.textActionButtons}>
-          {isSelectedAdaptationAvailable ? (
-            <Button
-              disabled={simplifyMutation.isPending}
-              onPress={handleShowAdaptedFromModal}
-              variant="primary">
-              {t('article.showAdaptedText')}
-            </Button>
-          ) : null}
           {!isSelectedAdaptationAvailable ? (
             <Button
               disabled={simplifyMutation.isPending}
@@ -887,14 +883,6 @@ export default function ArticleScreen() {
               currentPendingTransformationType === 'adaptation'
                 ? t('article.adapting')
                 : t('article.adaptText')}
-            </Button>
-          ) : null}
-          {isSelectedSummaryAvailable ? (
-            <Button
-              disabled={simplifyMutation.isPending}
-              onPress={handleShowSummaryFromModal}
-              variant={isSelectedAdaptationAvailable ? 'secondary' : 'primary'}>
-              {t('article.showSummarizedText')}
             </Button>
           ) : null}
           {!isSelectedSummaryAvailable ? (

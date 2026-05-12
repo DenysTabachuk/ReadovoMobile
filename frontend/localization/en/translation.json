@@ -291,6 +291,11 @@
       "summary": "Summary",
       "original": "Original"
     },
+    "textModeShort": {
+      "adapted": "Adapt.",
+      "summary": "Summary",
+      "original": "Original"
+    },
     "lengthsShort": {
       "original": "100%",
       "percent10": "10%",
@@ -375,7 +380,8 @@
         "description": "Collect your first 1000 coins to unlock this achievement."
       }
     },
-    "balance": "My balance"
+    "balance": "My balance",
+    "customizeMascotHint": "Tap the mascot to change its appearance"
   },
   "mascot": {
     "title": "Mascot wardrobe",
