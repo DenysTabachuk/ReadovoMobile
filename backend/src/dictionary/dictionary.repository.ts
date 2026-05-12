@@ -19,7 +19,7 @@ type DictionaryWordRow = {
 export class DictionaryRepository {
   constructor(private readonly databaseService: DatabaseService) {}
 
-  async createOrUpdate(word: DictionaryWord): Promise<DictionaryWord> {
+  async create(word: DictionaryWord): Promise<DictionaryWord | null> {
     const result = await this.databaseService.query<DictionaryWordRow>(
       `
         INSERT INTO dictionary_words (
@@ -35,10 +35,7 @@ export class DictionaryRepository {
         )
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
         ON CONFLICT (user_id, normalized_word) WHERE user_id IS NOT NULL
-        DO UPDATE SET
-          word = EXCLUDED.word,
-          translation = EXCLUDED.translation,
-          context = EXCLUDED.context
+        DO NOTHING
         RETURNING id, user_id, word, translation, context, progress, correct_answers_count, last_reviewed_at, created_at
       `,
       [
@@ -54,7 +51,9 @@ export class DictionaryRepository {
       ],
     );
 
-    return this.toDictionaryWord(result.rows[0]);
+    const row = result.rows[0];
+
+    return row ? this.toDictionaryWord(row) : null;
   }
 
   async findAll(userId: string): Promise<DictionaryWord[]> {

@@ -13,8 +13,8 @@ const DEFAULT_SOURCE_LANGUAGE = 'en';
 const DEFAULT_TARGET_LANGUAGE = 'uk';
 const GOOGLE_TRANSLATE_API_URL =
   'https://translation.googleapis.com/language/translate/v2';
-const CONTEXT_WORD_START_MARKER = '__CTX_WORD_START__';
-const CONTEXT_WORD_END_MARKER = '__CTX_WORD_END__';
+const CONTEXT_WORD_TAG = 'span';
+const CONTEXT_WORD_ATTRIBUTE = 'data-ctx-word';
 
 @Injectable()
 export class TranslationsService {
@@ -52,6 +52,7 @@ export class TranslationsService {
 
     if (contextWithMarker) {
       const translatedContextWithMarker = await this.translateText({
+        format: 'html',
         sourceLanguage,
         targetLanguage,
         text: contextWithMarker,
@@ -60,7 +61,10 @@ export class TranslationsService {
         translatedContextWithMarker,
       );
 
-      if (extractedTranslation) {
+      if (
+        extractedTranslation &&
+        !this.isSameTextNormalized(extractedTranslation, params.word)
+      ) {
         contextualTranslation = extractedTranslation;
         contextTranslation = this.stripContextWordTags(translatedContextWithMarker);
       } else {
@@ -96,7 +100,7 @@ export class TranslationsService {
   }
 
   private async translateText(params: {
-    format?: 'text';
+    format?: 'html' | 'text';
     sourceLanguage: string;
     targetLanguage: string;
     text: string;
@@ -157,17 +161,16 @@ export class TranslationsService {
     const wordEnd = wordStart + word.length;
     const originalWordSlice = context.slice(wordStart, wordEnd);
 
-    return `${context.slice(0, wordStart)}${CONTEXT_WORD_START_MARKER}${originalWordSlice}${CONTEXT_WORD_END_MARKER}${context.slice(wordEnd)}`;
+    return `${context.slice(0, wordStart)}<${CONTEXT_WORD_TAG} ${CONTEXT_WORD_ATTRIBUTE}="1">${this.escapeHtml(originalWordSlice)}</${CONTEXT_WORD_TAG}>${context.slice(wordEnd)}`;
   }
 
   private extractTaggedContent(translatedContextWithMarker: string): string | null {
-    const contentMatch = translatedContextWithMarker.match(
-      new RegExp(
-        `${CONTEXT_WORD_START_MARKER}([\\s\\S]*?)${CONTEXT_WORD_END_MARKER}`,
-        'i',
-      ),
+    const parserPattern = new RegExp(
+      `<${CONTEXT_WORD_TAG}[^>]*${CONTEXT_WORD_ATTRIBUTE}=["']1["'][^>]*>([\\s\\S]*?)<\\/${CONTEXT_WORD_TAG}>`,
+      'i',
     );
-    const taggedContent = contentMatch?.[1]?.trim();
+    const contentMatch = translatedContextWithMarker.match(parserPattern);
+    const taggedContent = this.stripHtmlTags(contentMatch?.[1] ?? '').trim();
 
     if (!taggedContent) {
       return null;
@@ -177,12 +180,35 @@ export class TranslationsService {
   }
 
   private stripContextWordTags(translatedContextWithMarker: string): string {
-    return this.decodeHtmlEntities(
-      translatedContextWithMarker
-        .replaceAll(CONTEXT_WORD_START_MARKER, '')
-        .replaceAll(CONTEXT_WORD_END_MARKER, '')
-        .trim(),
+    const tagPattern = new RegExp(
+      `<${CONTEXT_WORD_TAG}[^>]*${CONTEXT_WORD_ATTRIBUTE}=["']1["'][^>]*>([\\s\\S]*?)<\\/${CONTEXT_WORD_TAG}>`,
+      'gi',
     );
+
+    return this.decodeHtmlEntities(
+      this.stripHtmlTags(
+        translatedContextWithMarker.replace(tagPattern, '$1'),
+      ).trim(),
+    );
+  }
+
+  private stripHtmlTags(value: string): string {
+    return value.replace(/<[^>]+>/g, '');
+  }
+
+  private escapeHtml(value: string): string {
+    return value
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#39;');
+  }
+
+  private isSameTextNormalized(leftValue: string, rightValue: string): boolean {
+    const normalize = (value: string) => value.trim().toLowerCase();
+
+    return normalize(leftValue) === normalize(rightValue);
   }
 
   private decodeHtmlEntities(value: string): string {

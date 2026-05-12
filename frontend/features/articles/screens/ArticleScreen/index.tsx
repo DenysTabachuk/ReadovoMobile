@@ -54,13 +54,23 @@ import { useAuth } from '@/providers/authProvider';
 import { InteractiveArticleText } from './components/interactiveArticleText';
 import { styles } from './styles';
 
-type SelectedWord = {
+type SelectedTextToken = {
   context: string;
+  sentenceKey?: string;
+  sentenceWordIndex?: number;
+  text: string;
   tokenKey: string;
   word: string;
 };
+type SelectedTextFragment = {
+  context: string;
+  text: string;
+  tokenKeys: string[];
+  words: string[];
+};
 
 const DEFAULT_SIMPLIFICATION_LEVEL: SimplifyArticleLevel = 'A2';
+const TRANSLATION_SHEET_OPEN_DELAY_MS = 1000;
 const TEXT_VIEW_MODES = ['original', 'adaptation', 'summary'] as const;
 type ArticleTextViewMode = (typeof TEXT_VIEW_MODES)[number];
 const TEXT_MODE_LABEL_KEYS: Record<ArticleTextViewMode, 'original' | 'adapted' | 'summary'> = {
@@ -90,7 +100,7 @@ export default function ArticleScreen() {
   const params = useLocalSearchParams<{
     id?: string | string[];
   }>();
-  const [selectedWord, setSelectedWord] = useState<SelectedWord | null>(null);
+  const [selectedTokens, setSelectedTokens] = useState<SelectedTextToken[]>([]);
   const [generatedArticles, setGeneratedArticles] = useState<
     Partial<Record<ArticleTextTransformationType, SimplifyArticleResponse>>
   >({});
@@ -104,6 +114,12 @@ export default function ArticleScreen() {
   );
   const [isAdaptSettingsOpen, setIsAdaptSettingsOpen] = useState(false);
   const [isQuizModePickerOpen, setIsQuizModePickerOpen] = useState(false);
+  const [isTranslationSheetOpen, setIsTranslationSheetOpen] = useState(false);
+  const [translationSheetOpenProgress, setTranslationSheetOpenProgress] = useState(0);
+  const selectedFragment = useMemo(
+    () => buildSelectedFragment(selectedTokens),
+    [selectedTokens],
+  );
 
   const rawArticleId = Array.isArray(params.id) ? params.id[0] : params.id;
   const parsedArticleId = Number(rawArticleId);
@@ -141,10 +157,10 @@ export default function ArticleScreen() {
     error: translationError,
     isFetching: isTranslationLoading,
   } = useWordTranslation({
-    context: selectedWord?.context,
-    enabled: selectedWord !== null,
+    context: selectedFragment?.context,
+    enabled: selectedTokens.length > 0,
     queryScope: 'article-screen',
-    word: selectedWord?.word,
+    word: selectedFragment?.text,
   });
   const { data: savedArticles } = useQuery({
     enabled: Boolean(currentUser?.id),
@@ -186,7 +202,8 @@ export default function ArticleScreen() {
       }));
       setSelectedTextViewMode(response.transformationType);
       setLatestGeneratedTransformationType(response.transformationType);
-      setSelectedWord(null);
+      setSelectedTokens([]);
+      setIsTranslationSheetOpen(false);
       void queryClient.invalidateQueries({
         queryKey: [...RECENT_ARTICLES_QUERY_KEY, currentUser?.id],
       });
@@ -462,25 +479,62 @@ export default function ArticleScreen() {
     isSelectedSummaryAvailable,
     t,
   ]);
-  const handleWordPress = useCallback((selection: SelectedWord) => {
-    setSelectedWord(selection);
+  const handleWordPress = useCallback((selection: SelectedTextToken) => {
+    setSelectedTokens((currentSelection) => {
+      const isTappedTokenAlreadySelected = currentSelection.some(
+        (token) => token.tokenKey === selection.tokenKey,
+      );
+
+      if (isTappedTokenAlreadySelected) {
+        setIsTranslationSheetOpen(true);
+        return currentSelection;
+      }
+
+      setIsTranslationSheetOpen(false);
+      return resolveNextTokenSelection(currentSelection, selection);
+    });
   }, []);
 
+  useEffect(() => {
+    if (selectedTokens.length === 0 || isTranslationSheetOpen) {
+      setTranslationSheetOpenProgress(0);
+      return;
+    }
+
+    const startedAt = Date.now();
+    const timeoutId = setTimeout(() => {
+      setTranslationSheetOpenProgress(1);
+      setIsTranslationSheetOpen(true);
+    }, TRANSLATION_SHEET_OPEN_DELAY_MS);
+    const intervalId = setInterval(() => {
+      const elapsedMs = Date.now() - startedAt;
+      const nextProgress = Math.min(1, elapsedMs / TRANSLATION_SHEET_OPEN_DELAY_MS);
+
+      setTranslationSheetOpenProgress(nextProgress);
+    }, 16);
+
+    return () => {
+      clearTimeout(timeoutId);
+      clearInterval(intervalId);
+    };
+  }, [isTranslationSheetOpen, selectedTokens]);
+
   const handleCloseTranslation = useCallback(() => {
-    setSelectedWord(null);
+    setSelectedTokens([]);
+    setIsTranslationSheetOpen(false);
   }, []);
 
   const handleAddToDictionary = useCallback(() => {
-    if (!currentUser?.id || !selectedWord || !translation?.translation) {
+    if (!currentUser?.id || !selectedFragment || !translation?.translation) {
       return;
     }
 
     dictionaryMutation.mutate({
-      context: selectedWord.context,
+      context: selectedFragment.context,
       translation: translation.translation,
-      word: selectedWord.word,
+      word: selectedFragment.text,
     });
-  }, [currentUser?.id, dictionaryMutation, selectedWord, translation?.translation]);
+  }, [currentUser?.id, dictionaryMutation, selectedFragment, translation?.translation]);
 
   const handleOpenAdaptSettings = useCallback(() => {
     setIsAdaptSettingsOpen(true);
@@ -521,12 +575,14 @@ export default function ArticleScreen() {
   }, [simplifyMutation]);
 
   const handleShowOriginalPress = useCallback(() => {
-    setSelectedWord(null);
+    setSelectedTokens([]);
+    setIsTranslationSheetOpen(false);
     setSelectedTextViewMode('original');
   }, []);
 
   const handleShowAdaptedPress = useCallback(() => {
-    setSelectedWord(null);
+    setSelectedTokens([]);
+    setIsTranslationSheetOpen(false);
 
     if (generatedArticles.adaptation?.level === selectedLevel || generatedArticles.adaptation) {
       setSelectedTextViewMode('adaptation');
@@ -543,7 +599,8 @@ export default function ArticleScreen() {
     simplifyMutation,
   ]);
   const handleShowSummaryPress = useCallback(() => {
-    setSelectedWord(null);
+    setSelectedTokens([]);
+    setIsTranslationSheetOpen(false);
 
     if (generatedArticles.summary?.level === selectedLevel || generatedArticles.summary) {
       setSelectedTextViewMode('summary');
@@ -718,6 +775,19 @@ export default function ArticleScreen() {
           title: article.title,
         }}
       />
+      {selectedTokens.length > 0 && !isTranslationSheetOpen ? (
+        <View style={styles.translationProgressTrack}>
+          <View
+            style={[
+              styles.translationProgressFill,
+              {
+                backgroundColor: tintColor,
+                width: `${Math.round(translationSheetOpenProgress * 100)}%`,
+              },
+            ]}
+          />
+        </View>
+      ) : null}
       <InteractiveArticleText
         blocks={displayedBlocks}
         contentContainerStyle={styles.content}
@@ -775,12 +845,12 @@ export default function ArticleScreen() {
           </View>
         }
         onWordPress={handleWordPress}
-        selectedTokenKey={selectedWord?.tokenKey}
+        selectedTokenKeys={selectedTokens.map((token) => token.tokenKey)}
         text={displayedText}
       />
       <WordTranslationSheet
         baseTranslation={translation?.baseTranslation}
-        context={selectedWord?.context}
+        context={selectedFragment?.context}
         contextTranslation={translation?.contextTranslation}
         contextualTranslation={translation?.contextualTranslation}
         error={Boolean(translationError)}
@@ -788,14 +858,15 @@ export default function ArticleScreen() {
           isTranslationLoading ||
           Boolean(translationError) ||
           !translation?.translation ||
+          selectedTokens.length === 0 ||
           dictionaryMutation.isPending
         }
         loading={isTranslationLoading}
         onAddToDictionary={handleAddToDictionary}
         onClose={handleCloseTranslation}
-        open={selectedWord !== null}
+        open={isTranslationSheetOpen && selectedTokens.length > 0}
         translation={translation?.translation}
-        word={selectedWord?.word}
+        word={selectedFragment?.text}
       />
       <ModalSheet
         contentStyle={styles.adaptModalContent}
@@ -1032,5 +1103,82 @@ function isSameAdaptation(
     adaptation.level === level &&
     adaptation.transformationType === transformationType
   );
+}
+
+function buildSelectedFragment(
+  selectedTokens: SelectedTextToken[],
+): SelectedTextFragment | null {
+  if (selectedTokens.length === 0) {
+    return null;
+  }
+
+  const sortedTokens = [...selectedTokens].sort((leftToken, rightToken) => {
+    return (leftToken.sentenceWordIndex ?? 0) - (rightToken.sentenceWordIndex ?? 0);
+  });
+
+  const context = sortedTokens[0]?.context?.trim() ?? '';
+  const words = sortedTokens.map((token) => token.word);
+  const text = sortedTokens.map((token) => token.text).join(' ').trim();
+
+  if (!text || !context) {
+    return null;
+  }
+
+  return {
+    context,
+    text,
+    tokenKeys: sortedTokens.map((token) => token.tokenKey),
+    words,
+  };
+}
+
+function resolveNextTokenSelection(
+  currentSelection: SelectedTextToken[],
+  nextToken: SelectedTextToken,
+): SelectedTextToken[] {
+  if (currentSelection.length === 0) {
+    return [nextToken];
+  }
+
+  const firstSelectedToken = currentSelection[0];
+  const sameSentence = Boolean(
+    firstSelectedToken?.sentenceKey &&
+      nextToken.sentenceKey &&
+      firstSelectedToken.sentenceKey === nextToken.sentenceKey,
+  );
+  const nextTokenAlreadySelected = currentSelection.some(
+    (token) => token.tokenKey === nextToken.tokenKey,
+  );
+
+  if (!sameSentence) {
+    return [nextToken];
+  }
+
+  if (nextTokenAlreadySelected) {
+    return currentSelection;
+  }
+
+  const selectedIndexes = currentSelection
+    .map((token) => token.sentenceWordIndex)
+    .filter((index): index is number => typeof index === 'number');
+  const nextTokenIndex = nextToken.sentenceWordIndex;
+
+  if (selectedIndexes.length === 0 || typeof nextTokenIndex !== 'number') {
+    return [nextToken];
+  }
+
+  const minIndex = Math.min(...selectedIndexes);
+  const maxIndex = Math.max(...selectedIndexes);
+  const isAdjacent = nextTokenIndex === minIndex - 1 || nextTokenIndex === maxIndex + 1;
+
+  if (!isAdjacent) {
+    return [nextToken];
+  }
+
+  if (currentSelection.length >= 5) {
+    return currentSelection;
+  }
+
+  return [...currentSelection, nextToken];
 }
 

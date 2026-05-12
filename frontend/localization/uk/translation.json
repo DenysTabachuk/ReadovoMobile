@@ -195,6 +195,11 @@
     "progressUpdateError": "Не вдалося оновити прогрес слова.",
     "progressUpdateErrorDescription": "Перевірте з'єднання та спробуйте ще раз.",
     "progressMenuHint": "Поверніть слово назад, якщо ще не почуваєтесь упевнено.",
+    "filter": {
+      "all": "Усі",
+      "words": "Слова",
+      "phrases": "Фрази"
+    },
     "progress": {
       "new": "Нове",
       "in_progress": "В процесі",

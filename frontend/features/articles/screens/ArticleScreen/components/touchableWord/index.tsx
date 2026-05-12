@@ -10,9 +10,14 @@ type TouchableWordProps = {
   italic?: boolean;
   onPress: (selection: {
     context: string;
+    sentenceKey?: string;
+    sentenceWordIndex?: number;
+    text: string;
     tokenKey: string;
     word: string;
   }) => void;
+  sentenceKey?: string;
+  sentenceWordIndex?: number;
   selected?: boolean;
   text: string;
   tokenKey: string;
@@ -24,6 +29,8 @@ export const TouchableWord = memo(function TouchableWord({
   contextSentence,
   italic,
   onPress,
+  sentenceKey,
+  sentenceWordIndex,
   selected = false,
   text,
   tokenKey,
@@ -32,10 +39,13 @@ export const TouchableWord = memo(function TouchableWord({
   const handlePress = useCallback(() => {
     onPress({
       context: contextSentence ?? '',
+      sentenceKey,
+      sentenceWordIndex,
+      text,
       tokenKey,
       word,
     });
-  }, [contextSentence, onPress, tokenKey, word]);
+  }, [contextSentence, onPress, sentenceKey, sentenceWordIndex, text, tokenKey, word]);
 
   return (
     <ThemedText

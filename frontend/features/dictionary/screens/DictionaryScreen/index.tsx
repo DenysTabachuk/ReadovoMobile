@@ -32,6 +32,7 @@ import { PronunciationButton } from '@/components/pronunciationButton';
 import { useBanner } from '@/components/banner';
 import { FloatingActionButton } from '@/components/floatingActionButton';
 import { ScreenContainer } from '@/components/screenContainer';
+import { SegmentedToggle } from '@/components/segmentedToggle';
 import { TestResult } from '@/components/testResult';
 import { ThemedText } from '@/components/themedText';
 import { IconSymbol } from '@/components/ui/iconSymbol';
@@ -50,6 +51,8 @@ import { useThemeColor } from '@/hooks/use-theme-color';
 import { useAuth } from '@/providers/authProvider';
 
 import { styles } from './styles';
+
+type DictionaryFilter = 'all' | 'phrases' | 'words';
 
 export default function DictionaryScreen() {
   const { t } = useTranslation();
@@ -78,6 +81,7 @@ export default function DictionaryScreen() {
   const [testResult, setTestResult] = useState<QuizSessionResult | null>(null);
   const [openProgressMenuWordId, setOpenProgressMenuWordId] = useState<string | null>(null);
   const [selectedWord, setSelectedWord] = useState<DictionaryWord | null>(null);
+  const [activeFilter, setActiveFilter] = useState<DictionaryFilter>('all');
   const userId = currentUser?.id;
 
   const {
@@ -92,6 +96,25 @@ export default function DictionaryScreen() {
     queryKey: ['dictionary', 'words', userId],
   });
   const words = data ?? [];
+  const filteredWords = useMemo(() => {
+    if (activeFilter === 'all') {
+      return words;
+    }
+
+    return words.filter((word) => {
+      const wordCount = countWords(word.word);
+
+      return activeFilter === 'words' ? wordCount === 1 : wordCount > 1;
+    });
+  }, [activeFilter, words]);
+  const filterOptions = useMemo(
+    () => [
+      { label: t('dictionary.filter.all'), value: 'all' as const },
+      { label: t('dictionary.filter.words'), value: 'words' as const },
+      { label: t('dictionary.filter.phrases'), value: 'phrases' as const },
+    ],
+    [t],
+  );
   const {
     data: selectedWordTranslation,
     error: selectedWordTranslationError,
@@ -443,7 +466,7 @@ export default function DictionaryScreen() {
     <ScreenContainer style={styles.container}>
       <FlatList
         contentContainerStyle={styles.listContent}
-        data={words}
+        data={filteredWords}
         keyExtractor={(item) => item.id}
         ListEmptyComponent={
           <View style={styles.emptyState}>
@@ -461,6 +484,11 @@ export default function DictionaryScreen() {
             <ThemedText type="description" style={styles.description}>
               {t('dictionary.description')}
             </ThemedText>
+            <SegmentedToggle
+              onChange={setActiveFilter}
+              options={filterOptions}
+              selectedValue={activeFilter}
+            />
             {testMutation.error || answerMutation.error ? (
               <ThemedText type="body" style={styles.testError}>
                 {testMutation.error
@@ -471,7 +499,7 @@ export default function DictionaryScreen() {
           </View>
         }
         ListFooterComponent={
-          words.length > 0 && words.length < 4 ? (
+          filteredWords.length > 0 && words.length < 4 ? (
             <View
               style={[
                 styles.testHintCard,
@@ -513,7 +541,7 @@ export default function DictionaryScreen() {
         renderItem={renderWord}
         showsVerticalScrollIndicator={false}
       />
-      {words.length > 0 ? (
+      {filteredWords.length > 0 ? (
         <FloatingActionButton
           bottomOffset={8}
           disabled={words.length < 4 || testMutation.isPending}
@@ -580,4 +608,11 @@ function getProgressBadgeColors(
     backgroundColor: isDark ? '#263238' : '#e6f4f8',
     textColor: isDark ? '#7ccce6' : '#0a7ea4',
   };
+}
+
+function countWords(value: string): number {
+  return value
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean).length;
 }

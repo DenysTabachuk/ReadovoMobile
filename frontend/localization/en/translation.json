@@ -195,6 +195,11 @@
     "progressUpdateError": "Could not update word progress.",
     "progressUpdateErrorDescription": "Check your connection and try again.",
     "progressMenuHint": "Move this word back if you do not feel confident yet.",
+    "filter": {
+      "all": "All",
+      "words": "Words",
+      "phrases": "Phrases"
+    },
     "progress": {
       "new": "New",
       "in_progress": "In progress",

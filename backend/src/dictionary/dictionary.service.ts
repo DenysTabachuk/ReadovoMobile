@@ -22,6 +22,7 @@ import { DictionaryEmbeddingService } from './dictionary-embedding.service';
 const DEFAULT_DICTIONARY_TEST_LIMIT = 10;
 const DICTIONARY_TEST_OPTION_COUNT = 4;
 export const REQUIRED_CORRECT_ANSWERS_TO_LEARN = 5;
+const MAX_DICTIONARY_FRAGMENT_WORDS = 5;
 
 @Injectable()
 export class DictionaryService {
@@ -42,6 +43,14 @@ export class DictionaryService {
       throw new BadRequestException('Word is required.');
     }
 
+    const wordCount = countWords(word);
+
+    if (wordCount < 1 || wordCount > MAX_DICTIONARY_FRAGMENT_WORDS) {
+      throw new BadRequestException(
+        `Word or phrase must contain from 1 to ${MAX_DICTIONARY_FRAGMENT_WORDS} words.`,
+      );
+    }
+
     if (!translation) {
       throw new BadRequestException('Translation is required.');
     }
@@ -50,7 +59,17 @@ export class DictionaryService {
       throw new BadRequestException('Context is required.');
     }
 
-    return this.dictionaryRepository.createOrUpdate({
+    const existingWords = await this.dictionaryRepository.findAll(userId);
+    const normalizedWord = this.normalizeWord(word);
+    const duplicateWord = existingWords.find(
+      (existingWord) => this.normalizeWord(existingWord.word) === normalizedWord,
+    );
+
+    if (duplicateWord) {
+      throw new BadRequestException('Word or phrase already exists in dictionary.');
+    }
+
+    const createdWord = await this.dictionaryRepository.create({
       context,
       createdAt: new Date().toISOString(),
       correctAnswersCount: 0,
@@ -61,6 +80,12 @@ export class DictionaryService {
       userId,
       word,
     });
+
+    if (!createdWord) {
+      throw new BadRequestException('Word or phrase already exists in dictionary.');
+    }
+
+    return createdWord;
   }
 
   findAll(userId: string): Promise<DictionaryWord[]> {
@@ -278,10 +303,17 @@ export class DictionaryService {
   }
 
   private normalizeWord(word: string): string {
-    return word.trim().toLowerCase();
+    return word.trim().replace(/\s+/g, ' ').toLowerCase();
   }
 
   private shuffleWords<T>(words: T[]): T[] {
     return [...words].sort(() => Math.random() - 0.5);
   }
+}
+
+function countWords(value: string): number {
+  return value
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean).length;
 }

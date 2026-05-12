@@ -40,10 +40,13 @@ type InteractiveArticleTextProps = {
   ListHeaderComponent?: ReactElement | null;
   onWordPress: (selection: {
     context: string;
+    sentenceKey?: string;
+    sentenceWordIndex?: number;
+    text: string;
     tokenKey: string;
     word: string;
   }) => void;
-  selectedTokenKey?: string;
+  selectedTokenKeys?: string[];
   text?: string;
 };
 
@@ -57,7 +60,7 @@ type TouchableInlineTextProps = {
   nodes: InlineNode[];
   onWordPress: InteractiveArticleTextProps['onWordPress'];
   prefix: string;
-  selectedTokenKey?: string;
+  selectedTokenKeys?: string[];
   style: StyleProp<TextStyle>;
 };
 
@@ -67,7 +70,7 @@ type TouchableListItemProps = {
   onWordPress: InteractiveArticleTextProps['onWordPress'];
   ordered: boolean;
   prefix: string;
-  selectedTokenKey?: string;
+  selectedTokenKeys?: string[];
 };
 
 const LIST_ITEM_PATTERN = /^([*#-]+|[\u2022\u25cf\u25aa\u25e6]+|[A-Za-z0-9]+[.)])\s*(.*)$/;
@@ -90,7 +93,7 @@ export function InteractiveArticleText({
   contentContainerStyle,
   ListHeaderComponent,
   onWordPress,
-  selectedTokenKey,
+  selectedTokenKeys,
   text,
 }: InteractiveArticleTextProps) {
   const [collapsedHeadings, setCollapsedHeadings] = useState<Record<string, boolean>>({});
@@ -159,7 +162,7 @@ export function InteractiveArticleText({
           nodes={block.children}
           onWordPress={onWordPress}
           prefix={blockKey}
-          selectedTokenKey={selectedTokenKey}
+          selectedTokenKeys={selectedTokenKeys}
           style={styles.paragraph}
         />
       );
@@ -176,7 +179,7 @@ export function InteractiveArticleText({
               onWordPress={onWordPress}
               ordered={block.ordered}
               prefix={`${blockKey}-item-${itemIndex}`}
-              selectedTokenKey={selectedTokenKey}
+              selectedTokenKeys={selectedTokenKeys}
             />
           ))}
         </View>
@@ -196,7 +199,7 @@ export function InteractiveArticleText({
             })
           }
           rows={block.rows}
-          selectedTokenKey={selectedTokenKey}
+          selectedTokenKey={selectedTokenKeys?.[0]}
         />
       );
     }
@@ -225,7 +228,7 @@ export function InteractiveArticleText({
         src={block.src}
       />
     );
-  }, [onWordPress, selectedTokenKey]);
+  }, [onWordPress, selectedTokenKeys]);
   const renderItem = useCallback<ListRenderItem<ArticleBlockListItem>>(
     ({ item }) => {
       const { block } = item;
@@ -302,8 +305,10 @@ function renderTouchableParts(params: {
 function renderTouchablePartsFromParts(params: {
   onWordPress: InteractiveArticleTextProps['onWordPress'];
   parts: TouchableTextPart[];
-  selectedTokenKey?: string;
+  selectedTokenKeys?: string[];
 }) {
+  const selectedTokenKeySet = new Set(params.selectedTokenKeys ?? []);
+
   return params.parts.map((part) => {
     if (part.type === 'text') {
       return (
@@ -326,7 +331,9 @@ function renderTouchablePartsFromParts(params: {
         contextSentence={part.contextSentence}
         italic={part.italic}
         onPress={params.onWordPress}
-        selected={params.selectedTokenKey === part.key}
+        selected={selectedTokenKeySet.has(part.key)}
+        sentenceKey={part.sentenceKey}
+        sentenceWordIndex={part.sentenceWordIndex}
         text={part.text}
         tokenKey={part.key}
         word={part.word}
@@ -339,7 +346,7 @@ const TouchableInlineText = memo(function TouchableInlineText({
   nodes,
   onWordPress,
   prefix,
-  selectedTokenKey,
+  selectedTokenKeys,
   style,
 }: TouchableInlineTextProps) {
   const parts = useMemo(
@@ -352,7 +359,7 @@ const TouchableInlineText = memo(function TouchableInlineText({
       {renderTouchablePartsFromParts({
         onWordPress,
         parts,
-        selectedTokenKey,
+        selectedTokenKeys,
       })}
     </ThemedText>
   );
@@ -364,7 +371,7 @@ const TouchableListItem = memo(function TouchableListItem({
   onWordPress,
   ordered,
   prefix,
-  selectedTokenKey,
+  selectedTokenKeys,
 }: TouchableListItemProps) {
   return (
     <View style={styles.listItem}>
@@ -375,7 +382,7 @@ const TouchableListItem = memo(function TouchableListItem({
         nodes={item}
         onWordPress={onWordPress}
         prefix={prefix}
-        selectedTokenKey={selectedTokenKey}
+        selectedTokenKeys={selectedTokenKeys}
         style={styles.listItemText}
       />
     </View>
@@ -391,9 +398,9 @@ function areTouchableInlineTextPropsEqual(
     previousProps.onWordPress === nextProps.onWordPress &&
     previousProps.prefix === nextProps.prefix &&
     previousProps.style === nextProps.style &&
-    isSelectedTokenChangeIrrelevant({
-      nextSelectedTokenKey: nextProps.selectedTokenKey,
-      previousSelectedTokenKey: previousProps.selectedTokenKey,
+    isSelectedTokensChangeIrrelevant({
+      nextSelectedTokenKeys: nextProps.selectedTokenKeys,
+      previousSelectedTokenKeys: previousProps.selectedTokenKeys,
       prefix: nextProps.prefix,
     })
   );
@@ -409,33 +416,40 @@ function areTouchableListItemPropsEqual(
     previousProps.onWordPress === nextProps.onWordPress &&
     previousProps.ordered === nextProps.ordered &&
     previousProps.prefix === nextProps.prefix &&
-    isSelectedTokenChangeIrrelevant({
-      nextSelectedTokenKey: nextProps.selectedTokenKey,
-      previousSelectedTokenKey: previousProps.selectedTokenKey,
+    isSelectedTokensChangeIrrelevant({
+      nextSelectedTokenKeys: nextProps.selectedTokenKeys,
+      previousSelectedTokenKeys: previousProps.selectedTokenKeys,
       prefix: nextProps.prefix,
     })
   );
 }
 
-function isSelectedTokenChangeIrrelevant(params: {
-  nextSelectedTokenKey?: string;
+function isSelectedTokensChangeIrrelevant(params: {
+  nextSelectedTokenKeys?: string[];
   prefix: string;
-  previousSelectedTokenKey?: string;
+  previousSelectedTokenKeys?: string[];
 }): boolean {
-  const previousSelectionIsHere = isTokenKeyInsidePrefix(
-    params.previousSelectedTokenKey,
-    params.prefix,
+  const previousSelectionKeysInPrefix = (params.previousSelectedTokenKeys ?? []).filter(
+    (tokenKey) => isTokenKeyInsidePrefix(tokenKey, params.prefix),
   );
-  const nextSelectionIsHere = isTokenKeyInsidePrefix(
-    params.nextSelectedTokenKey,
-    params.prefix,
+  const nextSelectionKeysInPrefix = (params.nextSelectedTokenKeys ?? []).filter(
+    (tokenKey) => isTokenKeyInsidePrefix(tokenKey, params.prefix),
   );
 
-  if (!previousSelectionIsHere && !nextSelectionIsHere) {
+  if (
+    previousSelectionKeysInPrefix.length === 0 &&
+    nextSelectionKeysInPrefix.length === 0
+  ) {
     return true;
   }
 
-  return params.previousSelectedTokenKey === params.nextSelectedTokenKey;
+  if (previousSelectionKeysInPrefix.length !== nextSelectionKeysInPrefix.length) {
+    return false;
+  }
+
+  return previousSelectionKeysInPrefix.every(
+    (tokenKey, index) => tokenKey === nextSelectionKeysInPrefix[index],
+  );
 }
 
 function isTokenKeyInsidePrefix(

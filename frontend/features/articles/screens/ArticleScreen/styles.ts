@@ -104,6 +104,16 @@ export const styles = StyleSheet.create({
   textModeSection: {
     gap: Spacing.sm,
   },
+  translationProgressFill: {
+    borderRadius: 999,
+    height: '100%',
+  },
+  translationProgressTrack: {
+    backgroundColor: 'rgba(128, 128, 128, 0.2)',
+    height: 2,
+    overflow: 'hidden',
+    width: '100%',
+  },
   wikipediaLink: {
     textDecorationLine: 'underline',
   },
