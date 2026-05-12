@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Animated,
   Pressable,
+  type ComponentProps,
   type StyleProp,
   View,
   type ViewStyle,
@@ -14,11 +15,19 @@ import { useThemeColor } from '@/hooks/use-theme-color';
 
 import { styles } from './styles';
 
+type StatusIcon = {
+  accessibilityLabel: string;
+  name: ComponentProps<typeof Ionicons>['name'];
+};
+
 type Option<T extends string> = {
   badgeLabel?: string;
+  badgeLabels?: string[];
+  description?: string;
   disabled?: boolean;
   displayLabel?: string;
   label: string;
+  statusIcons?: StatusIcon[];
   value: T;
 };
 
@@ -112,6 +121,9 @@ export function OptionPickerField<T extends string>({
         <View style={styles.optionsList}>
           {options.map((option) => {
             const isSelected = option.value === selectedValue;
+            const badgeLabels = option.badgeLabels ?? (
+              option.badgeLabel ? [option.badgeLabel] : []
+            );
 
             return (
               <Pressable
@@ -130,26 +142,69 @@ export function OptionPickerField<T extends string>({
                     : null,
                 ]}>
                 <View style={styles.optionContent}>
-                  <ThemedText
-                    style={[
-                      styles.optionLabel,
-                      option.disabled ? styles.optionTextDisabled : null,
-                    ]}
-                    type="bodyStrong">
-                    {option.label}
-                  </ThemedText>
-                  {option.badgeLabel ? (
-                    <View style={styles.optionBadge}>
-                      <Ionicons
-                        color={badgeColor}
-                        name="checkmark-circle"
-                        size={16}
-                      />
+                  <View style={styles.optionMain}>
+                    <ThemedText
+                      style={[
+                        styles.optionLabel,
+                        option.disabled ? styles.optionTextDisabled : null,
+                      ]}
+                      type="bodyStrong">
+                      {option.label}
+                    </ThemedText>
+                    {option.description ? (
                       <ThemedText
-                        type="description"
-                        style={[styles.optionBadgeText, { color: badgeColor }]}>
-                        {option.badgeLabel}
+                        style={styles.optionDescription}
+                        type="description">
+                        {option.description}
                       </ThemedText>
+                    ) : null}
+                    {badgeLabels.length > 0 ? (
+                      <View style={styles.optionBadges}>
+                        {badgeLabels.map((badgeLabel) => (
+                          <View
+                            key={badgeLabel}
+                            style={[
+                              styles.optionBadge,
+                              {
+                                backgroundColor: selectedBackgroundColor,
+                                borderColor: badgeColor,
+                              },
+                            ]}>
+                            <Ionicons
+                              color={badgeColor}
+                              name="checkmark-circle"
+                              size={16}
+                            />
+                            <ThemedText
+                              type="description"
+                              style={[styles.optionBadgeText, { color: badgeColor }]}>
+                              {badgeLabel}
+                            </ThemedText>
+                          </View>
+                        ))}
+                      </View>
+                    ) : null}
+                  </View>
+                  {option.statusIcons?.length ? (
+                    <View style={styles.statusIcons}>
+                      {option.statusIcons.map((statusIcon) => (
+                        <View
+                          accessibilityLabel={statusIcon.accessibilityLabel}
+                          key={`${option.value}-${statusIcon.name}-${statusIcon.accessibilityLabel}`}
+                          style={[
+                            styles.statusIconBadge,
+                            {
+                              backgroundColor: selectedBackgroundColor,
+                              borderColor: badgeColor,
+                            },
+                          ]}>
+                          <Ionicons
+                            color={badgeColor}
+                            name={statusIcon.name}
+                            size={16}
+                          />
+                        </View>
+                      ))}
                     </View>
                   ) : null}
                 </View>

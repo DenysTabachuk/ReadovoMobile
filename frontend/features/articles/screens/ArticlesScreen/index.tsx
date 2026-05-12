@@ -152,7 +152,7 @@ export default function ArticlesScreen() {
   }, [personalFilter, recentArticles, savedArticles]);
   const { data: personalArticleAdaptations = {} } = useQuery({
     enabled: personalArticleIds.length > 0,
-    queryFn: () => fetchArticleAdaptations(personalArticleIds),
+    queryFn: () => fetchArticleAdaptations(personalArticleIds, 'all'),
     queryKey: ['wikipedia', 'article-adaptations', personalArticleIds],
   });
   const savedArticleMutation = useMutation<

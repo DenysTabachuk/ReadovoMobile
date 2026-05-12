@@ -4,6 +4,7 @@ import { Image } from 'expo-image';
 import * as Linking from 'expo-linking';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
 import { translateWord } from '@/api/translations';
@@ -11,12 +12,12 @@ import { createDictionaryWord } from '@/api/dictionary';
 import {
   type ArticleAdaptationSummary,
   type ArticleBlock,
+  type ArticleTextTransformationType,
   fetchArticleAdaptations,
   fetchWikipediaArticleDetail,
   generateArticleQuiz,
   generateArticleVocabularyQuiz,
   type SimplifyArticleLevel,
-  type SimplifyArticleTargetPercent,
   simplifyWikipediaArticle,
   type SimplifyArticleResponse,
 } from '@/api/wikipedia';
@@ -58,10 +59,10 @@ type SelectedWord = {
   tokenKey: string;
   word: string;
 };
-type ArticleTextLengthOption = '10' | '25' | '50' | '75' | 'original';
 
 const DEFAULT_SIMPLIFICATION_LEVEL: SimplifyArticleLevel = 'A2';
-const DEFAULT_TARGET_PERCENT: ArticleTextLengthOption = '25';
+const TEXT_VIEW_MODES = ['original', 'adaptation', 'summary'] as const;
+type ArticleTextViewMode = (typeof TEXT_VIEW_MODES)[number];
 
 export default function ArticleScreen() {
   const { t } = useTranslation();
@@ -72,10 +73,6 @@ export default function ArticleScreen() {
   const iconColor = useThemeColor({}, 'icon');
   const tintColor = Colors[colorScheme ?? 'light'].tint;
   const savedAccentColor = colorScheme === 'dark' ? '#c4a7ff' : tintColor;
-  const adaptationReadyBackgroundColor = useThemeColor(
-    { dark: '#123822', light: '#e8f8ef' },
-    'background',
-  );
   const adaptationReadyBorderColor = useThemeColor(
     { dark: '#2b6f43', light: '#9dddb7' },
     'icon',
@@ -89,14 +86,17 @@ export default function ArticleScreen() {
     id?: string | string[];
   }>();
   const [selectedWord, setSelectedWord] = useState<SelectedWord | null>(null);
-  const [adaptedArticle, setAdaptedArticle] = useState<SimplifyArticleResponse | null>(null);
-  const [showAdaptedText, setShowAdaptedText] = useState(false);
+  const [generatedArticles, setGeneratedArticles] = useState<
+    Partial<Record<ArticleTextTransformationType, SimplifyArticleResponse>>
+  >({});
+  const [selectedTextViewMode, setSelectedTextViewMode] =
+    useState<ArticleTextViewMode>('original');
+  const [latestGeneratedTransformationType, setLatestGeneratedTransformationType] =
+    useState<ArticleTextTransformationType | null>(null);
   const [hasImageLoadError, setHasImageLoadError] = useState(false);
   const [selectedLevel, setSelectedLevel] = useState<SimplifyArticleLevel>(
     DEFAULT_SIMPLIFICATION_LEVEL,
   );
-  const [selectedTargetLength, setSelectedTargetLength] =
-    useState<ArticleTextLengthOption>(DEFAULT_TARGET_PERCENT);
   const [isAdaptSettingsOpen, setIsAdaptSettingsOpen] = useState(false);
   const [isQuizModePickerOpen, setIsQuizModePickerOpen] = useState(false);
 
@@ -127,7 +127,7 @@ export default function ArticleScreen() {
         throw new Error('article.invalidId');
       }
 
-      return fetchArticleAdaptations([articleId]);
+      return fetchArticleAdaptations([articleId], 'all');
     },
     queryKey: ['wikipedia', 'article-adaptations', articleId],
   });
@@ -164,15 +164,10 @@ export default function ArticleScreen() {
   });
   const isCurrentArticleSaved = isArticleSaved(articleId, savedArticles);
   const simplifyMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (transformationType: ArticleTextTransformationType) => {
       if (!article) {
         throw new Error('article.errorDescription');
       }
-
-      const targetPercent =
-        selectedTargetLength === 'original'
-          ? 100
-          : (Number(selectedTargetLength) as 10 | 25 | 50 | 75);
 
       return simplifyWikipediaArticle({
         articleId: article.id,
@@ -180,21 +175,28 @@ export default function ArticleScreen() {
           stripDuplicateTitleHeading(article.blocks, article.title),
         ),
         level: selectedLevel,
-        targetPercent,
         text: article.content,
         title: article.title,
+        transformationType,
       });
     },
-    onError: (mutationError) => {
+    onError: (mutationError, transformationType) => {
       console.error('[ArticleScreen] Failed to adapt article', mutationError);
       showBanner({
-        title: t('article.adaptError'),
+        title:
+          transformationType === 'adaptation'
+            ? t('article.adaptError')
+            : t('article.summaryError'),
         variant: 'error',
       });
     },
     onSuccess: (response) => {
-      setAdaptedArticle(response);
-      setShowAdaptedText(true);
+      setGeneratedArticles((currentState) => ({
+        ...currentState,
+        [response.transformationType]: response,
+      }));
+      setSelectedTextViewMode(response.transformationType);
+      setLatestGeneratedTransformationType(response.transformationType);
       setSelectedWord(null);
       void queryClient.invalidateQueries({
         queryKey: [...RECENT_ARTICLES_QUERY_KEY, currentUser?.id],
@@ -383,120 +385,91 @@ export default function ArticleScreen() {
     },
   });
 
-  const targetLengthOptions = useMemo(
-    () => {
-      return [
-        {
-          disabled: false,
-          displayLabel: t('article.lengthsShort.original'),
-          label: t('article.lengths.original'),
-          value: 'original' as const,
-        },
-        {
-          disabled: false,
-          displayLabel: t('article.lengthsShort.percent10'),
-          label: t('article.lengths.percent10'),
-          value: '10' as const,
-        },
-        {
-          disabled: false,
-          displayLabel: t('article.lengthsShort.percent25'),
-          label: t('article.lengths.percent25'),
-          value: '25' as const,
-        },
-        {
-          disabled: false,
-          displayLabel: t('article.lengthsShort.percent50'),
-          label: t('article.lengths.percent50'),
-          value: '50' as const,
-        },
-        {
-          disabled: false,
-          displayLabel: t('article.lengthsShort.percent75'),
-          label: t('article.lengths.percent75'),
-          value: '75' as const,
-        },
-      ];
-    },
-    [t],
-  );
-  const selectedTargetPercent = useMemo(
-    () => getTargetPercentFromOption(selectedTargetLength),
-    [selectedTargetLength],
-  );
   const availableAdaptations = useMemo(() => {
     const persistedAdaptations =
       articleId === null ? [] : articleAdaptationsById[String(articleId)] ?? [];
-    const currentAdaptation = adaptedArticle
-      ? [
-          {
-            level: adaptedArticle.level,
-            targetPercent: adaptedArticle.targetPercent,
-          },
-        ]
-      : [];
+    const currentAdaptations = Object.values(generatedArticles).map((generatedArticle) => ({
+      level: generatedArticle.level,
+      transformationType: generatedArticle.transformationType,
+    }));
     const uniqueAdaptations = new Map<string, ArticleAdaptationSummary>();
 
-    [...persistedAdaptations, ...currentAdaptation].forEach((adaptation) => {
+    [...persistedAdaptations, ...currentAdaptations].forEach((adaptation) => {
       uniqueAdaptations.set(
-        `${adaptation.level}-${adaptation.targetPercent}`,
+        createAdaptationKey(
+          adaptation.level,
+          adaptation.transformationType,
+        ),
         adaptation,
       );
     });
 
     return Array.from(uniqueAdaptations.values());
-  }, [adaptedArticle, articleAdaptationsById, articleId]);
-  const isSelectedAdaptationAvailable = availableAdaptations.some(
-    (adaptation) => isSameAdaptation(adaptation, selectedLevel, selectedTargetPercent),
+  }, [articleAdaptationsById, articleId, generatedArticles]);
+  const isSelectedAdaptationAvailable = availableAdaptations.some((adaptation) =>
+    isSameAdaptation(adaptation, selectedLevel, 'adaptation'),
+  );
+  const isSelectedSummaryAvailable = availableAdaptations.some((adaptation) =>
+    isSameAdaptation(adaptation, selectedLevel, 'summary'),
   );
   const levelOptions = useMemo(
     () =>
       (['A1', 'A2', 'B1', 'B2'] as const).map((level) => {
-        const readyTargetPercents = Array.from(
-          new Set(
-            availableAdaptations
-              .filter((adaptation) => adaptation.level === level)
-              .map((adaptation) => adaptation.targetPercent),
-          ),
-        ).sort((left, right) => left - right);
+        const hasAdaptation = availableAdaptations.some((adaptation) =>
+          isSameAdaptation(adaptation, level, 'adaptation'),
+        );
+        const hasSummary = availableAdaptations.some((adaptation) =>
+          isSameAdaptation(adaptation, level, 'summary'),
+        );
+        const statusIcons = [];
+
+        if (hasAdaptation) {
+          statusIcons.push({
+            accessibilityLabel: t('article.levelOptionReadyAdaptation'),
+            name: 'sparkles-outline' as const,
+          });
+        }
+
+        if (hasSummary) {
+          statusIcons.push({
+            accessibilityLabel: t('article.levelOptionReadySummary'),
+            name: 'document-text-outline' as const,
+          });
+        }
 
         return {
-          badgeLabel: readyTargetPercents.length
-            ? t('article.levelReadyBadge', {
-                lengths: readyTargetPercents
-                  .map((targetPercent) =>
-                    getAdaptedArticleTargetLengthShortLabel(targetPercent, t),
-                  )
-                  .join(', '),
-              })
-            : undefined,
           label: t(`article.levels.${level}`),
+          statusIcons: statusIcons.length > 0 ? statusIcons : undefined,
           value: level,
         };
       }),
     [availableAdaptations, t],
   );
-  const targetLengthOptionsWithReadiness = useMemo(
-    () =>
-      targetLengthOptions.map((option) => {
-        const targetPercent = getTargetPercentFromOption(option.value);
-        const isAvailable = availableAdaptations.some((adaptation) =>
-          isSameAdaptation(adaptation, selectedLevel, targetPercent),
-        );
+  const generatedTextModeOptions = useMemo(() => {
+    const options: Array<{
+      label: string;
+      value: ArticleTextViewMode;
+    }> = [{ label: t('article.textMode.original'), value: 'original' }];
 
-        return isAvailable
-          ? {
-              ...option,
-              badgeLabel: t('article.adaptationReadyBadge'),
-            }
-          : option;
-      }),
-    [availableAdaptations, selectedLevel, t, targetLengthOptions],
-  );
+    if (generatedArticles.adaptation) {
+      options.push({
+        label: t('article.textMode.adapted'),
+        value: 'adaptation',
+      });
+    }
 
-  const isSelectedTargetLengthDisabled = Boolean(
-    targetLengthOptions.find((option) => option.value === selectedTargetLength)?.disabled,
-  );
+    if (generatedArticles.summary) {
+      options.push({
+        label: t('article.textMode.summary'),
+        value: 'summary',
+      });
+    }
+
+    return options;
+  }, [generatedArticles.adaptation, generatedArticles.summary, t]);
+  const hasLoadedSelectedAdaptation =
+    generatedArticles.adaptation?.level === selectedLevel;
+  const hasLoadedSelectedSummary = generatedArticles.summary?.level === selectedLevel;
 
   const handleWordPress = useCallback((selection: SelectedWord) => {
     setSelectedWord(selection);
@@ -548,18 +521,60 @@ export default function ArticleScreen() {
   }, [quizMutation]);
 
   const handleAdaptFromModal = useCallback(() => {
-    simplifyMutation.mutate();
+    simplifyMutation.mutate('adaptation');
     setIsAdaptSettingsOpen(false);
   }, [simplifyMutation]);
+  const handleSummarizeFromModal = useCallback(() => {
+    simplifyMutation.mutate('summary');
+    setIsAdaptSettingsOpen(false);
+  }, [simplifyMutation]);
+  const handleShowAdaptedFromModal = useCallback(() => {
+    setSelectedWord(null);
+
+    if (hasLoadedSelectedAdaptation) {
+      setSelectedTextViewMode('adaptation');
+      setIsAdaptSettingsOpen(false);
+      return;
+    }
+
+    if (isSelectedAdaptationAvailable) {
+      simplifyMutation.mutate('adaptation');
+    }
+
+    setIsAdaptSettingsOpen(false);
+  }, [
+    hasLoadedSelectedAdaptation,
+    isSelectedAdaptationAvailable,
+    simplifyMutation,
+  ]);
+  const handleShowSummaryFromModal = useCallback(() => {
+    setSelectedWord(null);
+
+    if (hasLoadedSelectedSummary) {
+      setSelectedTextViewMode('summary');
+      setIsAdaptSettingsOpen(false);
+      return;
+    }
+
+    if (isSelectedSummaryAvailable) {
+      simplifyMutation.mutate('summary');
+    }
+
+    setIsAdaptSettingsOpen(false);
+  }, [hasLoadedSelectedSummary, isSelectedSummaryAvailable, simplifyMutation]);
 
   const handleShowOriginalPress = useCallback(() => {
     setSelectedWord(null);
-    setShowAdaptedText(false);
+    setSelectedTextViewMode('original');
   }, []);
 
   const handleShowAdaptedPress = useCallback(() => {
     setSelectedWord(null);
-    setShowAdaptedText(true);
+    setSelectedTextViewMode('adaptation');
+  }, []);
+  const handleShowSummaryPress = useCallback(() => {
+    setSelectedWord(null);
+    setSelectedTextViewMode('summary');
   }, []);
   const handleToggleSavedArticle = useCallback(() => {
     if (savedArticleMutation.isPending) {
@@ -590,23 +605,30 @@ export default function ArticleScreen() {
   const displayedText = useMemo(() => {
     return article?.content ?? '';
   }, [article?.content]);
+  const displayedGeneratedArticle = useMemo(() => {
+    if (selectedTextViewMode === 'original') {
+      return null;
+    }
+
+    return generatedArticles[selectedTextViewMode] ?? null;
+  }, [generatedArticles, selectedTextViewMode]);
   const displayedBlocks = useMemo(() => {
     if (!article) {
       return undefined;
     }
 
-    if (showAdaptedText) {
-      return adaptedArticle?.adaptedBlocks;
+    if (displayedGeneratedArticle) {
+      return displayedGeneratedArticle.adaptedBlocks;
     }
 
     return stripDuplicateTitleHeading(article.blocks, article.title);
-  }, [adaptedArticle?.adaptedBlocks, article, showAdaptedText]);
+  }, [article, displayedGeneratedArticle]);
   const shouldRenderHeroImage = useMemo(() => {
     if (!article?.thumbnailUrl || hasImageLoadError) {
       return false;
     }
 
-    if (showAdaptedText) {
+    if (displayedGeneratedArticle) {
       return true;
     }
 
@@ -615,9 +637,10 @@ export default function ArticleScreen() {
     article?.blocks,
     article?.thumbnailUrl,
     displayedBlocks,
+    displayedGeneratedArticle,
     hasImageLoadError,
-    showAdaptedText,
   ]);
+  const currentPendingTransformationType = simplifyMutation.variables;
 
   useEffect(() => {
     setHasImageLoadError(false);
@@ -637,18 +660,6 @@ export default function ArticleScreen() {
       );
     });
   }, [article, currentUser?.id, queryClient]);
-
-  useEffect(() => {
-    if (!isSelectedTargetLengthDisabled) {
-      return;
-    }
-
-    const firstEnabledOption = targetLengthOptions.find((option) => !option.disabled);
-
-    if (firstEnabledOption) {
-      setSelectedTargetLength(firstEnabledOption.value);
-    }
-  }, [isSelectedTargetLengthDisabled, targetLengthOptions]);
 
   if (articleId === null) {
     return (
@@ -706,7 +717,11 @@ export default function ArticleScreen() {
         />
         <View style={styles.centerState}>
           <ActivityIndicator color={Colors[colorScheme ?? 'light'].tint} size="large" />
-          <ThemedText type="body">{t('article.adapting')}</ThemedText>
+          <ThemedText type="body">
+            {currentPendingTransformationType === 'adaptation'
+              ? t('article.adapting')
+              : t('article.summarizing')}
+          </ThemedText>
         </View>
       </ScreenContainer>
     );
@@ -745,27 +760,32 @@ export default function ArticleScreen() {
               </Pressable>
             </View>
 
-            {adaptedArticle ? (
+            {latestGeneratedTransformationType ? (
               <View style={styles.articleMeta}>
                 <ThemedText type="description" style={styles.infoText}>
-                  {showAdaptedText
+                  {selectedTextViewMode === 'adaptation' && generatedArticles.adaptation
                     ? t('article.adaptedState', {
-                        adaptedLength: adaptedArticle.adaptedLength,
-                        level: adaptedArticle.level,
-                        originalLength: adaptedArticle.originalLength,
-                        targetLength: getAdaptedArticleTargetLengthLabel(
-                          adaptedArticle.targetPercent,
-                          t,
-                        ),
+                        adaptedLength: generatedArticles.adaptation.adaptedLength,
+                        level: generatedArticles.adaptation.level,
+                        originalLength: generatedArticles.adaptation.originalLength,
                       })
-                    : t('article.originalState', {
-                        level: adaptedArticle.level,
-                        originalLength: adaptedArticle.originalLength,
-                        targetLength: getAdaptedArticleTargetLengthLabel(
-                          adaptedArticle.targetPercent,
-                          t,
-                        ),
-                      })}
+                    : selectedTextViewMode === 'summary' && generatedArticles.summary
+                      ? t('article.summarizedState', {
+                          adaptedLength: generatedArticles.summary.adaptedLength,
+                          level: generatedArticles.summary.level,
+                          originalLength: generatedArticles.summary.originalLength,
+                        })
+                      : latestGeneratedTransformationType === 'adaptation' &&
+                          generatedArticles.adaptation
+                        ? t('article.originalStateWithAdaptation', {
+                            level: generatedArticles.adaptation.level,
+                          })
+                        : latestGeneratedTransformationType === 'summary' &&
+                            generatedArticles.summary
+                          ? t('article.originalStateWithSummary', {
+                              level: generatedArticles.summary.level,
+                            })
+                          : null}
                 </ThemedText>
               </View>
             ) : null}
@@ -795,22 +815,24 @@ export default function ArticleScreen() {
         contentStyle={styles.adaptModalContent}
         onClose={handleCloseAdaptSettings}
         open={isAdaptSettingsOpen}
-        title={t('article.adaptText')}>
-        {adaptedArticle ? (
+        title={t('article.configureText')}>
+        {generatedTextModeOptions.length > 1 ? (
           <SegmentedToggle
             onChange={(value) => {
-              if (value === 'adapted') {
+              if (value === 'adaptation') {
                 handleShowAdaptedPress();
+                return;
+              }
+
+              if (value === 'summary') {
+                handleShowSummaryPress();
                 return;
               }
 
               handleShowOriginalPress();
             }}
-            options={[
-              { label: t('article.textMode.adapted'), value: 'adapted' },
-              { label: t('article.textMode.original'), value: 'original' },
-            ]}
-            selectedValue={showAdaptedText ? 'adapted' : 'original'}
+            options={generatedTextModeOptions}
+            selectedValue={selectedTextViewMode}
           />
         ) : null}
         <View style={styles.adaptModalFields}>
@@ -823,52 +845,83 @@ export default function ArticleScreen() {
               title={t('article.levelPickerTitle')}
             />
           </View>
-          <View style={styles.adaptModalPickerField}>
-            <OptionPickerField
-              label={t('article.lengthLabel')}
-              onSelect={setSelectedTargetLength}
-              options={targetLengthOptionsWithReadiness}
-              selectedValue={selectedTargetLength}
-              title={t('article.lengthPickerTitle')}
-            />
-          </View>
         </View>
-        {isSelectedAdaptationAvailable ? (
+        {isSelectedAdaptationAvailable || isSelectedSummaryAvailable ? (
           <View
             style={[
-              styles.adaptationReadyNotice,
-              {
-                backgroundColor: adaptationReadyBackgroundColor,
-                borderColor: adaptationReadyBorderColor,
-              },
+              styles.readyStatusList,
+              { borderColor: adaptationReadyBorderColor },
             ]}>
-            <ThemedText
-              type="bodyStrong"
-              style={{ color: adaptationReadyTextColor }}>
-              {t('article.adaptationReadyTitle')}
-            </ThemedText>
-            <ThemedText
-              type="description"
-              style={[
-                styles.adaptationReadyDescription,
-                { color: adaptationReadyTextColor },
-              ]}>
-              {t('article.adaptationReadyDescription', {
-                level: selectedLevel,
-                targetLength: getAdaptedArticleTargetLengthShortLabel(
-                  selectedTargetPercent,
-                  t,
-                ),
-              })}
-            </ThemedText>
+            {isSelectedAdaptationAvailable ? (
+              <View style={styles.readyStatusItem}>
+                <Ionicons
+                  color={adaptationReadyTextColor}
+                  name="sparkles-outline"
+                  size={16}
+                />
+                <ThemedText
+                  type="description"
+                  style={{ color: adaptationReadyTextColor }}>
+                  {t('article.readyAdaptedShort')}
+                </ThemedText>
+              </View>
+            ) : null}
+            {isSelectedSummaryAvailable ? (
+              <View style={styles.readyStatusItem}>
+                <Ionicons
+                  color={adaptationReadyTextColor}
+                  name="document-text-outline"
+                  size={16}
+                />
+                <ThemedText
+                  type="description"
+                  style={{ color: adaptationReadyTextColor }}>
+                  {t('article.readySummaryShort')}
+                </ThemedText>
+              </View>
+            ) : null}
           </View>
         ) : null}
-        <Button
-          disabled={simplifyMutation.isPending || isSelectedTargetLengthDisabled}
-          onPress={handleAdaptFromModal}
-          variant="primary">
-          {simplifyMutation.isPending ? t('article.adapting') : t('article.adaptText')}
-        </Button>
+        <View style={styles.textActionButtons}>
+          {isSelectedAdaptationAvailable ? (
+            <Button
+              disabled={simplifyMutation.isPending}
+              onPress={handleShowAdaptedFromModal}
+              variant="primary">
+              {t('article.showAdaptedText')}
+            </Button>
+          ) : null}
+          {!isSelectedAdaptationAvailable ? (
+            <Button
+              disabled={simplifyMutation.isPending}
+              onPress={handleAdaptFromModal}
+              variant={isSelectedSummaryAvailable ? 'secondary' : 'primary'}>
+              {simplifyMutation.isPending &&
+              currentPendingTransformationType === 'adaptation'
+                ? t('article.adapting')
+                : t('article.adaptText')}
+            </Button>
+          ) : null}
+          {isSelectedSummaryAvailable ? (
+            <Button
+              disabled={simplifyMutation.isPending}
+              onPress={handleShowSummaryFromModal}
+              variant={isSelectedAdaptationAvailable ? 'secondary' : 'primary'}>
+              {t('article.showSummarizedText')}
+            </Button>
+          ) : null}
+          {!isSelectedSummaryAvailable ? (
+            <Button
+              disabled={simplifyMutation.isPending}
+              onPress={handleSummarizeFromModal}
+              variant="secondary">
+              {simplifyMutation.isPending &&
+              currentPendingTransformationType === 'summary'
+                ? t('article.summarizing')
+                : t('article.summarizeText')}
+            </Button>
+          ) : null}
+        </View>
       </ModalSheet>
       <ModalSheet
         contentStyle={styles.adaptModalContent}
@@ -988,43 +1041,21 @@ function createSimplificationRequestBlocks(blocks: ArticleBlock[]): ArticleBlock
   });
 }
 
-function getAdaptedArticleTargetLengthLabel(
-  targetPercent: SimplifyArticleResponse['targetPercent'],
-  t: ReturnType<typeof useTranslation>['t'],
+function createAdaptationKey(
+  level: SimplifyArticleLevel,
+  transformationType: ArticleTextTransformationType,
 ): string {
-  if (targetPercent === 100) {
-    return t('article.lengths.original');
-  }
-
-  return t(`article.lengths.percent${targetPercent}`);
-}
-
-function getAdaptedArticleTargetLengthShortLabel(
-  targetPercent: SimplifyArticleTargetPercent,
-  t: ReturnType<typeof useTranslation>['t'],
-): string {
-  if (targetPercent === 100) {
-    return t('article.lengthsShort.original');
-  }
-
-  return t(`article.lengthsShort.percent${targetPercent}`);
-}
-
-function getTargetPercentFromOption(
-  targetLength: ArticleTextLengthOption,
-): SimplifyArticleTargetPercent {
-  if (targetLength === 'original') {
-    return 100;
-  }
-
-  return Number(targetLength) as SimplifyArticleTargetPercent;
+  return `${transformationType}:${level}`;
 }
 
 function isSameAdaptation(
   adaptation: ArticleAdaptationSummary,
   level: SimplifyArticleLevel,
-  targetPercent: SimplifyArticleTargetPercent,
+  transformationType: ArticleTextTransformationType,
 ): boolean {
-  return adaptation.level === level && adaptation.targetPercent === targetPercent;
+  return (
+    adaptation.level === level &&
+    adaptation.transformationType === transformationType
+  );
 }
 

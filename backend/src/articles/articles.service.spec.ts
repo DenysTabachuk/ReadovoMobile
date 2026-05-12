@@ -520,6 +520,149 @@ describe('ArticlesService', () => {
     ]);
   });
 
+  it('falls back to plain text paragraphs when adaptation response is not valid JSON', async () => {
+    queryMock
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] });
+    createChatCompletionMock.mockResolvedValue({
+      choices: [
+        {
+          message: {
+            content:
+              'Architecture is the art and practice of designing buildings.\n\nIt also includes planning spaces for people to use.',
+          },
+        },
+      ],
+    });
+
+    const response = await service.simplifyArticle({
+      level: 'A2',
+      text: 'Long article text',
+      title: 'Architecture',
+      transformationType: 'adaptation',
+    });
+
+    expect(response.adaptedBlocks).toEqual([
+      {
+        children: [
+          {
+            text: 'Architecture is the art and practice of designing buildings.',
+            type: 'text',
+          },
+        ],
+        type: 'paragraph',
+      },
+      {
+        children: [
+          {
+            text: 'It also includes planning spaces for people to use.',
+            type: 'text',
+          },
+        ],
+        type: 'paragraph',
+      },
+    ]);
+    expect(response.transformationType).toBe('adaptation');
+  });
+
+  it('falls back when adaptedBlocks is an array of strings', async () => {
+    queryMock
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] });
+    createChatCompletionMock.mockResolvedValue({
+      choices: [
+        {
+          message: {
+            content: JSON.stringify({
+              adaptedBlocks: [
+                'Architecture is about designing buildings.',
+                'It also plans how people use space.',
+              ],
+            }),
+          },
+        },
+      ],
+    });
+
+    const response = await service.simplifyArticle({
+      level: 'A2',
+      text: 'Long article text',
+      title: 'Architecture',
+      transformationType: 'adaptation',
+    });
+
+    expect(response.adaptedBlocks).toEqual([
+      {
+        children: [
+          {
+            text: 'Architecture is about designing buildings.',
+            type: 'text',
+          },
+        ],
+        type: 'paragraph',
+      },
+      {
+        children: [
+          {
+            text: 'It also plans how people use space.',
+            type: 'text',
+          },
+        ],
+        type: 'paragraph',
+      },
+    ]);
+  });
+
+  it('falls back when adaptation text is nested in a loose JSON field', async () => {
+    queryMock
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] });
+    createChatCompletionMock.mockResolvedValue({
+      choices: [
+        {
+          message: {
+            content: JSON.stringify({
+              result: {
+                paragraphs: [
+                  'Architecture is the design of buildings.',
+                  'It also shapes the spaces around them.',
+                ],
+              },
+            }),
+          },
+        },
+      ],
+    });
+
+    const response = await service.simplifyArticle({
+      level: 'A2',
+      text: 'Long article text',
+      title: 'Architecture',
+      transformationType: 'adaptation',
+    });
+
+    expect(response.adaptedBlocks).toEqual([
+      {
+        children: [
+          {
+            text: 'Architecture is the design of buildings.',
+            type: 'text',
+          },
+        ],
+        type: 'paragraph',
+      },
+      {
+        children: [
+          {
+            text: 'It also shapes the spaces around them.',
+            type: 'text',
+          },
+        ],
+        type: 'paragraph',
+      },
+    ]);
+  });
+
   it('normalizes table rows returned as row objects', async () => {
     queryMock
       .mockResolvedValueOnce({ rows: [] })

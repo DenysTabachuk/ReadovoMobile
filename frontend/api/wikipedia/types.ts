@@ -106,11 +106,11 @@ export type SimplifyArticleLevel = 'A1' | 'A2' | 'B1' | 'B2';
 export type VocabularyQuizResolvedLevel = SimplifyArticleLevel | 'C1';
 
 export type SimplifyArticleTargetLength = 'short' | 'medium' | 'long';
-export type SimplifyArticleTargetPercent = 10 | 25 | 50 | 75 | 100;
+export type ArticleTextTransformationType = 'adaptation' | 'summary';
 
 export type ArticleAdaptationSummary = {
   level: SimplifyArticleLevel;
-  targetPercent: SimplifyArticleTargetPercent;
+  transformationType: ArticleTextTransformationType;
 };
 
 export type ArticleAdaptationsByArticleId = Record<
@@ -155,9 +155,9 @@ export type SimplifyArticleRequest = {
   articleId?: number;
   blocks?: ArticleBlock[];
   level?: SimplifyArticleLevel;
-  targetPercent?: SimplifyArticleTargetPercent;
   text: string;
   title: string;
+  transformationType?: ArticleTextTransformationType;
 };
 
 export type GenerateArticleQuizRequest = {
@@ -192,6 +192,6 @@ export type SimplifyArticleResponse = {
   level: SimplifyArticleLevel;
   originalLength: number;
   questions?: ArticleQuizQuestion[];
-  targetPercent: SimplifyArticleTargetPercent;
+  transformationType: ArticleTextTransformationType;
   title: string;
 };

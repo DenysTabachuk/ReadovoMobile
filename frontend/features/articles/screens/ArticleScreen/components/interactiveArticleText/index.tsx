@@ -213,6 +213,10 @@ export function InteractiveArticleText({
       );
     }
 
+    if (block.type !== 'image') {
+      return null;
+    }
+
     return (
       <ArticleImageBlock
         alt={block.alt}

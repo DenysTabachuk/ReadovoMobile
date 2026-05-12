@@ -159,4 +159,32 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
     width: 36,
   },
+  transformationBadgeAdaptation: {
+    backgroundColor: '#e8f8ef',
+    borderColor: '#65b96d',
+  },
+  transformationBadgeAdaptationDark: {
+    backgroundColor: '#17391e',
+    borderColor: '#2f7d3a',
+  },
+  transformationBadgeSummary: {
+    backgroundColor: '#e8f5f9',
+    borderColor: '#5ba7d1',
+  },
+  transformationBadgeSummaryDark: {
+    backgroundColor: '#173444',
+    borderColor: '#3c7fa3',
+  },
+  transformationBadgeTextAdaptation: {
+    color: '#287334',
+  },
+  transformationBadgeTextAdaptationDark: {
+    color: '#9bd7a3',
+  },
+  transformationBadgeTextSummary: {
+    color: '#1e6f92',
+  },
+  transformationBadgeTextSummaryDark: {
+    color: '#9bcfe5',
+  },
 });

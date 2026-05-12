@@ -109,11 +109,11 @@ export type TableCell = {
 export type ArticleSimplificationLevel = 'A1' | 'A2' | 'B1' | 'B2' | 'C1';
 
 export type ArticleSimplificationTargetLength = 'short' | 'medium' | 'long';
-export type ArticleSimplificationTargetPercent = 10 | 25 | 50 | 75 | 100;
+export type ArticleTextTransformationType = 'adaptation' | 'summary';
 
 export type ArticleAdaptationSummary = {
   level: ArticleSimplificationLevel;
-  targetPercent: ArticleSimplificationTargetPercent;
+  transformationType: ArticleTextTransformationType;
 };
 
 export type ArticleAdaptationsByArticleId = Record<
@@ -160,9 +160,9 @@ export type SimplifyArticleRequest = {
   articleId?: number;
   blocks?: ArticleBlock[];
   level?: string;
-  targetPercent?: number | string;
   text?: string;
   title?: string;
+  transformationType?: string;
 };
 
 export type GenerateArticleQuizRequest = {
@@ -189,7 +189,7 @@ export type SimplifyArticleResponse = {
   level: ArticleSimplificationLevel;
   originalLength: number;
   questions?: ArticleQuizQuestion[];
-  targetPercent: ArticleSimplificationTargetPercent;
+  transformationType: ArticleTextTransformationType;
   title: string;
 };
 
@@ -219,7 +219,6 @@ export type SimplifiedArticleCacheRow = {
   level: string;
   original_length: number;
   source_hash?: string;
-  target_percent?: number;
   target_length: string;
   title: string;
 };

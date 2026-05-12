@@ -18,17 +18,6 @@ export const styles = StyleSheet.create({
   adaptModalPickerField: {
     minWidth: 0,
   },
-  adaptationReadyDescription: {
-    fontSize: 15,
-    lineHeight: 21,
-  },
-  adaptationReadyNotice: {
-    borderRadius: 12,
-    borderWidth: 1,
-    gap: Spacing.xs,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.md,
-  },
   pickerField: {
     flex: 1,
     minWidth: 150,
@@ -83,6 +72,18 @@ export const styles = StyleSheet.create({
   infoText: {
     opacity: 0.8,
   },
+  readyStatusItem: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: Spacing.xs,
+  },
+  readyStatusList: {
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.md,
+  },
   listHeader: {
     gap: Spacing.lg,
   },
@@ -93,6 +94,9 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.md,
     paddingVertical: Spacing.xLg,
+  },
+  textActionButtons: {
+    gap: Spacing.md,
   },
   wikipediaLink: {
     textDecorationLine: 'underline',

@@ -25,6 +25,7 @@ export type {
   ArticleQuizQuestionOption,
   ArticleQuizQuestionType,
   ArticleQuizSessionResponse,
+  ArticleTextTransformationType,
   ArticleVocabularyQuizQuestion,
   ArticleVocabularyQuizQuestionFormat,
   FetchWikipediaArticlesParams,
@@ -37,7 +38,6 @@ export type {
   SimplifyArticleRequest,
   SimplifyArticleResponse,
   SimplifyArticleTargetLength,
-  SimplifyArticleTargetPercent,
   TableCell,
   WikipediaArticle,
   WikipediaArticleCategory,
@@ -107,6 +107,7 @@ export async function fetchWikipediaArticleDetail(
 
 export async function fetchArticleAdaptations(
   articleIds: number[],
+  transformationType?: 'adaptation' | 'summary' | 'all',
 ): Promise<ArticleAdaptationsByArticleId> {
   if (articleIds.length === 0) {
     return {};
@@ -115,6 +116,11 @@ export async function fetchArticleAdaptations(
   const searchParams = new URLSearchParams({
     articleIds: Array.from(new Set(articleIds)).join(','),
   });
+
+  if (transformationType) {
+    searchParams.set('transformationType', transformationType);
+  }
+
   const response = await fetch(
     `${API_BASE_URL}/api/articles/adaptations?${searchParams.toString()}`,
   );

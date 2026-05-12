@@ -11,8 +11,8 @@ import {
 
 import { ArticlesService } from './articles.service';
 import {
+  type ArticleTextTransformationType,
   type ArticleSimplificationLevel,
-  type ArticleSimplificationTargetPercent,
   type ArticleSimplificationTargetLength,
   type ArticleAdaptationsByArticleId,
   type GenerateArticleVocabularyQuizRequest,
@@ -30,7 +30,6 @@ import {
 } from './types';
 
 const DEFAULT_TARGET_LENGTH: ArticleSimplificationTargetLength = 'short';
-const DEFAULT_TARGET_PERCENT: ArticleSimplificationTargetPercent = 25;
 const SIMPLIFICATION_LEVELS: ArticleSimplificationLevel[] = [
   'A1',
   'A2',
@@ -56,8 +55,9 @@ const TARGET_LENGTHS: ArticleSimplificationTargetLength[] = [
   'medium',
   'long',
 ];
-const TARGET_PERCENTS: ArticleSimplificationTargetPercent[] = [
-  10, 25, 50, 75, 100,
+const ARTICLE_TRANSFORMATION_TYPES: ArticleTextTransformationType[] = [
+  'adaptation',
+  'summary',
 ];
 const PREVIEW_LENGTHS: WikipediaArticlePreviewLength[] = [
   'all',
@@ -165,11 +165,28 @@ export class ArticlesController {
   @Get('api/articles/adaptations')
   async getArticleAdaptations(
     @Query('articleIds') articleIds?: string,
+    @Query('transformationType')
+    transformationType?: string,
   ): Promise<ArticleAdaptationsByArticleId> {
     const parsedArticleIds = this.parseArticleIds(articleIds);
+    const normalizedTransformationType = transformationType?.trim().toLowerCase();
+
+    if (
+      normalizedTransformationType &&
+      normalizedTransformationType !== 'all' &&
+      !ARTICLE_TRANSFORMATION_TYPES.includes(
+        normalizedTransformationType as ArticleTextTransformationType,
+      )
+    ) {
+      throw new BadRequestException('Article transformation type is invalid.');
+    }
 
     return this.articlesService.getAvailableAdaptationsByArticleIds(
       parsedArticleIds,
+      normalizedTransformationType as
+        | ArticleTextTransformationType
+        | 'all'
+        | undefined,
     );
   }
 
@@ -286,8 +303,9 @@ export class ArticlesController {
     const level = body.level?.trim().toUpperCase() as
       | ArticleSimplificationLevel
       | undefined;
-    const targetPercent =
-      body.targetPercent === undefined ? undefined : Number(body.targetPercent);
+    const transformationType = body.transformationType?.trim().toLowerCase() as
+      | ArticleTextTransformationType
+      | undefined;
 
     if (!text) {
       throw new BadRequestException('Article text is required.');
@@ -298,12 +316,10 @@ export class ArticlesController {
     }
 
     if (
-      targetPercent !== undefined &&
-      !TARGET_PERCENTS.includes(
-        targetPercent as ArticleSimplificationTargetPercent,
-      )
+      transformationType &&
+      !ARTICLE_TRANSFORMATION_TYPES.includes(transformationType)
     ) {
-      throw new BadRequestException('Target percent is invalid.');
+      throw new BadRequestException('Article transformation type is invalid.');
     }
 
     return this.articlesService.simplifyArticle({
@@ -311,11 +327,9 @@ export class ArticlesController {
         Number.isInteger(articleId) && articleId > 0 ? articleId : undefined,
       blocks: Array.isArray(body.blocks) ? body.blocks : undefined,
       level,
-      targetPercent:
-        (targetPercent as ArticleSimplificationTargetPercent | undefined) ??
-        DEFAULT_TARGET_PERCENT,
       text,
       title,
+      transformationType,
     });
   }
 

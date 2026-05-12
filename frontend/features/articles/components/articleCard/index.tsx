@@ -76,7 +76,7 @@ export function ArticleCard({
               }}
               style={styles.adaptationsToggle}>
               <ThemedText type="bodyStrong" style={styles.adaptationsToggleText}>
-                {t('articles.adaptationsAvailable')}
+                {t('articles.textVersionsAvailable')}
               </ThemedText>
               <Ionicons color={tintColor} name="sparkles" size={15} />
               <Ionicons
@@ -87,33 +87,36 @@ export function ArticleCard({
             </Pressable>
             {expandedAdaptations ? (
               <View style={styles.adaptationsPanel}>
-                {formatAdaptations(article.availableAdaptations).map((group) => (
-                  <View key={group.level} style={styles.adaptationLevelRow}>
+                {formatAdaptations(article.availableAdaptations).map((adaptationGroup) => (
+                  <View key={adaptationGroup.level} style={styles.adaptationLevelRow}>
                     <ThemedText
                       type="description"
                       style={[
                         styles.adaptationLevelLabel,
-                        getAdaptationLevelLabelStyle(group.level, colorScheme),
+                        getAdaptationLevelLabelStyle(
+                          adaptationGroup.level,
+                          colorScheme,
+                        ),
                       ]}>
-                      {group.level}
+                      {adaptationGroup.level}
                     </ThemedText>
                     <View style={styles.adaptationBadges}>
-                      {group.targetPercents.map((targetPercent) => (
+                      {adaptationGroup.transformationTypes.map((transformationType) => (
                         <View
-                          key={`${group.level}-${targetPercent}`}
+                          key={`${adaptationGroup.level}-${transformationType}`}
                           style={[
                             styles.adaptationBadge,
-                            group.level.startsWith('A')
+                            transformationType === 'adaptation'
                               ? [
-                                  styles.adaptationBadgeA,
+                                  styles.transformationBadgeAdaptation,
                                   colorScheme === 'dark'
-                                    ? styles.adaptationBadgeADark
+                                    ? styles.transformationBadgeAdaptationDark
                                     : null,
                                 ]
                               : [
-                                  styles.adaptationBadgeB,
+                                  styles.transformationBadgeSummary,
                                   colorScheme === 'dark'
-                                    ? styles.adaptationBadgeBDark
+                                    ? styles.transformationBadgeSummaryDark
                                     : null,
                                 ],
                           ]}>
@@ -121,21 +124,23 @@ export function ArticleCard({
                             type="description"
                             style={[
                               styles.adaptationBadgeText,
-                              group.level.startsWith('A')
+                              transformationType === 'adaptation'
                                 ? [
-                                    styles.adaptationBadgeTextA,
+                                    styles.transformationBadgeTextAdaptation,
                                     colorScheme === 'dark'
-                                      ? styles.adaptationBadgeTextADark
+                                      ? styles.transformationBadgeTextAdaptationDark
                                       : null,
                                   ]
                                 : [
-                                    styles.adaptationBadgeTextB,
+                                    styles.transformationBadgeTextSummary,
                                     colorScheme === 'dark'
-                                      ? styles.adaptationBadgeTextBDark
+                                      ? styles.transformationBadgeTextSummaryDark
                                       : null,
                                   ],
                             ]}>
-                            {`${targetPercent}%`}
+                            {transformationType === 'adaptation'
+                              ? t('article.textMode.adapted')
+                              : t('article.textMode.summary')}
                           </ThemedText>
                         </View>
                       ))}
@@ -184,29 +189,40 @@ export function ArticleCard({
 
 function formatAdaptations(
   adaptations: ArticleAdaptationSummary[],
-): {
-  level: ArticleAdaptationSummary['level'];
-  targetPercents: ArticleAdaptationSummary['targetPercent'][];
-}[] {
-  const targetPercentsByLevel = new Map<
+) {
+  const groupedAdaptations = new Map<
     ArticleAdaptationSummary['level'],
-    Set<ArticleAdaptationSummary['targetPercent']>
+    Set<ArticleAdaptationSummary['transformationType']>
   >();
 
   adaptations.forEach((adaptation) => {
-    const targetPercents =
-      targetPercentsByLevel.get(adaptation.level) ?? new Set();
+    const currentGroup =
+      groupedAdaptations.get(adaptation.level) ?? new Set();
 
-    targetPercents.add(adaptation.targetPercent);
-    targetPercentsByLevel.set(adaptation.level, targetPercents);
+    currentGroup.add(adaptation.transformationType);
+    groupedAdaptations.set(adaptation.level, currentGroup);
   });
 
-  return Array.from(targetPercentsByLevel.entries())
+  return Array.from(groupedAdaptations.entries())
     .sort(([leftLevel], [rightLevel]) => leftLevel.localeCompare(rightLevel))
-    .map(([level, targetPercents]) => ({
+    .map(([level, transformationTypes]) => ({
       level,
-      targetPercents: Array.from(targetPercents).sort((left, right) => left - right),
+      transformationTypes: Array.from(transformationTypes).sort(
+        compareTransformationType,
+      ),
     }));
+}
+
+function compareTransformationType(
+  leftType: ArticleAdaptationSummary['transformationType'],
+  rightType: ArticleAdaptationSummary['transformationType'],
+): number {
+  const transformationOrder = {
+    adaptation: 0,
+    summary: 1,
+  } satisfies Record<ArticleAdaptationSummary['transformationType'], number>;
+
+  return transformationOrder[leftType] - transformationOrder[rightType];
 }
 
 function getAdaptationLevelLabelStyle(
