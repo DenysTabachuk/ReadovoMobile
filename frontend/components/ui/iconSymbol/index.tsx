@@ -15,13 +15,17 @@ type IconSymbolName = keyof typeof MAPPING;
  */
 const MAPPING = {
   'house.fill': 'home',
+  'newspaper.fill': 'newspaper',
   'paperplane.fill': 'send',
   'book.fill': 'menu-book',
+  'book.closed.fill': 'auto-stories',
   bookmark: 'bookmark-border',
   'bookmark.fill': 'bookmark',
   'speaker.wave.2.fill': 'volume-up',
   'gearshape.fill': 'settings',
+  'slider.horizontal.3': 'tune',
   'person.fill': 'person',
+  'person.crop.circle.fill': 'account-circle',
   'sun.max.fill': 'wb-sunny',
   'moon.fill': 'nightlight-round',
   'info.circle.fill': 'info',

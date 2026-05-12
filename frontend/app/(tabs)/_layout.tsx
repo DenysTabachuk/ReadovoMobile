@@ -29,10 +29,21 @@ export default function TabLayout() {
           backgroundColor: Colors[colorScheme].background,
         },
         tabBarActiveTintColor: Colors[colorScheme].tint,
+        tabBarInactiveTintColor: Colors[colorScheme].tabIconDefault,
         headerShown: false,
         tabBarStyle: {
           backgroundColor: Colors[colorScheme].background,
-          borderTopColor: Colors[colorScheme].icon,
+          borderTopColor:
+            colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(17, 24, 28, 0.08)',
+          borderTopWidth: 1,
+          elevation: 0,
+          height: 60,
+          paddingBottom: 6,
+          paddingTop: 4,
+        },
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: '600',
         },
         tabBarButton: HapticTab,
       }}>
@@ -40,21 +51,27 @@ export default function TabLayout() {
         name="index"
         options={{
           title: t('tabs.articles'),
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={24} name="newspaper.fill" color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="dictionary"
         options={{
           title: t('tabs.dictionary'),
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="book.fill" color={color} />,
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={24} name="book.closed.fill" color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
           title: t('tabs.profile'),
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.fill" color={color} />,
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={24} name="person.crop.circle.fill" color={color} />
+          ),
         }}
       />
       <Tabs.Screen
@@ -67,7 +84,9 @@ export default function TabLayout() {
         name="settings"
         options={{
           title: t('tabs.settings'),
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="gearshape.fill" color={color} />,
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={24} name="slider.horizontal.3" color={color} />
+          ),
         }}
       />
     </Tabs>

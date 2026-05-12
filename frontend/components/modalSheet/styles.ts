@@ -29,7 +29,12 @@ export const styles = StyleSheet.create({
     width: 36,
   },
   content: {
+    flexShrink: 1,
     gap: Spacing.md,
+    minHeight: 0,
+  },
+  footerContainer: {
+    paddingTop: Spacing.xs,
   },
   handle: {
     alignSelf: 'center',
@@ -44,7 +49,12 @@ export const styles = StyleSheet.create({
     gap: Spacing.md,
     minHeight: 36,
   },
+  scrollView: {
+    flexShrink: 1,
+    minHeight: 0,
+  },
   scrollContent: {
+    flexGrow: 1,
     gap: Spacing.md,
     paddingBottom: Spacing.xs,
   },
