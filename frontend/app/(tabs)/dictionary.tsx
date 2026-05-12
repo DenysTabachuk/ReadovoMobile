@@ -1,1 +1,1 @@
-export { default } from '@/screens/DictionaryScreen';
+export { default } from '@/features/dictionary/screens/DictionaryScreen';

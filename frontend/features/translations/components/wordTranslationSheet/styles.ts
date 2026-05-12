@@ -15,15 +15,9 @@ export const styles = StyleSheet.create({
     gap: Spacing.sm,
     width: '100%',
   },
-  contextText: {
-    opacity: 0.7,
-  },
   loadingState: {
     alignItems: 'center',
     flexDirection: 'row',
     gap: Spacing.sm,
-  },
-  translationText: {
-    lineHeight: 32,
   },
 });

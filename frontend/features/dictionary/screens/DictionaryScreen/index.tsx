@@ -10,6 +10,7 @@ import {
   type ListRenderItem,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { Ionicons } from '@expo/vector-icons';
 
 import {
   fetchDictionaryWords,
@@ -26,6 +27,7 @@ import {
   type QuizSessionResult,
 } from '@/components/articleQuizRunner';
 import { Button } from '@/components/button';
+import { ModalSheet } from '@/components/modalSheet';
 import { PronunciationButton } from '@/components/pronunciationButton';
 import { useBanner } from '@/components/banner';
 import { FloatingActionButton } from '@/components/floatingActionButton';
@@ -40,6 +42,8 @@ import {
   getNewlyUnlockedAchievements,
   updateAchievementsProgress,
 } from '@/features/achievements';
+import { TranslationCards } from '@/features/translations/components/translationCards';
+import { useWordTranslation } from '@/features/translations/hooks/useWordTranslation';
 import { calculateQuizReward } from '@/features/quizRewards';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useThemeColor } from '@/hooks/use-theme-color';
@@ -73,6 +77,7 @@ export default function DictionaryScreen() {
   const [test, setTest] = useState<DictionaryTest>();
   const [testResult, setTestResult] = useState<QuizSessionResult | null>(null);
   const [openProgressMenuWordId, setOpenProgressMenuWordId] = useState<string | null>(null);
+  const [selectedWord, setSelectedWord] = useState<DictionaryWord | null>(null);
   const userId = currentUser?.id;
 
   const {
@@ -87,6 +92,16 @@ export default function DictionaryScreen() {
     queryKey: ['dictionary', 'words', userId],
   });
   const words = data ?? [];
+  const {
+    data: selectedWordTranslation,
+    error: selectedWordTranslationError,
+    isFetching: isSelectedWordTranslationLoading,
+  } = useWordTranslation({
+    context: selectedWord?.context,
+    enabled: selectedWord !== null,
+    queryScope: `dictionary-word-${selectedWord?.id ?? ''}`,
+    word: selectedWord?.word,
+  });
   const remainingWordsForTest = Math.max(0, 4 - words.length);
   const shouldShowInitialLoader = isLoading && words.length === 0;
   const shouldShowErrorState = Boolean(error) && words.length === 0;
@@ -206,7 +221,6 @@ export default function DictionaryScreen() {
       }
     },
   });
-
   const renderWord = useCallback<ListRenderItem<DictionaryWord>>(
     ({ item }) => {
       const progressColors = getProgressBadgeColors(item.progress, colorScheme);
@@ -222,14 +236,16 @@ export default function DictionaryScreen() {
       return (
         <View style={[styles.wordCard, { borderColor }]}>
           <View style={styles.cardHeader}>
-            <View style={styles.wordTitleGroup}>
+            <Pressable
+              onPress={() => setSelectedWord(item)}
+              style={styles.wordTitleGroup}>
               <ThemedText type="sectionTitle" style={styles.wordText}>
                 {item.word}
               </ThemedText>
-              <ThemedText type="bodyStrong" style={styles.translationText}>
+              <ThemedText type="body" style={styles.wordPreviewText}>
                 {item.translation}
               </ThemedText>
-            </View>
+            </Pressable>
             <View style={styles.progressControl}>
               <Pressable
                 disabled={item.progress !== 'learned'}
@@ -287,10 +303,6 @@ export default function DictionaryScreen() {
               ) : null}
             </View>
           </View>
-          <PronunciationButton word={item.word} />
-          <ThemedText type="body" style={styles.contextText}>
-            {item.context}
-          </ThemedText>
           <View style={styles.learningProgressBlock}>
             <View style={styles.learningProgressTrack}>
               <View
@@ -304,6 +316,16 @@ export default function DictionaryScreen() {
               {`${Math.min(item.correctAnswersCount, item.requiredCorrectAnswers)}/${item.requiredCorrectAnswers}`}
             </ThemedText>
           </View>
+          <View style={styles.cardTapHint}>
+            <Ionicons
+              color={Colors[colorScheme ?? 'light'].icon}
+              name="open-outline"
+              size={13}
+            />
+            <ThemedText type="description" style={styles.cardTapHintText}>
+              {t('dictionary.tapHint')}
+            </ThemedText>
+          </View>
         </View>
       );
     },
@@ -311,9 +333,7 @@ export default function DictionaryScreen() {
       borderColor,
       colorScheme,
       openProgressMenuWordId,
-      queryClient,
       t,
-      userId,
       wordProgressMutation,
     ],
   );
@@ -503,6 +523,24 @@ export default function DictionaryScreen() {
             : t('dictionary.test.start')}
         </FloatingActionButton>
       ) : null}
+      <ModalSheet
+        modalProps={{ presentationStyle: 'overFullScreen' }}
+        onClose={() => setSelectedWord(null)}
+        open={selectedWord !== null}
+        showHandle
+        title={selectedWord?.word ?? t('translation.titleFallback')}>
+        <PronunciationButton word={selectedWord?.word} />
+        {selectedWordTranslationError ? (
+          <ThemedText type="body">{t('translation.error')}</ThemedText>
+        ) : null}
+        <TranslationCards
+          context={selectedWord?.context}
+          contextTranslation={selectedWordTranslation?.contextTranslation}
+          isContextLoading={isSelectedWordTranslationLoading}
+          resetKey={selectedWord?.id}
+          translation={selectedWord?.translation}
+        />
+      </ModalSheet>
     </ScreenContainer>
   );
 }

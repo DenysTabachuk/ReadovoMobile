@@ -19,6 +19,19 @@ export const styles = StyleSheet.create({
   description: {
     maxWidth: 520,
   },
+  cardTapHint: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: Spacing.xs,
+    justifyContent: 'center',
+    marginTop: Spacing.xs,
+  },
+  cardTapHintText: {
+    fontSize: 12,
+    lineHeight: 16,
+    opacity: 0.68,
+    textAlign: 'center',
+  },
   wordCard: {
     borderRadius: 8,
     borderWidth: 1,
@@ -38,11 +51,8 @@ export const styles = StyleSheet.create({
   wordText: {
     flexShrink: 1,
   },
-  translationText: {
-    flexShrink: 1,
-  },
-  contextText: {
-    opacity: 0.74,
+  wordPreviewText: {
+    opacity: 0.78,
   },
   progressBadge: {
     borderRadius: 8,

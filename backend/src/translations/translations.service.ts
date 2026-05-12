@@ -36,8 +36,17 @@ export class TranslationsService {
     const cachedTranslation = this.cache.get(cacheKey);
 
     if (cachedTranslation) {
+      const contextTranslation = params.context
+        ? await this.translateText({
+            sourceLanguage,
+            targetLanguage,
+            text: params.context,
+          })
+        : undefined;
+
       return {
         context: params.context,
+        contextTranslation,
         sourceLanguage,
         targetLanguage,
         translation: cachedTranslation,
@@ -45,6 +54,38 @@ export class TranslationsService {
       };
     }
 
+    const [translation, contextTranslation] = await Promise.all([
+      this.translateText({
+        sourceLanguage,
+        targetLanguage,
+        text: params.word,
+      }),
+      params.context
+        ? this.translateText({
+            sourceLanguage,
+            targetLanguage,
+            text: params.context,
+          })
+        : Promise.resolve(undefined),
+    ]);
+
+    this.cache.set(cacheKey, translation);
+
+    return {
+      context: params.context,
+      contextTranslation,
+      sourceLanguage,
+      targetLanguage,
+      translation,
+      word: params.word,
+    };
+  }
+
+  private async translateText(params: {
+    sourceLanguage: string;
+    targetLanguage: string;
+    text: string;
+  }): Promise<string> {
     const apiKey = process.env.GOOGLE_TRANSLATE_API_KEY;
 
     if (!apiKey) {
@@ -58,9 +99,9 @@ export class TranslationsService {
     url.searchParams.set('format', 'text');
     url.searchParams.set('key', apiKey);
     url.searchParams.set('model', 'nmt');
-    url.searchParams.set('q', params.word);
-    url.searchParams.set('source', sourceLanguage);
-    url.searchParams.set('target', targetLanguage);
+    url.searchParams.set('q', params.text);
+    url.searchParams.set('source', params.sourceLanguage);
+    url.searchParams.set('target', params.targetLanguage);
 
     const response = await fetch(url, {
       method: 'POST',
@@ -77,20 +118,7 @@ export class TranslationsService {
       throw new BadGatewayException('Translation is unavailable.');
     }
 
-    const translation = this.decodeHtmlEntities(translatedText);
-
-    // MVP: Cloud Translation Basic v2 does not expose a dedicated sentence
-    // context field for disambiguating a single tapped word, so we translate
-    // the word directly for now and keep the sentence for future upgrades.
-    this.cache.set(cacheKey, translation);
-
-    return {
-      context: params.context,
-      sourceLanguage,
-      targetLanguage,
-      translation,
-      word: params.word,
-    };
+    return this.decodeHtmlEntities(translatedText);
   }
 
   private createCacheKey(

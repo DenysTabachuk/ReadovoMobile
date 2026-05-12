@@ -186,6 +186,7 @@
     "loading": "Loading dictionary...",
     "emptyTitle": "No saved words yet",
     "emptyDescription": "Tap a word in an article and add it to the dictionary after translation.",
+    "tapHint": "Tap to see more",
     "errorTitle": "Dictionary is unavailable",
     "errorDescription": "We could not load saved words right now.",
     "retry": "Try again",
@@ -333,7 +334,11 @@
     "pronouncing": "Playing pronunciation...",
     "pronounceAction": "Play pronunciation for {{word}}",
     "close": "Close",
-    "dictionaryComingSoon": "Dictionary will be added next."
+    "dictionaryComingSoon": "Dictionary will be added next.",
+    "contextTapHint": "Tap the card to see the context translation",
+    "wordTranslationLabel": "Word translation",
+    "contextOriginalLabel": "Context (original)",
+    "contextTranslationLabel": "Context translation"
   },
   "profile": {
     "title": "My profile",

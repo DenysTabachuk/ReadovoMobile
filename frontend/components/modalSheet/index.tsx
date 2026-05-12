@@ -2,6 +2,7 @@ import { type ReactNode } from 'react';
 import {
   Modal,
   Pressable,
+  ScrollView,
   View,
   type ModalProps,
   type StyleProp,
@@ -82,7 +83,12 @@ export function ModalSheet({
               </Pressable>
             </View>
 
-            {children}
+            <ScrollView
+              contentContainerStyle={styles.scrollContent}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}>
+              {children}
+            </ScrollView>
           </View>
 
           {footer}

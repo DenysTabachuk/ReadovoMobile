@@ -7,6 +7,7 @@ export type TranslateWordRequest = {
 
 export type TranslateWordResponse = {
   context?: string;
+  contextTranslation?: string;
   sourceLanguage: string;
   targetLanguage: string;
   translation: string;

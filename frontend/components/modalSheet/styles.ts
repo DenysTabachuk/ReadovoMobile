@@ -12,6 +12,7 @@ export const styles = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     gap: Spacing.lg,
+    maxHeight: '85%',
     paddingBottom: Spacing.xLg,
     paddingHorizontal: Spacing.xLg,
     paddingTop: Spacing.md,
@@ -42,6 +43,10 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: Spacing.md,
     minHeight: 36,
+  },
+  scrollContent: {
+    gap: Spacing.md,
+    paddingBottom: Spacing.xs,
   },
   title: {
     flex: 1,

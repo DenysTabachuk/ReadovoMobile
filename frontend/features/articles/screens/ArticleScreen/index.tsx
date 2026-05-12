@@ -7,7 +7,6 @@ import { ActivityIndicator, Pressable, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
-import { translateWord } from '@/api/translations';
 import { createDictionaryWord } from '@/api/dictionary';
 import {
   type ArticleAdaptationSummary,
@@ -46,12 +45,13 @@ import {
   type ArticleQuizMode,
   type SavedArticle,
 } from '@/features/articles';
+import { WordTranslationSheet } from '@/features/translations/components/wordTranslationSheet';
+import { useWordTranslation } from '@/features/translations/hooks/useWordTranslation';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useAuth } from '@/providers/authProvider';
 
 import { InteractiveArticleText } from './components/interactiveArticleText';
-import { WordTranslationSheet } from './components/wordTranslationSheet';
 import { styles } from './styles';
 
 type SelectedWord = {
@@ -135,27 +135,11 @@ export default function ArticleScreen() {
     data: translation,
     error: translationError,
     isFetching: isTranslationLoading,
-  } = useQuery({
+  } = useWordTranslation({
+    context: selectedWord?.context,
     enabled: selectedWord !== null,
-    queryFn: async () => {
-      if (!selectedWord) {
-        throw new Error('translation.error');
-      }
-
-      return translateWord({
-        context: selectedWord.context,
-        sourceLanguage: 'en',
-        targetLanguage: 'uk',
-        word: selectedWord.word,
-      });
-    },
-    queryKey: [
-      'translation',
-      selectedWord?.word ?? '',
-      selectedWord?.context ?? '',
-      'en',
-      'uk',
-    ],
+    queryScope: 'article-screen',
+    word: selectedWord?.word,
   });
   const { data: savedArticles } = useQuery({
     enabled: Boolean(currentUser?.id),
@@ -797,6 +781,7 @@ export default function ArticleScreen() {
       />
       <WordTranslationSheet
         context={selectedWord?.context}
+        contextTranslation={translation?.contextTranslation}
         error={Boolean(translationError)}
         isAddToDictionaryDisabled={
           isTranslationLoading ||

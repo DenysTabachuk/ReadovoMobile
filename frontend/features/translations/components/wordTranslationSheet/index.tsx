@@ -5,6 +5,7 @@ import { Button } from '@/components/button';
 import { ModalSheet } from '@/components/modalSheet';
 import { PronunciationButton } from '@/components/pronunciationButton';
 import { ThemedText } from '@/components/themedText';
+import { TranslationCards } from '../translationCards';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
@@ -12,6 +13,7 @@ import { styles } from './styles';
 
 type WordTranslationSheetProps = {
   context?: string;
+  contextTranslation?: string;
   error: boolean;
   isAddToDictionaryDisabled?: boolean;
   loading: boolean;
@@ -24,6 +26,7 @@ type WordTranslationSheetProps = {
 
 export function WordTranslationSheet({
   context,
+  contextTranslation,
   error,
   isAddToDictionaryDisabled,
   loading,
@@ -57,12 +60,6 @@ export function WordTranslationSheet({
       title={word ?? t('translation.titleFallback')}>
       <PronunciationButton word={word} />
 
-      {context ? (
-        <ThemedText type="body" style={styles.contextText}>
-          {context}
-        </ThemedText>
-      ) : null}
-
       {loading ? (
         <View style={styles.loadingState}>
           <ActivityIndicator color={Colors[colorScheme ?? 'light'].tint} />
@@ -74,10 +71,13 @@ export function WordTranslationSheet({
         <ThemedText type="body">{t('translation.error')}</ThemedText>
       ) : null}
 
-      {!loading && !error && translation ? (
-        <ThemedText type="paragraph" style={styles.translationText}>
-          {translation}
-        </ThemedText>
+      {!loading && !error ? (
+        <TranslationCards
+          context={context}
+          contextTranslation={contextTranslation}
+          resetKey={word}
+          translation={translation}
+        />
       ) : null}
     </ModalSheet>
   );

@@ -18,5 +18,7 @@ export const styles = StyleSheet.create({
   },
   label: {
     flexShrink: 1,
+    fontSize: 18,
+    lineHeight: 24,
   },
 });
