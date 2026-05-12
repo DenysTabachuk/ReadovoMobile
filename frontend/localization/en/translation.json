@@ -337,6 +337,8 @@
     "dictionaryComingSoon": "Dictionary will be added next.",
     "contextTapHint": "Tap the card to see the context translation",
     "wordTranslationLabel": "Word translation",
+    "wordTranslationContextualLabel": "Word translation in context",
+    "wordTapHint": "Tap to switch translation",
     "contextOriginalLabel": "Context (original)",
     "contextTranslationLabel": "Context translation"
   },

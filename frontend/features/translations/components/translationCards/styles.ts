@@ -37,4 +37,11 @@ export const styles = StyleSheet.create({
     borderWidth: 1,
     padding: Spacing.md,
   },
+  wordHint: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: Spacing.xs,
+    justifyContent: 'center',
+    marginTop: -Spacing.xs,
+  },
 });

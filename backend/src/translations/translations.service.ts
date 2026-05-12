@@ -13,12 +13,14 @@ const DEFAULT_SOURCE_LANGUAGE = 'en';
 const DEFAULT_TARGET_LANGUAGE = 'uk';
 const GOOGLE_TRANSLATE_API_URL =
   'https://translation.googleapis.com/language/translate/v2';
+const CONTEXT_WORD_START_MARKER = '__CTX_WORD_START__';
+const CONTEXT_WORD_END_MARKER = '__CTX_WORD_END__';
 
 @Injectable()
 export class TranslationsService {
   // MVP: in-memory cache keeps repeated word lookups off the Google API.
   // This should move to persistent storage once dictionary/progress data exists.
-  private readonly cache = new Map<string, string>();
+  private readonly baseWordCache = new Map<string, string>();
 
   async translateWord(params: {
     context?: string;
@@ -28,52 +30,64 @@ export class TranslationsService {
   }): Promise<TranslateWordResponse> {
     const sourceLanguage = params.sourceLanguage ?? DEFAULT_SOURCE_LANGUAGE;
     const targetLanguage = params.targetLanguage ?? DEFAULT_TARGET_LANGUAGE;
-    const cacheKey = this.createCacheKey(
+    const baseCacheKey = this.createBaseCacheKey(
       params.word,
       sourceLanguage,
       targetLanguage,
     );
-    const cachedTranslation = this.cache.get(cacheKey);
+    const cachedBaseTranslation = this.baseWordCache.get(baseCacheKey);
+    let baseTranslation = cachedBaseTranslation;
 
-    if (cachedTranslation) {
-      const contextTranslation = params.context
-        ? await this.translateText({
-            sourceLanguage,
-            targetLanguage,
-            text: params.context,
-          })
-        : undefined;
+    // Context-aware path:
+    // 1) Wrap the selected word with stable text markers inside the original sentence.
+    // 2) Translate the full sentence once via Google Translate.
+    // 3) Extract the translated fragment between markers as `translation`.
+    // This gives a word translation shaped by sentence context (gender/case/sense),
+    // while `contextTranslation` is the same translated sentence without markers.
+    const contextWithMarker = params.context
+      ? this.wrapContextWord(params.context, params.word)
+      : null;
+    let contextualTranslation: string | undefined;
+    let contextTranslation: string | undefined;
 
-      return {
-        context: params.context,
-        contextTranslation,
+    if (contextWithMarker) {
+      const translatedContextWithMarker = await this.translateText({
         sourceLanguage,
         targetLanguage,
-        translation: cachedTranslation,
-        word: params.word,
-      };
+        text: contextWithMarker,
+      });
+      const extractedTranslation = this.extractTaggedContent(
+        translatedContextWithMarker,
+      );
+
+      if (extractedTranslation) {
+        contextualTranslation = extractedTranslation;
+        contextTranslation = this.stripContextWordTags(translatedContextWithMarker);
+      } else {
+        contextTranslation = await this.translateText({
+          sourceLanguage,
+          targetLanguage,
+          text: params.context ?? '',
+        });
+      }
     }
 
-    const [translation, contextTranslation] = await Promise.all([
-      this.translateText({
+    if (!baseTranslation) {
+      baseTranslation = await this.translateText({
         sourceLanguage,
         targetLanguage,
         text: params.word,
-      }),
-      params.context
-        ? this.translateText({
-            sourceLanguage,
-            targetLanguage,
-            text: params.context,
-          })
-        : Promise.resolve(undefined),
-    ]);
+      });
+      this.baseWordCache.set(baseCacheKey, baseTranslation);
+    }
 
-    this.cache.set(cacheKey, translation);
+    const translation = contextualTranslation ?? baseTranslation;
 
     return {
+      baseTranslation,
       context: params.context,
       contextTranslation,
+      contextualTranslation,
       sourceLanguage,
       targetLanguage,
       translation,
@@ -82,6 +96,7 @@ export class TranslationsService {
   }
 
   private async translateText(params: {
+    format?: 'text';
     sourceLanguage: string;
     targetLanguage: string;
     text: string;
@@ -96,7 +111,7 @@ export class TranslationsService {
 
     const url = new URL(GOOGLE_TRANSLATE_API_URL);
 
-    url.searchParams.set('format', 'text');
+    url.searchParams.set('format', params.format ?? 'text');
     url.searchParams.set('key', apiKey);
     url.searchParams.set('model', 'nmt');
     url.searchParams.set('q', params.text);
@@ -121,12 +136,53 @@ export class TranslationsService {
     return this.decodeHtmlEntities(translatedText);
   }
 
-  private createCacheKey(
+  private createBaseCacheKey(
     word: string,
     sourceLanguage: string,
     targetLanguage: string,
   ): string {
     return `${word.toLowerCase()}::${sourceLanguage}::${targetLanguage}`;
+  }
+
+  private wrapContextWord(context: string, word: string): string | null {
+    // We mark only the first exact substring match to keep behavior deterministic.
+    const contextLower = context.toLowerCase();
+    const wordLower = word.toLowerCase();
+    const wordStart = contextLower.indexOf(wordLower);
+
+    if (wordStart < 0) {
+      return null;
+    }
+
+    const wordEnd = wordStart + word.length;
+    const originalWordSlice = context.slice(wordStart, wordEnd);
+
+    return `${context.slice(0, wordStart)}${CONTEXT_WORD_START_MARKER}${originalWordSlice}${CONTEXT_WORD_END_MARKER}${context.slice(wordEnd)}`;
+  }
+
+  private extractTaggedContent(translatedContextWithMarker: string): string | null {
+    const contentMatch = translatedContextWithMarker.match(
+      new RegExp(
+        `${CONTEXT_WORD_START_MARKER}([\\s\\S]*?)${CONTEXT_WORD_END_MARKER}`,
+        'i',
+      ),
+    );
+    const taggedContent = contentMatch?.[1]?.trim();
+
+    if (!taggedContent) {
+      return null;
+    }
+
+    return this.decodeHtmlEntities(taggedContent);
+  }
+
+  private stripContextWordTags(translatedContextWithMarker: string): string {
+    return this.decodeHtmlEntities(
+      translatedContextWithMarker
+        .replaceAll(CONTEXT_WORD_START_MARKER, '')
+        .replaceAll(CONTEXT_WORD_END_MARKER, '')
+        .trim(),
+    );
   }
 
   private decodeHtmlEntities(value: string): string {

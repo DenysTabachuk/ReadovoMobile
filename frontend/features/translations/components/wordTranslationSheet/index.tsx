@@ -12,8 +12,10 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { styles } from './styles';
 
 type WordTranslationSheetProps = {
+  baseTranslation?: string;
   context?: string;
   contextTranslation?: string;
+  contextualTranslation?: string;
   error: boolean;
   isAddToDictionaryDisabled?: boolean;
   loading: boolean;
@@ -25,8 +27,10 @@ type WordTranslationSheetProps = {
 };
 
 export function WordTranslationSheet({
+  baseTranslation,
   context,
   contextTranslation,
+  contextualTranslation,
   error,
   isAddToDictionaryDisabled,
   loading,
@@ -73,8 +77,10 @@ export function WordTranslationSheet({
 
       {!loading && !error ? (
         <TranslationCards
+          baseTranslation={baseTranslation}
           context={context}
           contextTranslation={contextTranslation}
+          contextualTranslation={contextualTranslation}
           resetKey={word}
           translation={translation}
         />

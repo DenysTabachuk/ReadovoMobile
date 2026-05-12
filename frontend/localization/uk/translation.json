@@ -337,6 +337,8 @@
     "dictionaryComingSoon": "Словник додамо наступним кроком.",
     "contextTapHint": "Тапніть на картку, щоб побачити переклад контексту",
     "wordTranslationLabel": "Переклад слова",
+    "wordTranslationContextualLabel": "Переклад слова у контексті",
+    "wordTapHint": "Тапніть, щоб перемкнути переклад",
     "contextOriginalLabel": "Контекст (оригінал)",
     "contextTranslationLabel": "Переклад контексту"
   },

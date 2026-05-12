@@ -780,8 +780,10 @@ export default function ArticleScreen() {
         text={displayedText}
       />
       <WordTranslationSheet
+        baseTranslation={translation?.baseTranslation}
         context={selectedWord?.context}
         contextTranslation={translation?.contextTranslation}
+        contextualTranslation={translation?.contextualTranslation}
         error={Boolean(translationError)}
         isAddToDictionaryDisabled={
           isTranslationLoading ||

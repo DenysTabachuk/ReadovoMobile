@@ -1,4 +1,4 @@
-import {
+﻿import {
   BadGatewayException,
   InternalServerErrorException,
 } from '@nestjs/common';
@@ -20,26 +20,41 @@ describe('TranslationsService', () => {
     delete process.env.GOOGLE_TRANSLATE_API_KEY;
   });
 
-  it('translates a word and returns the provided context', async () => {
-    fetchMock.mockResolvedValue({
-      json: () =>
-        Promise.resolve({
-          data: {
-            translations: [
-              {
-                translatedText: 'правильний',
-              },
-            ],
-          },
-        }),
-      ok: true,
-    });
+  it('translates a word with contextual marker extraction', async () => {
+    fetchMock
+      .mockResolvedValueOnce({
+        json: () =>
+          Promise.resolve({
+            data: {
+              translations: [
+                {
+                  translatedText:
+                    'Вона була __CTX_WORD_START__математикинею__CTX_WORD_END__ свого часу.',
+                },
+              ],
+            },
+          }),
+        ok: true,
+      })
+      .mockResolvedValueOnce({
+        json: () =>
+          Promise.resolve({
+            data: {
+              translations: [
+                {
+                  translatedText: 'математик',
+                },
+              ],
+            },
+          }),
+        ok: true,
+      });
 
     const response = await service.translateWord({
-      context: 'You are right.',
+      context: 'She was a mathematician of her time.',
       sourceLanguage: 'en',
       targetLanguage: 'uk',
-      word: 'right',
+      word: 'mathematician',
     });
 
     expect(fetchMock).toHaveBeenCalledWith(
@@ -49,11 +64,14 @@ describe('TranslationsService', () => {
       }),
     );
     expect(response).toEqual({
-      context: 'You are right.',
+      baseTranslation: 'математик',
+      context: 'She was a mathematician of her time.',
+      contextTranslation: 'Вона була математикинею свого часу.',
+      contextualTranslation: 'математикинею',
       sourceLanguage: 'en',
       targetLanguage: 'uk',
-      translation: 'правильний',
-      word: 'right',
+      translation: 'математикинею',
+      word: 'mathematician',
     });
   });
 

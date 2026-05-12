@@ -534,11 +534,15 @@ export default function DictionaryScreen() {
           <ThemedText type="body">{t('translation.error')}</ThemedText>
         ) : null}
         <TranslationCards
+          baseTranslation={
+            selectedWordTranslation?.baseTranslation ?? selectedWord?.translation
+          }
           context={selectedWord?.context}
           contextTranslation={selectedWordTranslation?.contextTranslation}
+          contextualTranslation={selectedWordTranslation?.contextualTranslation}
           isContextLoading={isSelectedWordTranslationLoading}
           resetKey={selectedWord?.id}
-          translation={selectedWord?.translation}
+          translation={selectedWordTranslation?.translation ?? selectedWord?.translation}
         />
       </ModalSheet>
     </ScreenContainer>
