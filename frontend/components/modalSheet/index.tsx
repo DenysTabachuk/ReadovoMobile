@@ -56,6 +56,10 @@ export function ModalSheet({
     Platform.OS === 'android'
       ? Math.max(insets.bottom, Spacing.xLg)
       : insets.bottom;
+  const contentBottomInset =
+    Platform.OS === 'android'
+      ? Math.max(insets.bottom, Spacing.md)
+      : insets.bottom;
   const closeButtonBorderColor = useThemeColor(
     { dark: '#4f5b62', light: '#d0d7de' },
     'icon',
@@ -108,7 +112,10 @@ export function ModalSheet({
             </View>
 
             <ScrollView
-              contentContainerStyle={styles.scrollContent}
+              contentContainerStyle={[
+                styles.scrollContent,
+                { paddingBottom: Spacing.md + contentBottomInset },
+              ]}
               keyboardShouldPersistTaps="handled"
               style={styles.scrollView}
               showsVerticalScrollIndicator={false}>

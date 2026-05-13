@@ -111,7 +111,21 @@
     "searchResults": "Знайдено статей: {{count}}",
     "randomResults": "Статей у добірці: {{count}}",
     "clearFilters": "Очистити",
+    "showFilters": "Показати фільтри",
+    "hideFilters": "Сховати фільтри",
+    "swipeUpToExpand": "Потягніть вгору, щоб розгорнути",
+    "swipeDownToCollapse": "Потягніть вниз, щоб згорнути",
+    "swipeDownToExpand": "Потягніть вниз, щоб розгорнути",
+    "swipeUpToCollapse": "Потягніть вгору, щоб згорнути",
+    "filtersCollapsedHint": "Потягніть угору, щоб розгорнути",
+    "activeFiltersCount": "Активних фільтрів: {{count}}",
+    "filtersSections": {
+      "quick": "Швидкі фільтри",
+      "personal": "Мої статті",
+      "main": "Основні фільтри"
+    },
     "recommendedLabel": "Рекомендовані статті",
+    "preferImagesFirstLabel": "Спочатку статті з картинками",
     "recommendedInfo": {
       "title": "Про рекомендовані статті",
       "description": "Це добірка статей, яку команда Readovo відібрала вручну, щоб вам було легше знайти цікавий матеріал для читання, особливо на початку.",
@@ -120,10 +134,18 @@
     },
     "previewLengthLabel": "Довжина опису",
     "previewLengthTitle": "Оберіть довжину опису",
+    "sortLabel": "Сортування статей",
+    "sortTitle": "Оберіть порядок статей",
+    "readyLevelLabel": "Рівень для готової версії",
+    "readyLevelTitle": "Оберіть рівень для готової версії",
+    "readyTransformationLabel": "Тип готового тексту",
+    "readyTransformationTitle": "Оберіть тип готового тексту",
     "categoryLabel": "Категорія",
     "categoryTitle": "Оберіть категорію",
     "emptyTitle": "Статей не знайдено",
+    "emptyFilteredTitle": "Немає статей за цими фільтрами",
     "emptySearchDescription": "Спробуйте коротший запит або інші ключові слова.",
+    "emptyFilteredDescription": "За поточними фільтрами немає результатів. Змініть або очистіть фільтри.",
     "emptyFilterDescription": "Змініть або очистіть фільтри, щоб побачити більше статей.",
     "loadMore": "Завантажити ще",
     "loadingMore": "Завантажуємо ще...",
@@ -148,6 +170,19 @@
         "medium": "Середній опис",
         "long": "Довгий опис"
       },
+      "sort": {
+        "default": "Звичайний порядок",
+        "lengthDesc": "Від довших до коротших",
+        "lengthAsc": "Від коротших до довших"
+      },
+      "readyLevel": {
+        "all": "Будь-який готовий рівень"
+      },
+      "readyTransformation": {
+        "all": "Будь-який готовий текст",
+        "adaptation": "Є адаптована версія",
+        "summary": "Є сумаризована версія"
+      },
       "category": {
         "all": "Усі теми",
         "biography": "Люди",
@@ -165,6 +200,8 @@
     "loading": "Завантажуємо статті...",
     "errorTitle": "Статті недоступні",
     "errorDescription": "Перевірте інтернет-з'єднання та спробуйте ще раз.",
+    "loadErrorTitle": "Не вдалося завантажити статті",
+    "loadErrorDescription": "Сталася помилка під час завантаження. Спробуйте ще раз.",
     "retry": "Спробувати ще",
     "myArticles": {
       "label": "Мої статті"

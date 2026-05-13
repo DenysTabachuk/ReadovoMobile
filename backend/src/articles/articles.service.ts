@@ -21,6 +21,8 @@ import {
   type ArticleQuizQuestionOption,
   type ArticleQuizQuestionType,
   type ArticleAdaptationsByArticleId,
+  type ArticleReadyLevelFilter,
+  type ArticleReadyTransformationFilter,
   type ArticleSimplificationLevel,
   type ArticleSimplificationTargetLength,
   type ArticleTextTransformationType,
@@ -40,6 +42,7 @@ import {
   type WikipediaArticleCategory,
   type WikipediaArticleDetail,
   type WikipediaArticlePreviewLength,
+  type WikipediaArticleSortOption,
   type WikipediaPage,
 } from './types';
 
@@ -59,12 +62,6 @@ const MAX_SIMPLIFICATION_CHUNK_COMPLETION_TOKENS =
 const MAX_SIMPLIFICATION_COMPLETION_TOKENS = GROQ_MODEL_MAX_OUTPUT_TOKENS;
 const MAX_VOCABULARY_QUIZ_COMPLETION_TOKENS = GROQ_MODEL_MAX_OUTPUT_TOKENS;
 const MAX_ARTICLE_LIMIT = 50;
-const MIN_BROWSE_EXTRACT_LENGTH = 90;
-const MIN_BROWSE_PAGE_LENGTH = 5000;
-const MIN_RECOMMENDED_EXTRACT_LENGTH = 80;
-const MIN_RECOMMENDED_PAGE_LENGTH = 4500;
-const MIN_SEARCH_EXTRACT_LENGTH = 60;
-const MIN_SEARCH_PAGE_LENGTH = 1800;
 const WIKIMEDIA_USER_AGENT = 'Readovo/1.0';
 const WIKIPEDIA_LANGUAGE_CODE = 'en';
 const WIKIPEDIA_CATEGORY_TITLES: Record<
@@ -410,12 +407,6 @@ type MathJaxModule = {
   ) => Promise<unknown>;
 };
 
-type ArticlePreviewQualityOptions = {
-  minExtractLength: number;
-  minPageLength: number;
-  requireThumbnail: boolean;
-};
-
 type SimplificationChunk = {
   blocks?: ArticleBlock[];
   index: number;
@@ -456,30 +447,43 @@ export class ArticlesService {
     const category = articleParams.category ?? 'all';
     const excludeIds = articleParams.excludeIds ?? [];
     const previewLength = articleParams.previewLength ?? 'all';
+    const preferImagesFirst = articleParams.preferImagesFirst ?? false;
+    const readyLevel = articleParams.readyLevel ?? 'all';
+    const readyTransformationType =
+      articleParams.readyTransformationType ?? 'all';
     const search = articleParams.search?.trim();
+    const sortBy = articleParams.sortBy ?? 'default';
     const shouldUseRecommendedArticles =
       articleParams.recommended !== false && !search;
 
+    let articles: WikipediaArticle[];
+
     if (shouldUseRecommendedArticles) {
-      const articles = await this.getRecommendedArticles({
+      articles = await this.getRecommendedArticles({
         category,
         excludeIds,
         limit: normalizedLimit,
         previewLength,
       });
-
-      return this.attachAvailableAdaptations(articles);
+    } else {
+      articles = await this.getLiveArticles({
+        category,
+        excludeIds,
+        limit: normalizedLimit,
+        previewLength,
+        search,
+      });
     }
 
-    const articles = await this.getLiveArticles({
-      category,
-      excludeIds,
-      limit: normalizedLimit,
-      previewLength,
-      search,
-    });
+    const articlesWithAdaptations = await this.attachAvailableAdaptations(articles);
 
-    return this.attachAvailableAdaptations(articles);
+    return this.applyArticleFiltersAndSorting(articlesWithAdaptations, {
+      limit: normalizedLimit,
+      preferImagesFirst,
+      readyLevel,
+      readyTransformationType,
+      sortBy,
+    });
   }
 
   async getRandomArticles(
@@ -497,68 +501,28 @@ export class ArticlesService {
   }): Promise<WikipediaArticle[]> {
     const search = params.search;
     const requestLimit = search
-      ? Math.min(MAX_ARTICLE_LIMIT, params.limit * 3)
-      : Math.min(MAX_ARTICLE_LIMIT, params.limit * 4);
-    const queryParams = new URLSearchParams({
-      action: 'query',
-      exintro: '1',
-      explaintext: '1',
-      exsentences: '2',
-      format: 'json',
-      inprop: 'url',
-      origin: '*',
-      piprop: 'thumbnail',
-      pithumbsize: '200',
-      prop: 'extracts|pageimages|info',
-      redirects: '1',
-    });
-
-    if (search) {
-      queryParams.set('generator', 'search');
-      queryParams.set(
-        'gsrsearch',
-        this.buildSearchQuery(search, params.category),
-      );
-      queryParams.set('gsrlimit', String(requestLimit));
-      queryParams.set('gsrnamespace', '0');
-    } else if (params.category !== 'all') {
-      queryParams.set('generator', 'search');
-      queryParams.set(
-        'gsrsearch',
-        this.buildSearchQuery(
-          WIKIPEDIA_CATEGORY_SEARCH_TERMS[params.category],
-          params.category,
-        ),
-      );
-      queryParams.set('gsrlimit', String(requestLimit));
-      queryParams.set('gsrnamespace', '0');
-    } else {
-      queryParams.set('generator', 'random');
-      queryParams.set('grnlimit', String(requestLimit));
-      queryParams.set('grnnamespace', '0');
-    }
-
-    const data = await this.fetchWikipediaResponse(queryParams);
-    const qualityOptions = search
-      ? {
-          minExtractLength: MIN_SEARCH_EXTRACT_LENGTH,
-          minPageLength: MIN_SEARCH_PAGE_LENGTH,
-          requireThumbnail: false,
-        }
-      : {
-          minExtractLength: MIN_BROWSE_EXTRACT_LENGTH,
-          minPageLength: MIN_BROWSE_PAGE_LENGTH,
-          requireThumbnail: true,
-        };
+      ? Math.min(MAX_ARTICLE_LIMIT, params.limit * 8)
+      : Math.min(MAX_ARTICLE_LIMIT, params.limit * 6);
     const excludedIds = new Set(params.excludeIds ?? []);
+    const primaryPages = await this.fetchLiveArticlePages({
+      category: params.category,
+      requestLimit,
+      search,
+    });
+    const fallbackPages =
+      search && params.category !== 'all' && primaryPages.length < params.limit
+        ? await this.fetchLiveArticlePages({
+            category: 'all',
+            requestLimit,
+            search,
+          })
+        : [];
 
-    return this.getPagesFromResponse(data)
-      .filter((page) => !excludedIds.has(page.pageid))
-      .filter((page) =>
-        this.isUsableArticlePreview(page, qualityOptions, params.previewLength),
-      )
-      .map((page) => this.mapPageToArticle(page))
-      .slice(0, params.limit);
+    return this.mergeAndMapLiveArticlePages(
+      [...primaryPages, ...fallbackPages],
+      excludedIds,
+      params.previewLength,
+    ).slice(0, params.limit);
   }
 
   private async getRecommendedArticles(params: {
@@ -594,15 +558,7 @@ export class ArticlesService {
     const recommendedArticles = this.getPagesFromResponse(data)
       .filter((page) => !excludedIds.has(page.pageid))
       .filter((page) =>
-        this.isUsableArticlePreview(
-          page,
-          {
-            minExtractLength: MIN_RECOMMENDED_EXTRACT_LENGTH,
-            minPageLength: MIN_RECOMMENDED_PAGE_LENGTH,
-            requireThumbnail: true,
-          },
-          params.previewLength,
-        ),
+        this.isUsableArticlePreview(page, params.previewLength),
       )
       .sort(
         (left, right) =>
@@ -1561,6 +1517,55 @@ export class ArticlesService {
     return `${search} incategory:"${WIKIPEDIA_CATEGORY_TITLES[category]}"`;
   }
 
+  private async fetchLiveArticlePages(params: {
+    category: WikipediaArticleCategory;
+    requestLimit: number;
+    search?: string;
+  }): Promise<WikipediaPage[]> {
+    const queryParams = new URLSearchParams({
+      action: 'query',
+      exintro: '1',
+      explaintext: '1',
+      exsentences: '2',
+      format: 'json',
+      inprop: 'url',
+      origin: '*',
+      piprop: 'thumbnail',
+      pithumbsize: '200',
+      prop: 'extracts|pageimages|info',
+      redirects: '1',
+    });
+
+    if (params.search) {
+      queryParams.set('generator', 'search');
+      queryParams.set(
+        'gsrsearch',
+        this.buildSearchQuery(params.search, params.category),
+      );
+      queryParams.set('gsrlimit', String(params.requestLimit));
+      queryParams.set('gsrnamespace', '0');
+    } else if (params.category !== 'all') {
+      queryParams.set('generator', 'search');
+      queryParams.set(
+        'gsrsearch',
+        this.buildSearchQuery(
+          WIKIPEDIA_CATEGORY_SEARCH_TERMS[params.category],
+          params.category,
+        ),
+      );
+      queryParams.set('gsrlimit', String(params.requestLimit));
+      queryParams.set('gsrnamespace', '0');
+    } else {
+      queryParams.set('generator', 'random');
+      queryParams.set('grnlimit', String(params.requestLimit));
+      queryParams.set('grnnamespace', '0');
+    }
+
+    const data = await this.fetchWikipediaResponse(queryParams);
+
+    return this.getPagesFromResponse(data);
+  }
+
   private getRecommendedArticleTitles(
     category: WikipediaArticleCategory,
     limit: number,
@@ -1580,7 +1585,6 @@ export class ArticlesService {
 
   private isUsableArticlePreview(
     page: WikipediaPage,
-    options: ArticlePreviewQualityOptions,
     previewLength: WikipediaArticlePreviewLength,
   ): boolean {
     const title = sanitizeWikipediaText(page.title).trim();
@@ -1596,19 +1600,132 @@ export class ArticlesService {
       return false;
     }
 
-    if (options.requireThumbnail && !page.thumbnail?.source) {
-      return false;
-    }
-
-    if (extract.length < options.minExtractLength) {
-      return false;
-    }
-
-    if ((page.length ?? 0) < options.minPageLength) {
-      return false;
-    }
-
     return this.isMatchingPreviewLength(extract, previewLength);
+  }
+
+  private mergeAndMapLiveArticlePages(
+    pages: WikipediaPage[],
+    excludedIds: Set<number>,
+    previewLength: WikipediaArticlePreviewLength,
+  ): WikipediaArticle[] {
+    const articleById = new Map<number, WikipediaArticle>();
+
+    for (const page of pages) {
+      if (excludedIds.has(page.pageid)) {
+        continue;
+      }
+
+      if (!this.isUsableArticlePreview(page, previewLength)) {
+        continue;
+      }
+
+      if (articleById.has(page.pageid)) {
+        continue;
+      }
+
+      articleById.set(page.pageid, this.mapPageToArticle(page));
+    }
+
+    return Array.from(articleById.values());
+  }
+
+  private applyArticleFiltersAndSorting<T extends WikipediaArticle>(
+    articles: T[],
+    params: {
+      limit: number;
+      preferImagesFirst: boolean;
+      readyLevel: ArticleReadyLevelFilter;
+      readyTransformationType: ArticleReadyTransformationFilter;
+      sortBy: WikipediaArticleSortOption;
+    },
+  ): T[] {
+    const filteredArticles = articles.filter((article) =>
+      this.matchesReadyAdaptationFilter(article, {
+        readyLevel: params.readyLevel,
+        readyTransformationType: params.readyTransformationType,
+      }),
+    );
+    const sortedArticles = [...filteredArticles].sort((left, right) =>
+      this.compareArticles(left, right, params),
+    );
+
+    return sortedArticles.slice(0, params.limit);
+  }
+
+  private matchesReadyAdaptationFilter(
+    article: WikipediaArticle,
+    params: {
+      readyLevel: ArticleReadyLevelFilter;
+      readyTransformationType: ArticleReadyTransformationFilter;
+    },
+  ): boolean {
+    if (
+      params.readyLevel === 'all' &&
+      params.readyTransformationType === 'all'
+    ) {
+      return true;
+    }
+
+    const availableAdaptations = article.availableAdaptations ?? [];
+
+    if (params.readyTransformationType === 'both') {
+      const adaptationsForLevel =
+        params.readyLevel === 'all'
+          ? availableAdaptations
+          : availableAdaptations.filter(
+              (adaptation) => adaptation.level === params.readyLevel,
+            );
+      const availableTypes = new Set(
+        adaptationsForLevel.map((adaptation) => adaptation.transformationType),
+      );
+
+      return (
+        availableTypes.has('adaptation') && availableTypes.has('summary')
+      );
+    }
+
+    return availableAdaptations.some((adaptation) => {
+      if (
+        params.readyLevel !== 'all' &&
+        adaptation.level !== params.readyLevel
+      ) {
+        return false;
+      }
+
+      if (params.readyTransformationType === 'all') {
+        return true;
+      }
+
+      return adaptation.transformationType === params.readyTransformationType;
+    });
+  }
+
+  private compareArticles(
+    left: WikipediaArticle,
+    right: WikipediaArticle,
+    params: {
+      preferImagesFirst: boolean;
+      sortBy: WikipediaArticleSortOption;
+    },
+  ): number {
+    if (params.preferImagesFirst) {
+      const imagePriorityDifference =
+        Number(Boolean(right.thumbnailUrl)) - Number(Boolean(left.thumbnailUrl));
+
+      if (imagePriorityDifference !== 0) {
+        return imagePriorityDifference;
+      }
+    }
+
+    if (params.sortBy === 'length_desc') {
+      return (right.pageLength ?? 0) - (left.pageLength ?? 0);
+    }
+
+    if (params.sortBy === 'length_asc') {
+      return (left.pageLength ?? 0) - (right.pageLength ?? 0);
+    }
+
+    return 0;
   }
 
   private isMatchingPreviewLength(

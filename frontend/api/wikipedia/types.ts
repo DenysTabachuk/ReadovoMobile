@@ -13,8 +13,12 @@ export type FetchWikipediaArticlesParams = {
   excludeIds?: number[];
   limit?: number;
   previewLength?: WikipediaArticlePreviewLength;
+  preferImagesFirst?: boolean;
+  readyLevel?: ArticleReadyLevelFilter;
+  readyTransformationType?: ArticleReadyTransformationFilter;
   recommended?: boolean;
   search?: string;
+  sortBy?: WikipediaArticleSortOption;
 };
 
 export type WikipediaArticlePreviewLength =
@@ -22,6 +26,16 @@ export type WikipediaArticlePreviewLength =
   | 'short'
   | 'medium'
   | 'long';
+export type WikipediaArticleSortOption =
+  | 'default'
+  | 'length_desc'
+  | 'length_asc';
+export type ArticleReadyLevelFilter = 'all' | 'A1' | 'A2' | 'B1' | 'B2';
+export type ArticleReadyTransformationFilter =
+  | 'all'
+  | 'adaptation'
+  | 'summary'
+  | 'both';
 
 export type WikipediaArticleCategory =
   | 'all'

@@ -6,6 +6,58 @@ export const styles = StyleSheet.create({
   container: {
     gap: Spacing.md,
   },
+  sectionCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    gap: Spacing.sm,
+    marginBottom: Spacing.md,
+    padding: Spacing.md,
+  },
+  sectionHeader: {
+    marginBottom: Spacing.xs,
+  },
+  sheetHeader: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: -Spacing.md,
+    minHeight: 68,
+    paddingHorizontal: Spacing.md,
+    paddingTop: Spacing.sm,
+    paddingBottom: Spacing.sm,
+  },
+  sheetHeaderCollapsed: {
+    minHeight: 44,
+    paddingTop: 0,
+    paddingBottom: 0,
+  },
+  sheetTitleRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  sheetContainer: {
+    borderRadius: 18,
+    borderWidth: 1,
+    gap: Spacing.sm,
+    overflow: 'hidden',
+    paddingHorizontal: Spacing.md,
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing.md,
+  },
+  sheetContainerCollapsed: {
+    gap: 0,
+    paddingTop: 0,
+    paddingBottom: 0,
+  },
+  filtersContentAnimated: {
+    overflow: 'hidden',
+  },
+  sectionHeaderText: {
+    fontSize: 13,
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+  },
   searchClearButton: {
     alignItems: 'center',
     height: 40,
@@ -123,10 +175,17 @@ export const styles = StyleSheet.create({
     lineHeight: 22,
   },
   clearButton: {
+    alignItems: 'center',
     borderRadius: 999,
-    minHeight: 32,
+    borderWidth: 1,
+    minHeight: 38,
     justifyContent: 'center',
-    paddingHorizontal: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+  },
+  clearButtonContent: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: Spacing.xs,
   },
   savedCount: {
     minWidth: 16,

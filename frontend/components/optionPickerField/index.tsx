@@ -52,6 +52,10 @@ export function OptionPickerField<T extends string>({
   const chevronProgress = useRef(new Animated.Value(0)).current;
   const selectedOption = options.find((option) => option.value === selectedValue);
   const borderColor = useThemeColor({ dark: '#3a4348', light: '#d0d7de' }, 'icon');
+  const buttonBackgroundColor = useThemeColor(
+    { dark: '#202425', light: '#f5f7fa' },
+    'background',
+  );
   const selectedBackgroundColor = useThemeColor(
     { dark: '#123847', light: '#e8f5f9' },
     'background',
@@ -107,7 +111,9 @@ export function OptionPickerField<T extends string>({
         <ThemedText type="bodyStrong">
           {label}
         </ThemedText>
-        <Pressable onPress={handleOpen} style={[styles.pickerButton, { borderColor }]}>
+        <Pressable
+          onPress={handleOpen}
+          style={[styles.pickerButton, { backgroundColor: buttonBackgroundColor, borderColor }]}>
           <ThemedText style={styles.pickerLabel} type="body">
             {selectedOption?.displayLabel ?? selectedOption?.label ?? selectedValue}
           </ThemedText>

@@ -8,7 +8,7 @@ import {
   type QueryKey,
 } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -52,7 +52,8 @@ import {
   ArticlesToolbar,
   type ArticleCategoryFilter,
   type ArticlePersonalFilter,
-  type ArticlePreviewLengthFilter,
+  type ArticleReadyLevelFilter,
+  type ArticleSortFilter,
 } from './components/articlesToolbar';
 
 const ARTICLE_SEARCH_DEBOUNCE_MS = 1200;
@@ -70,15 +71,22 @@ export default function ArticlesScreen() {
   const userId = currentUser?.id;
   const [searchValue, setSearchValue] = useState('');
   const [debouncedSearchValue, setDebouncedSearchValue] = useState('');
-  const [previewLengthFilter, setPreviewLengthFilter] =
-    useState<ArticlePreviewLengthFilter>('all');
   const [categoryFilter, setCategoryFilter] =
     useState<ArticleCategoryFilter>('all');
+  const [sortByFilter, setSortByFilter] =
+    useState<ArticleSortFilter>('default');
+  const [preferImagesFirst, setPreferImagesFirst] = useState(false);
+  const [readyLevelFilter, setReadyLevelFilter] =
+    useState<ArticleReadyLevelFilter>('all');
+  const [readyAdaptationEnabled, setReadyAdaptationEnabled] = useState(false);
+  const [readySummaryEnabled, setReadySummaryEnabled] = useState(false);
   const [recommendedArticles, setRecommendedArticles] = useState(true);
   const [personalFilter, setPersonalFilter] = useState<ArticlePersonalFilter>(null);
   const [isManualRefresh, setIsManualRefresh] = useState(false);
   const [expandedAdaptationArticleIds, setExpandedAdaptationArticleIds] =
     useState<Record<number, boolean>>({});
+  const listRef = useRef<FlatList<WikipediaArticle>>(null);
+  const listOffsetRef = useRef(0);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -88,11 +96,21 @@ export default function ArticlesScreen() {
     return () => clearTimeout(timeoutId);
   }, [searchValue]);
 
+  const readyTransformationType =
+    readyAdaptationEnabled && readySummaryEnabled
+      ? 'both'
+      : readyAdaptationEnabled
+        ? 'adaptation'
+        : readySummaryEnabled
+          ? 'summary'
+          : undefined;
+
   const {
     data,
     error,
     fetchNextPage,
     hasNextPage,
+    isError,
     isFetching,
     isFetchingNextPage,
     isLoading,
@@ -106,7 +124,7 @@ export default function ArticlesScreen() {
   >({
     initialPageParam: [] as number[],
     getNextPageParam: (lastPage, pages) => {
-      if (lastPage.length < DEFAULT_ARTICLE_LIMIT) {
+      if (lastPage.length === 0) {
         return undefined;
       }
 
@@ -117,17 +135,24 @@ export default function ArticlesScreen() {
       fetchWikipediaArticles({
         category: categoryFilter as WikipediaArticleCategory,
         excludeIds: pageParam,
-        previewLength: previewLengthFilter,
+        preferImagesFirst,
+        readyLevel: readyLevelFilter,
+        readyTransformationType,
         recommended: recommendedArticles,
         search: debouncedSearchValue,
+        sortBy: sortByFilter,
       }),
     queryKey: [
       'wikipedia',
       'articles',
       debouncedSearchValue,
       categoryFilter,
-      previewLengthFilter,
+      preferImagesFirst,
+      readyLevelFilter,
+      readyAdaptationEnabled,
+      readySummaryEnabled,
       recommendedArticles,
+      sortByFilter,
     ],
   });
   const { data: savedArticles = [] } = useQuery({
@@ -280,17 +305,33 @@ export default function ArticlesScreen() {
   const shouldShowInitialLoader =
     personalFilter === null && isLoading && articles.length === 0;
   const shouldShowErrorState =
-    personalFilter === null && Boolean(error) && articles.length === 0;
+    personalFilter === null &&
+    isError &&
+    Boolean(error) &&
+    !isFetching &&
+    !data;
   const isUpdatingResults =
     personalFilter === null && isFetching && !isFetchingNextPage && !shouldShowInitialLoader;
   const shouldShowLoadMore =
     personalFilter === null && articles.length > 0 && hasNextPage;
+  const hasActiveContentFilters =
+    categoryFilter !== 'all' ||
+    sortByFilter !== 'default' ||
+    preferImagesFirst ||
+    readyLevelFilter !== 'all' ||
+    readyAdaptationEnabled ||
+    readySummaryEnabled ||
+    !recommendedArticles;
 
   const clearFilters = useCallback(() => {
     setSearchValue('');
     setDebouncedSearchValue('');
-    setPreviewLengthFilter('all');
     setCategoryFilter('all');
+    setSortByFilter('default');
+    setPreferImagesFirst(false);
+    setReadyLevelFilter('all');
+    setReadyAdaptationEnabled(false);
+    setReadySummaryEnabled(false);
     setRecommendedArticles(true);
     setPersonalFilter(null);
   }, []);
@@ -300,13 +341,33 @@ export default function ArticlesScreen() {
     setCategoryFilter(value);
   }, []);
 
-  const handleChangePreviewLengthFilter = useCallback(
-    (value: ArticlePreviewLengthFilter) => {
+  const handleChangeSortByFilter = useCallback((value: ArticleSortFilter) => {
+    setPersonalFilter(null);
+    setSortByFilter(value);
+  }, []);
+
+  const handleChangePreferImagesFirst = useCallback((value: boolean) => {
+    setPersonalFilter(null);
+    setPreferImagesFirst(value);
+  }, []);
+
+  const handleChangeReadyLevelFilter = useCallback(
+    (value: ArticleReadyLevelFilter) => {
       setPersonalFilter(null);
-      setPreviewLengthFilter(value);
+      setReadyLevelFilter(value);
     },
     [],
   );
+
+  const handleChangeReadyAdaptationEnabled = useCallback((value: boolean) => {
+    setPersonalFilter(null);
+    setReadyAdaptationEnabled(value);
+  }, []);
+
+  const handleChangeReadySummaryEnabled = useCallback((value: boolean) => {
+    setPersonalFilter(null);
+    setReadySummaryEnabled(value);
+  }, []);
 
   const handleChangeRecommendedArticles = useCallback((value: boolean) => {
     setPersonalFilter(null);
@@ -346,10 +407,24 @@ export default function ArticlesScreen() {
   const handleChangePersonalFilter = useCallback((value: ArticlePersonalFilter) => {
     setSearchValue('');
     setDebouncedSearchValue('');
-    setPreviewLengthFilter('all');
     setCategoryFilter('all');
+    setSortByFilter('default');
+    setPreferImagesFirst(false);
+    setReadyLevelFilter('all');
+    setReadyAdaptationEnabled(false);
+    setReadySummaryEnabled(false);
     setRecommendedArticles(true);
     setPersonalFilter(value);
+  }, []);
+  const handleToggleFilters = useCallback((isCollapsed: boolean) => {
+    if (!isCollapsed) {
+      return;
+    }
+
+    listRef.current?.scrollToOffset({
+      animated: true,
+      offset: 0,
+    });
   }, []);
 
   const openArticle = useCallback((article: WikipediaArticle) => {
@@ -419,28 +494,17 @@ export default function ArticlesScreen() {
     );
   }
 
-  if (shouldShowErrorState) {
-    return (
-      <ScreenContainer>
-        <View style={styles.centerState}>
-          <ThemedText type="screenTitle" style={styles.centerTitle}>
-            {t('articles.errorTitle')}
-          </ThemedText>
-          <ThemedText type="description" style={styles.centerDescription}>
-            {t('articles.errorDescription')}
-          </ThemedText>
-          <Button onPress={() => refetch()}>{t('articles.retry')}</Button>
-        </View>
-      </ScreenContainer>
-    );
-  }
-
   return (
     <ScreenContainer style={styles.container}>
       <FlatList
+        ref={listRef}
         data={displayedArticles}
         keyExtractor={(item) => String(item.id)}
         keyboardShouldPersistTaps="handled"
+        onScroll={(event) => {
+          listOffsetRef.current = event.nativeEvent.contentOffset.y;
+        }}
+        scrollEventThrottle={16}
         ListHeaderComponent={
           <View style={styles.header}>
             <View style={styles.headerTopRow}>
@@ -459,36 +523,65 @@ export default function ArticlesScreen() {
               onChangeRecommendedArticles={handleChangeRecommendedArticles}
               onChangeCategoryFilter={handleChangeCategoryFilter}
               onChangePersonalFilter={handleChangePersonalFilter}
-              onChangePreviewLengthFilter={handleChangePreviewLengthFilter}
+              onChangePreferImagesFirst={handleChangePreferImagesFirst}
+              onChangeReadyAdaptationEnabled={
+                handleChangeReadyAdaptationEnabled
+              }
+              onChangeReadyLevelFilter={handleChangeReadyLevelFilter}
+              onChangeReadySummaryEnabled={handleChangeReadySummaryEnabled}
               onChangeSearchValue={handleChangeSearchValue}
+              onChangeSortByFilter={handleChangeSortByFilter}
               onClearFilters={clearFilters}
-              previewLengthFilter={previewLengthFilter}
+              onToggleFilters={handleToggleFilters}
+              preferImagesFirst={preferImagesFirst}
+              readyAdaptationEnabled={readyAdaptationEnabled}
+              readyLevelFilter={readyLevelFilter}
+              readySummaryEnabled={readySummaryEnabled}
               recommendedArticles={recommendedArticles}
               recentArticlesCount={recentArticles.length}
               resultCount={displayedArticles.length}
               savedArticlesCount={savedArticles.length}
               searchValue={searchValue}
+              sortByFilter={sortByFilter}
             />
           </View>
         }
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <ThemedText type="sectionTitle" style={styles.centerTitle}>
-              {personalFilter === 'saved'
-                ? t('articles.saved.emptyTitle')
-                : personalFilter === 'recent'
-                  ? t('articles.recent.emptyTitle')
-                : t('articles.emptyTitle')}
-            </ThemedText>
-            <ThemedText type="body" style={styles.centerDescription}>
-              {personalFilter === 'saved'
-                ? t('articles.saved.emptyDescription')
-                : personalFilter === 'recent'
-                  ? t('articles.recent.emptyDescription')
-                : debouncedSearchValue.length > 0
-                  ? t('articles.emptySearchDescription')
-                  : t('articles.emptyFilterDescription')}
-            </ThemedText>
+            {shouldShowErrorState ? (
+              <>
+                <ThemedText type="sectionTitle" style={styles.centerTitle}>
+                  {t('articles.loadErrorTitle')}
+                </ThemedText>
+                <ThemedText type="body" style={styles.centerDescription}>
+                  {t('articles.loadErrorDescription')}
+                </ThemedText>
+                <Button onPress={() => refetch()}>{t('articles.retry')}</Button>
+              </>
+            ) : (
+              <>
+                <ThemedText type="sectionTitle" style={styles.centerTitle}>
+                  {personalFilter === 'saved'
+                    ? t('articles.saved.emptyTitle')
+                    : personalFilter === 'recent'
+                      ? t('articles.recent.emptyTitle')
+                      : hasActiveContentFilters
+                        ? t('articles.emptyFilteredTitle')
+                        : t('articles.emptyTitle')}
+                </ThemedText>
+                <ThemedText type="body" style={styles.centerDescription}>
+                  {personalFilter === 'saved'
+                    ? t('articles.saved.emptyDescription')
+                    : personalFilter === 'recent'
+                      ? t('articles.recent.emptyDescription')
+                      : hasActiveContentFilters
+                        ? t('articles.emptyFilteredDescription')
+                        : debouncedSearchValue.length > 0
+                        ? t('articles.emptySearchDescription')
+                        : t('articles.emptyFilterDescription')}
+                </ThemedText>
+              </>
+            )}
           </View>
         }
         ListFooterComponent={

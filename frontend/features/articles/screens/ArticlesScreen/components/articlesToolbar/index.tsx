@@ -1,7 +1,16 @@
-import { Ionicons } from '@expo/vector-icons';
-import { useCallback, useState, type ComponentProps } from 'react';
+﻿import { Ionicons } from '@expo/vector-icons';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ComponentProps,
+} from 'react';
 import {
   ActivityIndicator,
+  Animated,
+  Easing,
   Pressable,
   ScrollView,
   Switch,
@@ -19,8 +28,9 @@ import { useThemeColor } from '@/hooks/use-theme-color';
 
 import { styles } from './styles';
 
-export type ArticlePreviewLengthFilter = 'all' | 'short' | 'medium' | 'long';
 export type ArticlePersonalFilter = 'recent' | 'saved' | null;
+export type ArticleSortFilter = 'default' | 'length_desc' | 'length_asc';
+export type ArticleReadyLevelFilter = 'all' | 'A1' | 'A2' | 'B1' | 'B2';
 export type ArticleCategoryFilter =
   | 'all'
   | 'biography'
@@ -46,16 +56,25 @@ type ArticlesToolbarProps = {
   personalFilter: ArticlePersonalFilter;
   isRefreshingResults: boolean;
   isSearchActive: boolean;
-  previewLengthFilter: ArticlePreviewLengthFilter;
+  preferImagesFirst: boolean;
+  readyAdaptationEnabled: boolean;
+  readyLevelFilter: ArticleReadyLevelFilter;
+  readySummaryEnabled: boolean;
   recommendedArticles: boolean;
   recentArticlesCount: number;
   resultCount: number;
   savedArticlesCount: number;
   searchValue: string;
+  sortByFilter: ArticleSortFilter;
+  onToggleFilters?: (isCollapsed: boolean) => void;
   onChangeCategoryFilter: (value: ArticleCategoryFilter) => void;
-  onChangePreviewLengthFilter: (value: ArticlePreviewLengthFilter) => void;
+  onChangePreferImagesFirst: (value: boolean) => void;
+  onChangeReadyLevelFilter: (value: ArticleReadyLevelFilter) => void;
+  onChangeReadyAdaptationEnabled: (value: boolean) => void;
+  onChangeReadySummaryEnabled: (value: boolean) => void;
   onChangeRecommendedArticles: (value: boolean) => void;
   onChangeSearchValue: (value: string) => void;
+  onChangeSortByFilter: (value: ArticleSortFilter) => void;
   onClearFilters: () => void;
   onChangePersonalFilter: (value: ArticlePersonalFilter) => void;
 };
@@ -65,47 +84,66 @@ export function ArticlesToolbar({
   personalFilter,
   isRefreshingResults,
   isSearchActive,
-  previewLengthFilter,
+  preferImagesFirst,
+  readyAdaptationEnabled,
+  readyLevelFilter,
+  readySummaryEnabled,
   recommendedArticles,
   recentArticlesCount,
   resultCount,
   savedArticlesCount,
   searchValue,
+  sortByFilter,
+  onToggleFilters,
   onChangeCategoryFilter,
-  onChangePreviewLengthFilter,
+  onChangePreferImagesFirst,
+  onChangeReadyLevelFilter,
+  onChangeReadyAdaptationEnabled,
+  onChangeReadySummaryEnabled,
   onChangeRecommendedArticles,
   onChangeSearchValue,
+  onChangeSortByFilter,
   onClearFilters,
   onChangePersonalFilter,
 }: ArticlesToolbarProps) {
   const { t } = useTranslation();
   const [isRecommendedInfoOpen, setIsRecommendedInfoOpen] = useState(false);
+  const [isFiltersCollapsed, setIsFiltersCollapsed] = useState(false);
+  const [filtersContentHeight, setFiltersContentHeight] = useState(0);
+  const collapseProgress = useRef(new Animated.Value(1)).current;
+  const opacityProgress = useRef(new Animated.Value(1)).current;
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
   const borderColor = useThemeColor({ light: '#d0d7de', dark: '#2d3336' }, 'text');
   const cardColor = useThemeColor({ light: '#f5f7fa', dark: '#202425' }, 'background');
+  const sectionCardColor = useThemeColor(
+    { light: '#edf1f5', dark: '#171c1d' },
+    'background',
+  );
   const tintColor = useThemeColor({}, 'tint');
   const textColor = useThemeColor({}, 'text');
   const placeholderColor = useThemeColor({ light: '#7c7c7c', dark: '#a8a8a8' }, 'icon');
   const mutedTextColor = useThemeColor({ light: '#687076', dark: '#9ba1a6' }, 'icon');
+  const darkFilterIconColor = '#a5b4fc';
+  const clearIconColor = isDarkMode ? darkFilterIconColor : tintColor;
   const savedAccentColor = isDarkMode ? '#c4a7ff' : tintColor;
   const selectedCategoryBackground = useThemeColor(
     { light: '#e8f5f9', dark: '#2a2141' },
     'background',
   );
   const selectedCategoryColor = isDarkMode ? '#d9c7ff' : tintColor;
-  const hasActiveFilters =
-    personalFilter !== null ||
-    searchValue.trim().length > 0 ||
-    previewLengthFilter !== 'all' ||
-    categoryFilter !== 'all' ||
-    !recommendedArticles;
-  const previewLengthOptions = [
-    { label: t('articles.filters.previewLength.all'), value: 'all' as const },
-    { label: t('articles.filters.previewLength.short'), value: 'short' as const },
-    { label: t('articles.filters.previewLength.medium'), value: 'medium' as const },
-    { label: t('articles.filters.previewLength.long'), value: 'long' as const },
-  ];
+  const hasReadyTransformationFilter =
+    readyAdaptationEnabled || readySummaryEnabled;
+  const activeFiltersCount =
+    Number(personalFilter !== null) +
+    Number(searchValue.trim().length > 0) +
+    Number(preferImagesFirst) +
+    Number(readyLevelFilter !== 'all') +
+    Number(hasReadyTransformationFilter) +
+    Number(sortByFilter !== 'default') +
+    Number(categoryFilter !== 'all') +
+    Number(!recommendedArticles);
+  const hasActiveFilters = activeFiltersCount > 0;
   const categoryOptions: CategoryOption[] = [
     {
       darkIconColor: '#c4a7ff',
@@ -174,6 +212,24 @@ export function ArticlesToolbar({
       value: 'culture',
     },
   ];
+  const sortOptions = [
+    { label: t('articles.filters.sort.default'), value: 'default' as const },
+    {
+      label: t('articles.filters.sort.lengthDesc'),
+      value: 'length_desc' as const,
+    },
+    {
+      label: t('articles.filters.sort.lengthAsc'),
+      value: 'length_asc' as const,
+    },
+  ];
+  const readyLevelOptions = [
+    { label: t('articles.filters.readyLevel.all'), value: 'all' as const },
+    { label: 'A1', value: 'A1' as const },
+    { label: 'A2', value: 'A2' as const },
+    { label: 'B1', value: 'B1' as const },
+    { label: 'B2', value: 'B2' as const },
+  ];
   const openRecommendedInfo = useCallback(() => {
     setIsRecommendedInfoOpen(true);
   }, []);
@@ -183,6 +239,41 @@ export function ArticlesToolbar({
   const clearSearch = useCallback(() => {
     onChangeSearchValue('');
   }, [onChangeSearchValue]);
+  useEffect(() => {
+    Animated.timing(collapseProgress, {
+      duration: 300,
+      easing: Easing.linear,
+      toValue: isFiltersCollapsed ? 0 : 1,
+      useNativeDriver: false,
+    }).start();
+  }, [collapseProgress, isFiltersCollapsed]);
+  useEffect(() => {
+    Animated.timing(opacityProgress, {
+      duration: 200,
+      easing: Easing.linear,
+      toValue: isFiltersCollapsed ? 0 : 1,
+      useNativeDriver: false,
+    }).start();
+  }, [isFiltersCollapsed, opacityProgress]);
+
+  const animatedContentStyle = useMemo(
+    () => ({
+      height: collapseProgress.interpolate({
+        inputRange: [0, 1],
+        outputRange: [0, Math.max(filtersContentHeight, 1)],
+      }),
+      opacity: opacityProgress,
+    }),
+    [collapseProgress, filtersContentHeight, opacityProgress],
+  );
+
+  const toggleFilters = useCallback(() => {
+    setIsFiltersCollapsed((current) => {
+      const next = !current;
+      onToggleFilters?.(next);
+      return next;
+    });
+  }, [onToggleFilters]);
 
   return (
     <View style={styles.container}>
@@ -223,7 +314,38 @@ export function ArticlesToolbar({
         ) : null}
       </View>
 
-      <View style={styles.recommendedRow}>
+      <View
+        style={[
+          styles.sheetContainer,
+          isFiltersCollapsed ? styles.sheetContainerCollapsed : null,
+          {
+            backgroundColor: sectionCardColor,
+            borderColor,
+          },
+        ]}>
+        <Animated.View
+          pointerEvents={isFiltersCollapsed ? 'none' : 'auto'}
+          style={[
+            styles.filtersContentAnimated,
+            filtersContentHeight > 0 ? animatedContentStyle : null,
+          ]}>
+          <View
+            onLayout={(event) => {
+              const nextHeight = Math.ceil(event.nativeEvent.layout.height);
+              if (nextHeight > 0 && nextHeight !== filtersContentHeight) {
+                setFiltersContentHeight(nextHeight);
+              }
+            }}>
+            <>
+      <View
+        style={[
+          styles.sectionCard,
+          {
+            backgroundColor: sectionCardColor,
+            borderColor,
+          },
+        ]}>
+        <View style={styles.recommendedRow}>
         <View
           style={[
             styles.recommendedToggle,
@@ -266,6 +388,7 @@ export function ArticlesToolbar({
           />
         </Pressable>
       </View>
+      </View>
       <ModalSheet
         contentStyle={styles.recommendedInfoContent}
         onClose={closeRecommendedInfo}
@@ -279,10 +402,23 @@ export function ArticlesToolbar({
         </Button>
       </ModalSheet>
 
+      <View
+        style={[
+          styles.sectionCard,
+          {
+            backgroundColor: sectionCardColor,
+            borderColor,
+          },
+        ]}>
+        <View style={styles.sectionHeader}>
+          <ThemedText
+            type="body"
+            style={[styles.sectionHeaderText, { color: mutedTextColor }]}>
+            {t('articles.filtersSections.personal')}
+          </ThemedText>
+        </View>
+
       <View style={styles.categorySection}>
-        <ThemedText type="bodyStrong">
-          {t('articles.myArticles.label')}
-        </ThemedText>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -380,6 +516,23 @@ export function ArticlesToolbar({
           </Pressable>
         </ScrollView>
       </View>
+      </View>
+
+      <View
+        style={[
+          styles.sectionCard,
+          {
+            backgroundColor: sectionCardColor,
+            borderColor,
+          },
+        ]}>
+        <View style={styles.sectionHeader}>
+          <ThemedText
+            type="body"
+            style={[styles.sectionHeaderText, { color: mutedTextColor }]}>
+            {t('articles.filtersSections.main')}
+          </ThemedText>
+        </View>
 
       <View style={styles.categorySection}>
         <ThemedText type="bodyStrong">
@@ -430,13 +583,152 @@ export function ArticlesToolbar({
       <View style={styles.filtersRow}>
         <View style={styles.pickerField}>
           <OptionPickerField
-            label={t('articles.previewLengthLabel')}
-            onSelect={onChangePreviewLengthFilter}
-            options={previewLengthOptions}
-            selectedValue={previewLengthFilter}
-            title={t('articles.previewLengthTitle')}
+            label={t('articles.sortLabel')}
+            onSelect={onChangeSortByFilter}
+            options={sortOptions}
+            selectedValue={sortByFilter}
+            title={t('articles.sortTitle')}
           />
         </View>
+      </View>
+      </View>
+
+      <View
+        style={[
+          styles.sectionCard,
+          {
+            backgroundColor: sectionCardColor,
+            borderColor,
+          },
+        ]}>
+        <View style={styles.sectionHeader}>
+          <ThemedText
+            type="body"
+            style={[styles.sectionHeaderText, { color: mutedTextColor }]}>
+            {t('articles.filtersSections.quick')}
+          </ThemedText>
+        </View>
+
+      <View style={styles.recommendedRow}>
+        <View
+          style={[
+            styles.recommendedToggle,
+            {
+              backgroundColor: cardColor,
+              borderColor,
+            },
+          ]}>
+          <View style={styles.recommendedToggleLabel}>
+            <Ionicons
+              color={isDarkMode ? darkFilterIconColor : tintColor}
+              name="image-outline"
+              size={20}
+            />
+            <ThemedText type="bodyStrong">
+              {t('articles.preferImagesFirstLabel')}
+            </ThemedText>
+          </View>
+          <Switch
+            onValueChange={onChangePreferImagesFirst}
+            thumbColor={preferImagesFirst ? tintColor : '#f4f3f4'}
+            trackColor={{ false: '#767577', true: selectedCategoryBackground }}
+            value={preferImagesFirst}
+          />
+        </View>
+      </View>
+
+      <View style={styles.filtersRow}>
+        <View style={styles.pickerField}>
+          <OptionPickerField
+            label={t('articles.readyLevelLabel')}
+            onSelect={onChangeReadyLevelFilter}
+            options={readyLevelOptions}
+            selectedValue={readyLevelFilter}
+            title={t('articles.readyLevelTitle')}
+          />
+        </View>
+      </View>
+
+      <View style={styles.recommendedRow}>
+        <View
+          style={[
+            styles.recommendedToggle,
+            {
+              backgroundColor: cardColor,
+              borderColor,
+            },
+          ]}>
+          <View style={styles.recommendedToggleLabel}>
+            <Ionicons
+              color={isDarkMode ? darkFilterIconColor : tintColor}
+              name="create-outline"
+              size={20}
+            />
+            <ThemedText type="bodyStrong">
+              {t('articles.filters.readyTransformation.adaptation')}
+            </ThemedText>
+          </View>
+          <Switch
+            onValueChange={onChangeReadyAdaptationEnabled}
+            thumbColor={readyAdaptationEnabled ? tintColor : '#f4f3f4'}
+            trackColor={{ false: '#767577', true: selectedCategoryBackground }}
+            value={readyAdaptationEnabled}
+          />
+        </View>
+      </View>
+
+      <View style={styles.recommendedRow}>
+        <View
+          style={[
+            styles.recommendedToggle,
+            {
+              backgroundColor: cardColor,
+              borderColor,
+            },
+          ]}>
+          <View style={styles.recommendedToggleLabel}>
+            <Ionicons
+              color={isDarkMode ? darkFilterIconColor : tintColor}
+              name="document-text-outline"
+              size={20}
+            />
+            <ThemedText type="bodyStrong">
+              {t('articles.filters.readyTransformation.summary')}
+            </ThemedText>
+          </View>
+          <Switch
+            onValueChange={onChangeReadySummaryEnabled}
+            thumbColor={readySummaryEnabled ? tintColor : '#f4f3f4'}
+            trackColor={{ false: '#767577', true: selectedCategoryBackground }}
+            value={readySummaryEnabled}
+          />
+        </View>
+      </View>
+      </View>
+            </>
+          </View>
+        </Animated.View>
+        <Pressable
+          style={[
+            styles.sheetHeader,
+            isFiltersCollapsed ? styles.sheetHeaderCollapsed : null,
+          ]}
+          onPress={toggleFilters}>
+          <View style={styles.sheetTitleRow}>
+            <ThemedText
+              type="bodyStrong"
+              style={{ color: textColor }}>
+              {isFiltersCollapsed
+                ? t('articles.showFilters')
+                : t('articles.hideFilters')}
+            </ThemedText>
+            <Ionicons
+              color={mutedTextColor}
+              name={isFiltersCollapsed ? 'chevron-down' : 'chevron-up'}
+              size={16}
+            />
+          </View>
+        </Pressable>
       </View>
 
       <View style={styles.resultsRow}>
@@ -451,6 +743,11 @@ export function ArticlesToolbar({
           {isRefreshingResults ? (
             <ActivityIndicator color={tintColor} size="small" />
           ) : null}
+          {hasActiveFilters ? (
+            <ThemedText type="body" style={{ color: mutedTextColor }}>
+              {t('articles.activeFiltersCount', { count: activeFiltersCount })}
+            </ThemedText>
+          ) : null}
         </View>
 
         {hasActiveFilters ? (
@@ -460,15 +757,24 @@ export function ArticlesToolbar({
               styles.clearButton,
               {
                 backgroundColor: cardColor,
+                borderColor,
                 opacity: pressed ? 0.72 : 1,
               },
             ]}>
-            <ThemedText type="bodyStrong" style={{ color: tintColor }}>
-              {t('articles.clearFilters')}
-            </ThemedText>
+            <View style={styles.clearButtonContent}>
+              <Ionicons color={clearIconColor} name="close-circle-outline" size={16} />
+              <ThemedText type="bodyStrong" style={{ color: mutedTextColor }}>
+                {t('articles.clearFilters')}
+              </ThemedText>
+            </View>
           </Pressable>
         ) : null}
       </View>
     </View>
   );
 }
+
+
+
+
+

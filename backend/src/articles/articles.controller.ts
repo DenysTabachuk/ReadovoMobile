@@ -12,6 +12,8 @@ import {
 import { ArticlesService } from './articles.service';
 import {
   type ArticleTextTransformationType,
+  type ArticleReadyLevelFilter,
+  type ArticleReadyTransformationFilter,
   type ArticleSimplificationLevel,
   type ArticleSimplificationTargetLength,
   type ArticleAdaptationsByArticleId,
@@ -26,6 +28,7 @@ import {
   type WikipediaArticle,
   type WikipediaArticleCategory,
   type WikipediaArticlePreviewLength,
+  type WikipediaArticleSortOption,
   type WikipediaArticleDetail,
 } from './types';
 
@@ -65,6 +68,24 @@ const PREVIEW_LENGTHS: WikipediaArticlePreviewLength[] = [
   'medium',
   'long',
 ];
+const ARTICLE_SORT_OPTIONS: WikipediaArticleSortOption[] = [
+  'default',
+  'length_desc',
+  'length_asc',
+];
+const READY_LEVEL_FILTERS: ArticleReadyLevelFilter[] = [
+  'all',
+  'A1',
+  'A2',
+  'B1',
+  'B2',
+];
+const READY_TRANSFORMATION_FILTERS: ArticleReadyTransformationFilter[] = [
+  'all',
+  'adaptation',
+  'summary',
+  'both',
+];
 
 @Controller()
 export class ArticlesController {
@@ -93,8 +114,12 @@ export class ArticlesController {
     @Query('excludeIds') excludeIds?: string,
     @Query('limit') limit?: string,
     @Query('previewLength') previewLength?: string,
+    @Query('preferImagesFirst') preferImagesFirst?: string,
+    @Query('readyLevel') readyLevel?: string,
+    @Query('readyTransformationType') readyTransformationType?: string,
     @Query('recommended') recommended?: string,
     @Query('search') search?: string,
+    @Query('sortBy') sortBy?: string,
   ): Promise<WikipediaArticle[]> {
     const parsedLimit = limit === undefined ? undefined : Number(limit);
     const normalizedCategory = category?.trim().toLowerCase() as
@@ -103,7 +128,18 @@ export class ArticlesController {
     const normalizedPreviewLength = previewLength?.trim().toLowerCase() as
       | WikipediaArticlePreviewLength
       | undefined;
+    const normalizedPreferImagesFirst = preferImagesFirst?.trim().toLowerCase();
+    const normalizedReadyLevel = readyLevel?.trim().toUpperCase() as
+      | ArticleReadyLevelFilter
+      | undefined;
+    const normalizedReadyTransformationType =
+      readyTransformationType?.trim().toLowerCase() as
+        | ArticleReadyTransformationFilter
+        | undefined;
     const normalizedRecommended = recommended?.trim().toLowerCase();
+    const normalizedSortBy = sortBy?.trim().toLowerCase() as
+      | WikipediaArticleSortOption
+      | undefined;
     const parsedExcludeIds = this.parseExcludeIds(excludeIds);
 
     if (limit !== undefined && !Number.isFinite(parsedLimit)) {
@@ -125,6 +161,28 @@ export class ArticlesController {
     }
 
     if (
+      normalizedPreferImagesFirst !== undefined &&
+      normalizedPreferImagesFirst !== 'true' &&
+      normalizedPreferImagesFirst !== 'false'
+    ) {
+      throw new BadRequestException('Prefer images flag is invalid.');
+    }
+
+    if (
+      normalizedReadyLevel !== undefined &&
+      !READY_LEVEL_FILTERS.includes(normalizedReadyLevel)
+    ) {
+      throw new BadRequestException('Ready level filter is invalid.');
+    }
+
+    if (
+      normalizedReadyTransformationType !== undefined &&
+      !READY_TRANSFORMATION_FILTERS.includes(normalizedReadyTransformationType)
+    ) {
+      throw new BadRequestException('Ready transformation filter is invalid.');
+    }
+
+    if (
       normalizedRecommended !== undefined &&
       normalizedRecommended !== 'true' &&
       normalizedRecommended !== 'false'
@@ -132,16 +190,27 @@ export class ArticlesController {
       throw new BadRequestException('Recommended flag is invalid.');
     }
 
+    if (
+      normalizedSortBy !== undefined &&
+      !ARTICLE_SORT_OPTIONS.includes(normalizedSortBy)
+    ) {
+      throw new BadRequestException('Article sort option is invalid.');
+    }
+
     return this.articlesService.getArticles({
       category: normalizedCategory,
       excludeIds: parsedExcludeIds,
       limit: parsedLimit,
       previewLength: normalizedPreviewLength,
+      preferImagesFirst: normalizedPreferImagesFirst === 'true',
+      readyLevel: normalizedReadyLevel,
+      readyTransformationType: normalizedReadyTransformationType,
       recommended:
         normalizedRecommended === undefined
           ? undefined
           : normalizedRecommended === 'true',
       search,
+      sortBy: normalizedSortBy,
     });
   }
 

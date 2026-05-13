@@ -111,7 +111,21 @@
     "searchResults": "{{count}} articles found",
     "randomResults": "{{count}} articles in this set",
     "clearFilters": "Clear",
+    "showFilters": "Show filters",
+    "hideFilters": "Hide filters",
+    "swipeUpToExpand": "Swipe up to expand",
+    "swipeDownToCollapse": "Swipe down to collapse",
+    "swipeDownToExpand": "Swipe down to expand",
+    "swipeUpToCollapse": "Swipe up to collapse",
+    "filtersCollapsedHint": "Swipe up to expand",
+    "activeFiltersCount": "Active filters: {{count}}",
+    "filtersSections": {
+      "quick": "Quick filters",
+      "personal": "My articles",
+      "main": "Main filters"
+    },
     "recommendedLabel": "Recommended articles",
+    "preferImagesFirstLabel": "Show articles with images first",
     "recommendedInfo": {
       "title": "About recommended articles",
       "description": "These articles are hand-picked by the Readovo team to make it easier to find interesting reading material, especially while you are just getting started.",
@@ -120,10 +134,18 @@
     },
     "previewLengthLabel": "Description length",
     "previewLengthTitle": "Choose description length",
+    "sortLabel": "Sort articles",
+    "sortTitle": "Choose article order",
+    "readyLevelLabel": "Level for ready version",
+    "readyLevelTitle": "Choose a level for ready version",
+    "readyTransformationLabel": "Ready text type",
+    "readyTransformationTitle": "Choose a ready text type",
     "categoryLabel": "Category",
     "categoryTitle": "Choose a category",
     "emptyTitle": "No articles found",
+    "emptyFilteredTitle": "No articles match these filters",
     "emptySearchDescription": "Try a shorter query or different keywords.",
+    "emptyFilteredDescription": "No results for the current filters. Change or clear filters.",
     "emptyFilterDescription": "Change or clear the filters to see more articles.",
     "loadMore": "Load more",
     "loadingMore": "Loading more...",
@@ -148,6 +170,19 @@
         "medium": "Medium preview",
         "long": "Long preview"
       },
+      "sort": {
+        "default": "Default order",
+        "lengthDesc": "From longer to shorter",
+        "lengthAsc": "From shorter to longer"
+      },
+      "readyLevel": {
+        "all": "Any ready level"
+      },
+      "readyTransformation": {
+        "all": "Any ready text",
+        "adaptation": "Adapted text available",
+        "summary": "Summarized version available"
+      },
       "category": {
         "all": "All topics",
         "biography": "People",
@@ -165,6 +200,8 @@
     "loading": "Loading articles...",
     "errorTitle": "Articles are unavailable",
     "errorDescription": "Check your internet connection and try again.",
+    "loadErrorTitle": "Could not load articles",
+    "loadErrorDescription": "An error occurred while loading articles. Try again.",
     "retry": "Try again",
     "myArticles": {
       "label": "My articles"
