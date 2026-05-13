@@ -28,7 +28,9 @@ import { DEFAULT_ARTICLE_LIMIT } from '@/api/wikipedia/constants';
 import { useBanner } from '@/components/banner';
 import { Button } from '@/components/button';
 import { ScreenContainer } from '@/components/screenContainer';
+import { ScrollToTopButton } from '@/components/scrollToTopButton';
 import { ThemedText } from '@/components/themedText';
+import { Spacing } from '@/constants/spacing';
 import { Colors } from '@/constants/theme';
 import {
   ArticleCard,
@@ -83,10 +85,10 @@ export default function ArticlesScreen() {
   const [recommendedArticles, setRecommendedArticles] = useState(true);
   const [personalFilter, setPersonalFilter] = useState<ArticlePersonalFilter>(null);
   const [isManualRefresh, setIsManualRefresh] = useState(false);
+  const [scrollOffsetY, setScrollOffsetY] = useState(0);
   const [expandedAdaptationArticleIds, setExpandedAdaptationArticleIds] =
     useState<Record<number, boolean>>({});
   const listRef = useRef<FlatList<WikipediaArticle>>(null);
-  const listOffsetRef = useRef(0);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -502,7 +504,8 @@ export default function ArticlesScreen() {
         keyExtractor={(item) => String(item.id)}
         keyboardShouldPersistTaps="handled"
         onScroll={(event) => {
-          listOffsetRef.current = event.nativeEvent.contentOffset.y;
+          const currentOffsetY = event.nativeEvent.contentOffset.y;
+          setScrollOffsetY(currentOffsetY);
         }}
         scrollEventThrottle={16}
         ListHeaderComponent={
@@ -611,6 +614,12 @@ export default function ArticlesScreen() {
         removeClippedSubviews={false}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
+      />
+      <ScrollToTopButton
+        bottomOffset={72}
+        rightOffset={Spacing.md}
+        scrollOffsetY={scrollOffsetY}
+        scrollRef={listRef}
       />
     </ScreenContainer>
   );

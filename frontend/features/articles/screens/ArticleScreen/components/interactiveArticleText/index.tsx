@@ -8,9 +8,12 @@ import {
 } from 'react';
 import {
   FlatList,
+  type NativeSyntheticEvent,
+  type NativeScrollEvent,
   Pressable,
   View,
   type ListRenderItem,
+  type RefObject,
   type StyleProp,
   type TextStyle,
   type ViewStyle,
@@ -38,6 +41,7 @@ type InteractiveArticleTextProps = {
   blocks?: ArticleBlock[];
   contentContainerStyle?: StyleProp<ViewStyle>;
   ListHeaderComponent?: ReactElement | null;
+  onScroll?: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
   onWordPress: (selection: {
     context: string;
     sentenceKey?: string;
@@ -47,6 +51,8 @@ type InteractiveArticleTextProps = {
     word: string;
   }) => void;
   selectedTokenKeys?: string[];
+  scrollEventThrottle?: number;
+  scrollRef?: RefObject<FlatList<ArticleBlockListItem> | null>;
   text?: string;
 };
 
@@ -92,7 +98,10 @@ export function InteractiveArticleText({
   blocks,
   contentContainerStyle,
   ListHeaderComponent,
+  onScroll,
   onWordPress,
+  scrollEventThrottle = 16,
+  scrollRef,
   selectedTokenKeys,
   text,
 }: InteractiveArticleTextProps) {
@@ -272,14 +281,17 @@ export function InteractiveArticleText({
 
   return (
     <FlatList
+      ref={scrollRef}
       data={visibleBlockItems}
       initialNumToRender={INITIAL_RENDER_BLOCK_COUNT}
       keyExtractor={(item) => item.key}
       keyboardShouldPersistTaps="handled"
       ListHeaderComponent={ListHeaderComponent}
       maxToRenderPerBatch={MAX_RENDER_BATCH_SIZE}
+      onScroll={onScroll}
       renderItem={renderItem}
       removeClippedSubviews={false}
+      scrollEventThrottle={scrollEventThrottle}
       showsVerticalScrollIndicator={false}
       style={styles.container}
       updateCellsBatchingPeriod={RENDER_BATCH_INTERVAL_MS}

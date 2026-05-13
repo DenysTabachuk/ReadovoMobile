@@ -2,8 +2,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import * as Linking from 'expo-linking';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, FlatList, Pressable, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
@@ -26,9 +26,11 @@ import { Cta } from '@/components/cta';
 import { ModalSheet } from '@/components/modalSheet';
 import { OptionPickerField } from '@/components/optionPickerField';
 import { ScreenContainer } from '@/components/screenContainer';
+import { ScrollToTopButton } from '@/components/scrollToTopButton';
 import { SegmentedToggle } from '@/components/segmentedToggle';
 import { ThemedText } from '@/components/themedText';
 import { IconSymbol } from '@/components/ui/iconSymbol';
+import { Spacing } from '@/constants/spacing';
 import { Colors } from '@/constants/theme';
 import {
   createRecentArticleFromDetail,
@@ -116,6 +118,8 @@ export default function ArticleScreen() {
   const [isQuizModePickerOpen, setIsQuizModePickerOpen] = useState(false);
   const [isTranslationSheetOpen, setIsTranslationSheetOpen] = useState(false);
   const [translationSheetOpenProgress, setTranslationSheetOpenProgress] = useState(0);
+  const [scrollOffsetY, setScrollOffsetY] = useState(0);
+  const articleListRef = useRef<FlatList>(null);
   const selectedFragment = useMemo(
     () => buildSelectedFragment(selectedTokens),
     [selectedTokens],
@@ -844,9 +848,19 @@ export default function ArticleScreen() {
             ) : null}
           </View>
         }
+        onScroll={(event) => {
+          setScrollOffsetY(event.nativeEvent.contentOffset.y);
+        }}
         onWordPress={handleWordPress}
+        scrollRef={articleListRef}
         selectedTokenKeys={selectedTokens.map((token) => token.tokenKey)}
         text={displayedText}
+      />
+      <ScrollToTopButton
+        bottomOffset={160}
+        rightOffset={Spacing.md}
+        scrollOffsetY={scrollOffsetY}
+        scrollRef={articleListRef}
       />
       <WordTranslationSheet
         baseTranslation={translation?.baseTranslation}
