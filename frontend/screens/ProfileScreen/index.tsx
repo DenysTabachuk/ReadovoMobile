@@ -74,12 +74,16 @@ export default function ProfileScreen() {
 
   const progress = achievementsQuery.data?.progress ?? defaultStats;
   const achievements = achievementsQuery.data?.achievements ?? [];
+  const isAchievementsLoading = achievementsQuery.isLoading && !achievementsQuery.data;
+  const shouldShowAchievements = achievements.length > 0;
   const unlockedAchievementsCount = (achievementsQuery.data?.achievements ?? []).filter(
     (achievement) => achievement.isUnlocked,
   ).length;
   const fallbackName = currentUser?.email?.split('@')[0] ?? t('profile.defaultName');
   const displayName = currentUser?.displayName ?? fallbackName;
   const streak = streakQuery.data ?? fallbackStreak;
+  const isStreakLoading = streakQuery.isLoading && !streakQuery.data;
+  const isStreakError = streakQuery.isError && !streakQuery.data;
 
   return (
     <ScreenContainer style={styles.container}>
@@ -169,16 +173,48 @@ export default function ProfileScreen() {
           </View>
         </View>
         <View style={styles.streakBlock}>
-          <ActivityCalendar
-            onPressCta={() => {
-              if (streak.todayStatus === 'broken' && streak.brokenStreakInfo?.canRestore) {
-                void restoreMutation.mutateAsync();
-              }
-            }}
-            serverNow={streak.serverNow}
-            streak={streak}
-            userId={currentUser?.id ?? undefined}
-          />
+          {isStreakLoading ? (
+            <View style={[styles.streakNoticeCard, isDarkTheme ? styles.streakNoticeCardDark : null]}>
+              <ThemedText style={[styles.streakNoticeText, isDarkTheme ? styles.streakNoticeTextDark : null]}>
+                {t('profile.loading')}
+              </ThemedText>
+            </View>
+          ) : null}
+          {isStreakError ? (
+            <View style={[styles.streakNoticeCard, isDarkTheme ? styles.streakNoticeCardDark : null]}>
+              <ThemedText style={[styles.streakNoticeText, isDarkTheme ? styles.streakNoticeTextDark : null]}>
+                {t('profile.errors.loadFailed', { defaultValue: 'Не вдалося завантажити streak.' })}
+              </ThemedText>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => {
+                  void streakQuery.refetch();
+                }}
+                style={({ pressed }) => [
+                  styles.streakRetryButton,
+                  isDarkTheme ? styles.streakRetryButtonDark : null,
+                  pressed ? styles.avatarButtonPressed : null,
+                ]}>
+                <ThemedText
+                  type="bodyStrong"
+                  style={[styles.streakRetryButtonText, isDarkTheme ? styles.streakRetryButtonTextDark : null]}>
+                  {t('article.retry')}
+                </ThemedText>
+              </Pressable>
+            </View>
+          ) : null}
+          {!isStreakLoading && !isStreakError ? (
+            <ActivityCalendar
+              onPressCta={() => {
+                if (streak.todayStatus === 'broken' && streak.brokenStreakInfo?.canRestore) {
+                  void restoreMutation.mutateAsync();
+                }
+              }}
+              serverNow={streak.serverNow}
+              streak={streak}
+              userId={currentUser?.id ?? undefined}
+            />
+          ) : null}
           <ScrollView
             contentContainerStyle={styles.streakAchievementsRow}
             horizontal
@@ -194,8 +230,15 @@ export default function ProfileScreen() {
         </View>
 
         <View style={styles.achievementsBlock}>
-          <ThemedText type="sectionTitle">{t('profile.achievementsTitle')}</ThemedText>
-          {achievements.map((achievement) => {
+          {isAchievementsLoading ? (
+            <ThemedText style={[styles.achievementsNoticeText, isDarkTheme ? styles.achievementsNoticeTextDark : null]}>
+              {t('profile.loading')}
+            </ThemedText>
+          ) : null}
+          {shouldShowAchievements ? (
+            <ThemedText type="sectionTitle">{t('profile.achievementsTitle')}</ThemedText>
+          ) : null}
+          {shouldShowAchievements ? achievements.map((achievement) => {
             const isUnlocked = achievement.isUnlocked;
             const progressValue = achievement.progressValue;
             const progressRatio = Math.min(progressValue / achievement.targetValue, 1);
@@ -266,7 +309,7 @@ export default function ProfileScreen() {
                 </View>
               </View>
             );
-          })}
+          }) : null}
         </View>
       </ScrollView>
     </ScreenContainer>

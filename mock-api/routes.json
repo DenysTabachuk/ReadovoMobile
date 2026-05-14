@@ -1,0 +1,6 @@
+{
+  "/streak/profile/:userId": "/streak/profile/:userId",
+  "/streak/profile/:userId/activity-completed": "/streak/profile/:userId/activity-completed",
+  "/streak/profile/:userId/restore": "/streak/profile/:userId/restore",
+  "/streak/profile/:userId/calendar/month": "/streak/profile/:userId/calendar/month"
+}

@@ -116,6 +116,12 @@ export const styles = StyleSheet.create({
   achievementsBlock: {
     gap: Spacing.md,
   },
+  achievementsNoticeText: {
+    color: '#5b5f76',
+  },
+  achievementsNoticeTextDark: {
+    color: '#cbc7df',
+  },
   streakAchievementsRow: {
     flexDirection: 'row',
     gap: Spacing.sm,
@@ -123,6 +129,41 @@ export const styles = StyleSheet.create({
   },
   streakBlock: {
     gap: Spacing.md,
+  },
+  streakNoticeCard: {
+    alignItems: 'center',
+    backgroundColor: '#f7f3ff',
+    borderColor: '#e8e8ef',
+    borderRadius: 20,
+    borderWidth: 1,
+    gap: Spacing.sm,
+    padding: Spacing.lg,
+  },
+  streakNoticeText: {
+    color: '#5b5f76',
+    textAlign: 'center',
+  },
+  streakNoticeCardDark: {
+    backgroundColor: '#20182f',
+    borderColor: '#3b2b5c',
+  },
+  streakNoticeTextDark: {
+    color: '#cbc7df',
+  },
+  streakRetryButton: {
+    backgroundColor: '#ece8f7',
+    borderRadius: 999,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+  },
+  streakRetryButtonDark: {
+    backgroundColor: '#312447',
+  },
+  streakRetryButtonText: {
+    color: '#3b2b5c',
+  },
+  streakRetryButtonTextDark: {
+    color: '#e1daf5',
   },
   achievementCard: {
     alignItems: 'center',

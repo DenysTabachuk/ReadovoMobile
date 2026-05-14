@@ -394,6 +394,10 @@
     "openSettings": "Open settings",
     "defaultName": "Octopus",
     "subtitle": "English Explorer",
+    "loading": "Loading profile data...",
+    "errors": {
+      "loadFailed": "Could not load streak data."
+    },
     "stats": {
       "words": "words learned",
       "tests": "tests completed",
