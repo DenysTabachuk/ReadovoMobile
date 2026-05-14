@@ -118,7 +118,7 @@ describe('TranslationsService', () => {
                 },
               ],
             },
-        }),
+          }),
         ok: true,
       })
       .mockResolvedValueOnce({

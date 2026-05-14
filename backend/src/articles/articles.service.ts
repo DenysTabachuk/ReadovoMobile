@@ -57,8 +57,7 @@ const GROQ_MODEL_MAX_OUTPUT_TOKENS = 32768;
 const GROQ_REQUEST_TIMEOUT_MS = 180000;
 // This is a character-based heuristic aligned upward with the documented 131,072-token context window.
 const MAX_SIMPLIFICATION_CHUNK_CHARS = GROQ_MODEL_CONTEXT_WINDOW_TOKENS;
-const MAX_SIMPLIFICATION_CHUNK_COMPLETION_TOKENS =
-  GROQ_MODEL_MAX_OUTPUT_TOKENS;
+const MAX_SIMPLIFICATION_CHUNK_COMPLETION_TOKENS = GROQ_MODEL_MAX_OUTPUT_TOKENS;
 const MAX_SIMPLIFICATION_COMPLETION_TOKENS = GROQ_MODEL_MAX_OUTPUT_TOKENS;
 const MAX_VOCABULARY_QUIZ_COMPLETION_TOKENS = GROQ_MODEL_MAX_OUTPUT_TOKENS;
 const MAX_ARTICLE_LIMIT = 50;
@@ -475,7 +474,8 @@ export class ArticlesService {
       });
     }
 
-    const articlesWithAdaptations = await this.attachAvailableAdaptations(articles);
+    const articlesWithAdaptations =
+      await this.attachAvailableAdaptations(articles);
 
     return this.applyArticleFiltersAndSorting(articlesWithAdaptations, {
       limit: normalizedLimit,
@@ -557,9 +557,7 @@ export class ArticlesService {
 
     const recommendedArticles = this.getPagesFromResponse(data)
       .filter((page) => !excludedIds.has(page.pageid))
-      .filter((page) =>
-        this.isUsableArticlePreview(page, params.previewLength),
-      )
+      .filter((page) => this.isUsableArticlePreview(page, params.previewLength))
       .sort(
         (left, right) =>
           (titleRank.get(this.normalizeTitle(left.title)) ??
@@ -1203,7 +1201,9 @@ export class ArticlesService {
         errorStack,
       );
 
-      throw new BadGatewayException('Failed to generate article vocabulary quiz.');
+      throw new BadGatewayException(
+        'Failed to generate article vocabulary quiz.',
+      );
     }
   }
 
@@ -1679,9 +1679,7 @@ export class ArticlesService {
         adaptationsForLevel.map((adaptation) => adaptation.transformationType),
       );
 
-      return (
-        availableTypes.has('adaptation') && availableTypes.has('summary')
-      );
+      return availableTypes.has('adaptation') && availableTypes.has('summary');
     }
 
     return availableAdaptations.some((adaptation) => {
@@ -1710,7 +1708,8 @@ export class ArticlesService {
   ): number {
     if (params.preferImagesFirst) {
       const imagePriorityDifference =
-        Number(Boolean(right.thumbnailUrl)) - Number(Boolean(left.thumbnailUrl));
+        Number(Boolean(right.thumbnailUrl)) -
+        Number(Boolean(left.thumbnailUrl));
 
       if (imagePriorityDifference !== 0) {
         return imagePriorityDifference;
@@ -2206,7 +2205,9 @@ Source text:
 ${params.chunk.text}`;
     }
 
-    const summaryLengthRule = this.getSummaryMinimumLengthRule(params.chunk.text);
+    const summaryLengthRule = this.getSummaryMinimumLengthRule(
+      params.chunk.text,
+    );
 
     return `Summarize this chunk of a longer English Wikipedia article for an English learner.
 
@@ -2553,9 +2554,8 @@ ${params.text}`;
       }
     }
 
-    const rawTextFallback = this.createFallbackArticleBlocksFromRawResponse(
-      rawResponse,
-    );
+    const rawTextFallback =
+      this.createFallbackArticleBlocksFromRawResponse(rawResponse);
 
     if (rawTextFallback.length > 0) {
       this.logger.warn(
@@ -2575,7 +2575,11 @@ ${params.text}`;
   ): ArticleBlock[] {
     const normalized = this.stripJsonMarkdownFences(rawResponse);
 
-    if (!normalized || normalized.startsWith('{') || normalized.startsWith('[')) {
+    if (
+      !normalized ||
+      normalized.startsWith('{') ||
+      normalized.startsWith('[')
+    ) {
       return [];
     }
 
@@ -2694,7 +2698,9 @@ ${params.text}`;
     return null;
   }
 
-  private normalizeInlineNodes(rawNodes: unknown): { text: string; type: 'text' }[] {
+  private normalizeInlineNodes(
+    rawNodes: unknown,
+  ): { text: string; type: 'text' }[] {
     if (typeof rawNodes === 'string') {
       return this.createPlainTextInlineNodes(rawNodes);
     }
@@ -2713,7 +2719,9 @@ ${params.text}`;
           return null;
         }
 
-        const text = this.getStringValue((node as Record<string, unknown>).text);
+        const text = this.getStringValue(
+          (node as Record<string, unknown>).text,
+        );
 
         return text ? { text, type: 'text' as const } : null;
       })
@@ -2825,10 +2833,7 @@ ${params.text}`;
         continue;
       }
 
-      const extracted = this.extractLooseArticleText(
-        candidate[key],
-        depth + 1,
-      );
+      const extracted = this.extractLooseArticleText(candidate[key], depth + 1);
 
       if (extracted) {
         return extracted;
@@ -2836,7 +2841,9 @@ ${params.text}`;
     }
 
     return Object.entries(candidate)
-      .filter(([key]) => !['questions', 'options', 'correctOptionIds'].includes(key))
+      .filter(
+        ([key]) => !['questions', 'options', 'correctOptionIds'].includes(key),
+      )
       .map(([, nestedValue]) =>
         this.extractLooseArticleText(nestedValue, depth + 1),
       )
@@ -2952,9 +2959,8 @@ ${params.text}`;
             parsed: JSON.parse(repaired) as T,
           };
         } catch (repairError) {
-          const partialRecovery = this.tryRecoverVocabularyQuizFromPartialJson<T>(
-            repaired,
-          );
+          const partialRecovery =
+            this.tryRecoverVocabularyQuizFromPartialJson<T>(repaired);
 
           if (partialRecovery.parsed) {
             return {
@@ -2963,7 +2969,7 @@ ${params.text}`;
                 `JSON repair parse still failed: ${repairError instanceof Error ? repairError.message : 'Unknown parse error'}.`,
                 this.describeJsonParseError(repairError, repaired) ?? '',
                 ...partialRecovery.diagnostics,
-              ].filter(Boolean) as string[],
+              ].filter(Boolean),
               parsed: partialRecovery.parsed,
             };
           }
@@ -3041,9 +3047,7 @@ ${params.text}`;
   }
 
   private repairCommonJsonIssues(value: string): string {
-    return value
-      .replace(/,\s*([}\]])/g, '$1')
-      .trim();
+    return value.replace(/,\s*([}\]])/g, '$1').trim();
   }
 
   private extractResolvedLevelFromRawResponse(
@@ -3350,11 +3354,14 @@ ${params.text}`;
     rawQuestion: unknown,
     index: number,
     sourceText: string,
-  ): {
-    question: ArticleVocabularyQuizQuestion;
-  } | {
-    reason: string;
-  } | null {
+  ):
+    | {
+        question: ArticleVocabularyQuizQuestion;
+      }
+    | {
+        reason: string;
+      }
+    | null {
     if (!rawQuestion || typeof rawQuestion !== 'object') {
       return { reason: 'question is not an object' };
     }
@@ -3593,7 +3600,9 @@ ${params.text}`;
     return true;
   }
 
-  private hasDuplicateOptionTexts(options: ArticleQuizQuestionOption[]): boolean {
+  private hasDuplicateOptionTexts(
+    options: ArticleQuizQuestionOption[],
+  ): boolean {
     const normalizedOptions = options.map((option) =>
       option.text.trim().toLowerCase(),
     );

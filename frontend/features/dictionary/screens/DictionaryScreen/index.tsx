@@ -46,6 +46,7 @@ import {
 import { TranslationCards } from '@/features/translations/components/translationCards';
 import { useWordTranslation } from '@/features/translations/hooks/useWordTranslation';
 import { calculateQuizReward } from '@/features/quizRewards';
+import { trackLearningActivity } from '@/features/streak';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useAuth } from '@/providers/authProvider';
@@ -200,6 +201,7 @@ export default function DictionaryScreen() {
         balance: profile.progress.balance + rewardCoins,
         testsCompleted: profile.progress.testsCompleted + 1,
       });
+      await trackLearningActivity(currentUser.id, 'lexical_test_completed');
 
       return {
         newlyUnlockedAchievements: getNewlyUnlockedAchievements(
@@ -217,6 +219,9 @@ export default function DictionaryScreen() {
 
       void queryClient.invalidateQueries({
         queryKey: ['achievements-profile', userId],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: ['streak-profile', userId],
       });
 
       const achievement = response?.newlyUnlockedAchievements[0];

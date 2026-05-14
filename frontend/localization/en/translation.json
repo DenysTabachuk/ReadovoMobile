@@ -454,5 +454,35 @@
       "glasses": "Glasses",
       "eye-patch": "Eye patch"
     }
+  },
+  "streak": {
+    "calendar": {
+      "weekdays": {
+        "mon": "Mon",
+        "tue": "Tue",
+        "wed": "Wed",
+        "thu": "Thu",
+        "fri": "Fri",
+        "sat": "Sat",
+        "sun": "Sun"
+      }
+    },
+    "summary": {
+      "status": {
+        "completed": "Today's activity is saved",
+        "pending": "Complete an activity today to keep your streak",
+        "broken": "Streak broken",
+        "frozen": "Today is protected with a freeze token",
+        "default": "Status is updating"
+      },
+      "cta": {
+        "completed": "Done today",
+        "pending": "Complete activity",
+        "restore": "Restore streak",
+        "restart": "Start over",
+        "default": "Continue"
+      },
+      "daysInRow": "days in a row"
+    }
   }
 }

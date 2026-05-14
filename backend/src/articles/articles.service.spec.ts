@@ -909,12 +909,19 @@ describe('ArticlesService', () => {
                   format: 'definition',
                   id: 'vq-1',
                   options: [
-                    { id: 'a', text: 'a sudden event when a volcano throws out lava' },
+                    {
+                      id: 'a',
+                      text: 'a sudden event when a volcano throws out lava',
+                    },
                     { id: 'b', text: 'a machine that measures wind speed' },
                     { id: 'c', text: 'a flat area near a river' },
-                    { id: 'd', text: 'a person who climbs mountains for sport' },
+                    {
+                      id: 'd',
+                      text: 'a person who climbs mountains for sport',
+                    },
                   ],
-                  prompt: 'Which definition best matches "eruption" in the text?',
+                  prompt:
+                    'Which definition best matches "eruption" in the text?',
                   sourceExcerpt:
                     'Scientists study volcanoes. Lava flows down the mountain during an eruption.',
                   term: 'eruption',
@@ -980,7 +987,8 @@ describe('ArticlesService', () => {
                     { id: 'c', text: 'швидкий' },
                     { id: 'd', text: 'гарячий' },
                   ],
-                  prompt: 'Choose the best Ukrainian translation of "mysterious".',
+                  prompt:
+                    'Choose the best Ukrainian translation of "mysterious".',
                   sourceExcerpt: 'The forest canopy protects many insects.',
                   term: 'mysterious',
                   termKind: 'word',
@@ -1070,7 +1078,8 @@ describe('ArticlesService', () => {
                     { id: 'c', text: 'uncertainty' },
                     { id: 'd', text: 'victory' },
                   ],
-                  prompt: 'Which word is closest in meaning to "ambiguity" in the text?',
+                  prompt:
+                    'Which word is closest in meaning to "ambiguity" in the text?',
                   sourceExcerpt:
                     'The policy language created ambiguity for both investors and regulators.',
                   term: 'ambiguity',
@@ -1203,8 +1212,7 @@ describe('ArticlesService', () => {
 
     const response = await service.generateArticleVocabularyQuiz({
       level: 'A2',
-      text:
-        'Alan Turing was an English mathematician. The machine could follow an algorithm. He helped develop theoretical computer science. Turing wrote about artificial intelligence. He worked at Britain\'s codebreaking centre.',
+      text: "Alan Turing was an English mathematician. The machine could follow an algorithm. He helped develop theoretical computer science. Turing wrote about artificial intelligence. He worked at Britain's codebreaking centre.",
       title: 'Alan Turing',
     });
 

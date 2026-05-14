@@ -34,56 +34,68 @@ describe('AchievementsService', () => {
     learnedWordsCount = 0;
     achievements = [];
 
-    queryMock = jest.fn().mockImplementation((text: string, values?: unknown[]) => {
-      if (text.includes('SELECT lessons_completed, tests_completed, words_learned, balance')) {
-        return Promise.resolve({
-          rows: [user],
-        });
-      }
+    queryMock = jest
+      .fn()
+      .mockImplementation((text: string, values?: unknown[]) => {
+        if (
+          text.includes(
+            'SELECT lessons_completed, tests_completed, words_learned, balance',
+          )
+        ) {
+          return Promise.resolve({
+            rows: [user],
+          });
+        }
 
-      if (text.includes("SELECT COUNT(*)::text AS count") && text.includes('FROM dictionary_words')) {
-        return Promise.resolve({
-          rows: [{ count: String(learnedWordsCount) }],
-        });
-      }
+        if (
+          text.includes('SELECT COUNT(*)::text AS count') &&
+          text.includes('FROM dictionary_words')
+        ) {
+          return Promise.resolve({
+            rows: [{ count: String(learnedWordsCount) }],
+          });
+        }
 
-      if (text.includes('SELECT achievement_id, unlocked_at, claimed_at')) {
-        return Promise.resolve({
-          rows: achievements,
-        });
-      }
+        if (text.includes('SELECT achievement_id, unlocked_at, claimed_at')) {
+          return Promise.resolve({
+            rows: achievements,
+          });
+        }
 
-      if (text.includes('INSERT INTO user_achievements')) {
-        const achievementId = values?.[1] as AchievementId;
-        const existingAchievement = achievements.find(
-          (achievement) => achievement.achievement_id === achievementId,
-        );
+        if (text.includes('INSERT INTO user_achievements')) {
+          const achievementId = values?.[1] as AchievementId;
+          const existingAchievement = achievements.find(
+            (achievement) => achievement.achievement_id === achievementId,
+          );
 
-        if (existingAchievement) {
+          if (existingAchievement) {
+            return Promise.resolve({ rows: [] });
+          }
+
+          const insertedAchievement: MockAchievementRow = {
+            achievement_id: achievementId,
+            claimed_at: new Date('2026-05-10T18:00:00.000Z'),
+            unlocked_at: new Date('2026-05-10T18:00:00.000Z'),
+          };
+
+          achievements.push(insertedAchievement);
+
+          return Promise.resolve({
+            rows: [{ achievement_id: achievementId }],
+          });
+        }
+
+        if (
+          text.includes('UPDATE users') &&
+          text.includes('SET balance = balance + $2')
+        ) {
+          user.balance += Number(values?.[1] ?? 0);
+
           return Promise.resolve({ rows: [] });
         }
 
-        const insertedAchievement: MockAchievementRow = {
-          achievement_id: achievementId,
-          claimed_at: new Date('2026-05-10T18:00:00.000Z'),
-          unlocked_at: new Date('2026-05-10T18:00:00.000Z'),
-        };
-
-        achievements.push(insertedAchievement);
-
-        return Promise.resolve({
-          rows: [{ achievement_id: achievementId }],
-        });
-      }
-
-      if (text.includes('UPDATE users') && text.includes('SET balance = balance + $2')) {
-        user.balance += Number(values?.[1] ?? 0);
-
-        return Promise.resolve({ rows: [] });
-      }
-
-      throw new Error(`Unexpected query: ${text}`);
-    });
+        throw new Error(`Unexpected query: ${text}`);
+      });
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [

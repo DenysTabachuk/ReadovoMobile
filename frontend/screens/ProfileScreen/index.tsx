@@ -13,7 +13,9 @@ import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 
 import { ScreenContainer } from '@/components/screenContainer';
+import { ActivityCalendar } from '@/components/activityCalendar';
 import { Mascot } from '@/components/mascot';
+import { StreakAchievementCard } from '@/components/streakAchievementCard';
 import { ThemedText } from '@/components/themedText';
 import {
   getAchievementBadge,
@@ -22,6 +24,7 @@ import {
 import { getMascotProfile } from '@/features/mascot';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useAuth } from '@/providers/authProvider';
+import { useStreak } from '@/features/streak';
 
 import { styles } from './styles';
 
@@ -31,6 +34,21 @@ const defaultStats = {
   streakDays: 0,
   testsCompleted: 0,
   wordsLearned: 0,
+};
+
+const fallbackStreak = {
+  activityHistory: [],
+  brokenStreakInfo: null,
+  claimedStreakAchievements: [],
+  coinBalance: 0,
+  currentStreak: 0,
+  freezeTokens: 0,
+  lastActivityDate: null,
+  longestStreak: 0,
+  nextBonusInDays: 3,
+  nextMilestone: 3 as const,
+  serverNow: new Date().toISOString(),
+  todayStatus: 'pending' as const,
 };
 
 export default function ProfileScreen() {
@@ -52,6 +70,7 @@ export default function ProfileScreen() {
     queryFn: () => getMascotProfile(currentUser?.id ?? ''),
     queryKey: ['mascot-profile', currentUser?.id],
   });
+  const { restoreMutation, streakQuery } = useStreak(currentUser?.id ?? undefined);
 
   const progress = achievementsQuery.data?.progress ?? defaultStats;
   const achievements = achievementsQuery.data?.achievements ?? [];
@@ -60,6 +79,7 @@ export default function ProfileScreen() {
   ).length;
   const fallbackName = currentUser?.email?.split('@')[0] ?? t('profile.defaultName');
   const displayName = currentUser?.displayName ?? fallbackName;
+  const streak = streakQuery.data ?? fallbackStreak;
 
   return (
     <ScreenContainer style={styles.container}>
@@ -140,13 +160,37 @@ export default function ProfileScreen() {
           </View>
           <View style={[styles.statItem, shouldUseTwoRows && styles.statItemTwoRows]}>
             <View style={styles.statValueRow}>
-              <ThemedText style={styles.statValue}>{defaultStats.streakDays}</ThemedText>
-              <Ionicons color="#f2994a" name="flame-outline" size={18} />
+              <ThemedText style={styles.statValue}>{streak?.currentStreak ?? defaultStats.streakDays}</ThemedText>
+              <Ionicons color="#f2994a" name="flame" size={18} />
             </View>
             <View style={styles.statMetaRow}>
               <ThemedText style={styles.statLabel}>{t('profile.stats.streak')}</ThemedText>
             </View>
           </View>
+        </View>
+        <View style={styles.streakBlock}>
+          <ActivityCalendar
+            onPressCta={() => {
+              if (streak.todayStatus === 'broken' && streak.brokenStreakInfo?.canRestore) {
+                void restoreMutation.mutateAsync();
+              }
+            }}
+            serverNow={streak.serverNow}
+            streak={streak}
+            userId={currentUser?.id ?? undefined}
+          />
+          <ScrollView
+            contentContainerStyle={styles.streakAchievementsRow}
+            horizontal
+            showsHorizontalScrollIndicator={false}>
+            {streak.claimedStreakAchievements.map((achievement) => (
+              <StreakAchievementCard
+                achievement={achievement}
+                key={achievement.milestone}
+                progressValue={streak.currentStreak}
+              />
+            ))}
+          </ScrollView>
         </View>
 
         <View style={styles.achievementsBlock}>

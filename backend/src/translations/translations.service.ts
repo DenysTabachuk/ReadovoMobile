@@ -66,7 +66,9 @@ export class TranslationsService {
         !this.isSameTextNormalized(extractedTranslation, params.word)
       ) {
         contextualTranslation = extractedTranslation;
-        contextTranslation = this.stripContextWordTags(translatedContextWithMarker);
+        contextTranslation = this.stripContextWordTags(
+          translatedContextWithMarker,
+        );
       } else {
         contextTranslation = await this.translateText({
           sourceLanguage,
@@ -164,7 +166,9 @@ export class TranslationsService {
     return `${context.slice(0, wordStart)}<${CONTEXT_WORD_TAG} ${CONTEXT_WORD_ATTRIBUTE}="1">${this.escapeHtml(originalWordSlice)}</${CONTEXT_WORD_TAG}>${context.slice(wordEnd)}`;
   }
 
-  private extractTaggedContent(translatedContextWithMarker: string): string | null {
+  private extractTaggedContent(
+    translatedContextWithMarker: string,
+  ): string | null {
     const parserPattern = new RegExp(
       `<${CONTEXT_WORD_TAG}[^>]*${CONTEXT_WORD_ATTRIBUTE}=["']1["'][^>]*>([\\s\\S]*?)<\\/${CONTEXT_WORD_TAG}>`,
       'i',

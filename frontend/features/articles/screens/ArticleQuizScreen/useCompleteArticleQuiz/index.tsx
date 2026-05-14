@@ -14,6 +14,7 @@ import {
   updateAchievementsProgress,
 } from '@/features/achievements';
 import { calculateQuizReward } from '@/features/quizRewards';
+import { trackLearningActivity } from '@/features/streak';
 
 import { resolveEffectiveTargetLength } from '../resolveEffectiveArticleLength';
 import { type ArticleQuizLengthParam } from '../types';
@@ -56,6 +57,7 @@ export function useCompleteArticleQuiz({
         balance: profile.progress.balance + rewardCoins,
         testsCompleted: profile.progress.testsCompleted + 1,
       });
+      await trackLearningActivity(currentUserId, 'article_quiz_completed');
 
       return {
         newlyUnlockedAchievements: getNewlyUnlockedAchievements(
@@ -72,6 +74,9 @@ export function useCompleteArticleQuiz({
 
       void queryClient.invalidateQueries({
         queryKey: ['achievements-profile', currentUserId],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: ['streak-profile', currentUserId],
       });
 
       const achievement = response?.newlyUnlockedAchievements[0];

@@ -132,10 +132,9 @@ export class ArticlesController {
     const normalizedReadyLevel = readyLevel?.trim().toUpperCase() as
       | ArticleReadyLevelFilter
       | undefined;
-    const normalizedReadyTransformationType =
-      readyTransformationType?.trim().toLowerCase() as
-        | ArticleReadyTransformationFilter
-        | undefined;
+    const normalizedReadyTransformationType = readyTransformationType
+      ?.trim()
+      .toLowerCase() as ArticleReadyTransformationFilter | undefined;
     const normalizedRecommended = recommended?.trim().toLowerCase();
     const normalizedSortBy = sortBy?.trim().toLowerCase() as
       | WikipediaArticleSortOption
@@ -238,7 +237,9 @@ export class ArticlesController {
     transformationType?: string,
   ): Promise<ArticleAdaptationsByArticleId> {
     const parsedArticleIds = this.parseArticleIds(articleIds);
-    const normalizedTransformationType = transformationType?.trim().toLowerCase();
+    const normalizedTransformationType = transformationType
+      ?.trim()
+      .toLowerCase();
 
     if (
       normalizedTransformationType &&

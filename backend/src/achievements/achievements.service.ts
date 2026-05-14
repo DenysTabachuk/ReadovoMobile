@@ -205,10 +205,14 @@ export class AchievementsService {
     }
 
     const rewardByAchievementId = new Map(
-      achievementDefinitions.map((definition) => [definition.id, definition.coinsReward]),
+      achievementDefinitions.map((definition) => [
+        definition.id,
+        definition.coinsReward,
+      ]),
     );
     const totalCoinsReward = insertedAchievementIds.reduce(
-      (sum, achievementId) => sum + (rewardByAchievementId.get(achievementId) ?? 0),
+      (sum, achievementId) =>
+        sum + (rewardByAchievementId.get(achievementId) ?? 0),
       0,
     );
 

@@ -70,7 +70,10 @@ export class DictionaryRepository {
     return result.rows.map((row) => this.toDictionaryWord(row));
   }
 
-  async findById(id: string, userId: string): Promise<DictionaryWord | undefined> {
+  async findById(
+    id: string,
+    userId: string,
+  ): Promise<DictionaryWord | undefined> {
     const result = await this.databaseService.query<DictionaryWordRow>(
       `
         SELECT id, user_id, word, translation, context, progress, correct_answers_count, last_reviewed_at, created_at
@@ -86,7 +89,10 @@ export class DictionaryRepository {
     return row ? this.toDictionaryWord(row) : undefined;
   }
 
-  async findReviewCandidates(userId: string, limit: number): Promise<DictionaryWord[]> {
+  async findReviewCandidates(
+    userId: string,
+    limit: number,
+  ): Promise<DictionaryWord[]> {
     const result = await this.databaseService.query<DictionaryWordRow>(
       `
         SELECT id, user_id, word, translation, context, progress, correct_answers_count, last_reviewed_at, created_at

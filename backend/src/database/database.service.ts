@@ -226,6 +226,44 @@ export class DatabaseService implements OnModuleDestroy, OnModuleInit {
         ELSE correct_answers_count
       END;
     `);
+
+    await this.query(`
+      CREATE TABLE IF NOT EXISTS user_streak_profiles (
+        user_id uuid PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+        current_streak integer NOT NULL DEFAULT 0,
+        longest_streak integer NOT NULL DEFAULT 0,
+        last_activity_date date,
+        freeze_tokens integer NOT NULL DEFAULT 1,
+        timezone text NOT NULL DEFAULT 'UTC',
+        broken_streak_info jsonb,
+        updated_at timestamptz NOT NULL DEFAULT now()
+      );
+    `);
+
+    await this.query(`
+      CREATE TABLE IF NOT EXISTS user_streak_history (
+        user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        activity_date date NOT NULL,
+        status text NOT NULL,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        PRIMARY KEY (user_id, activity_date)
+      );
+    `);
+
+    await this.query(`
+      CREATE INDEX IF NOT EXISTS user_streak_history_user_date_idx
+      ON user_streak_history (user_id, activity_date DESC);
+    `);
+
+    await this.query(`
+      CREATE TABLE IF NOT EXISTS user_streak_achievements (
+        user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        milestone integer NOT NULL,
+        reward_coins integer NOT NULL,
+        claimed_at timestamptz NOT NULL DEFAULT now(),
+        PRIMARY KEY (user_id, milestone)
+      );
+    `);
   }
 
   query<T extends QueryResultRow = QueryResultRow>(

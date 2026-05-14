@@ -116,6 +116,14 @@ export const styles = StyleSheet.create({
   achievementsBlock: {
     gap: Spacing.md,
   },
+  streakAchievementsRow: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    paddingRight: Spacing.sm,
+  },
+  streakBlock: {
+    gap: Spacing.md,
+  },
   achievementCard: {
     alignItems: 'center',
     borderRadius: 16,

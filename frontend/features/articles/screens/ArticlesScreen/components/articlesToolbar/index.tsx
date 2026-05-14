@@ -108,7 +108,7 @@ export function ArticlesToolbar({
 }: ArticlesToolbarProps) {
   const { t } = useTranslation();
   const [isRecommendedInfoOpen, setIsRecommendedInfoOpen] = useState(false);
-  const [isFiltersCollapsed, setIsFiltersCollapsed] = useState(false);
+  const [isFiltersCollapsed, setIsFiltersCollapsed] = useState(true);
   const [filtersContentHeight, setFiltersContentHeight] = useState(0);
   const collapseProgress = useRef(new Animated.Value(1)).current;
   const opacityProgress = useRef(new Animated.Value(1)).current;

@@ -62,11 +62,14 @@ export class DictionaryService {
     const existingWords = await this.dictionaryRepository.findAll(userId);
     const normalizedWord = this.normalizeWord(word);
     const duplicateWord = existingWords.find(
-      (existingWord) => this.normalizeWord(existingWord.word) === normalizedWord,
+      (existingWord) =>
+        this.normalizeWord(existingWord.word) === normalizedWord,
     );
 
     if (duplicateWord) {
-      throw new BadRequestException('Word or phrase already exists in dictionary.');
+      throw new BadRequestException(
+        'Word or phrase already exists in dictionary.',
+      );
     }
 
     const createdWord = await this.dictionaryRepository.create({
@@ -82,7 +85,9 @@ export class DictionaryService {
     });
 
     if (!createdWord) {
-      throw new BadRequestException('Word or phrase already exists in dictionary.');
+      throw new BadRequestException(
+        'Word or phrase already exists in dictionary.',
+      );
     }
 
     return createdWord;
@@ -130,7 +135,10 @@ export class DictionaryService {
     }
 
     const reviewCandidates =
-      await this.dictionaryRepository.findReviewCandidates(userId, normalizedLimit);
+      await this.dictionaryRepository.findReviewCandidates(
+        userId,
+        normalizedLimit,
+      );
     const questions = await Promise.all(
       reviewCandidates.map((word) => this.createTestQuestion(word, words)),
     );
@@ -312,8 +320,5 @@ export class DictionaryService {
 }
 
 function countWords(value: string): number {
-  return value
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean).length;
+  return value.trim().split(/\s+/).filter(Boolean).length;
 }
