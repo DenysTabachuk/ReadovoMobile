@@ -7,6 +7,8 @@ import { FormTextInput } from '@/components/formTextInput';
 import { useThemeColor } from '@/hooks/use-theme-color';
 
 type PasswordTextInputProps = Omit<TextInputProps, 'secureTextEntry'> & {
+  errorText?: string;
+  hasError?: boolean;
   label: string;
 };
 

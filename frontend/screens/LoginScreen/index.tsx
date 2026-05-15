@@ -31,27 +31,24 @@ export default function LoginScreen() {
   const [email, setEmail] = useState(getParamValue(params.email));
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(rememberMePreference);
+  const [isSubmitted, setIsSubmitted] = useState(false);
+
+  const normalizedEmail = email.trim().toLowerCase();
+  const emailError =
+    !emailPattern.test(normalizedEmail) ? t('auth.errors.invalidEmail') : '';
+  const passwordError =
+    password.length === 0 ? t('auth.errors.passwordRequired') : '';
+  const shouldShowEmailError = isSubmitted && emailError.length > 0;
+  const shouldShowPasswordError = isSubmitted && passwordError.length > 0;
 
   useEffect(() => {
     setRememberMe(rememberMePreference);
   }, [rememberMePreference]);
 
   const handleSignIn = async () => {
-    const normalizedEmail = email.trim().toLowerCase();
+    setIsSubmitted(true);
 
-    if (!emailPattern.test(normalizedEmail)) {
-      showBanner({
-        title: t('auth.errors.invalidEmail'),
-        variant: 'error',
-      });
-      return;
-    }
-
-    if (password.length === 0) {
-      showBanner({
-        title: t('auth.errors.passwordRequired'),
-        variant: 'error',
-      });
+    if (emailError.length > 0 || passwordError.length > 0) {
       return;
     }
 
@@ -134,6 +131,8 @@ export default function LoginScreen() {
             <FormTextInput
               autoCapitalize="none"
               autoComplete="email"
+              errorText={shouldShowEmailError ? emailError : undefined}
+              hasError={shouldShowEmailError}
               keyboardType="email-address"
               label={t('auth.emailLabel')}
               onChangeText={setEmail}
@@ -143,6 +142,8 @@ export default function LoginScreen() {
             />
 
             <PasswordTextInput
+              errorText={shouldShowPasswordError ? passwordError : undefined}
+              hasError={shouldShowPasswordError}
               label={t('auth.passwordLabel')}
               onChangeText={setPassword}
               placeholder={t('auth.passwordPlaceholder')}

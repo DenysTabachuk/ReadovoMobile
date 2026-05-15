@@ -27,9 +27,15 @@ export const styles = StyleSheet.create({
   inputWithRightAccessory: {
     paddingRight: 52,
   },
+  inputError: {
+    borderColor: '#d93025',
+  },
   rightAccessory: {
     position: 'absolute',
     right: Spacing.lg,
     top: 18,
+  },
+  errorText: {
+    color: '#d93025',
   },
 });

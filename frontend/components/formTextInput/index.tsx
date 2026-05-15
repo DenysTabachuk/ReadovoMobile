@@ -14,12 +14,16 @@ import { styles } from './styles';
 
 type FormTextInputProps = TextInputProps & {
   containerStyle?: StyleProp<ViewStyle>;
+  errorText?: string;
+  hasError?: boolean;
   label: string;
   rightAccessory?: ReactNode;
 };
 
 export function FormTextInput({
   containerStyle,
+  errorText,
+  hasError = false,
   label,
   onBlur,
   onFocus,
@@ -55,6 +59,7 @@ export function FormTextInput({
           style={[
             styles.input,
             isFocused && styles.inputFocused,
+            hasError && styles.inputError,
             rightAccessory ? styles.inputWithRightAccessory : null,
             style,
             { color: textColor },
@@ -68,6 +73,12 @@ export function FormTextInput({
           </View>
         ) : null}
       </View>
+
+      {errorText ? (
+        <ThemedText type="default" style={styles.errorText}>
+          {errorText}
+        </ThemedText>
+      ) : null}
     </View>
   );
 }

@@ -30,31 +30,32 @@ export default function RegisterScreen() {
   const [pendingEmail, setPendingEmail] = useState('');
   const [verificationExpiresAt, setVerificationExpiresAt] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
+  const [isSubmitted, setIsSubmitted] = useState(false);
+
+  const normalizedEmail = email.trim().toLowerCase();
+  const emailError =
+    !emailPattern.test(normalizedEmail) ? t('auth.errors.invalidEmail') : '';
+  const passwordError =
+    password.length < minPasswordLength
+      ? t('auth.errors.passwordTooShort')
+      : '';
+  const passwordConfirmationError =
+    password !== passwordConfirmation
+      ? t('auth.errors.passwordsDoNotMatch')
+      : '';
+  const shouldShowEmailError = isSubmitted && emailError.length > 0;
+  const shouldShowPasswordError = isSubmitted && passwordError.length > 0;
+  const shouldShowPasswordConfirmationError =
+    isSubmitted && passwordConfirmationError.length > 0;
 
   const handleRegister = async () => {
-    const normalizedEmail = email.trim().toLowerCase();
+    setIsSubmitted(true);
 
-    if (!emailPattern.test(normalizedEmail)) {
-      showBanner({
-        title: t('auth.errors.invalidEmail'),
-        variant: 'error',
-      });
-      return;
-    }
-
-    if (password.length < minPasswordLength) {
-      showBanner({
-        title: t('auth.errors.passwordTooShort'),
-        variant: 'error',
-      });
-      return;
-    }
-
-    if (password !== passwordConfirmation) {
-      showBanner({
-        title: t('auth.errors.passwordsDoNotMatch'),
-        variant: 'error',
-      });
+    if (
+      emailError.length > 0 ||
+      passwordError.length > 0 ||
+      passwordConfirmationError.length > 0
+    ) {
       return;
     }
 
@@ -186,6 +187,8 @@ export default function RegisterScreen() {
           <FormTextInput
             autoCapitalize="none"
             autoComplete="email"
+            errorText={shouldShowEmailError ? emailError : undefined}
+            hasError={shouldShowEmailError}
             keyboardType="email-address"
             label={t('auth.emailLabel')}
             onChangeText={setEmail}
@@ -195,6 +198,8 @@ export default function RegisterScreen() {
           />
 
           <PasswordTextInput
+            errorText={shouldShowPasswordError ? passwordError : undefined}
+            hasError={shouldShowPasswordError}
             label={t('auth.passwordLabel')}
             onChangeText={setPassword}
             placeholder={t('auth.passwordPlaceholder')}
@@ -203,6 +208,12 @@ export default function RegisterScreen() {
           />
 
           <PasswordTextInput
+            errorText={
+              shouldShowPasswordConfirmationError
+                ? passwordConfirmationError
+                : undefined
+            }
+            hasError={shouldShowPasswordConfirmationError}
             label={t('auth.passwordConfirmationLabel')}
             onChangeText={setPasswordConfirmation}
             placeholder={t('auth.passwordConfirmationPlaceholder')}
