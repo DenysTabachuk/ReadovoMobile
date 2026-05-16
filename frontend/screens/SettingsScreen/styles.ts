@@ -4,7 +4,11 @@ import { Spacing } from '@/constants/spacing';
 
 export const styles = StyleSheet.create({
   container: {
+    paddingHorizontal: 0,
+  },
+  scrollContent: {
     gap: Spacing.xLg,
+    paddingHorizontal: Spacing.xLg,
   },
   header: {
     gap: Spacing.sm,
@@ -14,6 +18,12 @@ export const styles = StyleSheet.create({
   },
   description: {
     maxWidth: 520,
+  },
+  learningReminderRow: {
+    alignItems: 'flex-start',
+  },
+  learningReminderTimeField: {
+    maxWidth: 240,
   },
   section: {
     gap: Spacing.md,
@@ -64,5 +74,13 @@ export const styles = StyleSheet.create({
   },
   logoutText: {
     color: '#d64545',
+  },
+  versionButton: {
+    alignItems: 'center',
+    marginTop: Spacing.sm,
+    paddingVertical: Spacing.sm,
+  },
+  versionText: {
+    opacity: 0.75,
   },
 });

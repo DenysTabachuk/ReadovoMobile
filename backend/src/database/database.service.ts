@@ -264,6 +264,43 @@ export class DatabaseService implements OnModuleDestroy, OnModuleInit {
         PRIMARY KEY (user_id, milestone)
       );
     `);
+
+    await this.query(`
+      CREATE TABLE IF NOT EXISTS user_notification_preferences (
+        user_id uuid PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+        learning_reminders_enabled boolean NOT NULL DEFAULT false,
+        learning_reminder_time text NOT NULL DEFAULT '19:00',
+        updated_at timestamptz NOT NULL DEFAULT now()
+      );
+    `);
+
+    await this.query(`
+      CREATE TABLE IF NOT EXISTS user_push_tokens (
+        user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        device_id text NOT NULL,
+        expo_push_token text NOT NULL,
+        platform text NOT NULL,
+        is_active boolean NOT NULL DEFAULT true,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        last_seen_at timestamptz NOT NULL DEFAULT now(),
+        updated_at timestamptz NOT NULL DEFAULT now(),
+        PRIMARY KEY (user_id, device_id)
+      );
+    `);
+
+    await this.query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS user_push_tokens_expo_push_token_idx
+      ON user_push_tokens (expo_push_token);
+    `);
+
+    await this.query(`
+      CREATE TABLE IF NOT EXISTS user_learning_reminder_dispatches (
+        user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        reminder_date date NOT NULL,
+        sent_at timestamptz NOT NULL DEFAULT now(),
+        PRIMARY KEY (user_id, reminder_date)
+      );
+    `);
   }
 
   query<T extends QueryResultRow = QueryResultRow>(

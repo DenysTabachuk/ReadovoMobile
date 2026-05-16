@@ -271,6 +271,18 @@
   "settings": {
     "title": "Settings",
     "description": "Adjust the app appearance and language.",
+    "learningReminders": {
+      "sectionTitle": "Learning reminders",
+      "description": "Get a daily reminder if you have not completed any learning test today.",
+      "toggleLabel": "Enable reminders",
+      "timeLabel": "Reminder time",
+      "timePickerTitle": "Choose reminder time",
+      "messages": [
+        "Take a short test today and keep your progress moving.",
+        "A quick quiz now will keep your learning streak alive.",
+        "Return to Readovo and complete a test to stay on track."
+      ]
+    },
     "theme": {
       "title": "Theme",
       "light": "Light",

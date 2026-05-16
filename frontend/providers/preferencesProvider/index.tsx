@@ -10,20 +10,32 @@ import {
 } from 'react';
 import { useColorScheme as useSystemColorScheme } from 'react-native';
 import i18n from '@/localization';
-import type { LanguagePreference, ThemePreference } from './types';
+import type { LanguagePreference, LearningReminderTime, ThemePreference } from './types';
 import { saveThemePreference } from './preferenceStorage/saveThemePreference';
 import { readStoredPreferences } from './preferenceStorage/readStoredPreferences';
 import { saveCompletedOnboarding } from './preferenceStorage/saveCompletedOnboarding';
 import { saveLanguagePreference } from './preferenceStorage/saveLanguagePreference';
-export type { LanguagePreference, ThemePreference } from './types';
+import { saveLearningReminderEnabled } from './preferenceStorage/saveLearningReminderEnabled';
+import { saveLearningReminderTime } from './preferenceStorage/saveLearningReminderTime';
+export type { LanguagePreference, LearningReminderTime, ThemePreference } from './types';
+
+export const DEFAULT_LEARNING_REMINDER_TIME: LearningReminderTime = '19:00';
 
 type PreferencesContextValue = {
   colorScheme: Exclude<ThemePreference, 'system'>;
   hasCompletedOnboarding: boolean;
   languagePreference: LanguagePreference;
+  learningReminderEnabled: boolean;
+  learningReminderTime: LearningReminderTime;
   themePreference: ThemePreference;
   isLoadingPreferences: boolean;
   completeOnboarding: () => Promise<void>;
+  hydrateLearningReminderPreferences: (input: {
+    learningReminderTime: LearningReminderTime;
+    learningRemindersEnabled: boolean;
+  }) => void;
+  setLearningReminderEnabled: (enabled: boolean) => Promise<void>;
+  setLearningReminderTime: (time: LearningReminderTime) => Promise<void>;
   setLanguagePreference: (languagePreference: LanguagePreference) => Promise<void>;
   setThemePreference: (themePreference: ThemePreference) => Promise<void>;
 };
@@ -39,6 +51,8 @@ type PreferencesProviderProps = {
 type StoredPreferencesState = {
   hasCompletedOnboarding: boolean;
   languagePreference: LanguagePreference;
+  learningReminderEnabled: boolean;
+  learningReminderTime: LearningReminderTime;
   themePreference: ThemePreference;
 };
 
@@ -47,6 +61,8 @@ export function PreferencesProvider({ children }: PreferencesProviderProps) {
   const [preferences, setPreferences] = useState<StoredPreferencesState>({
     hasCompletedOnboarding: false,
     languagePreference: 'en',
+    learningReminderEnabled: false,
+    learningReminderTime: DEFAULT_LEARNING_REMINDER_TIME,
     themePreference: 'system',
   });
   const systemColorScheme = useSystemColorScheme();
@@ -63,6 +79,9 @@ export function PreferencesProvider({ children }: PreferencesProviderProps) {
         setPreferences({
           hasCompletedOnboarding: storedPreferences.hasCompletedOnboarding,
           languagePreference: storedPreferences.languagePreference ?? 'en',
+          learningReminderEnabled: storedPreferences.learningReminderEnabled,
+          learningReminderTime:
+            storedPreferences.learningReminderTime ?? DEFAULT_LEARNING_REMINDER_TIME,
           themePreference: storedPreferences.themePreference ?? 'system',
         });
       } catch (error) {
@@ -103,6 +122,36 @@ export function PreferencesProvider({ children }: PreferencesProviderProps) {
     }));
   }, []);
 
+  const setLearningReminderEnabled = useCallback(async (enabled: boolean) => {
+    await saveLearningReminderEnabled(AsyncStorage, enabled);
+    setPreferences((previous) => ({
+      ...previous,
+      learningReminderEnabled: enabled,
+    }));
+  }, []);
+
+  const setLearningReminderTime = useCallback(async (time: LearningReminderTime) => {
+    await saveLearningReminderTime(AsyncStorage, time);
+    setPreferences((previous) => ({
+      ...previous,
+      learningReminderTime: time,
+    }));
+  }, []);
+
+  const hydrateLearningReminderPreferences = useCallback(
+    (input: {
+      learningReminderTime: LearningReminderTime;
+      learningRemindersEnabled: boolean;
+    }) => {
+      setPreferences((previous) => ({
+        ...previous,
+        learningReminderEnabled: input.learningRemindersEnabled,
+        learningReminderTime: input.learningReminderTime,
+      }));
+    },
+    [],
+  );
+
   const colorScheme = useMemo<Exclude<ThemePreference, 'system'>>(() => {
     if (preferences.themePreference !== 'system') {
       return preferences.themePreference;
@@ -116,19 +165,29 @@ export function PreferencesProvider({ children }: PreferencesProviderProps) {
       colorScheme,
       hasCompletedOnboarding: preferences.hasCompletedOnboarding,
       languagePreference: preferences.languagePreference,
+      learningReminderEnabled: preferences.learningReminderEnabled,
+      learningReminderTime: preferences.learningReminderTime,
       themePreference: preferences.themePreference,
       isLoadingPreferences: isLoading,
       completeOnboarding,
+      hydrateLearningReminderPreferences,
+      setLearningReminderEnabled,
+      setLearningReminderTime,
       setLanguagePreference,
       setThemePreference,
     }),
     [
       completeOnboarding,
+      hydrateLearningReminderPreferences,
       colorScheme,
       isLoading,
       preferences.hasCompletedOnboarding,
       preferences.languagePreference,
+      preferences.learningReminderEnabled,
+      preferences.learningReminderTime,
       preferences.themePreference,
+      setLearningReminderEnabled,
+      setLearningReminderTime,
       setLanguagePreference,
       setThemePreference,
     ],

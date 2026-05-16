@@ -8,6 +8,7 @@ import { AppService } from './app.service';
 import { DatabaseModule } from './database/database.module';
 import { DictionaryModule } from './dictionary/dictionary.module';
 import { MascotModule } from './mascot/mascot.module';
+import { NotificationsModule } from './notifications/notifications.module';
 import { StreakModule } from './streak/streak.module';
 import { TranslationsModule } from './translations/translations.module';
 
@@ -20,6 +21,7 @@ import { TranslationsModule } from './translations/translations.module';
     TranslationsModule,
     DictionaryModule,
     MascotModule,
+    NotificationsModule,
     StreakModule,
   ],
   controllers: [AppController],
