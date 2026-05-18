@@ -16,6 +16,7 @@ import { useTranslation } from 'react-i18next';
 import { isMockApiEnabled } from '@/api/auth/constants';
 import { ScreenContainer } from '@/components/screenContainer';
 import { useBanner } from '@/components/banner';
+import { FullScreenLoader } from '@/components/fullScreenLoader';
 import { ThemedText } from '@/components/themedText';
 import {
   getAchievementBadge,
@@ -100,8 +101,17 @@ export default function ProfileScreen() {
   ).length;
   const isStreakLoading = streakQuery.isLoading && !streakQuery.data;
   const isStreakError = streakQuery.isError && !streakQuery.data;
+  const isInitialProfileLoading =
+    Boolean(currentUser?.id) &&
+    ((achievementsQuery.isLoading && !achievementsQuery.data) ||
+      (mascotQuery.isLoading && !mascotQuery.data) ||
+      isStreakLoading);
   const shouldShowMockStreakAchievementAction =
     __DEV__ && isMockApiEnabled();
+
+  if (isInitialProfileLoading) {
+    return <FullScreenLoader />;
+  }
 
   return (
     <ScreenContainer style={styles.container}>

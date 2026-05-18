@@ -275,6 +275,7 @@
   "settings": {
     "title": "Settings",
     "description": "Adjust the app appearance and language.",
+    "version": "Version {{version}}",
     "learningReminders": {
       "sectionTitle": "Learning reminders",
       "description": "Get a daily reminder if you have not completed any learning test today.",

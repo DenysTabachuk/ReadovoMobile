@@ -142,7 +142,7 @@ export default function SettingsScreen() {
           onPress={handleVersionPress}
           style={styles.versionButton}>
           <ThemedText type="description" style={styles.versionText}>
-            {t('settings.version', { defaultValue: 'Version {{version}}', version: appVersion })}
+            {t('settings.version', { version: appVersion })}
           </ThemedText>
         </Pressable>
       </ScrollView>
