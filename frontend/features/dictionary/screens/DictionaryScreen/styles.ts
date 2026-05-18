@@ -59,6 +59,40 @@ export const styles = StyleSheet.create({
     paddingHorizontal: Spacing.sm,
     paddingVertical: Spacing.xs,
   },
+  progressFilterAllText: {
+    flex: 1,
+  },
+  progressFilterBadge: {
+    alignSelf: 'flex-start',
+  },
+  progressFilterButton: {
+    alignItems: 'center',
+    borderRadius: 12,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    justifyContent: 'space-between',
+    minHeight: 48,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+  },
+  progressFilterField: {
+    gap: Spacing.xs,
+  },
+  progressFilterOption: {
+    alignItems: 'center',
+    borderRadius: 12,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    justifyContent: 'space-between',
+    minHeight: 56,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+  },
+  progressFilterOptions: {
+    gap: Spacing.sm,
+  },
   progressControl: {
     alignItems: 'flex-end',
     gap: Spacing.xs,

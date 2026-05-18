@@ -223,6 +223,8 @@
     "loading": "Loading dictionary...",
     "emptyTitle": "No saved words yet",
     "emptyDescription": "Tap a word in an article and add it to the dictionary after translation.",
+    "emptyFilteredTitle": "No words match this filter",
+    "emptyFilteredDescription": "Change the filter to see other words from your dictionary.",
     "tapHint": "Tap to see more",
     "errorTitle": "Dictionary is unavailable",
     "errorDescription": "We could not load saved words right now.",
@@ -232,6 +234,8 @@
     "progressUpdateError": "Could not update word progress.",
     "progressUpdateErrorDescription": "Check your connection and try again.",
     "progressMenuHint": "Move this word back if you do not feel confident yet.",
+    "progressFilterLabel": "Word status",
+    "progressFilterTitle": "Choose word status",
     "filter": {
       "all": "All",
       "words": "Words",

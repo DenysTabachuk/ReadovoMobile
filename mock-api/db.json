@@ -73,7 +73,7 @@
           "id": "first_test_completed",
           "isClaimed": false,
           "isUnlocked": true,
-          "progressValue": 15,
+          "progressValue": 16,
           "targetValue": 1,
           "titleKey": "profile.achievements.first_test_completed.title",
           "unlockedAt": "2026-05-14T12:00:00.000Z"
@@ -86,7 +86,7 @@
           "id": "ten_tests_completed",
           "isClaimed": false,
           "isUnlocked": true,
-          "progressValue": 15,
+          "progressValue": 16,
           "targetValue": 10,
           "titleKey": "profile.achievements.ten_tests_completed.title",
           "unlockedAt": "2026-05-14T12:00:00.000Z"
@@ -112,16 +112,16 @@
           "id": "first_thousand_coins",
           "isClaimed": false,
           "isUnlocked": false,
-          "progressValue": 292,
+          "progressValue": 302,
           "targetValue": 1000,
           "titleKey": "profile.achievements.first_thousand_coins.title",
           "unlockedAt": null
         }
       ],
       "progress": {
-        "balance": 292,
+        "balance": 302,
         "lessonsCompleted": 0,
-        "testsCompleted": 15,
+        "testsCompleted": 16,
         "wordsLearned": 0
       },
       "userId": "6c4c590a-5ece-415c-a6fc-02d23c40afb2"
