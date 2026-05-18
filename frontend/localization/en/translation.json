@@ -494,6 +494,10 @@
         "title": "100-day streak"
       }
     },
+    "banner": {
+      "description": "Today's test is saved. Current streak: {{count}} days.",
+      "title": "Streak continued"
+    },
     "calendar": {
       "weekdays": {
         "mon": "Mon",

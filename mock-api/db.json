@@ -1,4 +1,132 @@
 {
+  "achievementsProfiles": {
+    "demo-user": {
+      "achievements": [
+        {
+          "badgeKey": "first-test-completed",
+          "claimedAt": null,
+          "coinsReward": 20,
+          "descriptionKey": "profile.achievements.first_test_completed.description",
+          "id": "first_test_completed",
+          "isClaimed": false,
+          "isUnlocked": false,
+          "progressValue": 0,
+          "targetValue": 1,
+          "titleKey": "profile.achievements.first_test_completed.title",
+          "unlockedAt": null
+        },
+        {
+          "badgeKey": "first-test-completed",
+          "claimedAt": null,
+          "coinsReward": 80,
+          "descriptionKey": "profile.achievements.ten_tests_completed.description",
+          "id": "ten_tests_completed",
+          "isClaimed": false,
+          "isUnlocked": false,
+          "progressValue": 0,
+          "targetValue": 10,
+          "titleKey": "profile.achievements.ten_tests_completed.title",
+          "unlockedAt": null
+        },
+        {
+          "badgeKey": "first-test-completed",
+          "claimedAt": null,
+          "coinsReward": 50,
+          "descriptionKey": "profile.achievements.ten_words_learned.description",
+          "id": "ten_words_learned",
+          "isClaimed": false,
+          "isUnlocked": false,
+          "progressValue": 0,
+          "targetValue": 10,
+          "titleKey": "profile.achievements.ten_words_learned.title",
+          "unlockedAt": null
+        },
+        {
+          "badgeKey": "first-test-completed",
+          "claimedAt": null,
+          "coinsReward": 100,
+          "descriptionKey": "profile.achievements.first_thousand_coins.description",
+          "id": "first_thousand_coins",
+          "isClaimed": false,
+          "isUnlocked": false,
+          "progressValue": 0,
+          "targetValue": 1000,
+          "titleKey": "profile.achievements.first_thousand_coins.title",
+          "unlockedAt": null
+        }
+      ],
+      "progress": {
+        "balance": 0,
+        "lessonsCompleted": 0,
+        "testsCompleted": 0,
+        "wordsLearned": 0
+      },
+      "userId": "demo-user"
+    },
+    "6c4c590a-5ece-415c-a6fc-02d23c40afb2": {
+      "achievements": [
+        {
+          "badgeKey": "first-test-completed",
+          "claimedAt": null,
+          "coinsReward": 20,
+          "descriptionKey": "profile.achievements.first_test_completed.description",
+          "id": "first_test_completed",
+          "isClaimed": false,
+          "isUnlocked": true,
+          "progressValue": 15,
+          "targetValue": 1,
+          "titleKey": "profile.achievements.first_test_completed.title",
+          "unlockedAt": "2026-05-14T12:00:00.000Z"
+        },
+        {
+          "badgeKey": "first-test-completed",
+          "claimedAt": null,
+          "coinsReward": 80,
+          "descriptionKey": "profile.achievements.ten_tests_completed.description",
+          "id": "ten_tests_completed",
+          "isClaimed": false,
+          "isUnlocked": true,
+          "progressValue": 15,
+          "targetValue": 10,
+          "titleKey": "profile.achievements.ten_tests_completed.title",
+          "unlockedAt": "2026-05-14T12:00:00.000Z"
+        },
+        {
+          "badgeKey": "first-test-completed",
+          "claimedAt": null,
+          "coinsReward": 50,
+          "descriptionKey": "profile.achievements.ten_words_learned.description",
+          "id": "ten_words_learned",
+          "isClaimed": false,
+          "isUnlocked": false,
+          "progressValue": 0,
+          "targetValue": 10,
+          "titleKey": "profile.achievements.ten_words_learned.title",
+          "unlockedAt": null
+        },
+        {
+          "badgeKey": "first-test-completed",
+          "claimedAt": null,
+          "coinsReward": 100,
+          "descriptionKey": "profile.achievements.first_thousand_coins.description",
+          "id": "first_thousand_coins",
+          "isClaimed": false,
+          "isUnlocked": false,
+          "progressValue": 292,
+          "targetValue": 1000,
+          "titleKey": "profile.achievements.first_thousand_coins.title",
+          "unlockedAt": null
+        }
+      ],
+      "progress": {
+        "balance": 292,
+        "lessonsCompleted": 0,
+        "testsCompleted": 15,
+        "wordsLearned": 0
+      },
+      "userId": "6c4c590a-5ece-415c-a6fc-02d23c40afb2"
+    }
+  },
   "streakProfiles": {
     "demo-user": {
       "activityHistory": [

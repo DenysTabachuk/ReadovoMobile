@@ -20,6 +20,7 @@ export {
 export {
   applyFreezeToMissedDay,
   buyStreakFreezeToken,
+  didCompleteStreakToday,
   getStreakReminderState,
   queuePendingStreakEvent,
   restoreStreakForCoins,

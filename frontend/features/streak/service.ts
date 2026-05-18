@@ -132,6 +132,17 @@ export function getStreakReminderState(streak: StreakState): StreakReminderState
   };
 }
 
+export function didCompleteStreakToday(
+  previousStreak: StreakState | null | undefined,
+  nextStreak: StreakState | null | undefined,
+): boolean {
+  return (
+    Boolean(previousStreak) &&
+    previousStreak?.todayStatus !== 'completed' &&
+    nextStreak?.todayStatus === 'completed'
+  );
+}
+
 export async function restoreStreakForCoins(userId: string): Promise<StreakState> {
   return restoreBrokenStreak(userId, { price: STREAK_RESTORE_PRICE });
 }

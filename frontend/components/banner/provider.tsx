@@ -22,9 +22,14 @@ type BannerProviderProps = {
 
 export function BannerProvider({ children }: BannerProviderProps) {
   const [banner, setBanner] = useState<ShowBannerOptions | null>(null);
+  const [queueSignal, setQueueSignal] = useState(0);
   const opacity = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(HIDDEN_OFFSET)).current;
+  const queueRef = useRef<ShowBannerOptions[]>([]);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const activeBannerIdRef = useRef<number | null>(null);
+  const isHidingRef = useRef(false);
+  const bannerIdSequenceRef = useRef(0);
 
   const clearHideTimer = useCallback(() => {
     if (timerRef.current) {
@@ -33,8 +38,24 @@ export function BannerProvider({ children }: BannerProviderProps) {
     }
   }, []);
 
-  const hideBanner = useCallback(() => {
+  const hideBannerById = useCallback((bannerId?: number) => {
+    if (
+      bannerId !== undefined &&
+      activeBannerIdRef.current !== null &&
+      activeBannerIdRef.current !== bannerId
+    ) {
+      return;
+    }
+
+    if (isHidingRef.current || activeBannerIdRef.current === null) {
+      return;
+    }
+
+    const hidingBannerId = activeBannerIdRef.current;
+    isHidingRef.current = true;
     clearHideTimer();
+    opacity.stopAnimation();
+    translateY.stopAnimation();
 
     Animated.parallel([
       Animated.timing(opacity, {
@@ -48,46 +69,83 @@ export function BannerProvider({ children }: BannerProviderProps) {
         useNativeDriver: true,
       }),
     ]).start(({ finished }) => {
-      if (finished) {
-        setBanner(null);
+      if (finished && activeBannerIdRef.current === hidingBannerId) {
+        activeBannerIdRef.current = null;
       }
+      isHidingRef.current = false;
+      setBanner(null);
+      setQueueSignal((currentSignal) => currentSignal + 1);
     });
   }, [clearHideTimer, opacity, translateY]);
 
+  const hideBanner = useCallback(() => {
+    hideBannerById();
+  }, [hideBannerById]);
+
+  useEffect(() => {
+    if (banner || isHidingRef.current || queueRef.current.length === 0) {
+      return;
+    }
+
+    const nextBanner = queueRef.current.shift();
+
+    if (!nextBanner) {
+      return;
+    }
+
+    const bannerId = bannerIdSequenceRef.current + 1;
+    bannerIdSequenceRef.current = bannerId;
+    activeBannerIdRef.current = bannerId;
+    setBanner(nextBanner);
+
+    clearHideTimer();
+    opacity.stopAnimation();
+    translateY.stopAnimation();
+    opacity.setValue(0);
+    translateY.setValue(HIDDEN_OFFSET);
+
+    Animated.parallel([
+      Animated.timing(opacity, {
+        duration: ANIMATION_DURATION_MS,
+        toValue: 1,
+        useNativeDriver: true,
+      }),
+      Animated.spring(translateY, {
+        damping: 18,
+        mass: 0.8,
+        stiffness: 180,
+        toValue: 0,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    if (nextBanner.durationMs && nextBanner.durationMs > 0) {
+      timerRef.current = setTimeout(() => {
+        hideBannerById(bannerId);
+      }, nextBanner.durationMs);
+    }
+  }, [banner, clearHideTimer, hideBannerById, opacity, queueSignal, translateY]);
+
   const showBanner = useCallback(
     ({ durationMs = DEFAULT_DURATION_MS, ...options }: ShowBannerOptions) => {
-      clearHideTimer();
-      opacity.stopAnimation();
-      translateY.stopAnimation();
-
-      setBanner({
+      queueRef.current.push({
         ...options,
         durationMs,
       });
-
-      Animated.parallel([
-        Animated.timing(opacity, {
-          duration: ANIMATION_DURATION_MS,
-          toValue: 1,
-          useNativeDriver: true,
-        }),
-        Animated.spring(translateY, {
-          damping: 18,
-          mass: 0.8,
-          stiffness: 180,
-          toValue: 0,
-          useNativeDriver: true,
-        }),
-      ]).start();
-
-      if (durationMs > 0) {
-        timerRef.current = setTimeout(hideBanner, durationMs);
-      }
+      setQueueSignal((currentSignal) => currentSignal + 1);
     },
-    [clearHideTimer, hideBanner, opacity, translateY]
+    []
   );
 
-  useEffect(() => clearHideTimer, [clearHideTimer]);
+  useEffect(
+    () => () => {
+      clearHideTimer();
+      queueRef.current = [];
+      activeBannerIdRef.current = null;
+      isHidingRef.current = false;
+    },
+    [clearHideTimer],
+  );
 
   const value = useMemo(
     () => ({
@@ -117,6 +175,8 @@ function BannerContent({ banner }: { banner: ShowBannerOptions }) {
   const { t } = useTranslation();
   const colorScheme = useColorScheme();
   const achievementIconColor = colorScheme === 'dark' ? '#ffb347' : '#f2994a';
+  const isDarkTheme = colorScheme === 'dark';
+  const streakIconColor = isDarkTheme ? '#ffb067' : '#ff8a1f';
 
   if (banner.variant === 'achievement' && banner.achievement) {
     return (
@@ -169,6 +229,7 @@ function BannerContent({ banner }: { banner: ShowBannerOptions }) {
   }
 
   const shouldShowRewardIcon = banner.variant === 'reward';
+  const shouldShowStreakIcon = banner.variant === 'streak';
 
   return (
     <View style={styles.content}>
@@ -179,12 +240,21 @@ function BannerContent({ banner }: { banner: ShowBannerOptions }) {
           style={styles.rewardIcon}
         />
       ) : null}
+      {shouldShowStreakIcon ? (
+        <Ionicons color={streakIconColor} name="flame" size={26} style={styles.streakIcon} />
+      ) : null}
       <View style={styles.textContent}>
-        <ThemedText type="bodyStrong" style={styles.title}>
+        <ThemedText
+          type="bodyStrong"
+          style={[styles.title, shouldShowStreakIcon && !isDarkTheme ? styles.streakTextLight : null]}>
           {banner.title}
         </ThemedText>
         {banner.description ? (
-          <ThemedText style={styles.description}>
+          <ThemedText
+            style={[
+              styles.description,
+              shouldShowStreakIcon && !isDarkTheme ? styles.streakTextLight : null,
+            ]}>
             {banner.description}
           </ThemedText>
         ) : null}

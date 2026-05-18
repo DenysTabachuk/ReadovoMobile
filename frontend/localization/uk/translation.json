@@ -482,6 +482,10 @@
         "title": "100 днів streak"
       }
     },
+    "banner": {
+      "description": "Сьогоднішній тест зараховано. Поточний streak: {{count}} дн.",
+      "title": "Відрізок продовжено"
+    },
     "calendar": {
       "weekdays": {
         "mon": "Пн",

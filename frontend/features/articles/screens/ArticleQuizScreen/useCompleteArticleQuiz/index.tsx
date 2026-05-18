@@ -5,6 +5,7 @@ import {
   type SimplifyArticleLevel,
   type WikipediaArticleDetail,
 } from '@/api/wikipedia';
+import { isMockApiEnabled } from '@/api/auth/constants';
 import { useBanner } from '@/components/banner';
 import { type QuizSessionResult } from '@/components/articleQuizRunner';
 import {
@@ -14,7 +15,12 @@ import {
   updateAchievementsProgress,
 } from '@/features/achievements';
 import { calculateQuizReward } from '@/features/quizRewards';
-import { trackLearningActivity } from '@/features/streak';
+import {
+  didCompleteStreakToday,
+  getStreakProfile,
+  trackLearningActivity,
+  type StreakState,
+} from '@/features/streak';
 
 import { resolveEffectiveTargetLength } from '../resolveEffectiveArticleLength';
 import { type ArticleQuizLengthParam } from '../types';
@@ -57,7 +63,10 @@ export function useCompleteArticleQuiz({
         balance: profile.progress.balance + rewardCoins,
         testsCompleted: profile.progress.testsCompleted + 1,
       });
-      await trackLearningActivity(currentUserId, 'article_quiz_completed');
+      const previousStreak =
+        queryClient.getQueryData<StreakState>(['streak-profile', currentUserId]) ??
+        (await getStreakProfile(currentUserId).catch(() => null));
+      const streak = await trackLearningActivity(currentUserId, 'article_quiz_completed');
 
       return {
         newlyUnlockedAchievements: getNewlyUnlockedAchievements(
@@ -65,6 +74,8 @@ export function useCompleteArticleQuiz({
           updatedProfile.achievements,
         ),
         rewardCoins,
+        shouldShowStreakBanner: didCompleteStreakToday(previousStreak, streak),
+        streak,
       };
     },
     onSuccess: (response) => {
@@ -79,6 +90,29 @@ export function useCompleteArticleQuiz({
         queryKey: ['streak-profile', currentUserId],
       });
 
+      if (response?.streak) {
+        queryClient.setQueryData(['streak-profile', currentUserId], response.streak);
+      }
+
+      if (response?.rewardCoins !== undefined) {
+        showBanner({
+          durationMs: 4200,
+          title: t('profile.reward', { count: response.rewardCoins }),
+          variant: 'reward',
+        });
+      }
+
+      if (response?.shouldShowStreakBanner || (isMockApiEnabled() && response?.streak)) {
+        showBanner({
+          description: t('streak.banner.description', {
+            count: response.streak.currentStreak,
+          }),
+          durationMs: 4200,
+          title: t('streak.banner.title'),
+          variant: 'streak',
+        });
+      }
+
       const achievement = response?.newlyUnlockedAchievements[0];
 
       if (achievement) {
@@ -88,18 +122,23 @@ export function useCompleteArticleQuiz({
             coinsReward: achievement.coinsReward,
           },
           description: t(achievement.descriptionKey),
-          durationMs: 5200,
+          durationMs: 4200,
           title: t(achievement.titleKey),
           variant: 'achievement',
         });
         return;
       }
 
-      if (response?.rewardCoins !== undefined) {
+      if (isMockApiEnabled() && response) {
         showBanner({
+          achievement: {
+            badge: getAchievementBadge('first-test-completed'),
+            coinsReward: 20,
+          },
+          description: t('profile.achievements.first_test_completed.description'),
           durationMs: 4200,
-          title: t('profile.reward', { count: response.rewardCoins }),
-          variant: 'reward',
+          title: t('profile.achievements.first_test_completed.title'),
+          variant: 'achievement',
         });
       }
     },
