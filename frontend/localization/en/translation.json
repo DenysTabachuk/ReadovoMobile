@@ -472,6 +472,28 @@
     }
   },
   "streak": {
+    "achievements": {
+      "3": {
+        "description": "Keep your streak for 3 days in a row.",
+        "title": "3-day streak"
+      },
+      "7": {
+        "description": "Keep your streak for 7 days in a row.",
+        "title": "7-day streak"
+      },
+      "14": {
+        "description": "Keep your streak for 14 days in a row.",
+        "title": "14-day streak"
+      },
+      "30": {
+        "description": "Keep your streak for 30 days in a row.",
+        "title": "30-day streak"
+      },
+      "100": {
+        "description": "Keep your streak for 100 days in a row.",
+        "title": "100-day streak"
+      }
+    },
     "calendar": {
       "weekdays": {
         "mon": "Mon",
@@ -482,6 +504,34 @@
         "sat": "Sat",
         "sun": "Sun"
       }
+    },
+    "freeze": {
+      "applying": "Applying...",
+      "buy": "Buy",
+      "buying": "Buying...",
+      "cancel": "Cancel",
+      "confirm": "Use token",
+      "description": "A freeze token protects one missed day. One streak break can be covered by up to 3 freezes.",
+      "limitReached": "Limit",
+      "modalDescription": "Use a freeze token for {{date}}?",
+      "modalTitle": "Freeze day",
+      "notEnoughCoins": "Not enough coins to buy one.",
+      "purchaseConfirm": "Buy",
+      "purchaseDescription": "Buy one freeze token for 100 coins?",
+      "purchaseTitle": "Buy freeze",
+      "title": "Streak freezes",
+      "tokensAvailable": "Available: {{count}}"
+    },
+    "errors": {
+      "dayAlreadyProtected": "This day is already protected.",
+      "freezeDayLimitReached": "This streak break already has the maximum of 3 freezes.",
+      "freezeFailed": "Could not apply the freeze.",
+      "freezeLimitReached": "You already have the maximum number of freeze tokens.",
+      "freezeOnlyMissed": "Only a missed day can be frozen.",
+      "freezeWindowExpired": "This day can no longer be frozen.",
+      "noFreezeTokens": "You do not have any freeze tokens.",
+      "notEnoughCoins": "Not enough coins.",
+      "purchaseFreezeFailed": "Could not buy a freeze."
     },
     "summary": {
       "status": {

@@ -1,5 +1,6 @@
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Image } from 'expo-image';
+import { Ionicons } from '@expo/vector-icons';
 import { Animated, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
@@ -12,6 +13,7 @@ import {
 import { BannerContext } from './context';
 import { type ShowBannerOptions } from './types';
 import { ThemedText } from '@/components/themedText';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { styles } from './styles';
 
 type BannerProviderProps = {
@@ -113,16 +115,31 @@ export function BannerProvider({ children }: BannerProviderProps) {
 
 function BannerContent({ banner }: { banner: ShowBannerOptions }) {
   const { t } = useTranslation();
+  const colorScheme = useColorScheme();
+  const achievementIconColor = colorScheme === 'dark' ? '#ffb347' : '#f2994a';
 
   if (banner.variant === 'achievement' && banner.achievement) {
     return (
       <View style={styles.content}>
-        <Image
-          accessibilityIgnoresInvertColors
-          contentFit="contain"
-          source={banner.achievement.badge}
-          style={styles.achievementBadge}
-        />
+        {banner.achievement.icon ? (
+          <View
+            style={[
+              styles.achievementIconCircle,
+              colorScheme === 'dark'
+                ? styles.achievementIconCircleDark
+                : styles.achievementIconCircleLight,
+            ]}>
+            <Ionicons color={achievementIconColor} name={banner.achievement.icon} size={28} />
+          </View>
+        ) : null}
+        {banner.achievement.badge ? (
+          <Image
+            accessibilityIgnoresInvertColors
+            contentFit="contain"
+            source={banner.achievement.badge}
+            style={styles.achievementBadge}
+          />
+        ) : null}
         <View style={styles.textContent}>
           <ThemedText type="bodyStrong" style={styles.achievementTitle}>
             {banner.title}

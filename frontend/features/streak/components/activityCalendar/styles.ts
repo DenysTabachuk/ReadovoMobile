@@ -74,6 +74,13 @@ export const styles = StyleSheet.create({
   dayNeutral: {
     backgroundColor: 'transparent',
   },
+  dayPressable: {
+    borderColor: '#ffffff',
+    borderWidth: 1,
+  },
+  dayPressed: {
+    opacity: 0.7,
+  },
   dayRestored: {
     backgroundColor: '#ebb35a',
   },

@@ -24,6 +24,38 @@ function buildNeutralCalendarMonth(year, month) {
   };
 }
 
+const STREAK_MILESTONES = [
+  { milestone: 3, rewardCoins: 30 },
+  { milestone: 7, rewardCoins: 70 },
+  { milestone: 14, rewardCoins: 150 },
+  { milestone: 30, rewardCoins: 400 },
+  { milestone: 100, rewardCoins: 1500 },
+];
+
+function buildStreakAchievements(currentStreak, previousAchievements = []) {
+  const previousMap = new Map(
+    previousAchievements.map((achievement) => [achievement.milestone, achievement]),
+  );
+
+  return STREAK_MILESTONES.map((milestone) => {
+    const previous = previousMap.get(milestone.milestone);
+    const isUnlocked = Boolean(previous?.isUnlocked) || currentStreak >= milestone.milestone;
+
+    return {
+      claimedAt: isUnlocked
+        ? previous?.claimedAt ?? '2026-05-14T12:00:00.000Z'
+        : null,
+      isUnlocked,
+      milestone: milestone.milestone,
+      rewardCoins: milestone.rewardCoins,
+    };
+  });
+}
+
+function resolveNextMilestone(currentStreak) {
+  return STREAK_MILESTONES.find((item) => item.milestone > currentStreak)?.milestone ?? 100;
+}
+
 function pipeToBackend(req, res) {
   const options = {
     headers: {
@@ -73,19 +105,13 @@ module.exports = (req, res, next) => {
   const defaultProfile = {
     activityHistory: [],
     brokenStreakInfo: null,
-    claimedStreakAchievements: [
-      { claimedAt: null, isUnlocked: false, milestone: 3, rewardCoins: 50 },
-      { claimedAt: null, isUnlocked: false, milestone: 7, rewardCoins: 100 },
-      { claimedAt: null, isUnlocked: false, milestone: 14, rewardCoins: 200 },
-      { claimedAt: null, isUnlocked: false, milestone: 30, rewardCoins: 400 },
-      { claimedAt: null, isUnlocked: false, milestone: 100, rewardCoins: 1000 },
-    ],
+    claimedStreakAchievements: buildStreakAchievements(2),
     coinBalance: 100,
-    currentStreak: 0,
+    currentStreak: 2,
     freezeTokens: 0,
-    lastActivityDate: null,
-    longestStreak: 0,
-    nextBonusInDays: 3,
+    lastActivityDate: '2026-05-13',
+    longestStreak: 2,
+    nextBonusInDays: 1,
     nextMilestone: 3,
     serverNow: '2026-05-14T12:00:00.000Z',
     todayStatus: 'pending',
@@ -121,14 +147,40 @@ module.exports = (req, res, next) => {
   }
 
   if (method === 'POST' && action === 'activity-completed') {
+    const nextStreak = profile.todayStatus === 'completed'
+      ? profile.currentStreak
+      : profile.currentStreak + 1;
+    const claimedStreakAchievements = buildStreakAchievements(
+      nextStreak,
+      profile.claimedStreakAchievements,
+    );
+    const nextMilestone = resolveNextMilestone(nextStreak);
+    const newlyUnlockedReward = claimedStreakAchievements.reduce((sum, achievement) => {
+      const previous = (profile.claimedStreakAchievements ?? []).find(
+        (item) => item.milestone === achievement.milestone,
+      );
+
+      if (achievement.isUnlocked && !previous?.isUnlocked) {
+        return sum + achievement.rewardCoins;
+      }
+
+      return sum;
+    }, 0);
     const next = {
       ...profile,
-      currentStreak: profile.currentStreak + 1,
+      claimedStreakAchievements,
+      coinBalance: profile.coinBalance + newlyUnlockedReward,
+      currentStreak: nextStreak,
       lastActivityDate: '2026-05-14',
-      longestStreak: Math.max(profile.longestStreak, profile.currentStreak + 1),
-      nextBonusInDays: Math.max(0, (profile.nextMilestone ?? 3) - (profile.currentStreak + 1)),
+      longestStreak: Math.max(profile.longestStreak, nextStreak),
+      nextBonusInDays: Math.max(0, nextMilestone - nextStreak),
+      nextMilestone,
       todayStatus: 'completed',
     };
+
+    db.get('streakProfiles')
+      .assign({ [userId]: next })
+      .write();
 
     res.jsonp({
       pendingSync: false,

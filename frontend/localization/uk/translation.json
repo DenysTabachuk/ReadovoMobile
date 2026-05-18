@@ -460,6 +460,28 @@
     }
   },
   "streak": {
+    "achievements": {
+      "3": {
+        "description": "Тримайте streak 3 дні поспіль.",
+        "title": "3 дні streak"
+      },
+      "7": {
+        "description": "Тримайте streak 7 днів поспіль.",
+        "title": "7 днів streak"
+      },
+      "14": {
+        "description": "Тримайте streak 14 днів поспіль.",
+        "title": "14 днів streak"
+      },
+      "30": {
+        "description": "Тримайте streak 30 днів поспіль.",
+        "title": "30 днів streak"
+      },
+      "100": {
+        "description": "Тримайте streak 100 днів поспіль.",
+        "title": "100 днів streak"
+      }
+    },
     "calendar": {
       "weekdays": {
         "mon": "Пн",
@@ -470,6 +492,34 @@
         "sat": "Сб",
         "sun": "Нд"
       }
+    },
+    "freeze": {
+      "applying": "Застосовуємо...",
+      "buy": "Купити",
+      "buying": "Купуємо...",
+      "cancel": "Скасувати",
+      "confirm": "Використати",
+      "description": "Freeze-токен захищає один пропущений день. Один розрив streak можна закрити максимум 3 заморозками.",
+      "limitReached": "Ліміт",
+      "modalDescription": "Використати freeze-токен для {{date}}?",
+      "modalTitle": "Заморозити день",
+      "notEnoughCoins": "Недостатньо монет для покупки.",
+      "purchaseConfirm": "Купити",
+      "purchaseDescription": "Купити один freeze-токен за 100 монет?",
+      "purchaseTitle": "Купити заморозку",
+      "title": "Заморозки streak",
+      "tokensAvailable": "Доступно: {{count}}"
+    },
+    "errors": {
+      "dayAlreadyProtected": "Цей день уже захищено.",
+      "freezeDayLimitReached": "Цей розрив уже має максимум 3 заморозки.",
+      "freezeFailed": "Не вдалося застосувати заморозку.",
+      "freezeLimitReached": "У вас уже максимум freeze-токенів.",
+      "freezeOnlyMissed": "Заморозити можна лише пропущений день.",
+      "freezeWindowExpired": "Цей день уже не можна заморозити.",
+      "noFreezeTokens": "У вас немає freeze-токенів.",
+      "notEnoughCoins": "Недостатньо монет.",
+      "purchaseFreezeFailed": "Не вдалося купити заморозку."
     },
     "summary": {
       "status": {

@@ -13,3 +13,7 @@ function getApiBaseUrl() {
 }
 
 export const API_BASE_URL = getApiBaseUrl();
+
+export function isMockApiEnabled(): boolean {
+  return API_BASE_URL.includes(':3101');
+}

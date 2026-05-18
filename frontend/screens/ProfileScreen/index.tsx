@@ -5,6 +5,7 @@ import {
   useWindowDimensions,
   type DimensionValue,
 } from 'react-native';
+import { useState } from 'react';
 import { useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -12,16 +13,21 @@ import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 
+import { isMockApiEnabled } from '@/api/auth/constants';
 import { ScreenContainer } from '@/components/screenContainer';
-import { ActivityCalendar } from '@/components/activityCalendar';
+import { useBanner } from '@/components/banner';
 import { Mascot } from '@/components/mascot';
-import { StreakAchievementCard } from '@/components/streakAchievementCard';
 import { ThemedText } from '@/components/themedText';
 import {
   getAchievementBadge,
   getAchievementsProfile,
 } from '@/features/achievements';
 import { getMascotProfile } from '@/features/mascot';
+import { ActivityCalendar } from '@/features/streak/components/activityCalendar';
+import { StreakAchievementCard } from '@/features/streak/components/streakAchievementCard';
+import { StreakFreezeCard } from '@/features/streak/components/streakFreezeCard';
+import { StreakFreezeConfirmModal } from '@/features/streak/components/streakFreezeConfirmModal';
+import { StreakFreezePurchaseModal } from '@/features/streak/components/streakFreezePurchaseModal';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useAuth } from '@/providers/authProvider';
 import { useStreak } from '@/features/streak';
@@ -53,6 +59,7 @@ const fallbackStreak = {
 
 export default function ProfileScreen() {
   const { t } = useTranslation();
+  const { showBanner } = useBanner();
   const router = useRouter();
   const { currentUser } = useAuth();
   const colorScheme = useColorScheme();
@@ -70,7 +77,14 @@ export default function ProfileScreen() {
     queryFn: () => getMascotProfile(currentUser?.id ?? ''),
     queryKey: ['mascot-profile', currentUser?.id],
   });
-  const { restoreMutation, streakQuery } = useStreak(currentUser?.id ?? undefined);
+  const {
+    applyFreezeMutation,
+    purchaseFreezeTokenMutation,
+    restoreMutation,
+    streakQuery,
+  } = useStreak(currentUser?.id ?? undefined);
+  const [freezeDate, setFreezeDate] = useState<string | null>(null);
+  const [isPurchaseFreezeModalOpen, setIsPurchaseFreezeModalOpen] = useState(false);
 
   const progress = achievementsQuery.data?.progress ?? defaultStats;
   const achievements = achievementsQuery.data?.achievements ?? [];
@@ -82,8 +96,13 @@ export default function ProfileScreen() {
   const fallbackName = currentUser?.email?.split('@')[0] ?? t('profile.defaultName');
   const displayName = currentUser?.displayName ?? fallbackName;
   const streak = streakQuery.data ?? fallbackStreak;
+  const unlockedStreakAchievementsCount = streak.claimedStreakAchievements.filter(
+    (achievement) => achievement.isUnlocked,
+  ).length;
   const isStreakLoading = streakQuery.isLoading && !streakQuery.data;
   const isStreakError = streakQuery.isError && !streakQuery.data;
+  const shouldShowMockStreakAchievementAction =
+    __DEV__ && isMockApiEnabled();
 
   return (
     <ScreenContainer style={styles.container}>
@@ -155,7 +174,9 @@ export default function ProfileScreen() {
           </View>
           <View style={[styles.statItem, shouldUseTwoRows && styles.statItemTwoRows]}>
             <View style={styles.statValueRow}>
-              <ThemedText style={styles.statValue}>{unlockedAchievementsCount}</ThemedText>
+              <ThemedText style={styles.statValue}>
+                {unlockedAchievementsCount + unlockedStreakAchievementsCount}
+              </ThemedText>
               <Ionicons color="#2f80ed" name="trophy-outline" size={18} />
             </View>
             <View style={styles.statMetaRow}>
@@ -204,16 +225,115 @@ export default function ProfileScreen() {
             </View>
           ) : null}
           {!isStreakLoading && !isStreakError ? (
-            <ActivityCalendar
-              onPressCta={() => {
-                if (streak.todayStatus === 'broken' && streak.brokenStreakInfo?.canRestore) {
-                  void restoreMutation.mutateAsync();
-                }
-              }}
-              serverNow={streak.serverNow}
-              streak={streak}
-              userId={currentUser?.id ?? undefined}
-            />
+            <>
+              <ActivityCalendar
+                onPressCta={() => {
+                  if (streak.todayStatus === 'broken' && streak.brokenStreakInfo?.canRestore) {
+                    void restoreMutation.mutateAsync();
+                  }
+                }}
+                onRequestFreezeDay={(day) => {
+                  setFreezeDate(day.date);
+                }}
+                serverNow={streak.serverNow}
+                streak={streak}
+                userId={currentUser?.id ?? undefined}
+              />
+              <StreakFreezeCard
+                coinBalance={streak.coinBalance}
+                freezeTokens={streak.freezeTokens}
+                isBuying={purchaseFreezeTokenMutation.isPending}
+                onBuyToken={() => {
+                  setIsPurchaseFreezeModalOpen(true);
+                }}
+              />
+              <StreakFreezeConfirmModal
+                date={freezeDate}
+                freezeTokens={streak.freezeTokens}
+                isApplying={applyFreezeMutation.isPending}
+                onClose={() => {
+                  setFreezeDate(null);
+                }}
+                onConfirm={() => {
+                  if (!freezeDate) {
+                    return;
+                  }
+
+                  void applyFreezeMutation.mutateAsync(freezeDate)
+                    .then(() => {
+                      setFreezeDate(null);
+                    })
+                    .catch((error) => {
+                      const messageKey =
+                        error instanceof Error ? error.message : 'streak.errors.freezeFailed';
+
+                      showBanner({
+                        title: t(messageKey, {
+                          defaultValue: t('streak.errors.freezeFailed'),
+                        }),
+                        variant: 'error',
+                      });
+                    });
+                }}
+                open={Boolean(freezeDate)}
+              />
+              <StreakFreezePurchaseModal
+                coinBalance={streak.coinBalance}
+                isBuying={purchaseFreezeTokenMutation.isPending}
+                onClose={() => {
+                  setIsPurchaseFreezeModalOpen(false);
+                }}
+                onConfirm={() => {
+                  void purchaseFreezeTokenMutation.mutateAsync()
+                    .then(() => {
+                      setIsPurchaseFreezeModalOpen(false);
+                    })
+                    .catch((error) => {
+                      const messageKey =
+                        error instanceof Error
+                          ? error.message
+                          : 'streak.errors.purchaseFreezeFailed';
+
+                      showBanner({
+                        title: t(messageKey, {
+                          defaultValue: t('streak.errors.purchaseFreezeFailed'),
+                        }),
+                        variant: 'error',
+                      });
+                    });
+                }}
+                open={isPurchaseFreezeModalOpen}
+              />
+              {shouldShowMockStreakAchievementAction ? (
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => {
+                    showBanner({
+                      achievement: {
+                        coinsReward: 30,
+                        icon: 'trophy',
+                      },
+                      description: t('streak.achievements.3.description'),
+                      title: t('streak.achievements.3.title'),
+                      variant: 'achievement',
+                    });
+                  }}
+                  style={({ pressed }) => [
+                    styles.streakRetryButton,
+                    isDarkTheme ? styles.streakRetryButtonDark : null,
+                    pressed ? styles.avatarButtonPressed : null,
+                  ]}>
+                  <ThemedText
+                    type="bodyStrong"
+                    style={[
+                      styles.streakRetryButtonText,
+                      isDarkTheme ? styles.streakRetryButtonTextDark : null,
+                    ]}>
+                    Програти streak-achievement
+                  </ThemedText>
+                </Pressable>
+              ) : null}
+            </>
           ) : null}
           <ScrollView
             contentContainerStyle={styles.streakAchievementsRow}

@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
+import type { ReactElement } from 'react';
 import { Pressable, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
@@ -17,6 +18,7 @@ import { styles } from './styles';
 
 type ActivityCalendarProps = {
   onPressCta?: () => void;
+  onRequestFreezeDay?: (day: StreakCalendarDay) => void;
   serverNow: string;
   streak: StreakState;
   userId?: string;
@@ -60,7 +62,7 @@ function getStatusStyle(status: CalendarDayStatus) {
   return styles.dayNeutral;
 }
 
-function getStatusIcon(status: CalendarDayStatus, isDark: boolean): JSX.Element | null {
+function getStatusIcon(status: CalendarDayStatus, isDark: boolean): ReactElement | null {
   if (status === 'completed' || status === 'today_completed') {
     return <Ionicons color="#ffffff" name="checkmark" size={12} style={styles.dayIcon} />;
   }
@@ -132,7 +134,13 @@ function getCtaTextKey(streak: StreakState): string {
   return 'streak.summary.cta.default';
 }
 
-export function ActivityCalendar({ userId, serverNow, streak, onPressCta }: ActivityCalendarProps) {
+export function ActivityCalendar({
+  userId,
+  serverNow,
+  streak,
+  onPressCta,
+  onRequestFreezeDay,
+}: ActivityCalendarProps) {
   const { t } = useTranslation();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
@@ -227,15 +235,11 @@ export function ActivityCalendar({ userId, serverNow, streak, onPressCta }: Acti
           }
 
           const icon = getStatusIcon(cell.status, isDark);
-
-          return (
-            <View
-              key={cell.date}
-              style={[
-                styles.dayCell,
-                getStatusStyle(cell.status),
-                isDark ? styles.dayCellDark : styles.dayCellLight,
-              ]}>
+          const canRequestFreeze =
+            cell.status === 'missed' &&
+            Boolean(onRequestFreezeDay);
+          const dayContent = (
+            <>
               <ThemedText
                 style={[
                   styles.dayText,
@@ -246,6 +250,36 @@ export function ActivityCalendar({ userId, serverNow, streak, onPressCta }: Acti
                 {cell.dayOfMonth}
               </ThemedText>
               {icon}
+            </>
+          );
+
+          if (canRequestFreeze) {
+            return (
+              <Pressable
+                accessibilityRole="button"
+                key={cell.date}
+                onPress={() => onRequestFreezeDay?.(cell)}
+                style={({ pressed }) => [
+                  styles.dayCell,
+                  getStatusStyle(cell.status),
+                  isDark ? styles.dayCellDark : styles.dayCellLight,
+                  styles.dayPressable,
+                  pressed ? styles.dayPressed : null,
+                ]}>
+                {dayContent}
+              </Pressable>
+            );
+          }
+
+          return (
+            <View
+              key={cell.date}
+              style={[
+                styles.dayCell,
+                getStatusStyle(cell.status),
+                isDark ? styles.dayCellDark : styles.dayCellLight,
+              ]}>
+              {dayContent}
             </View>
           );
         })}

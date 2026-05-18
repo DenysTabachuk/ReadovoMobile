@@ -7,6 +7,7 @@ import {
 import { DatabaseService } from '../database/database.service';
 import {
   type CalendarDayStatus,
+  type BrokenStreakInfo,
   type CompleteStreakActivityDto,
   type CompleteStreakActivityResponse,
   type StreakAchievement,
@@ -22,6 +23,9 @@ import {
 } from './types';
 
 const RESTORE_PRICE = 100;
+const FREEZE_TOKEN_PRICE = 100;
+const MAX_FREEZE_TOKENS = 3;
+const MAX_FREEZE_DAYS_PER_BREAK = 3;
 const STREAK_MILESTONES: readonly {
   milestone: StreakAchievementMilestone;
   rewardCoins: number;
@@ -268,6 +272,106 @@ export class StreakService {
       [userId, broken.previousStreak],
     );
 
+    await this.unlockMilestones(userId, broken.previousStreak);
+
+    return this.getProfile(userId);
+  }
+
+  async applyFreeze(userId: string, date: string): Promise<StreakState> {
+    if (!this.isDateKey(date)) {
+      throw new BadRequestException('Invalid freeze date.');
+    }
+
+    const profile = await this.ensureProfile(userId);
+    const localToday = this.getLocalDateKey(new Date(), profile.timezone);
+
+    await this.reconcileMissingDays(userId, profile, localToday);
+
+    const refreshedProfile = await this.ensureProfile(userId);
+
+    if (refreshedProfile.freeze_tokens <= 0) {
+      throw new BadRequestException('No freeze tokens available.');
+    }
+
+    const day = await this.getHistoryDay(userId, date);
+
+    if (day?.status === 'completed' || day?.status === 'frozen' || day?.status === 'restored') {
+      throw new BadRequestException('This day is already protected.');
+    }
+
+    if (day?.status !== 'missed') {
+      throw new BadRequestException('Freeze can only be applied to a missed day.');
+    }
+
+    if (await this.hasReachedFreezeLimitForBreak(userId, date)) {
+      throw new BadRequestException('Freeze day limit reached.');
+    }
+
+    await this.databaseService.query(
+      `
+        UPDATE user_streak_history
+        SET status = 'frozen'
+        WHERE user_id = $1 AND activity_date = $2::date
+      `,
+      [userId, date],
+    );
+
+    await this.databaseService.query(
+      `
+        UPDATE user_streak_profiles
+        SET freeze_tokens = freeze_tokens - 1,
+            updated_at = now()
+        WHERE user_id = $1
+      `,
+      [userId],
+    );
+
+    const rebuiltCurrentStreak = await this.rebuildProfileFromHistory(
+      userId,
+      refreshedProfile.timezone,
+      localToday,
+    );
+    await this.unlockMilestones(userId, rebuiltCurrentStreak);
+
+    return this.getProfile(userId);
+  }
+
+  async purchaseFreezeToken(userId: string, price: number): Promise<StreakState> {
+    if (price !== FREEZE_TOKEN_PRICE) {
+      throw new BadRequestException('Invalid freeze token price.');
+    }
+
+    const profile = await this.ensureProfile(userId);
+
+    if (profile.freeze_tokens >= MAX_FREEZE_TOKENS) {
+      throw new BadRequestException('Freeze token limit reached.');
+    }
+
+    const balance = await this.getUserBalance(userId);
+
+    if (balance.balance < FREEZE_TOKEN_PRICE) {
+      throw new BadRequestException('Not enough coins.');
+    }
+
+    await this.databaseService.query(
+      `
+        UPDATE users
+        SET balance = balance - $2
+        WHERE id = $1
+      `,
+      [userId, FREEZE_TOKEN_PRICE],
+    );
+
+    await this.databaseService.query(
+      `
+        UPDATE user_streak_profiles
+        SET freeze_tokens = LEAST(freeze_tokens + 1, $2),
+            updated_at = now()
+        WHERE user_id = $1
+      `,
+      [userId, MAX_FREEZE_TOKENS],
+    );
+
     return this.getProfile(userId);
   }
 
@@ -350,27 +454,28 @@ export class StreakService {
       return null;
     }
 
-    let freezeTokens = profile.freeze_tokens;
     let currentStreak = profile.current_streak;
     let brokenInfo = profile.broken_streak_info;
 
     for (const day of missingDays) {
       const existing = await this.getHistoryDay(userId, day);
 
-      if (existing) {
+      if (existing?.status === 'frozen' || existing?.status === 'restored') {
         continue;
       }
 
-      if (freezeTokens > 0) {
-        freezeTokens -= 1;
-        await this.databaseService.query(
-          `
-            INSERT INTO user_streak_history (user_id, activity_date, status)
-            VALUES ($1, $2::date, 'frozen')
-            ON CONFLICT (user_id, activity_date) DO NOTHING
-          `,
-          [userId, day],
-        );
+      if (existing?.status === 'missed') {
+        currentStreak = 0;
+        brokenInfo = brokenInfo ?? {
+          brokenAt: day,
+          canRestore: true,
+          previousStreak: profile.current_streak,
+          restorePrice: RESTORE_PRICE,
+        };
+        continue;
+      }
+
+      if (existing?.status === 'completed') {
         continue;
       }
 
@@ -395,15 +500,13 @@ export class StreakService {
     await this.databaseService.query(
       `
         UPDATE user_streak_profiles
-        SET freeze_tokens = $2,
-            current_streak = $3,
-            broken_streak_info = $4,
+        SET current_streak = $2,
+            broken_streak_info = $3,
             updated_at = now()
         WHERE user_id = $1
       `,
       [
         userId,
-        freezeTokens,
         currentStreak,
         brokenInfo ? JSON.stringify(brokenInfo) : null,
       ],
@@ -413,8 +516,89 @@ export class StreakService {
       ...profile,
       broken_streak_info: brokenInfo,
       current_streak: currentStreak,
-      freeze_tokens: freezeTokens,
     };
+  }
+
+  private async rebuildProfileFromHistory(
+    userId: string,
+    timezone: string,
+    localToday: string,
+  ): Promise<number> {
+    const result = await this.databaseService.query<StreakHistoryRow>(
+      `
+        SELECT activity_date::text, status
+        FROM user_streak_history
+        WHERE user_id = $1
+        ORDER BY activity_date ASC
+      `,
+      [userId],
+    );
+
+    const protectedStatuses = new Set<StreakDayStatus>([
+      'completed',
+      'frozen',
+      'restored',
+    ]);
+    let currentStreak = 0;
+    let longestStreak = 0;
+    let lastActivityDate: string | null = null;
+    let brokenInfo: BrokenStreakInfo | null = null;
+
+    for (const day of result.rows) {
+      if (day.activity_date >= localToday) {
+        continue;
+      }
+
+      if (protectedStatuses.has(day.status)) {
+        currentStreak += 1;
+        longestStreak = Math.max(longestStreak, currentStreak);
+        lastActivityDate = day.activity_date;
+        brokenInfo = null;
+        continue;
+      }
+
+      if (day.status === 'missed') {
+        brokenInfo = {
+          brokenAt: day.activity_date,
+          canRestore: true,
+          previousStreak: currentStreak,
+          restorePrice: RESTORE_PRICE,
+        };
+        currentStreak = 0;
+      }
+    }
+
+    const todayRow = result.rows.find((day) => day.activity_date === localToday);
+
+    if (todayRow && protectedStatuses.has(todayRow.status)) {
+      currentStreak += 1;
+      longestStreak = Math.max(longestStreak, currentStreak);
+      lastActivityDate = todayRow.activity_date;
+      brokenInfo = null;
+    }
+
+    await this.databaseService.query(
+      `
+        UPDATE user_streak_profiles
+        SET current_streak = $2,
+            longest_streak = GREATEST(longest_streak, $3),
+            last_activity_date = $4::date,
+            broken_streak_info = $5,
+            timezone = $6,
+            updated_at = now()
+        WHERE user_id = $1
+      `,
+      [
+        userId,
+        currentStreak,
+        longestStreak,
+        lastActivityDate,
+        brokenInfo ? JSON.stringify(brokenInfo) : null,
+        timezone,
+      ],
+    );
+
+    return currentStreak;
   }
 
   private async unlockMilestones(
@@ -605,6 +789,58 @@ export class StreakService {
     }
 
     return dates;
+  }
+
+  private isDateKey(value: string): boolean {
+    return /^\d{4}-\d{2}-\d{2}$/.test(value);
+  }
+
+  private async hasReachedFreezeLimitForBreak(
+    userId: string,
+    date: string,
+  ): Promise<boolean> {
+    const result = await this.databaseService.query<StreakHistoryRow>(
+      `
+        SELECT activity_date::text, status
+        FROM user_streak_history
+        WHERE user_id = $1
+        ORDER BY activity_date ASC
+      `,
+      [userId],
+    );
+    const index = result.rows.findIndex((row) => row.activity_date === date);
+
+    if (index < 0) {
+      return false;
+    }
+
+    let frozenDays = 0;
+
+    for (let cursor = index; cursor >= 0; cursor -= 1) {
+      const status = result.rows[cursor].status;
+
+      if (status === 'completed' || status === 'restored') {
+        break;
+      }
+
+      if (status === 'frozen') {
+        frozenDays += 1;
+      }
+    }
+
+    for (let cursor = index + 1; cursor < result.rows.length; cursor += 1) {
+      const status = result.rows[cursor].status;
+
+      if (status === 'completed' || status === 'restored') {
+        break;
+      }
+
+      if (status === 'frozen') {
+        frozenDays += 1;
+      }
+    }
+
+    return frozenDays >= MAX_FREEZE_DAYS_PER_BREAK;
   }
 
   private formatDateKeyUTC(year: number, month: number, day: number): string {

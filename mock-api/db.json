@@ -2,18 +2,55 @@
   "streakProfiles": {
     "demo-user": {
       "activityHistory": [
-        { "date": "2026-05-02", "status": "completed" },
-        { "date": "2026-05-03", "status": "missed" },
-        { "date": "2026-05-04", "status": "frozen" },
-        { "date": "2026-05-05", "status": "restored" }
+        {
+          "date": "2026-05-02",
+          "status": "completed"
+        },
+        {
+          "date": "2026-05-03",
+          "status": "missed"
+        },
+        {
+          "date": "2026-05-04",
+          "status": "frozen"
+        },
+        {
+          "date": "2026-05-05",
+          "status": "restored"
+        }
       ],
       "brokenStreakInfo": null,
       "claimedStreakAchievements": [
-        { "claimedAt": "2026-05-03T10:00:00.000Z", "isUnlocked": true, "milestone": 3, "rewardCoins": 50 },
-        { "claimedAt": null, "isUnlocked": false, "milestone": 7, "rewardCoins": 100 },
-        { "claimedAt": null, "isUnlocked": false, "milestone": 14, "rewardCoins": 200 },
-        { "claimedAt": null, "isUnlocked": false, "milestone": 30, "rewardCoins": 400 },
-        { "claimedAt": null, "isUnlocked": false, "milestone": 100, "rewardCoins": 1000 }
+        {
+          "claimedAt": "2026-05-03T10:00:00.000Z",
+          "isUnlocked": true,
+          "milestone": 3,
+          "rewardCoins": 50
+        },
+        {
+          "claimedAt": null,
+          "isUnlocked": false,
+          "milestone": 7,
+          "rewardCoins": 100
+        },
+        {
+          "claimedAt": null,
+          "isUnlocked": false,
+          "milestone": 14,
+          "rewardCoins": 200
+        },
+        {
+          "claimedAt": null,
+          "isUnlocked": false,
+          "milestone": 30,
+          "rewardCoins": 400
+        },
+        {
+          "claimedAt": null,
+          "isUnlocked": false,
+          "milestone": 100,
+          "rewardCoins": 1000
+        }
       ],
       "coinBalance": 420,
       "currentStreak": 4,
@@ -27,9 +64,18 @@
     },
     "broken-user": {
       "activityHistory": [
-        { "date": "2026-05-06", "status": "completed" },
-        { "date": "2026-05-07", "status": "completed" },
-        { "date": "2026-05-08", "status": "missed" }
+        {
+          "date": "2026-05-06",
+          "status": "completed"
+        },
+        {
+          "date": "2026-05-07",
+          "status": "completed"
+        },
+        {
+          "date": "2026-05-08",
+          "status": "missed"
+        }
       ],
       "brokenStreakInfo": {
         "brokenAt": "2026-05-08",
@@ -38,11 +84,36 @@
         "restorePrice": 100
       },
       "claimedStreakAchievements": [
-        { "claimedAt": "2026-05-07T10:00:00.000Z", "isUnlocked": true, "milestone": 3, "rewardCoins": 50 },
-        { "claimedAt": null, "isUnlocked": false, "milestone": 7, "rewardCoins": 100 },
-        { "claimedAt": null, "isUnlocked": false, "milestone": 14, "rewardCoins": 200 },
-        { "claimedAt": null, "isUnlocked": false, "milestone": 30, "rewardCoins": 400 },
-        { "claimedAt": null, "isUnlocked": false, "milestone": 100, "rewardCoins": 1000 }
+        {
+          "claimedAt": "2026-05-07T10:00:00.000Z",
+          "isUnlocked": true,
+          "milestone": 3,
+          "rewardCoins": 50
+        },
+        {
+          "claimedAt": null,
+          "isUnlocked": false,
+          "milestone": 7,
+          "rewardCoins": 100
+        },
+        {
+          "claimedAt": null,
+          "isUnlocked": false,
+          "milestone": 14,
+          "rewardCoins": 200
+        },
+        {
+          "claimedAt": null,
+          "isUnlocked": false,
+          "milestone": 30,
+          "rewardCoins": 400
+        },
+        {
+          "claimedAt": null,
+          "isUnlocked": false,
+          "milestone": 100,
+          "rewardCoins": 1000
+        }
       ],
       "coinBalance": 250,
       "currentStreak": 0,
@@ -53,42 +124,211 @@
       "nextMilestone": 3,
       "serverNow": "2026-05-14T12:00:00.000Z",
       "todayStatus": "broken"
+    },
+    "6c4c590a-5ece-415c-a6fc-02d23c40afb2": {
+      "activityHistory": [],
+      "brokenStreakInfo": null,
+      "claimedStreakAchievements": [
+        {
+          "claimedAt": "2026-05-14T12:00:00.000Z",
+          "isUnlocked": true,
+          "milestone": 3,
+          "rewardCoins": 30
+        },
+        {
+          "claimedAt": null,
+          "isUnlocked": false,
+          "milestone": 7,
+          "rewardCoins": 70
+        },
+        {
+          "claimedAt": null,
+          "isUnlocked": false,
+          "milestone": 14,
+          "rewardCoins": 150
+        },
+        {
+          "claimedAt": null,
+          "isUnlocked": false,
+          "milestone": 30,
+          "rewardCoins": 400
+        },
+        {
+          "claimedAt": null,
+          "isUnlocked": false,
+          "milestone": 100,
+          "rewardCoins": 1500
+        }
+      ],
+      "coinBalance": 130,
+      "currentStreak": 3,
+      "freezeTokens": 0,
+      "lastActivityDate": "2026-05-14",
+      "longestStreak": 3,
+      "nextBonusInDays": 4,
+      "nextMilestone": 7,
+      "serverNow": "2026-05-14T12:00:00.000Z",
+      "todayStatus": "completed"
     }
   },
   "streakCalendars": {
     "demo-user-2026-5": {
       "days": [
-        { "date": "2026-05-01", "dayOfMonth": 1, "status": "neutral" },
-        { "date": "2026-05-02", "dayOfMonth": 2, "status": "completed" },
-        { "date": "2026-05-03", "dayOfMonth": 3, "status": "missed" },
-        { "date": "2026-05-04", "dayOfMonth": 4, "status": "frozen" },
-        { "date": "2026-05-05", "dayOfMonth": 5, "status": "restored" },
-        { "date": "2026-05-06", "dayOfMonth": 6, "status": "completed" },
-        { "date": "2026-05-07", "dayOfMonth": 7, "status": "neutral" },
-        { "date": "2026-05-08", "dayOfMonth": 8, "status": "completed" },
-        { "date": "2026-05-09", "dayOfMonth": 9, "status": "missed" },
-        { "date": "2026-05-10", "dayOfMonth": 10, "status": "neutral" },
-        { "date": "2026-05-11", "dayOfMonth": 11, "status": "frozen" },
-        { "date": "2026-05-12", "dayOfMonth": 12, "status": "completed" },
-        { "date": "2026-05-13", "dayOfMonth": 13, "status": "today_completed" },
-        { "date": "2026-05-14", "dayOfMonth": 14, "status": "today_pending" },
-        { "date": "2026-05-15", "dayOfMonth": 15, "status": "future" },
-        { "date": "2026-05-16", "dayOfMonth": 16, "status": "future" },
-        { "date": "2026-05-17", "dayOfMonth": 17, "status": "future" },
-        { "date": "2026-05-18", "dayOfMonth": 18, "status": "future" },
-        { "date": "2026-05-19", "dayOfMonth": 19, "status": "future" },
-        { "date": "2026-05-20", "dayOfMonth": 20, "status": "future" },
-        { "date": "2026-05-21", "dayOfMonth": 21, "status": "future" },
-        { "date": "2026-05-22", "dayOfMonth": 22, "status": "future" },
-        { "date": "2026-05-23", "dayOfMonth": 23, "status": "future" },
-        { "date": "2026-05-24", "dayOfMonth": 24, "status": "future" },
-        { "date": "2026-05-25", "dayOfMonth": 25, "status": "future" },
-        { "date": "2026-05-26", "dayOfMonth": 26, "status": "future" },
-        { "date": "2026-05-27", "dayOfMonth": 27, "status": "future" },
-        { "date": "2026-05-28", "dayOfMonth": 28, "status": "future" },
-        { "date": "2026-05-29", "dayOfMonth": 29, "status": "future" },
-        { "date": "2026-05-30", "dayOfMonth": 30, "status": "future" },
-        { "date": "2026-05-31", "dayOfMonth": 31, "status": "future" }
+        {
+          "date": "2026-05-01",
+          "dayOfMonth": 1,
+          "status": "neutral"
+        },
+        {
+          "date": "2026-05-02",
+          "dayOfMonth": 2,
+          "status": "completed"
+        },
+        {
+          "date": "2026-05-03",
+          "dayOfMonth": 3,
+          "status": "missed"
+        },
+        {
+          "date": "2026-05-04",
+          "dayOfMonth": 4,
+          "status": "frozen"
+        },
+        {
+          "date": "2026-05-05",
+          "dayOfMonth": 5,
+          "status": "restored"
+        },
+        {
+          "date": "2026-05-06",
+          "dayOfMonth": 6,
+          "status": "completed"
+        },
+        {
+          "date": "2026-05-07",
+          "dayOfMonth": 7,
+          "status": "neutral"
+        },
+        {
+          "date": "2026-05-08",
+          "dayOfMonth": 8,
+          "status": "completed"
+        },
+        {
+          "date": "2026-05-09",
+          "dayOfMonth": 9,
+          "status": "missed"
+        },
+        {
+          "date": "2026-05-10",
+          "dayOfMonth": 10,
+          "status": "neutral"
+        },
+        {
+          "date": "2026-05-11",
+          "dayOfMonth": 11,
+          "status": "frozen"
+        },
+        {
+          "date": "2026-05-12",
+          "dayOfMonth": 12,
+          "status": "completed"
+        },
+        {
+          "date": "2026-05-13",
+          "dayOfMonth": 13,
+          "status": "today_completed"
+        },
+        {
+          "date": "2026-05-14",
+          "dayOfMonth": 14,
+          "status": "today_pending"
+        },
+        {
+          "date": "2026-05-15",
+          "dayOfMonth": 15,
+          "status": "future"
+        },
+        {
+          "date": "2026-05-16",
+          "dayOfMonth": 16,
+          "status": "future"
+        },
+        {
+          "date": "2026-05-17",
+          "dayOfMonth": 17,
+          "status": "future"
+        },
+        {
+          "date": "2026-05-18",
+          "dayOfMonth": 18,
+          "status": "future"
+        },
+        {
+          "date": "2026-05-19",
+          "dayOfMonth": 19,
+          "status": "future"
+        },
+        {
+          "date": "2026-05-20",
+          "dayOfMonth": 20,
+          "status": "future"
+        },
+        {
+          "date": "2026-05-21",
+          "dayOfMonth": 21,
+          "status": "future"
+        },
+        {
+          "date": "2026-05-22",
+          "dayOfMonth": 22,
+          "status": "future"
+        },
+        {
+          "date": "2026-05-23",
+          "dayOfMonth": 23,
+          "status": "future"
+        },
+        {
+          "date": "2026-05-24",
+          "dayOfMonth": 24,
+          "status": "future"
+        },
+        {
+          "date": "2026-05-25",
+          "dayOfMonth": 25,
+          "status": "future"
+        },
+        {
+          "date": "2026-05-26",
+          "dayOfMonth": 26,
+          "status": "future"
+        },
+        {
+          "date": "2026-05-27",
+          "dayOfMonth": 27,
+          "status": "future"
+        },
+        {
+          "date": "2026-05-28",
+          "dayOfMonth": 28,
+          "status": "future"
+        },
+        {
+          "date": "2026-05-29",
+          "dayOfMonth": 29,
+          "status": "future"
+        },
+        {
+          "date": "2026-05-30",
+          "dayOfMonth": 30,
+          "status": "future"
+        },
+        {
+          "date": "2026-05-31",
+          "dayOfMonth": 31,
+          "status": "future"
+        }
       ],
       "month": 5,
       "monthLabel": "May 2026",
@@ -98,37 +338,161 @@
     },
     "broken-user-2026-5": {
       "days": [
-        { "date": "2026-05-01", "dayOfMonth": 1, "status": "neutral" },
-        { "date": "2026-05-02", "dayOfMonth": 2, "status": "completed" },
-        { "date": "2026-05-03", "dayOfMonth": 3, "status": "completed" },
-        { "date": "2026-05-04", "dayOfMonth": 4, "status": "completed" },
-        { "date": "2026-05-05", "dayOfMonth": 5, "status": "missed" },
-        { "date": "2026-05-06", "dayOfMonth": 6, "status": "missed" },
-        { "date": "2026-05-07", "dayOfMonth": 7, "status": "missed" },
-        { "date": "2026-05-08", "dayOfMonth": 8, "status": "restored" },
-        { "date": "2026-05-09", "dayOfMonth": 9, "status": "neutral" },
-        { "date": "2026-05-10", "dayOfMonth": 10, "status": "neutral" },
-        { "date": "2026-05-11", "dayOfMonth": 11, "status": "neutral" },
-        { "date": "2026-05-12", "dayOfMonth": 12, "status": "neutral" },
-        { "date": "2026-05-13", "dayOfMonth": 13, "status": "today_pending" },
-        { "date": "2026-05-14", "dayOfMonth": 14, "status": "today_pending" },
-        { "date": "2026-05-15", "dayOfMonth": 15, "status": "future" },
-        { "date": "2026-05-16", "dayOfMonth": 16, "status": "future" },
-        { "date": "2026-05-17", "dayOfMonth": 17, "status": "future" },
-        { "date": "2026-05-18", "dayOfMonth": 18, "status": "future" },
-        { "date": "2026-05-19", "dayOfMonth": 19, "status": "future" },
-        { "date": "2026-05-20", "dayOfMonth": 20, "status": "future" },
-        { "date": "2026-05-21", "dayOfMonth": 21, "status": "future" },
-        { "date": "2026-05-22", "dayOfMonth": 22, "status": "future" },
-        { "date": "2026-05-23", "dayOfMonth": 23, "status": "future" },
-        { "date": "2026-05-24", "dayOfMonth": 24, "status": "future" },
-        { "date": "2026-05-25", "dayOfMonth": 25, "status": "future" },
-        { "date": "2026-05-26", "dayOfMonth": 26, "status": "future" },
-        { "date": "2026-05-27", "dayOfMonth": 27, "status": "future" },
-        { "date": "2026-05-28", "dayOfMonth": 28, "status": "future" },
-        { "date": "2026-05-29", "dayOfMonth": 29, "status": "future" },
-        { "date": "2026-05-30", "dayOfMonth": 30, "status": "future" },
-        { "date": "2026-05-31", "dayOfMonth": 31, "status": "future" }
+        {
+          "date": "2026-05-01",
+          "dayOfMonth": 1,
+          "status": "neutral"
+        },
+        {
+          "date": "2026-05-02",
+          "dayOfMonth": 2,
+          "status": "completed"
+        },
+        {
+          "date": "2026-05-03",
+          "dayOfMonth": 3,
+          "status": "completed"
+        },
+        {
+          "date": "2026-05-04",
+          "dayOfMonth": 4,
+          "status": "completed"
+        },
+        {
+          "date": "2026-05-05",
+          "dayOfMonth": 5,
+          "status": "missed"
+        },
+        {
+          "date": "2026-05-06",
+          "dayOfMonth": 6,
+          "status": "missed"
+        },
+        {
+          "date": "2026-05-07",
+          "dayOfMonth": 7,
+          "status": "missed"
+        },
+        {
+          "date": "2026-05-08",
+          "dayOfMonth": 8,
+          "status": "restored"
+        },
+        {
+          "date": "2026-05-09",
+          "dayOfMonth": 9,
+          "status": "neutral"
+        },
+        {
+          "date": "2026-05-10",
+          "dayOfMonth": 10,
+          "status": "neutral"
+        },
+        {
+          "date": "2026-05-11",
+          "dayOfMonth": 11,
+          "status": "neutral"
+        },
+        {
+          "date": "2026-05-12",
+          "dayOfMonth": 12,
+          "status": "neutral"
+        },
+        {
+          "date": "2026-05-13",
+          "dayOfMonth": 13,
+          "status": "today_pending"
+        },
+        {
+          "date": "2026-05-14",
+          "dayOfMonth": 14,
+          "status": "today_pending"
+        },
+        {
+          "date": "2026-05-15",
+          "dayOfMonth": 15,
+          "status": "future"
+        },
+        {
+          "date": "2026-05-16",
+          "dayOfMonth": 16,
+          "status": "future"
+        },
+        {
+          "date": "2026-05-17",
+          "dayOfMonth": 17,
+          "status": "future"
+        },
+        {
+          "date": "2026-05-18",
+          "dayOfMonth": 18,
+          "status": "future"
+        },
+        {
+          "date": "2026-05-19",
+          "dayOfMonth": 19,
+          "status": "future"
+        },
+        {
+          "date": "2026-05-20",
+          "dayOfMonth": 20,
+          "status": "future"
+        },
+        {
+          "date": "2026-05-21",
+          "dayOfMonth": 21,
+          "status": "future"
+        },
+        {
+          "date": "2026-05-22",
+          "dayOfMonth": 22,
+          "status": "future"
+        },
+        {
+          "date": "2026-05-23",
+          "dayOfMonth": 23,
+          "status": "future"
+        },
+        {
+          "date": "2026-05-24",
+          "dayOfMonth": 24,
+          "status": "future"
+        },
+        {
+          "date": "2026-05-25",
+          "dayOfMonth": 25,
+          "status": "future"
+        },
+        {
+          "date": "2026-05-26",
+          "dayOfMonth": 26,
+          "status": "future"
+        },
+        {
+          "date": "2026-05-27",
+          "dayOfMonth": 27,
+          "status": "future"
+        },
+        {
+          "date": "2026-05-28",
+          "dayOfMonth": 28,
+          "status": "future"
+        },
+        {
+          "date": "2026-05-29",
+          "dayOfMonth": 29,
+          "status": "future"
+        },
+        {
+          "date": "2026-05-30",
+          "dayOfMonth": 30,
+          "status": "future"
+        },
+        {
+          "date": "2026-05-31",
+          "dayOfMonth": 31,
+          "status": "future"
+        }
       ],
       "month": 5,
       "monthLabel": "May 2026",

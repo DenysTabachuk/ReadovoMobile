@@ -65,6 +65,22 @@ export const styles = StyleSheet.create({
     height: 56,
     width: 56,
   },
+  achievementIconCircle: {
+    alignItems: 'center',
+    borderRadius: 28,
+    borderWidth: 1,
+    height: 56,
+    justifyContent: 'center',
+    width: 56,
+  },
+  achievementIconCircleDark: {
+    backgroundColor: '#3a2461',
+    borderColor: '#7d5fd1',
+  },
+  achievementIconCircleLight: {
+    backgroundColor: '#fff7db',
+    borderColor: '#f2bf4a',
+  },
   textContent: {
     flex: 1,
     minWidth: 0,
