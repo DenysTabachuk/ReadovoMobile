@@ -36,7 +36,7 @@ import { ScreenContainer } from '@/components/screenContainer';
 import { SegmentedToggle } from '@/components/segmentedToggle';
 import { TestResult } from '@/components/testResult';
 import { ThemedText } from '@/components/themedText';
-import { IconSymbol } from '@/components/ui/iconSymbol';
+import { IconSymbol } from '@/components/iconSymbol';
 import { Colors } from '@/constants/theme';
 import {
   getAchievementBadge,

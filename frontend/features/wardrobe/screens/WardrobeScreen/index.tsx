@@ -14,7 +14,6 @@ import { useTranslation } from 'react-i18next';
 
 import { useBanner } from '@/components/banner';
 import { Button } from '@/components/button';
-import { Mascot } from '@/components/mascot';
 import { ScreenContainer } from '@/components/screenContainer';
 import { ThemedText } from '@/components/themedText';
 import { Colors } from '@/constants/theme';
@@ -26,6 +25,7 @@ import {
   getMascotCatalogItem,
   getMascotItemsBySlot,
   getMascotProfile,
+  Mascot,
   mascotAccessorySlots,
   type MascotAccessorySlot,
   type MascotCatalogItem,
@@ -146,7 +146,7 @@ export default function WardrobeScreen() {
           <View style={styles.itemPriceRow}>
             <Image
               contentFit="contain"
-              source={require('../../assets/images/money.png')}
+              source={require('../../../../assets/images/money.png')}
               style={styles.balanceIcon}
             />
             <ThemedText>
@@ -227,7 +227,7 @@ export default function WardrobeScreen() {
                 <View style={styles.walletItem}>
                   <Image
                     contentFit="contain"
-                    source={require('../../assets/images/money.png')}
+                    source={require('../../../../assets/images/money.png')}
                     style={styles.walletIcon}
                   />
                   <ThemedText style={styles.walletText}>

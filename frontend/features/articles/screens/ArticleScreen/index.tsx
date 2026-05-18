@@ -29,7 +29,7 @@ import { ScreenContainer } from '@/components/screenContainer';
 import { ScrollToTopButton } from '@/components/scrollToTopButton';
 import { SegmentedToggle } from '@/components/segmentedToggle';
 import { ThemedText } from '@/components/themedText';
-import { IconSymbol } from '@/components/ui/iconSymbol';
+import { IconSymbol } from '@/components/iconSymbol';
 import { Spacing } from '@/constants/spacing';
 import { Colors } from '@/constants/theme';
 import {

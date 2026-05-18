@@ -7,10 +7,10 @@ import { registerUser, resendVerificationCode, verifyEmail } from '@/api/auth';
 import { Button } from '@/components/button';
 import { useBanner } from '@/components/banner';
 import { FormTextInput } from '@/components/formTextInput';
-import { PasswordTextInput } from '@/components/passwordTextInput';
+import { PasswordTextInput } from '@/features/auth/components/passwordTextInput';
 import { ScreenContainer } from '@/components/screenContainer';
 import { ThemedText } from '@/components/themedText';
-import { VerificationCodeModal } from '@/components/verificationCodeModal';
+import { VerificationCodeModal } from '@/features/auth/components/verificationCodeModal';
 
 import { styles } from './styles';
 

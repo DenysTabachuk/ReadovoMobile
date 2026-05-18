@@ -10,8 +10,8 @@ import {
 import {
   getMascotCatalogItem,
   mascotAccessorySlots,
-  type MascotEquippedItems,
-} from '@/features/mascot';
+} from '../../catalog';
+import { type MascotEquippedItems } from '../../types';
 
 import { styles } from './styles';
 
@@ -43,7 +43,7 @@ export function Mascot({ equippedItems = {}, style }: MascotProps) {
     <View onLayout={handleLayout} style={[styles.stage, style]}>
       <Image
         contentFit="contain"
-        source={require('../../assets/mascot/base/octopus.png')}
+        source={require('../../../../assets/mascot/base/octopus.png')}
         style={styles.base}
       />
       {equippedCatalogItems.map(({ slot, item }) => {

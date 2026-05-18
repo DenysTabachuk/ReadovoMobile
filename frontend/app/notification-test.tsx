@@ -1,1 +1,1 @@
-export { default } from '@/screens/NotificationTestScreen';
+export { default } from '@/features/learningReminders/screens/NotificationTestScreen';

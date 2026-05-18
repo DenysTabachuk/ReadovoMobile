@@ -3,7 +3,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { HapticTab } from '@/components/hapticTab';
-import { IconSymbol } from '@/components/ui/iconSymbol';
+import { IconSymbol } from '@/components/iconSymbol';
 import { FullScreenLoader } from '@/components/fullScreenLoader';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';

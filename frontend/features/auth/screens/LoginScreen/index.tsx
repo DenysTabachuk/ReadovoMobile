@@ -9,7 +9,7 @@ import { Button } from '@/components/button';
 import { useBanner } from '@/components/banner';
 import { CheckboxRow } from '@/components/checkboxRow';
 import { FormTextInput } from '@/components/formTextInput';
-import { PasswordTextInput } from '@/components/passwordTextInput';
+import { PasswordTextInput } from '@/features/auth/components/passwordTextInput';
 import { ScreenContainer } from '@/components/screenContainer';
 import { ThemedText } from '@/components/themedText';
 import { useAuth } from '@/providers/authProvider';

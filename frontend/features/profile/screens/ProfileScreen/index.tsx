@@ -16,13 +16,12 @@ import { useTranslation } from 'react-i18next';
 import { isMockApiEnabled } from '@/api/auth/constants';
 import { ScreenContainer } from '@/components/screenContainer';
 import { useBanner } from '@/components/banner';
-import { Mascot } from '@/components/mascot';
 import { ThemedText } from '@/components/themedText';
 import {
   getAchievementBadge,
   getAchievementsProfile,
 } from '@/features/achievements';
-import { getMascotProfile } from '@/features/mascot';
+import { getMascotProfile, Mascot } from '@/features/mascot';
 import { ActivityCalendar } from '@/features/streak/components/activityCalendar';
 import { StreakAchievementCard } from '@/features/streak/components/streakAchievementCard';
 import { StreakFreezeCard } from '@/features/streak/components/streakFreezeCard';
@@ -137,7 +136,7 @@ export default function ProfileScreen() {
               <View style={styles.walletItem}>
                 <Image
                   contentFit="contain"
-                  source={require('../../assets/images/money.png')}
+                  source={require('../../../../assets/images/money.png')}
                   style={styles.walletIcon}
                 />
                 <ThemedText style={styles.walletText}>
@@ -419,7 +418,7 @@ export default function ProfileScreen() {
                   <View style={styles.rewardRow}>
                     <Image
                       contentFit="contain"
-                      source={require('../../assets/images/money.png')}
+                      source={require('../../../../assets/images/money.png')}
                       style={styles.moneyIcon}
                     />
                     <ThemedText style={styles.rewardText}>

@@ -12,7 +12,7 @@ import { type LearningReminderTime, usePreferences } from '@/providers/preferenc
 import { LanguageSelector } from '@/components/languageSelector';
 import { ScreenContainer } from '@/components/screenContainer';
 import { ThemedText } from '@/components/themedText';
-import { IconSymbol } from '@/components/ui/iconSymbol';
+import { IconSymbol } from '@/components/iconSymbol';
 
 import { styles } from './styles';
 
