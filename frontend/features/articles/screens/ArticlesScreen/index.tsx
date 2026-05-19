@@ -7,6 +7,7 @@ import {
   type InfiniteData,
   type QueryKey,
 } from '@tanstack/react-query';
+import { useFocusEffect } from '@react-navigation/native';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -89,6 +90,13 @@ export default function ArticlesScreen() {
   const [expandedAdaptationArticleIds, setExpandedAdaptationArticleIds] =
     useState<Record<number, boolean>>({});
   const listRef = useRef<FlatList<WikipediaArticle>>(null);
+  const isOpeningArticleRef = useRef(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      isOpeningArticleRef.current = false;
+    }, []),
+  );
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -430,7 +438,12 @@ export default function ArticlesScreen() {
   }, []);
 
   const openArticle = useCallback((article: WikipediaArticle) => {
-    router.push({
+    if (isOpeningArticleRef.current) {
+      return;
+    }
+
+    isOpeningArticleRef.current = true;
+    router.navigate({
       pathname: '/article/[id]',
       params: {
         id: String(article.id),
