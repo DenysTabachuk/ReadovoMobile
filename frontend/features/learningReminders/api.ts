@@ -1,3 +1,4 @@
+import { authenticatedFetch } from '@/api/auth/authenticatedFetch';
 import { API_BASE_URL } from '@/api/auth/constants';
 
 import type { LearningReminderTime } from '@/providers/preferencesProvider';
@@ -16,7 +17,7 @@ type RegisterPushTokenPayload = {
 export async function getLearningReminderPreferences(
   userId: string,
 ): Promise<LearningReminderPreferencesResponse> {
-  const response = await fetch(`${API_BASE_URL}/notifications/preferences/${userId}`);
+  const response = await authenticatedFetch(`${API_BASE_URL}/notifications/preferences/${userId}`);
 
   if (!response.ok) {
     throw new Error('settings.learningReminders.fetchFailed');
@@ -29,7 +30,7 @@ export async function updateLearningReminderPreferences(
   userId: string,
   payload: LearningReminderPreferencesResponse,
 ): Promise<LearningReminderPreferencesResponse> {
-  const response = await fetch(`${API_BASE_URL}/notifications/preferences/${userId}`, {
+  const response = await authenticatedFetch(`${API_BASE_URL}/notifications/preferences/${userId}`, {
     body: JSON.stringify(payload),
     headers: {
       'Content-Type': 'application/json',
@@ -48,7 +49,7 @@ export async function registerPushToken(
   userId: string,
   payload: RegisterPushTokenPayload,
 ): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/notifications/push-token/${userId}`, {
+  const response = await authenticatedFetch(`${API_BASE_URL}/notifications/push-token/${userId}`, {
     body: JSON.stringify(payload),
     headers: {
       'Content-Type': 'application/json',
@@ -62,7 +63,7 @@ export async function registerPushToken(
 }
 
 export async function sendRemoteTestPush(userId: string): Promise<{ sentCount: number }> {
-  const response = await fetch(`${API_BASE_URL}/notifications/test-push/${userId}`, {
+  const response = await authenticatedFetch(`${API_BASE_URL}/notifications/test-push/${userId}`, {
     body: JSON.stringify({}),
     headers: {
       'Content-Type': 'application/json',

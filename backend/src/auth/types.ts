@@ -33,6 +33,16 @@ export type PasswordResetRequest = {
   verificationExpiresAt: string;
 };
 
+export type RefreshTokenRecord = {
+  createdAt: string;
+  expiresAt: string;
+  id: string;
+  revokedAt: string | null;
+  tokenHash: string;
+  tokenSalt: string;
+  userId: string;
+};
+
 export type AuthUser = {
   balance: number;
   createdAt: string;
@@ -43,18 +53,27 @@ export type AuthUser = {
   wordsLearned: number;
 };
 
+export type AuthenticatedUser = {
+  email: string;
+  id: string;
+};
+
+export type AuthSession = {
+  accessToken: string;
+  accessTokenExpiresAt: string;
+  refreshToken: string;
+  refreshTokenExpiresAt: string;
+  user: AuthUser;
+};
+
 export type RegisterUserResponse = {
   email: string;
   verificationExpiresAt: string;
 };
 
-export type LoginUserResponse = {
-  user: AuthUser;
-};
+export type LoginUserResponse = AuthSession;
 
-export type VerifyEmailResponse = {
-  user: AuthUser;
-};
+export type VerifyEmailResponse = AuthSession;
 
 export type ResendVerificationCodeResponse = {
   email: string;

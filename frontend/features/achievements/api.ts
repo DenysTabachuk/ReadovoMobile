@@ -1,3 +1,4 @@
+import { authenticatedFetch } from '@/api/auth/authenticatedFetch';
 import { API_BASE_URL } from '@/api/auth/constants';
 
 import {
@@ -8,7 +9,7 @@ import {
 export async function getAchievementsProfile(
   userId: string,
 ): Promise<AchievementsProfileResponse> {
-  const response = await fetch(`${API_BASE_URL}/achievements/profile/${userId}`);
+  const response = await authenticatedFetch(`${API_BASE_URL}/achievements/profile/${userId}`);
 
   if (!response.ok) {
     throw new Error('profile.errors.loadFailed');
@@ -21,7 +22,7 @@ export async function updateAchievementsProgress(
   userId: string,
   payload: UpdateAchievementProgressDto,
 ): Promise<AchievementsProfileResponse> {
-  const response = await fetch(`${API_BASE_URL}/achievements/profile/${userId}/progress`, {
+  const response = await authenticatedFetch(`${API_BASE_URL}/achievements/profile/${userId}/progress`, {
     body: JSON.stringify(payload),
     headers: {
       'Content-Type': 'application/json',

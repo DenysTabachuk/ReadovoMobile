@@ -61,6 +61,24 @@ export class DatabaseService implements OnModuleDestroy, OnModuleInit {
     `);
 
     await this.query(`
+      CREATE TABLE IF NOT EXISTS user_refresh_tokens (
+        id uuid PRIMARY KEY,
+        user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        token_hash text NOT NULL,
+        token_salt text NOT NULL,
+        expires_at timestamptz NOT NULL,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        revoked_at timestamptz
+      );
+    `);
+
+    await this.query(`
+      CREATE INDEX IF NOT EXISTS user_refresh_tokens_user_active_idx
+      ON user_refresh_tokens (user_id, expires_at DESC)
+      WHERE revoked_at IS NULL;
+    `);
+
+    await this.query(`
       CREATE TABLE IF NOT EXISTS user_achievements (
         user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         achievement_id text NOT NULL,

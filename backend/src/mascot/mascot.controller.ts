@@ -1,9 +1,11 @@
-import { Controller, Delete, Get, Param, Post } from '@nestjs/common';
+import { Controller, Delete, Get, Param, Post, UseGuards } from '@nestjs/common';
 
+import { UserAuthGuard } from '../auth/user-auth.guard';
 import { MascotService } from './mascot.service';
 import { type MascotAccessorySlot, type MascotProfileResponse } from './types';
 
 @Controller('mascot')
+@UseGuards(UserAuthGuard)
 export class MascotController {
   constructor(private readonly mascotService: MascotService) {}
 

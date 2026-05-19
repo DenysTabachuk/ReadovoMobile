@@ -8,8 +8,10 @@ import {
   Post,
   Put,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 
+import { UserAuthGuard } from '../auth/user-auth.guard';
 import { NotificationsService } from './notifications.service';
 import type {
   LearningReminderPreferences,
@@ -19,6 +21,7 @@ import type {
 } from './types';
 
 @Controller('notifications')
+@UseGuards(UserAuthGuard)
 export class NotificationsController {
   private readonly logger = new Logger(NotificationsController.name);
 

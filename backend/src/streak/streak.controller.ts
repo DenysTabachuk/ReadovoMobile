@@ -1,5 +1,6 @@
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
 
+import { UserAuthGuard } from '../auth/user-auth.guard';
 import { StreakService } from './streak.service';
 import {
   type ApplyStreakFreezeDto,
@@ -12,6 +13,7 @@ import {
 } from './types';
 
 @Controller('streak')
+@UseGuards(UserAuthGuard)
 export class StreakController {
   constructor(private readonly streakService: StreakService) {}
 

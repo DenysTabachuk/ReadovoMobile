@@ -1,4 +1,5 @@
-﻿import { API_BASE_URL } from '@/api/auth/constants';
+import { authenticatedFetch } from '@/api/auth/authenticatedFetch';
+import { API_BASE_URL } from '@/api/auth/constants';
 
 import {
   type ApplyStreakFreezeRequest,
@@ -15,7 +16,7 @@ type ErrorResponseBody = {
 };
 
 export async function getStreakProfile(userId: string): Promise<StreakState> {
-  const response = await fetch(`${API_BASE_URL}/streak/profile/${userId}`);
+  const response = await authenticatedFetch(`${API_BASE_URL}/streak/profile/${userId}`);
 
   if (!response.ok) {
     throw new Error('profile.errors.loadFailed');
@@ -28,7 +29,7 @@ export async function completeStreakActivity(
   userId: string,
   payload: CompleteActivityRequest,
 ): Promise<CompleteActivityResponse> {
-  const response = await fetch(`${API_BASE_URL}/streak/profile/${userId}/activity-completed`, {
+  const response = await authenticatedFetch(`${API_BASE_URL}/streak/profile/${userId}/activity-completed`, {
     body: JSON.stringify(payload),
     headers: {
       'Content-Type': 'application/json',
@@ -47,7 +48,7 @@ export async function restoreBrokenStreak(
   userId: string,
   payload: RestoreStreakRequest,
 ): Promise<StreakState> {
-  const response = await fetch(`${API_BASE_URL}/streak/profile/${userId}/restore`, {
+  const response = await authenticatedFetch(`${API_BASE_URL}/streak/profile/${userId}/restore`, {
     body: JSON.stringify(payload),
     headers: {
       'Content-Type': 'application/json',
@@ -66,7 +67,7 @@ export async function applyStreakFreeze(
   userId: string,
   payload: ApplyStreakFreezeRequest,
 ): Promise<StreakState> {
-  const response = await fetch(`${API_BASE_URL}/streak/profile/${userId}/freeze`, {
+  const response = await authenticatedFetch(`${API_BASE_URL}/streak/profile/${userId}/freeze`, {
     body: JSON.stringify(payload),
     headers: {
       'Content-Type': 'application/json',
@@ -85,7 +86,7 @@ export async function purchaseStreakFreezeToken(
   userId: string,
   payload: PurchaseStreakFreezeRequest,
 ): Promise<StreakState> {
-  const response = await fetch(`${API_BASE_URL}/streak/profile/${userId}/freeze-token/purchase`, {
+  const response = await authenticatedFetch(`${API_BASE_URL}/streak/profile/${userId}/freeze-token/purchase`, {
     body: JSON.stringify(payload),
     headers: {
       'Content-Type': 'application/json',
@@ -105,7 +106,7 @@ export async function getStreakCalendarMonth(
   year: number,
   month: number,
 ): Promise<StreakCalendarMonthResponse> {
-  const response = await fetch(
+  const response = await authenticatedFetch(
     `${API_BASE_URL}/streak/profile/${userId}/calendar/month?year=${year}&month=${month}`,
   );
 

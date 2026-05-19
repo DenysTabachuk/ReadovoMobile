@@ -36,6 +36,23 @@ export class UsersRepository {
     return user ? this.toStoredUser(user) : undefined;
   }
 
+  async findById(id: string): Promise<StoredUser | undefined> {
+    const result = await this.databaseService.query<UserRow>(
+      `
+        SELECT id, email, password_hash, password_salt, created_at
+             , lessons_completed, tests_completed, words_learned, balance
+        FROM users
+        WHERE id = $1
+        LIMIT 1
+      `,
+      [id],
+    );
+
+    const user = result.rows[0];
+
+    return user ? this.toStoredUser(user) : undefined;
+  }
+
   async create(user: StoredUser): Promise<StoredUser> {
     const result = await this.databaseService.query<UserRow>(
       `

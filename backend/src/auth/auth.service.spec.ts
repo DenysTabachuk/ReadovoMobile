@@ -8,8 +8,10 @@ import { pbkdf2Sync } from 'node:crypto';
 
 import { AuthService } from './auth.service';
 import { EmailVerificationService } from './email-verification.service';
+import { JwtService } from './jwt.service';
 import { PendingRegistrationsRepository } from './pending-registrations.repository';
 import { PasswordResetRequestsRepository } from './password-reset-requests.repository';
+import { RefreshTokensRepository } from './refresh-tokens.repository';
 import {
   type PasswordResetRequest,
   type PendingUserRegistration,
@@ -35,7 +37,10 @@ describe('AuthService', () => {
     >
   >;
   let usersRepository: jest.Mocked<
-    Pick<UsersRepository, 'create' | 'findByEmail' | 'updatePassword'>
+    Pick<UsersRepository, 'create' | 'findByEmail' | 'findById' | 'updatePassword'>
+  >;
+  let refreshTokensRepository: jest.Mocked<
+    Pick<RefreshTokensRepository, 'create' | 'findActiveByUserId' | 'revoke'>
   >;
   let passwordResetRequestsRepository: jest.Mocked<
     Pick<
@@ -65,7 +70,13 @@ describe('AuthService', () => {
     usersRepository = {
       create: jest.fn(),
       findByEmail: jest.fn(),
+      findById: jest.fn(),
       updatePassword: jest.fn().mockResolvedValue(undefined),
+    };
+    refreshTokensRepository = {
+      create: jest.fn().mockResolvedValue(undefined),
+      findActiveByUserId: jest.fn(),
+      revoke: jest.fn().mockResolvedValue(undefined),
     };
     passwordResetRequestsRepository = {
       deleteByEmail: jest.fn().mockResolvedValue(undefined),
@@ -77,6 +88,7 @@ describe('AuthService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthService,
+        JwtService,
         {
           provide: UsersRepository,
           useValue: usersRepository,
@@ -88,6 +100,10 @@ describe('AuthService', () => {
         {
           provide: PasswordResetRequestsRepository,
           useValue: passwordResetRequestsRepository,
+        },
+        {
+          provide: RefreshTokensRepository,
+          useValue: refreshTokensRepository,
         },
         {
           provide: EmailVerificationService,
@@ -166,6 +182,8 @@ describe('AuthService', () => {
     );
     expect(response.user.email).toBe('user@example.com');
     expect(response.user).not.toHaveProperty('passwordHash');
+    expect(response.accessToken).toEqual(expect.any(String));
+    expect(response.accessTokenExpiresAt).toEqual(expect.any(String));
   });
 
   it('logs in a user with normalized email and valid password', async () => {
@@ -191,6 +209,46 @@ describe('AuthService', () => {
       wordsLearned: user.wordsLearned,
     });
     expect(response.user).not.toHaveProperty('passwordHash');
+    expect(response.accessToken).toEqual(expect.any(String));
+    expect(response.accessTokenExpiresAt).toEqual(expect.any(String));
+  });
+
+  it('refreshes a session and rotates the refresh token', async () => {
+    const user = createStoredUser('user@example.com', 'password123');
+
+    usersRepository.findByEmail.mockResolvedValue(user);
+    usersRepository.findById.mockResolvedValue(user);
+
+    const loginResponse = await service.login({
+      email: 'user@example.com',
+      password: 'password123',
+    });
+    const refreshTokenRecord =
+      refreshTokensRepository.create.mock.calls[0]?.[0];
+
+    expect(refreshTokenRecord).toBeDefined();
+    if (!refreshTokenRecord) {
+      throw new Error('Expected refresh token record to be created.');
+    }
+
+    refreshTokensRepository.findActiveByUserId.mockResolvedValue([
+      refreshTokenRecord,
+    ]);
+
+    const refreshResponse = await service.refreshSession({
+      refreshToken: loginResponse.refreshToken,
+    });
+
+    expect(refreshTokensRepository.findActiveByUserId).toHaveBeenCalledWith(
+      user.id,
+    );
+    expect(refreshTokensRepository.revoke).toHaveBeenCalledWith(
+      refreshTokenRecord.id,
+    );
+    expect(refreshResponse.accessToken).toEqual(expect.any(String));
+    expect(refreshResponse.refreshToken).toEqual(expect.any(String));
+    expect(refreshResponse.refreshToken).not.toBe(loginResponse.refreshToken);
+    expect(refreshTokensRepository.create).toHaveBeenCalledTimes(2);
   });
 
   it('rejects login with invalid password', async () => {

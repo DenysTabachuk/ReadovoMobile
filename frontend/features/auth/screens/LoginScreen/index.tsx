@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
-import { loginUser } from '@/api/auth';
+import { loginUser, loginWithGoogle } from '@/api/auth';
 import { Button } from '@/components/button';
 import { useBanner } from '@/components/banner';
 import { CheckboxRow } from '@/components/checkboxRow';
@@ -59,7 +59,7 @@ export default function LoginScreen() {
         email: normalizedEmail,
         password,
       });
-      await signIn(rememberMe, {
+      await signIn(rememberMe, response.accessToken, response.refreshToken, {
         displayName: null,
         email: response.user.email,
         id: response.user.id,
@@ -93,10 +93,19 @@ export default function LoginScreen() {
       if (!result) {
         return;
       }
-      await signIn(rememberMe, {
+
+      if (!result.idToken) {
+        throw new Error('auth.errors.googleSignInFailed');
+      }
+
+      const response = await loginWithGoogle({
+        idToken: result.idToken,
+      });
+
+      await signIn(rememberMe, response.accessToken, response.refreshToken, {
         displayName: result.user.name ?? null,
-        email: result.user.email ?? null,
-        id: null,
+        email: response.user.email,
+        id: response.user.id,
       });
 
       showBanner({

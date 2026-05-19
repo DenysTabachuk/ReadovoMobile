@@ -1,5 +1,6 @@
-import { Body, Controller, Get, Param, Patch } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, UseGuards } from '@nestjs/common';
 
+import { UserAuthGuard } from '../auth/user-auth.guard';
 import { AchievementsService } from './achievements.service';
 import {
   type AchievementsProfileResponse,
@@ -7,6 +8,7 @@ import {
 } from './types';
 
 @Controller('achievements')
+@UseGuards(UserAuthGuard)
 export class AchievementsController {
   constructor(private readonly achievementsService: AchievementsService) {}
 

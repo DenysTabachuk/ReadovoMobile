@@ -9,13 +9,26 @@ import {
   useState,
 } from 'react';
 
+import {
+  AUTH_ACCESS_TOKEN_STORAGE_KEY,
+  AUTH_REFRESH_TOKEN_STORAGE_KEY,
+  clearAuthTokens,
+  persistAuthTokens,
+  refreshAuthSession,
+} from '@/api/auth/authenticatedFetch';
+
 type AuthContextValue = {
   currentUser: AuthUserProfile | null;
   isAuthenticated: boolean;
   isHydratingAuth: boolean;
   rememberMePreference: boolean;
   setRememberMePreference: (rememberMe: boolean) => Promise<void>;
-  signIn: (rememberMe: boolean, userProfile?: AuthUserProfile | null) => Promise<void>;
+  signIn: (
+    rememberMe: boolean,
+    accessToken: string,
+    refreshToken: string,
+    userProfile?: AuthUserProfile | null,
+  ) => Promise<void>;
   signOut: () => Promise<void>;
 };
 
@@ -30,12 +43,11 @@ type AuthProviderProps = {
 };
 
 const AUTH_STORAGE_KEYS = {
+  accessToken: AUTH_ACCESS_TOKEN_STORAGE_KEY,
+  refreshToken: AUTH_REFRESH_TOKEN_STORAGE_KEY,
   rememberMe: 'readovo.auth.rememberMe',
-  session: 'readovo.auth.session',
   userProfile: 'readovo.auth.userProfile',
 } as const;
-
-const AUTH_SESSION_VALUE = 'authenticated';
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
@@ -48,16 +60,35 @@ export function AuthProvider({ children }: AuthProviderProps) {
   useEffect(() => {
     async function hydrateAuthState() {
       try {
-        const [storedRememberMe, storedSession, storedUserProfile] = await Promise.all([
+        const [storedRememberMe, storedAccessToken, storedRefreshToken, storedUserProfile] = await Promise.all([
           AsyncStorage.getItem(AUTH_STORAGE_KEYS.rememberMe),
-          AsyncStorage.getItem(AUTH_STORAGE_KEYS.session),
+          AsyncStorage.getItem(AUTH_STORAGE_KEYS.accessToken),
+          AsyncStorage.getItem(AUTH_STORAGE_KEYS.refreshToken),
           AsyncStorage.getItem(AUTH_STORAGE_KEYS.userProfile),
         ]);
 
         const rememberMe = storedRememberMe === 'true';
+        const hasValidStoredToken = Boolean(storedAccessToken) && !isJwtExpired(storedAccessToken);
+        const refreshedSession =
+          rememberMe && !hasValidStoredToken && storedRefreshToken
+            ? await refreshAuthSession()
+            : null;
+        const isAuthenticatedAfterHydration =
+          rememberMe && (hasValidStoredToken || Boolean(refreshedSession));
         setRememberMePreferenceState(rememberMe);
-        setIsAuthenticated(rememberMe && storedSession === AUTH_SESSION_VALUE);
-        setCurrentUser(storedUserProfile ? (JSON.parse(storedUserProfile) as AuthUserProfile) : null);
+        setIsAuthenticated(isAuthenticatedAfterHydration);
+        setCurrentUser(
+          isAuthenticatedAfterHydration && storedUserProfile
+            ? (JSON.parse(storedUserProfile) as AuthUserProfile)
+            : null,
+        );
+
+        if (!rememberMe || !isAuthenticatedAfterHydration) {
+          await Promise.all([
+            clearAuthTokens(),
+            AsyncStorage.removeItem(AUTH_STORAGE_KEYS.userProfile),
+          ]);
+        }
       } catch (error) {
         console.error('Failed to hydrate auth state', error);
       } finally {
@@ -74,19 +105,24 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
   const signIn = useCallback(
-    async (rememberMe: boolean, userProfile: AuthUserProfile | null = null) => {
+    async (
+      rememberMe: boolean,
+      accessToken: string,
+      refreshToken: string,
+      userProfile: AuthUserProfile | null = null,
+    ) => {
       await setRememberMePreference(rememberMe);
 
       if (rememberMe) {
         const userProfileValue = userProfile ? JSON.stringify(userProfile) : '';
 
         await Promise.all([
-          AsyncStorage.setItem(AUTH_STORAGE_KEYS.session, AUTH_SESSION_VALUE),
+          persistAuthTokens({ accessToken, refreshToken }),
           AsyncStorage.setItem(AUTH_STORAGE_KEYS.userProfile, userProfileValue),
         ]);
       } else {
         await Promise.all([
-          AsyncStorage.removeItem(AUTH_STORAGE_KEYS.session),
+          persistAuthTokens({ accessToken, refreshToken }),
           AsyncStorage.removeItem(AUTH_STORAGE_KEYS.userProfile),
         ]);
       }
@@ -99,7 +135,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const signOut = useCallback(async () => {
     await Promise.all([
-      AsyncStorage.removeItem(AUTH_STORAGE_KEYS.session),
+      clearAuthTokens(),
       AsyncStorage.removeItem(AUTH_STORAGE_KEYS.userProfile),
     ]);
     setCurrentUser(null);
@@ -138,4 +174,19 @@ export function useAuth(): AuthContextValue {
   }
 
   return auth;
+}
+
+function isJwtExpired(token: string | null): boolean {
+  if (!token) {
+    return true;
+  }
+
+  try {
+    const [, encodedPayload] = token.split('.');
+    const payload = JSON.parse(atob(encodedPayload ?? '')) as { exp?: number };
+
+    return typeof payload.exp !== 'number' || payload.exp * 1000 <= Date.now();
+  } catch {
+    return true;
+  }
 }

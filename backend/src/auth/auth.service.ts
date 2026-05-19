@@ -13,6 +13,8 @@ import {
 
 import { type LoginUserDto } from './dto/login-user.dto';
 import { type RegisterUserDto } from './dto/register-user.dto';
+import { type GoogleLoginDto } from './dto/google-login.dto';
+import { type RefreshSessionDto } from './dto/refresh-session.dto';
 import { type RequestPasswordResetDto } from './dto/request-password-reset.dto';
 import { type ResetPasswordDto } from './dto/reset-password.dto';
 import { type ResendVerificationCodeDto } from './dto/resend-verification-code.dto';
@@ -33,12 +35,15 @@ import {
   type VerifyPasswordResetCodeResponse,
   type VerifyEmailResponse,
 } from './types';
+import { JwtService } from './jwt.service';
+import { RefreshTokensRepository } from './refresh-tokens.repository';
 import { UsersRepository } from './users.repository';
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const minPasswordLength = 8;
 const verificationCodePattern = /^\d{6}$/;
 const resetTokenTtlMinutes = 15;
+const refreshTokenTtlDays = 30;
 
 @Injectable()
 export class AuthService {
@@ -46,7 +51,9 @@ export class AuthService {
     private readonly usersRepository: UsersRepository,
     private readonly pendingRegistrationsRepository: PendingRegistrationsRepository,
     private readonly passwordResetRequestsRepository: PasswordResetRequestsRepository,
+    private readonly refreshTokensRepository: RefreshTokensRepository,
     private readonly emailVerificationService: EmailVerificationService,
+    private readonly jwtService: JwtService,
   ) {}
 
   async login(loginUserDto: LoginUserDto): Promise<LoginUserResponse> {
@@ -63,9 +70,7 @@ export class AuthService {
       throw new UnauthorizedException('Email or password is invalid.');
     }
 
-    return {
-      user: this.toAuthUser(user),
-    };
+    return this.toAuthSession(this.toAuthUser(user));
   }
 
   async register(
@@ -201,9 +206,61 @@ export class AuthService {
     const createdUser = await this.usersRepository.create(user);
     await this.pendingRegistrationsRepository.deleteByEmail(email);
 
-    return {
-      user: this.toAuthUser(createdUser),
-    };
+    return this.toAuthSession(this.toAuthUser(createdUser));
+  }
+
+  async loginWithGoogle(
+    googleLoginDto: GoogleLoginDto,
+  ): Promise<LoginUserResponse> {
+    const idToken = googleLoginDto.idToken?.trim() ?? '';
+
+    if (!idToken) {
+      throw new BadRequestException('Google id token is required.');
+    }
+
+    const googleUser = await this.verifyGoogleIdToken(idToken);
+    const email = googleUser.email.trim().toLowerCase();
+    let user = await this.usersRepository.findByEmail(email);
+
+    if (!user) {
+      user = await this.usersRepository.create(
+        this.createGoogleStoredUser(email),
+      );
+    }
+
+    return this.toAuthSession(this.toAuthUser(user));
+  }
+
+  async refreshSession(
+    refreshSessionDto: RefreshSessionDto,
+  ): Promise<LoginUserResponse> {
+    const refreshToken = refreshSessionDto.refreshToken?.trim() ?? '';
+
+    if (!refreshToken) {
+      throw new UnauthorizedException('Refresh token is required.');
+    }
+
+    const activeRefreshTokens =
+      await this.refreshTokensRepository.findActiveByUserId(
+        this.getRefreshTokenUserId(refreshToken),
+      );
+    const matchingRefreshToken = activeRefreshTokens.find((record) =>
+      this.isSecretValid(refreshToken, record.tokenHash, record.tokenSalt),
+    );
+
+    if (!matchingRefreshToken) {
+      throw new UnauthorizedException('Refresh token is invalid.');
+    }
+
+    const user = await this.usersRepository.findById(matchingRefreshToken.userId);
+
+    if (!user) {
+      throw new UnauthorizedException('Refresh token is invalid.');
+    }
+
+    await this.refreshTokensRepository.revoke(matchingRefreshToken.id);
+
+    return this.toAuthSession(this.toAuthUser(user));
   }
 
   async requestPasswordReset(
@@ -423,6 +480,92 @@ export class AuthService {
       testsCompleted: user.testsCompleted,
       wordsLearned: user.wordsLearned,
     };
+  }
+
+  private async toAuthSession(user: AuthUser): Promise<LoginUserResponse> {
+    const refreshToken = this.createRefreshToken(user.id);
+    const refreshTokenSalt = randomBytes(16).toString('hex');
+    const refreshTokenExpiresAt = new Date(
+      Date.now() + refreshTokenTtlDays * 24 * 60 * 60 * 1000,
+    ).toISOString();
+
+    await this.refreshTokensRepository.create({
+      createdAt: new Date().toISOString(),
+      expiresAt: refreshTokenExpiresAt,
+      id: randomUUID(),
+      revokedAt: null,
+      tokenHash: this.hashSecret(refreshToken, refreshTokenSalt),
+      tokenSalt: refreshTokenSalt,
+      userId: user.id,
+    });
+
+    return {
+      ...this.jwtService.issueAccessToken(user),
+      refreshToken,
+      refreshTokenExpiresAt,
+      user,
+    };
+  }
+
+  private createRefreshToken(userId: string): string {
+    return `${userId}.${randomBytes(48).toString('base64url')}`;
+  }
+
+  private getRefreshTokenUserId(refreshToken: string): string {
+    const [userId] = refreshToken.split('.');
+
+    if (!userId) {
+      throw new UnauthorizedException('Refresh token is invalid.');
+    }
+
+    return userId;
+  }
+
+  private createGoogleStoredUser(email: string): StoredUser {
+    const passwordCredentials = this.createPasswordCredentials(
+      randomBytes(32).toString('hex'),
+    );
+
+    return {
+      balance: 0,
+      createdAt: new Date().toISOString(),
+      email,
+      id: randomUUID(),
+      lessonsCompleted: 0,
+      passwordHash: passwordCredentials.passwordHash,
+      passwordSalt: passwordCredentials.passwordSalt,
+      testsCompleted: 0,
+      wordsLearned: 0,
+    };
+  }
+
+  private async verifyGoogleIdToken(
+    idToken: string,
+  ): Promise<{ email: string }> {
+    const response = await fetch(
+      `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`,
+    );
+
+    if (!response.ok) {
+      throw new UnauthorizedException('Google id token is invalid.');
+    }
+
+    const payload = (await response.json()) as {
+      aud?: string;
+      email?: string;
+      email_verified?: string;
+    };
+    const expectedAudience = process.env.GOOGLE_WEB_CLIENT_ID?.trim();
+
+    if (expectedAudience && payload.aud !== expectedAudience) {
+      throw new UnauthorizedException('Google id token audience is invalid.');
+    }
+
+    if (payload.email_verified !== 'true' || !payload.email) {
+      throw new UnauthorizedException('Google email is not verified.');
+    }
+
+    return { email: payload.email };
   }
 
   private createPasswordCredentials(password: string): {

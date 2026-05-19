@@ -7,8 +7,10 @@ import {
   Param,
   Post,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 
+import { UserAuthGuard } from '../auth/user-auth.guard';
 import { ArticlesService } from './articles.service';
 import {
   type ArticleTextTransformationType,
@@ -278,6 +280,7 @@ export class ArticlesController {
   }
 
   @Get('api/users/:userId/articles/saved')
+  @UseGuards(UserAuthGuard)
   async getSavedArticles(
     @Param('userId') userId: string,
   ): Promise<UserSavedArticle[]> {
@@ -285,6 +288,7 @@ export class ArticlesController {
   }
 
   @Post('api/users/:userId/articles/saved')
+  @UseGuards(UserAuthGuard)
   async saveArticle(
     @Param('userId') userId: string,
     @Body() body: WikipediaArticle,
@@ -295,6 +299,7 @@ export class ArticlesController {
   }
 
   @Delete('api/users/:userId/articles/saved/:articleId')
+  @UseGuards(UserAuthGuard)
   async removeSavedArticle(
     @Param('userId') userId: string,
     @Param('articleId') articleId: string,
@@ -308,6 +313,7 @@ export class ArticlesController {
   }
 
   @Get('api/users/:userId/articles/recent')
+  @UseGuards(UserAuthGuard)
   async getRecentArticles(
     @Param('userId') userId: string,
   ): Promise<UserRecentArticle[]> {
@@ -315,6 +321,7 @@ export class ArticlesController {
   }
 
   @Post('api/users/:userId/articles/recent')
+  @UseGuards(UserAuthGuard)
   async recordRecentArticle(
     @Param('userId') userId: string,
     @Body() body: WikipediaArticle,
