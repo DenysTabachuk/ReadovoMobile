@@ -14,6 +14,7 @@ import { useTranslation } from 'react-i18next';
 
 import { useBanner } from '@/components/banner';
 import { Button } from '@/components/button';
+import { ModalSheet } from '@/components/modalSheet';
 import { ScreenContainer } from '@/components/screenContainer';
 import { ThemedText } from '@/components/themedText';
 import { Colors } from '@/constants/theme';
@@ -43,6 +44,7 @@ export default function WardrobeScreen() {
   const colorScheme = useColorScheme();
   const palette = Colors[colorScheme ?? 'light'];
   const [selectedSlot, setSelectedSlot] = useState<MascotAccessorySlot>('head');
+  const [purchaseItem, setPurchaseItem] = useState<MascotCatalogItem | null>(null);
   const userId = currentUser?.id;
 
   const mascotQuery = useQuery({
@@ -64,6 +66,8 @@ export default function WardrobeScreen() {
   const ownedItemIds = mascotQuery.data?.ownedItemIds ?? [];
   const balance = achievementsQuery.data?.progress.balance ?? 0;
   const isRefreshing = mascotQuery.isFetching || achievementsQuery.isFetching;
+  const equippedSlots = mascotAccessorySlots.filter((slot) => equippedItems[slot]);
+  const canConfirmPurchase = purchaseItem ? balance >= purchaseItem.price : false;
 
   const invalidateMascotState = () => {
     if (!userId) {
@@ -90,6 +94,7 @@ export default function WardrobeScreen() {
     onSuccess: (_, itemId) => {
       const item = getMascotCatalogItem(itemId);
 
+      setPurchaseItem(null);
       invalidateMascotState();
       showBanner({
         description: item
@@ -110,6 +115,36 @@ export default function WardrobeScreen() {
   const clearMutation = useMutation({
     mutationFn: (slot: MascotAccessorySlot) => clearMascotSlot(userId ?? '', slot),
     onSuccess: invalidateMascotState,
+    onError: (error) => {
+      const messageKey =
+        error instanceof Error ? error.message : 'mascot.errors.clearFailed';
+
+      showBanner({
+        title: t(messageKey, {
+          defaultValue: t('mascot.errors.clearFailed'),
+        }),
+        variant: 'error',
+      });
+    },
+  });
+  const clearAllMutation = useMutation({
+    mutationFn: async () => {
+      for (const slot of equippedSlots) {
+        await clearMascotSlot(userId ?? '', slot);
+      }
+    },
+    onSuccess: invalidateMascotState,
+    onError: (error) => {
+      const messageKey =
+        error instanceof Error ? error.message : 'mascot.errors.clearFailed';
+
+      showBanner({
+        title: t(messageKey, {
+          defaultValue: t('mascot.errors.clearFailed'),
+        }),
+        variant: 'error',
+      });
+    },
   });
 
   const handleRefresh = () => {
@@ -121,11 +156,19 @@ export default function WardrobeScreen() {
     const isOwned = ownedItemIds.includes(item.id);
 
     if (!isOwned) {
-      buyMutation.mutate(item.id);
+      setPurchaseItem(item);
       return;
     }
 
     equipMutation.mutate(item.id);
+  };
+
+  const handleConfirmPurchase = () => {
+    if (!purchaseItem || !canConfirmPurchase) {
+      return;
+    }
+
+    buyMutation.mutate(purchaseItem.id);
   };
 
   const renderItem: ListRenderItem<MascotCatalogItem> = ({ item }) => {
@@ -143,16 +186,22 @@ export default function WardrobeScreen() {
         <Image contentFit="contain" source={item.asset} style={styles.itemImage} />
         <View style={styles.itemMeta}>
           <ThemedText style={styles.itemTitle}>{t(item.labelKey)}</ThemedText>
-          <View style={styles.itemPriceRow}>
-            <Image
-              contentFit="contain"
-              source={require('../../../../assets/images/money.png')}
-              style={styles.balanceIcon}
-            />
-            <ThemedText>
-              {item.price}
+          {isOwned ? (
+            <ThemedText style={styles.ownedLabel}>
+              {t('mascot.owned')}
             </ThemedText>
-          </View>
+          ) : (
+            <View style={styles.itemPriceRow}>
+              <Image
+                contentFit="contain"
+                source={require('../../../../assets/images/money.png')}
+                style={styles.balanceIcon}
+              />
+              <ThemedText>
+                {item.price}
+              </ThemedText>
+            </View>
+          )}
         </View>
         <Pressable
           disabled={isPending || isEquipped}
@@ -205,15 +254,26 @@ export default function WardrobeScreen() {
           </ThemedText>
         }
         ListFooterComponent={
-          equippedItems[selectedSlot] ? (
+          equippedSlots.length > 0 ? (
             <View style={styles.footer}>
-              <Button
-                disabled={clearMutation.isPending}
-                onPress={() => clearMutation.mutate(selectedSlot)}
-                style={{ width: '100%' }}
-                variant="secondary">
-                {t('mascot.clearSlot')}
-              </Button>
+              <View style={styles.footerActions}>
+                {equippedItems[selectedSlot] ? (
+                  <Button
+                    disabled={clearMutation.isPending || clearAllMutation.isPending}
+                    onPress={() => clearMutation.mutate(selectedSlot)}
+                    style={styles.footerButton}
+                    variant="secondary">
+                    {t('mascot.clearSlot')}
+                  </Button>
+                ) : null}
+                <Button
+                  disabled={clearMutation.isPending || clearAllMutation.isPending}
+                  onPress={() => clearAllMutation.mutate()}
+                  style={styles.footerButton}
+                  variant="secondary">
+                  {t('mascot.clearAll')}
+                </Button>
+              </View>
             </View>
           ) : null
         }
@@ -273,6 +333,57 @@ export default function WardrobeScreen() {
         renderItem={renderItem}
         showsVerticalScrollIndicator={false}
       />
+      <ModalSheet
+        modalProps={{ presentationStyle: 'overFullScreen' }}
+        onClose={() => setPurchaseItem(null)}
+        open={Boolean(purchaseItem)}
+        title={t('mascot.purchaseConfirmTitle')}>
+        {purchaseItem ? (
+          <View style={styles.purchaseModalContent}>
+            <Image
+              contentFit="contain"
+              source={purchaseItem.asset}
+              style={styles.purchaseModalImage}
+            />
+            <ThemedText style={styles.purchaseModalDescription}>
+              {t('mascot.purchaseConfirmDescription', {
+                itemName: t(purchaseItem.labelKey),
+                price: purchaseItem.price,
+              })}
+            </ThemedText>
+            <View style={styles.purchaseModalPriceRow}>
+              <Image
+                contentFit="contain"
+                source={require('../../../../assets/images/money.png')}
+                style={styles.balanceIcon}
+              />
+              <ThemedText type="bodyStrong">
+                {purchaseItem.price}
+              </ThemedText>
+            </View>
+            {!canConfirmPurchase ? (
+              <ThemedText style={styles.purchaseModalError}>
+                {t('mascot.errors.notEnoughCoins')}
+              </ThemedText>
+            ) : null}
+            <View style={styles.purchaseModalActions}>
+              <Button
+                disabled={buyMutation.isPending}
+                onPress={() => setPurchaseItem(null)}
+                style={styles.purchaseModalButton}
+                variant="secondary">
+                {t('mascot.cancel')}
+              </Button>
+              <Button
+                disabled={!canConfirmPurchase || buyMutation.isPending}
+                onPress={handleConfirmPurchase}
+                style={styles.purchaseModalButton}>
+                {buyMutation.isPending ? t('mascot.buying') : t('mascot.confirmBuy')}
+              </Button>
+            </View>
+          </View>
+        ) : null}
+      </ModalSheet>
     </ScreenContainer>
   );
 }

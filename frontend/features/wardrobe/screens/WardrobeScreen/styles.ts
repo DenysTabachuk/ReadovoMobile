@@ -33,8 +33,14 @@ export const styles = StyleSheet.create({
     paddingBottom: 0,
   },
   footer: {
-    paddingTop: Spacing.lg,
     paddingBottom: Spacing.xxLg,
+    paddingTop: Spacing.lg,
+  },
+  footerActions: {
+    gap: Spacing.sm,
+  },
+  footerButton: {
+    width: '100%',
   },
   header: {
     gap: Spacing.md,
@@ -84,13 +90,48 @@ export const styles = StyleSheet.create({
   listContent: {
     paddingBottom: Spacing.xxLg,
   },
+  ownedLabel: {
+    color: '#1f8a4c',
+    fontSize: 14,
+    fontWeight: '700',
+    lineHeight: 18,
+  },
   previewBlock: {
     alignItems: 'center',
     gap: Spacing.md,
   },
   previewMascot: {
-    marginTop: -2 *Spacing.xxLg,
+    marginTop: -2 * Spacing.xxLg,
     width: '100%',
+  },
+  purchaseModalActions: {
+    gap: Spacing.sm,
+  },
+  purchaseModalButton: {
+    width: '100%',
+  },
+  purchaseModalContent: {
+    gap: Spacing.md,
+  },
+  purchaseModalDescription: {
+    fontSize: 15,
+    lineHeight: 22,
+  },
+  purchaseModalError: {
+    color: '#d14343',
+    fontSize: 14,
+    fontWeight: '700',
+    lineHeight: 18,
+  },
+  purchaseModalImage: {
+    alignSelf: 'center',
+    height: 112,
+    width: 112,
+  },
+  purchaseModalPriceRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: Spacing.xs,
   },
   selectedCard: {
     borderColor: '#0a7ea4',
@@ -98,7 +139,6 @@ export const styles = StyleSheet.create({
   },
   slotRow: {
     flexDirection: 'row',
-    gap: Spacing.sm,
     marginTop: -2 * Spacing.xxLg,
   },
   slotTab: {
@@ -107,6 +147,7 @@ export const styles = StyleSheet.create({
     borderRadius: 999,
     borderWidth: 1,
     minHeight: 38,
+    marginRight: Spacing.sm,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
   },
