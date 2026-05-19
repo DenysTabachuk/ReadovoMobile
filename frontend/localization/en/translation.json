@@ -378,6 +378,17 @@
     "adaptationReadyDescription": "An adapted version for {{level}} is ready. You can use it without waiting for a new adaptation.",
     "readyAdaptedShort": "Already adapted",
     "readySummaryShort": "Already summarized",
+    "speech": {
+      "title": "Listen to text",
+      "ready": "Ready to play",
+      "playing": "Playing now",
+      "paused": "Paused",
+      "playAction": "Play article audio",
+      "pauseAction": "Pause article audio",
+      "restartAction": "Restart article audio",
+      "stopAction": "Stop article audio",
+      "scrollToCurrentAction": "Scroll to the word being read"
+    },
     "summaryReadyBadge": "Summary ready",
     "summaryReadyTitle": "This summary is already ready",
     "summaryReadyDescription": "{{level}} summary is ready. You can use it without waiting for a new summary.",

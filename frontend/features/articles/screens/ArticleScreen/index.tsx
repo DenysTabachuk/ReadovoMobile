@@ -3,7 +3,7 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import * as Linking from 'expo-linking';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, View } from 'react-native';
+import { ActivityIndicator, Animated, FlatList, Pressable, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
@@ -53,8 +53,10 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useAuth } from '@/providers/authProvider';
 
+import { ArticleSpeechControls } from './components/articleSpeechControls';
 import { InteractiveArticleText } from './components/interactiveArticleText';
 import { styles } from './styles';
+import { useArticleSpeech } from './useArticleSpeech';
 
 type SelectedTextToken = {
   context: string;
@@ -73,6 +75,8 @@ type SelectedTextFragment = {
 
 const DEFAULT_SIMPLIFICATION_LEVEL: SimplifyArticleLevel = 'A2';
 const TRANSLATION_SHEET_OPEN_DELAY_MS = 1000;
+const FLOATING_SPEECH_CONTROLS_HIDDEN_OFFSET = -120;
+const FLOATING_SPEECH_CONTROLS_ANIMATION_DURATION_MS = 220;
 const TEXT_VIEW_MODES = ['original', 'adaptation', 'summary'] as const;
 type ArticleTextViewMode = (typeof TEXT_VIEW_MODES)[number];
 const TEXT_MODE_LABEL_KEYS: Record<ArticleTextViewMode, 'original' | 'adapted' | 'summary'> = {
@@ -119,7 +123,18 @@ export default function ArticleScreen() {
   const [isTranslationSheetOpen, setIsTranslationSheetOpen] = useState(false);
   const [translationSheetOpenProgress, setTranslationSheetOpenProgress] = useState(0);
   const [scrollOffsetY, setScrollOffsetY] = useState(0);
+  const [speechControlsBottomY, setSpeechControlsBottomY] = useState<number | null>(
+    null,
+  );
+  const [firstVisibleBlockIndex, setFirstVisibleBlockIndex] = useState(0);
+  const [isFloatingSpeechControlsRendered, setIsFloatingSpeechControlsRendered] =
+    useState(false);
   const articleListRef = useRef<FlatList>(null);
+  const floatingSpeechControlsOpacity = useRef(new Animated.Value(0)).current;
+  const floatingSpeechControlsTranslateY = useRef(
+    new Animated.Value(FLOATING_SPEECH_CONTROLS_HIDDEN_OFFSET),
+  ).current;
+  const currentSpeechButtonRotation = useRef(new Animated.Value(0)).current;
   const selectedFragment = useMemo(
     () => buildSelectedFragment(selectedTokens),
     [selectedTokens],
@@ -667,6 +682,7 @@ export default function ArticleScreen() {
 
     return stripDuplicateTitleHeading(article.blocks, article.title);
   }, [article, displayedGeneratedArticle]);
+  const articleSpeech = useArticleSpeech(displayedBlocks);
   const shouldRenderHeroImage = useMemo(() => {
     if (!article?.thumbnailUrl || hasImageLoadError) {
       return false;
@@ -685,10 +701,105 @@ export default function ArticleScreen() {
     hasImageLoadError,
   ]);
   const currentPendingTransformationType = simplifyMutation.variables;
+  const shouldShowFloatingSpeechControls =
+    articleSpeech.status !== 'idle' &&
+    speechControlsBottomY !== null &&
+    scrollOffsetY > speechControlsBottomY + Spacing.sm;
+  const currentSpeechBlockIndex = useMemo(
+    () => getBlockIndexFromTokenKey(articleSpeech.activeTokenKey),
+    [articleSpeech.activeTokenKey],
+  );
+  const shouldShowCurrentSpeechButton =
+    articleSpeech.status !== 'idle' && Boolean(articleSpeech.activeTokenKey);
+  const shouldShowArticleCta =
+    articleSpeech.status === 'idle' && !isAdaptSettingsOpen && !isQuizModePickerOpen;
+  const navigationButtonBottomOffset = shouldShowArticleCta ? 160 : Spacing.xLg;
+  const currentSpeechButtonBottomOffset =
+    navigationButtonBottomOffset + 64;
+  const currentSpeechButtonDirection =
+    currentSpeechBlockIndex !== null && currentSpeechBlockIndex < firstVisibleBlockIndex
+      ? 'up'
+      : 'down';
+  const currentSpeechButtonIconStyle = {
+    transform: [
+      {
+        rotate: currentSpeechButtonRotation.interpolate({
+          inputRange: [0, 1],
+          outputRange: ['0deg', '180deg'],
+        }),
+      },
+    ],
+  };
+
+  const handleScrollToCurrentSpeechWord = useCallback(() => {
+    if (currentSpeechBlockIndex === null) {
+      return;
+    }
+
+    articleListRef.current?.scrollToIndex({
+      animated: true,
+      index: currentSpeechBlockIndex,
+      viewPosition: 0.36,
+    });
+  }, [currentSpeechBlockIndex]);
 
   useEffect(() => {
     setHasImageLoadError(false);
   }, [article?.thumbnailUrl]);
+
+  useEffect(() => {
+    if (shouldShowFloatingSpeechControls) {
+      setIsFloatingSpeechControlsRendered(true);
+      floatingSpeechControlsOpacity.stopAnimation();
+      floatingSpeechControlsTranslateY.stopAnimation();
+      Animated.parallel([
+        Animated.timing(floatingSpeechControlsOpacity, {
+          duration: FLOATING_SPEECH_CONTROLS_ANIMATION_DURATION_MS,
+          toValue: 1,
+          useNativeDriver: true,
+        }),
+        Animated.spring(floatingSpeechControlsTranslateY, {
+          damping: 18,
+          mass: 0.8,
+          stiffness: 180,
+          toValue: 0,
+          useNativeDriver: true,
+        }),
+      ]).start();
+      return;
+    }
+
+    floatingSpeechControlsOpacity.stopAnimation();
+    floatingSpeechControlsTranslateY.stopAnimation();
+    Animated.parallel([
+      Animated.timing(floatingSpeechControlsOpacity, {
+        duration: FLOATING_SPEECH_CONTROLS_ANIMATION_DURATION_MS,
+        toValue: 0,
+        useNativeDriver: true,
+      }),
+      Animated.timing(floatingSpeechControlsTranslateY, {
+        duration: FLOATING_SPEECH_CONTROLS_ANIMATION_DURATION_MS,
+        toValue: FLOATING_SPEECH_CONTROLS_HIDDEN_OFFSET,
+        useNativeDriver: true,
+      }),
+    ]).start(({ finished }) => {
+      if (finished) {
+        setIsFloatingSpeechControlsRendered(false);
+      }
+    });
+  }, [
+    floatingSpeechControlsOpacity,
+    floatingSpeechControlsTranslateY,
+    shouldShowFloatingSpeechControls,
+  ]);
+
+  useEffect(() => {
+    Animated.timing(currentSpeechButtonRotation, {
+      duration: 180,
+      toValue: currentSpeechButtonDirection === 'up' ? 1 : 0,
+      useNativeDriver: true,
+    }).start();
+  }, [currentSpeechButtonDirection, currentSpeechButtonRotation]);
 
   useEffect(() => {
     if (!article || !currentUser?.id) {
@@ -846,22 +957,78 @@ export default function ArticleScreen() {
                 </ThemedText>
               </View>
             ) : null}
+
+            <ArticleSpeechControls
+              disabled={!articleSpeech.canSpeak}
+              onLayout={(event) => {
+                const { height, y } = event.nativeEvent.layout;
+
+                setSpeechControlsBottomY(y + height);
+              }}
+              onRestart={articleSpeech.restart}
+              onStop={() => {
+                void articleSpeech.stop();
+              }}
+              onTogglePlayPause={articleSpeech.togglePlayPause}
+              progress={articleSpeech.progress}
+              status={articleSpeech.status}
+            />
           </View>
         }
         onScroll={(event) => {
           setScrollOffsetY(event.nativeEvent.contentOffset.y);
         }}
+        onVisibleBlockIndexChange={setFirstVisibleBlockIndex}
         onWordPress={handleWordPress}
         scrollRef={articleListRef}
         selectedTokenKeys={selectedTokens.map((token) => token.tokenKey)}
+        speakingTokenKey={articleSpeech.activeTokenKey}
         text={displayedText}
       />
+      {isFloatingSpeechControlsRendered ? (
+        <Animated.View
+          style={[
+            styles.floatingSpeechControls,
+            { backgroundColor: Colors[colorScheme ?? 'light'].background },
+            {
+              opacity: floatingSpeechControlsOpacity,
+              transform: [{ translateY: floatingSpeechControlsTranslateY }],
+            },
+          ]}>
+          <ArticleSpeechControls
+            disabled={!articleSpeech.canSpeak}
+            onRestart={articleSpeech.restart}
+            onStop={() => {
+              void articleSpeech.stop();
+            }}
+            onTogglePlayPause={articleSpeech.togglePlayPause}
+            progress={articleSpeech.progress}
+            status={articleSpeech.status}
+            style={styles.floatingSpeechControlsInner}
+          />
+        </Animated.View>
+      ) : null}
       <ScrollToTopButton
-        bottomOffset={160}
+        bottomOffset={navigationButtonBottomOffset}
         rightOffset={Spacing.md}
         scrollOffsetY={scrollOffsetY}
         scrollRef={articleListRef}
       />
+      {shouldShowCurrentSpeechButton ? (
+        <Pressable
+          accessibilityLabel={t('article.speech.scrollToCurrentAction')}
+          accessibilityRole="button"
+          hitSlop={8}
+          onPress={handleScrollToCurrentSpeechWord}
+          style={[
+            styles.scrollToCurrentSpeechButton,
+            { bottom: currentSpeechButtonBottomOffset },
+          ]}>
+          <Animated.View style={currentSpeechButtonIconStyle}>
+            <Ionicons color="#11181C" name="arrow-down" size={24} />
+          </Animated.View>
+        </Pressable>
+      ) : null}
       <WordTranslationSheet
         baseTranslation={translation?.baseTranslation}
         context={selectedFragment?.context}
@@ -1004,7 +1171,7 @@ export default function ArticleScreen() {
           </View>
         )}
       </ModalSheet>
-      {!isAdaptSettingsOpen && !isQuizModePickerOpen ? (
+      {shouldShowArticleCta ? (
         <Cta
           layout="vertical"
           primaryAction={{
@@ -1117,6 +1284,17 @@ function isSameAdaptation(
     adaptation.level === level &&
     adaptation.transformationType === transformationType
   );
+}
+
+function getBlockIndexFromTokenKey(tokenKey: string | undefined): number | null {
+  const match = tokenKey?.match(/^block-(\d+)(?:-|$)/);
+  const blockIndex = match?.[1] ? Number(match[1]) : NaN;
+
+  if (!Number.isFinite(blockIndex)) {
+    return null;
+  }
+
+  return blockIndex;
 }
 
 function buildSelectedFragment(

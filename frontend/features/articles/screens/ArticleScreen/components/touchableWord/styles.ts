@@ -19,6 +19,15 @@ export const styles = StyleSheet.create({
     color: '#ffffff',
     lineHeight: Typography.paragraph.lineHeight,
   },
+  speakingWord: {
+    backgroundColor: '#f2c94c',
+    borderRadius: 8,
+    paddingHorizontal: 6,
+  },
+  speakingWordText: {
+    color: '#11181C',
+    lineHeight: Typography.paragraph.lineHeight,
+  },
   word: {
     borderRadius: 6,
     includeFontPadding: false,

@@ -3,8 +3,10 @@ import {
   memo,
   useCallback,
   useMemo,
+  useRef,
   useState,
   type ReactElement,
+  type RefObject,
 } from 'react';
 import {
   FlatList,
@@ -13,7 +15,6 @@ import {
   Pressable,
   View,
   type ListRenderItem,
-  type RefObject,
   type StyleProp,
   type TextStyle,
   type ViewStyle,
@@ -42,6 +43,7 @@ type InteractiveArticleTextProps = {
   contentContainerStyle?: StyleProp<ViewStyle>;
   ListHeaderComponent?: ReactElement | null;
   onScroll?: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
+  onVisibleBlockIndexChange?: (sourceIndex: number) => void;
   onWordPress: (selection: {
     context: string;
     sentenceKey?: string;
@@ -51,6 +53,7 @@ type InteractiveArticleTextProps = {
     word: string;
   }) => void;
   selectedTokenKeys?: string[];
+  speakingTokenKey?: string;
   scrollEventThrottle?: number;
   scrollRef?: RefObject<FlatList<ArticleBlockListItem> | null>;
   text?: string;
@@ -67,6 +70,7 @@ type TouchableInlineTextProps = {
   onWordPress: InteractiveArticleTextProps['onWordPress'];
   prefix: string;
   selectedTokenKeys?: string[];
+  speakingTokenKey?: string;
   style: StyleProp<TextStyle>;
 };
 
@@ -77,6 +81,7 @@ type TouchableListItemProps = {
   ordered: boolean;
   prefix: string;
   selectedTokenKeys?: string[];
+  speakingTokenKey?: string;
 };
 
 const LIST_ITEM_PATTERN = /^([*#-]+|[\u2022\u25cf\u25aa\u25e6]+|[A-Za-z0-9]+[.)])\s*(.*)$/;
@@ -99,10 +104,12 @@ export function InteractiveArticleText({
   contentContainerStyle,
   ListHeaderComponent,
   onScroll,
+  onVisibleBlockIndexChange,
   onWordPress,
   scrollEventThrottle = 16,
   scrollRef,
   selectedTokenKeys,
+  speakingTokenKey,
   text,
 }: InteractiveArticleTextProps) {
   const [collapsedHeadings, setCollapsedHeadings] = useState<Record<string, boolean>>({});
@@ -172,6 +179,7 @@ export function InteractiveArticleText({
           onWordPress={onWordPress}
           prefix={blockKey}
           selectedTokenKeys={selectedTokenKeys}
+          speakingTokenKey={speakingTokenKey}
           style={styles.paragraph}
         />
       );
@@ -189,6 +197,7 @@ export function InteractiveArticleText({
               ordered={block.ordered}
               prefix={`${blockKey}-item-${itemIndex}`}
               selectedTokenKeys={selectedTokenKeys}
+              speakingTokenKey={speakingTokenKey}
             />
           ))}
         </View>
@@ -205,6 +214,7 @@ export function InteractiveArticleText({
               onWordPress,
               prefix,
               selectedTokenKey: currentSelectedTokenKey,
+              speakingTokenKey,
             })
           }
           rows={block.rows}
@@ -237,7 +247,7 @@ export function InteractiveArticleText({
         src={block.src}
       />
     );
-  }, [onWordPress, selectedTokenKeys]);
+  }, [onWordPress, selectedTokenKeys, speakingTokenKey]);
   const renderItem = useCallback<ListRenderItem<ArticleBlockListItem>>(
     ({ item }) => {
       const { block } = item;
@@ -278,6 +288,29 @@ export function InteractiveArticleText({
     },
     [chevronColor, collapsedHeadings, renderBlock],
   );
+  const viewabilityConfig = useRef({
+    itemVisiblePercentThreshold: 12,
+    minimumViewTime: 80,
+  }).current;
+  const handleViewableItemsChanged = useRef(
+    ({
+      viewableItems,
+    }: {
+      viewableItems: Array<{
+        index: number | null;
+        item?: ArticleBlockListItem;
+      }>;
+    }) => {
+      const firstVisibleItem = viewableItems
+        .filter((viewableItem) => viewableItem.index !== null)
+        .sort((leftItem, rightItem) => (leftItem.index ?? 0) - (rightItem.index ?? 0))[0]
+        ?.item;
+
+      if (typeof firstVisibleItem?.sourceIndex === 'number') {
+        onVisibleBlockIndexChange?.(firstVisibleItem.sourceIndex);
+      }
+    },
+  ).current;
 
   return (
     <FlatList
@@ -289,12 +322,20 @@ export function InteractiveArticleText({
       ListHeaderComponent={ListHeaderComponent}
       maxToRenderPerBatch={MAX_RENDER_BATCH_SIZE}
       onScroll={onScroll}
+      onViewableItemsChanged={handleViewableItemsChanged}
+      onScrollToIndexFailed={(info) => {
+        scrollRef?.current?.scrollToOffset({
+          animated: true,
+          offset: Math.max(0, info.averageItemLength * info.index),
+        });
+      }}
       renderItem={renderItem}
       removeClippedSubviews={false}
       scrollEventThrottle={scrollEventThrottle}
       showsVerticalScrollIndicator={false}
       style={styles.container}
       updateCellsBatchingPeriod={RENDER_BATCH_INTERVAL_MS}
+      viewabilityConfig={viewabilityConfig}
       windowSize={VIRTUALIZED_WINDOW_SIZE}
       contentContainerStyle={contentContainerStyle}
     />
@@ -306,20 +347,27 @@ function renderTouchableParts(params: {
   onWordPress: InteractiveArticleTextProps['onWordPress'];
   prefix: string;
   selectedTokenKey?: string;
+  speakingTokenKey?: string;
 }) {
   return renderTouchablePartsFromParts({
     onWordPress: params.onWordPress,
     parts: splitTextToTouchableParts(params.nodes, params.prefix),
     selectedTokenKey: params.selectedTokenKey,
+    speakingTokenKey: params.speakingTokenKey,
   });
 }
 
 function renderTouchablePartsFromParts(params: {
   onWordPress: InteractiveArticleTextProps['onWordPress'];
   parts: TouchableTextPart[];
+  selectedTokenKey?: string;
   selectedTokenKeys?: string[];
+  speakingTokenKey?: string;
 }) {
-  const selectedTokenKeySet = new Set(params.selectedTokenKeys ?? []);
+  const selectedTokenKeySet = new Set([
+    ...(params.selectedTokenKeys ?? []),
+    ...(params.selectedTokenKey ? [params.selectedTokenKey] : []),
+  ]);
 
   return params.parts.map((part) => {
     if (part.type === 'text') {
@@ -346,6 +394,7 @@ function renderTouchablePartsFromParts(params: {
         selected={selectedTokenKeySet.has(part.key)}
         sentenceKey={part.sentenceKey}
         sentenceWordIndex={part.sentenceWordIndex}
+        speaking={params.speakingTokenKey === part.key}
         text={part.text}
         tokenKey={part.key}
         word={part.word}
@@ -359,6 +408,7 @@ const TouchableInlineText = memo(function TouchableInlineText({
   onWordPress,
   prefix,
   selectedTokenKeys,
+  speakingTokenKey,
   style,
 }: TouchableInlineTextProps) {
   const parts = useMemo(
@@ -372,6 +422,7 @@ const TouchableInlineText = memo(function TouchableInlineText({
         onWordPress,
         parts,
         selectedTokenKeys,
+        speakingTokenKey,
       })}
     </ThemedText>
   );
@@ -384,6 +435,7 @@ const TouchableListItem = memo(function TouchableListItem({
   ordered,
   prefix,
   selectedTokenKeys,
+  speakingTokenKey,
 }: TouchableListItemProps) {
   return (
     <View style={styles.listItem}>
@@ -395,6 +447,7 @@ const TouchableListItem = memo(function TouchableListItem({
         onWordPress={onWordPress}
         prefix={prefix}
         selectedTokenKeys={selectedTokenKeys}
+        speakingTokenKey={speakingTokenKey}
         style={styles.listItemText}
       />
     </View>
@@ -410,6 +463,7 @@ function areTouchableInlineTextPropsEqual(
     previousProps.onWordPress === nextProps.onWordPress &&
     previousProps.prefix === nextProps.prefix &&
     previousProps.style === nextProps.style &&
+    previousProps.speakingTokenKey === nextProps.speakingTokenKey &&
     isSelectedTokensChangeIrrelevant({
       nextSelectedTokenKeys: nextProps.selectedTokenKeys,
       previousSelectedTokenKeys: previousProps.selectedTokenKeys,
@@ -428,6 +482,7 @@ function areTouchableListItemPropsEqual(
     previousProps.onWordPress === nextProps.onWordPress &&
     previousProps.ordered === nextProps.ordered &&
     previousProps.prefix === nextProps.prefix &&
+    previousProps.speakingTokenKey === nextProps.speakingTokenKey &&
     isSelectedTokensChangeIrrelevant({
       nextSelectedTokenKeys: nextProps.selectedTokenKeys,
       previousSelectedTokenKeys: previousProps.selectedTokenKeys,
@@ -476,12 +531,14 @@ function renderTableCellText(params: {
   onWordPress: InteractiveArticleTextProps['onWordPress'];
   prefix: string;
   selectedTokenKey?: string;
+  speakingTokenKey?: string;
 }) {
   return renderTouchableParts({
     nodes: createInlineNodesFromPlainText(params.cell.text),
     onWordPress: params.onWordPress,
     prefix: params.prefix,
     selectedTokenKey: params.selectedTokenKey,
+    speakingTokenKey: params.speakingTokenKey,
   });
 }
 

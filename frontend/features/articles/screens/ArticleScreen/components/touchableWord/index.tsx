@@ -19,6 +19,7 @@ type TouchableWordProps = {
   sentenceKey?: string;
   sentenceWordIndex?: number;
   selected?: boolean;
+  speaking?: boolean;
   text: string;
   tokenKey: string;
   word: string;
@@ -32,6 +33,7 @@ export const TouchableWord = memo(function TouchableWord({
   sentenceKey,
   sentenceWordIndex,
   selected = false,
+  speaking = false,
   text,
   tokenKey,
   word,
@@ -54,7 +56,9 @@ export const TouchableWord = memo(function TouchableWord({
         styles.word,
         bold ? styles.bold : null,
         italic ? styles.italic : null,
+        speaking ? styles.speakingWord : null,
         selected ? styles.selectedWord : null,
+        speaking ? styles.speakingWordText : null,
         selected ? styles.selectedWordText : null,
       ]}
       type="paragraph">
