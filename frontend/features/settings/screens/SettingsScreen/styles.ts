@@ -25,6 +25,16 @@ export const styles = StyleSheet.create({
   learningReminderTimeField: {
     maxWidth: 240,
   },
+  modalButton: {
+    flex: 1,
+  },
+  modalContent: {
+    gap: Spacing.sm,
+  },
+  modalFooter: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+  },
   section: {
     gap: Spacing.md,
   },

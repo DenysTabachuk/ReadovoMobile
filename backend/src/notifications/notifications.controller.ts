@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   Logger,
   Param,
@@ -14,9 +15,11 @@ import {
 import { UserAuthGuard } from '../auth/user-auth.guard';
 import { NotificationsService } from './notifications.service';
 import type {
+  LearningReminderDispatchResult,
   LearningReminderPreferences,
   RegisterPushTokenDto,
   SendTestPushDto,
+  SendTestPushResult,
   UpsertLearningReminderPreferencesDto,
 } from './types';
 
@@ -71,10 +74,45 @@ export class NotificationsController {
   async sendTestPush(
     @Param('userId') userId: string,
     @Body() payload: SendTestPushDto,
-  ): Promise<{ sentCount: number }> {
+  ): Promise<SendTestPushResult> {
     this.logger.log(`sendTestPush request userId=${userId}`);
     const result = await this.notificationsService.sendTestPush(userId, payload);
-    this.logger.log(`sendTestPush result userId=${userId} sentCount=${result.sentCount}`);
+    this.logger.log(
+      `sendTestPush result userId=${userId} tokenCount=${result.tokenCount} sentCount=${result.sentCount} failedCount=${result.failedCount}`,
+    );
+    return result;
+  }
+
+  @Delete('learning-reminders/dispatch/today/:userId')
+  async clearTodayLearningReminderDispatchForDevelopment(
+    @Param('userId') userId: string,
+  ): Promise<{ deletedCount: number }> {
+    if (process.env.NODE_ENV === 'production') {
+      throw new ForbiddenException('Clearing reminder dispatches is disabled in production.');
+    }
+
+    this.logger.log(`clear today reminder dispatch requested userId=${userId}`);
+    const result =
+      await this.notificationsService.clearTodayLearningReminderDispatch(userId);
+    this.logger.log(
+      `clear today reminder dispatch completed userId=${userId} deletedCount=${result.deletedCount}`,
+    );
+
+    return result;
+  }
+
+  @Post('learning-reminders/dispatch')
+  async dispatchLearningRemindersForDevelopment(): Promise<LearningReminderDispatchResult> {
+    if (process.env.NODE_ENV === 'production') {
+      throw new ForbiddenException('Manual reminder dispatch is disabled in production.');
+    }
+
+    this.logger.log('manual learning reminder dispatch requested');
+    const result = await this.notificationsService.dispatchLearningReminders();
+    this.logger.log(
+      `manual learning reminder dispatch completed checked=${result.checkedCount} sent=${result.sentCount} outsideWindow=${result.skippedOutsideWindowCount} completedToday=${result.skippedCompletedTodayCount} alreadySent=${result.skippedAlreadySentCount} noTokens=${result.skippedNoTokensCount} sendFailed=${result.skippedSendFailedCount}`,
+    );
+
     return result;
   }
 }

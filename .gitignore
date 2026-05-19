@@ -28,6 +28,11 @@ ios/
 !.env.example
 !.env.*.example
 
+# Firebase local config
+google-services.json
+firebase-adminsdk-*.json
+backend/secrets/
+
 # Logs
 logs/
 *.log

@@ -1,15 +1,20 @@
 import * as Notifications from 'expo-notifications';
 import { useState } from 'react';
-import { View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/button';
 import { OptionPickerField } from '@/components/optionPickerField';
 import { ScreenContainer } from '@/components/screenContainer';
 import { ThemedText } from '@/components/themedText';
-import { sendRemoteTestPush } from '@/features/learningReminders/api';
+import {
+  clearTodayLearningReminderDispatch,
+  dispatchLearningRemindersNow,
+  sendRemoteTestPush,
+} from '@/features/learningReminders/api';
 import { registerCurrentDevicePushToken } from '@/features/learningReminders/service';
 import { getStreakProfile } from '@/features/streak/api';
 import { useAuth } from '@/providers/authProvider';
+import { type LearningReminderTime, usePreferences } from '@/providers/preferencesProvider';
 
 import { styles } from './styles';
 
@@ -19,6 +24,12 @@ type ScenarioOption = 'smart-check' | 'force-send';
 export default function NotificationTestScreen() {
   const { t } = useTranslation();
   const { currentUser } = useAuth();
+  const {
+    learningReminderEnabled,
+    learningReminderTime,
+    setLearningReminderEnabled,
+    setLearningReminderTime,
+  } = usePreferences();
   const [status, setStatus] = useState<string>('');
   const [delaySeconds, setDelaySeconds] = useState<DelayOption>('10');
   const [scenario, setScenario] = useState<ScenarioOption>('smart-check');
@@ -114,21 +125,33 @@ export default function NotificationTestScreen() {
 
     try {
       const response = await sendRemoteTestPush(currentUser.id);
+      if (response.tokenCount === 0) {
+        setStatus('No active FCM tokens found. Tap "Refresh/Register FCM token" first.');
+        return;
+      }
+
       if (response.sentCount === 0) {
-        setStatus('No active push tokens found for this user/device.');
+        const failureDetails =
+          response.failureReasons.length > 0
+            ? ` Reason: ${response.failureReasons.join(' | ')}`
+            : '';
+
+        setStatus(
+          `Found ${response.tokenCount} active FCM token(s), but Firebase did not send the push.${failureDetails}`,
+        );
         return;
       }
 
       setStatus(
-        `Remote push sent to ${response.sentCount} device token(s). Now fully close the app and verify delivery.`,
+        `Backend FCM push sent to ${response.sentCount}/${response.tokenCount} token(s). Fully close the app and verify delivery.`,
       );
     } catch {
-      setStatus('Failed to send remote test push from backend.');
+      setStatus('Failed to send backend FCM push.');
     }
   };
 
   const handleRefreshPushToken = async () => {
-    console.log('[NotificationTest] Refresh/Register push token button pressed');
+    console.log('[NotificationTest] Refresh/Register FCM token button pressed');
 
     if (!currentUser?.id) {
       console.log('[NotificationTest] Missing currentUser.id');
@@ -145,16 +168,57 @@ export default function NotificationTestScreen() {
         return;
       }
 
-      setStatus('Push token refreshed and registered for this device.');
+      setStatus('FCM token refreshed and registered for this device.');
     } catch (error) {
-      console.log('[NotificationTest] Failed to refresh/register push token', error);
-      setStatus('Failed to refresh/register push token.');
+      console.log('[NotificationTest] Failed to refresh/register FCM token', error);
+      setStatus('Failed to refresh/register FCM token.');
+    }
+  };
+
+  const handleSetReminderToNextMinute = async () => {
+    const nextMinute = new Date(Date.now() + 60 * 1000);
+    const nextReminderTime = `${String(nextMinute.getHours()).padStart(2, '0')}:${String(
+      nextMinute.getMinutes(),
+    ).padStart(2, '0')}` as LearningReminderTime;
+
+    await setLearningReminderEnabled(true);
+    await setLearningReminderTime(nextReminderTime);
+    setStatus(
+      `Learning reminders enabled and time set to ${nextReminderTime}. Wait a moment for sync, then run backend dispatch.`,
+    );
+  };
+
+  const handleDispatchLearningRemindersNow = async () => {
+    try {
+      const result = await dispatchLearningRemindersNow();
+      setStatus(
+        `Dispatch checked ${result.checkedCount} user(s), sent ${result.sentCount}. Skipped: outside time ${result.skippedOutsideWindowCount}, completed today ${result.skippedCompletedTodayCount}, already sent ${result.skippedAlreadySentCount}, no tokens ${result.skippedNoTokensCount}, send failed ${result.skippedSendFailedCount}.`,
+      );
+    } catch {
+      setStatus('Failed to run backend reminder dispatch.');
+    }
+  };
+
+  const handleClearTodayDispatch = async () => {
+    if (!currentUser?.id) {
+      setStatus('No user id found. Please sign in again.');
+      return;
+    }
+
+    try {
+      const result = await clearTodayLearningReminderDispatch(currentUser.id);
+      setStatus(`Cleared today's reminder dispatch rows: ${result.deletedCount}.`);
+    } catch {
+      setStatus("Failed to clear today's reminder dispatch.");
     }
   };
 
   return (
     <ScreenContainer style={styles.container}>
-      <View style={styles.content}>
+      <ScrollView
+        bounces={false}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}>
         <ThemedText type="screenTitle">
           {t('settings.notificationTest.screenTitle', {
             defaultValue: 'Notification Test',
@@ -163,20 +227,26 @@ export default function NotificationTestScreen() {
         <ThemedText type="description">
           {t('settings.notificationTest.description', {
             defaultValue:
-              'Use scenarios below to test reminder logic and Android tray behavior.',
+              'Use local checks for tray behavior and backend checks for Firebase Cloud Messaging delivery.',
           })}
         </ThemedText>
+        <View style={styles.preferenceSummary}>
+          <ThemedText type="bodyStrong">Learning reminder settings</ThemedText>
+          <ThemedText type="description">
+            {`Enabled: ${learningReminderEnabled ? 'yes' : 'no'} | Time: ${learningReminderTime}`}
+          </ThemedText>
+        </View>
         <OptionPickerField
-          label="Scenario"
+          label="Local notification scenario"
           onSelect={(value) => setScenario(value as ScenarioOption)}
           options={[
             {
-              description: 'Checks streak first and sends only when today is not completed.',
+              description: 'Checks streak first and schedules locally only when today is not completed.',
               label: 'Smart check',
               value: 'smart-check',
             },
             {
-              description: 'Always sends notification for icon/delivery testing.',
+              description: 'Always schedules a local notification for icon/tray testing.',
               label: 'Force send',
               value: 'force-send',
             },
@@ -196,19 +266,70 @@ export default function NotificationTestScreen() {
           selectedValue={delaySeconds}
           title="Select delay"
         />
-        <Button onPress={() => void handleSendTestNotification()}>
-          {t('settings.notificationTest.sendButton', {
-            defaultValue: 'Send test notification',
-          })}
-        </Button>
-        <Button onPress={() => void handleRefreshPushToken()} variant="secondary">
-          Refresh/Register push token now
-        </Button>
-        <Button onPress={() => void handleSendRemoteTestPush()} variant="secondary">
-          Send remote push (backend)
-        </Button>
+
+        <View style={styles.actionGroup}>
+          <Button onPress={() => void handleSendTestNotification()}>
+            {t('settings.notificationTest.sendButton', {
+              defaultValue: 'Schedule local notification',
+            })}
+          </Button>
+          <ThemedText type="description">
+            Schedules a notification on this device only. It does not use Firebase or the backend.
+          </ThemedText>
+        </View>
+
+        <View style={styles.actionGroup}>
+          <Button onPress={() => void handleSetReminderToNextMinute()} variant="secondary">
+            Set reminder to next minute
+          </Button>
+          <ThemedText type="description">
+            Enables learning reminders and changes the reminder time to the next minute for quick
+            dispatch testing.
+          </ThemedText>
+        </View>
+
+        <View style={styles.actionGroup}>
+          <Button onPress={() => void handleRefreshPushToken()} variant="secondary">
+            Refresh/Register FCM token
+          </Button>
+          <ThemedText type="description">
+            Gets the Android Firebase Cloud Messaging token and saves it on the backend for this
+            user and device.
+          </ThemedText>
+        </View>
+
+        <View style={styles.actionGroup}>
+          <Button onPress={() => void handleSendRemoteTestPush()} variant="secondary">
+            Send backend FCM push
+          </Button>
+          <ThemedText type="description">
+            Sends an immediate test push from the backend through Firebase to the registered FCM
+            token.
+          </ThemedText>
+        </View>
+
+        <View style={styles.actionGroup}>
+          <Button onPress={() => void handleDispatchLearningRemindersNow()} variant="secondary">
+            Run backend reminder dispatch
+          </Button>
+          <ThemedText type="description">
+            Runs the real reminder job now. It sends only when reminders are enabled, the selected
+            time is in the dispatch window, today is not completed, and an active FCM token exists.
+          </ThemedText>
+        </View>
+
+        <View style={styles.actionGroup}>
+          <Button onPress={() => void handleClearTodayDispatch()} variant="secondary">
+            Clear today's reminder dispatch
+          </Button>
+          <ThemedText type="description">
+            Removes today's already-sent marker for this user so scheduled reminder delivery can be
+            tested again on the same day.
+          </ThemedText>
+        </View>
+
         {status ? <ThemedText type="description">{status}</ThemedText> : null}
-      </View>
+      </ScrollView>
     </ScreenContainer>
   );
 }

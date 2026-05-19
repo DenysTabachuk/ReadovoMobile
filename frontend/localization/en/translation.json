@@ -282,6 +282,15 @@
       "toggleLabel": "Enable reminders",
       "timeLabel": "Reminder time",
       "timePickerTitle": "Choose reminder time",
+      "confirmModal": {
+        "cancel": "Cancel",
+        "disableConfirm": "Turn off",
+        "disableDescription": "You will stop receiving daily learning reminders. You can turn them back on at any time.",
+        "disableTitle": "Turn off reminders?",
+        "enableConfirm": "Turn on",
+        "enableDescription": "Readovo will remind you once per day if you have not completed a learning test. If system notifications are disabled, enable them in device settings.",
+        "enableTitle": "Turn on reminders?"
+      },
       "messages": [
         "Take a short test today and keep your progress moving.",
         "A quick quiz now will keep your learning streak alive.",

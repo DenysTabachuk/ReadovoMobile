@@ -4,12 +4,23 @@ import {
   Logger,
   OnModuleInit,
 } from '@nestjs/common';
+import {
+  applicationDefault,
+  cert,
+  getApps,
+  initializeApp,
+  type App,
+} from 'firebase-admin/app';
+import { getMessaging, type Messaging } from 'firebase-admin/messaging';
+import { readFileSync } from 'node:fs';
 
 import { DatabaseService } from '../database/database.service';
 import type {
+  LearningReminderDispatchResult,
   LearningReminderPreferences,
   RegisterPushTokenDto,
   SendTestPushDto,
+  SendTestPushResult,
   UpsertLearningReminderPreferencesDto,
 } from './types';
 
@@ -21,25 +32,33 @@ type EligibleUserRow = {
 
 type PushTokenRow = {
   device_id: string;
-  expo_push_token: string;
+  push_token: string;
+};
+
+type PushSendResult = {
+  failureReason?: string;
+  sent: boolean;
+  shouldDeactivateToken: boolean;
 };
 
 const DEFAULT_LEARNING_REMINDER_TIME = '19:00';
-const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send';
-const DISPATCH_WINDOW_MINUTES = 15;
+const DISPATCH_INTERVAL_MS = 60 * 1000;
 
 @Injectable()
 export class NotificationsService implements OnModuleInit {
   private readonly logger = new Logger(NotificationsService.name);
+  private readonly messaging: Messaging | null;
 
-  constructor(private readonly databaseService: DatabaseService) {}
+  constructor(private readonly databaseService: DatabaseService) {
+    this.messaging = this.createMessagingClient();
+  }
 
   onModuleInit(): void {
     setInterval(
       () => {
         void this.dispatchLearningReminders();
       },
-      DISPATCH_WINDOW_MINUTES * 60 * 1000,
+      DISPATCH_INTERVAL_MS,
     );
   }
 
@@ -108,22 +127,30 @@ export class NotificationsService implements OnModuleInit {
     this.logger.log(
       `registerPushToken start userId=${userId} deviceId=${payload.deviceId} platform=${payload.platform}`,
     );
-    if (!payload.deviceId || !payload.expoPushToken) {
-      throw new BadRequestException('deviceId and expoPushToken are required.');
+    if (!payload.deviceId || !payload.pushToken) {
+      throw new BadRequestException('deviceId and pushToken are required.');
     }
 
-    if (!payload.expoPushToken.startsWith('ExponentPushToken[')) {
-      throw new BadRequestException('Invalid Expo push token.');
+    if (payload.provider !== 'fcm') {
+      throw new BadRequestException('Invalid push token provider.');
+    }
+
+    if (payload.platform !== 'android') {
+      throw new BadRequestException('FCM push tokens are currently supported only for Android.');
+    }
+
+    if (payload.pushToken.trim().length < 32) {
+      throw new BadRequestException('Invalid FCM push token.');
     }
 
     await this.databaseService.query(
       `
         UPDATE user_push_tokens
         SET is_active = false, updated_at = now()
-        WHERE expo_push_token = $1
+        WHERE push_token = $1
           AND user_id <> $2
       `,
-      [payload.expoPushToken, userId],
+      [payload.pushToken, userId],
     );
 
     await this.databaseService.query(
@@ -131,23 +158,31 @@ export class NotificationsService implements OnModuleInit {
         INSERT INTO user_push_tokens (
           user_id,
           device_id,
-          expo_push_token,
+          push_token,
+          provider,
           platform,
           is_active,
           created_at,
           last_seen_at,
           updated_at
         )
-        VALUES ($1, $2, $3, $4, true, now(), now(), now())
+        VALUES ($1, $2, $3, $4, $5, true, now(), now(), now())
         ON CONFLICT (user_id, device_id)
         DO UPDATE SET
-          expo_push_token = EXCLUDED.expo_push_token,
+          push_token = EXCLUDED.push_token,
+          provider = EXCLUDED.provider,
           platform = EXCLUDED.platform,
           is_active = true,
           last_seen_at = now(),
           updated_at = now()
       `,
-      [userId, payload.deviceId, payload.expoPushToken, payload.platform],
+      [
+        userId,
+        payload.deviceId,
+        payload.pushToken.trim(),
+        payload.provider,
+        payload.platform,
+      ],
     );
     this.logger.log(
       `registerPushToken upsert done userId=${userId} deviceId=${payload.deviceId}`,
@@ -166,13 +201,44 @@ export class NotificationsService implements OnModuleInit {
     );
   }
 
-  async sendTestPush(userId: string, payload: SendTestPushDto): Promise<{ sentCount: number }> {
+  async clearTodayLearningReminderDispatch(userId: string): Promise<{ deletedCount: number }> {
+    const profile = await this.databaseService.query<{ timezone: string }>(
+      `
+        SELECT timezone
+        FROM user_streak_profiles
+        WHERE user_id = $1
+        LIMIT 1
+      `,
+      [userId],
+    );
+    const timezone = profile.rows[0]?.timezone ?? 'UTC';
+    const today = this.getLocalDateKey(new Date(), timezone);
+    const result = await this.databaseService.query(
+      `
+        DELETE FROM user_learning_reminder_dispatches
+        WHERE user_id = $1
+          AND reminder_date = $2::date
+      `,
+      [userId, today],
+    );
+
+    return {
+      deletedCount: result.rowCount ?? 0,
+    };
+  }
+
+  async sendTestPush(
+    userId: string,
+    payload: SendTestPushDto,
+  ): Promise<SendTestPushResult> {
     this.logger.log(`sendTestPush start userId=${userId}`);
     const tokens = await this.databaseService.query<PushTokenRow>(
       `
-        SELECT device_id, expo_push_token
+        SELECT device_id, push_token
         FROM user_push_tokens
         WHERE user_id = $1
+          AND provider = 'fcm'
+          AND push_token IS NOT NULL
           AND is_active = true
       `,
       [userId],
@@ -180,26 +246,42 @@ export class NotificationsService implements OnModuleInit {
 
     if (tokens.rows.length === 0) {
       this.logger.warn(`sendTestPush no active tokens userId=${userId}`);
-      return { sentCount: 0 };
+      return {
+        failedCount: 0,
+        failureReasons: [],
+        sentCount: 0,
+        tokenCount: 0,
+      };
     }
 
     const title = payload.title?.trim() || 'Readovo test push';
     const body = payload.body?.trim() || 'This is a remote push test from backend.';
+    let failedCount = 0;
     let sentCount = 0;
+    const failureReasons = new Set<string>();
     const sentTokenSet = new Set<string>();
 
     for (const tokenRow of tokens.rows) {
-      if (sentTokenSet.has(tokenRow.expo_push_token)) {
+      if (sentTokenSet.has(tokenRow.push_token)) {
         continue;
       }
 
-      sentTokenSet.add(tokenRow.expo_push_token);
-      const isSent = await this.sendExpoPush(tokenRow.expo_push_token, body, title);
+      sentTokenSet.add(tokenRow.push_token);
+      const sendResult = await this.sendFcmPush(tokenRow.push_token, body, title);
       this.logger.log(
-        `sendTestPush token delivery userId=${userId} deviceId=${tokenRow.device_id} sent=${String(isSent)}`,
+        `sendTestPush token delivery userId=${userId} deviceId=${tokenRow.device_id} sent=${String(sendResult.sent)}`,
       );
 
-      if (!isSent) {
+      if (!sendResult.sent) {
+        failedCount += 1;
+        if (sendResult.failureReason) {
+          failureReasons.add(sendResult.failureReason);
+        }
+
+        if (!sendResult.shouldDeactivateToken) {
+          continue;
+        }
+
         await this.databaseService.query(
           `
             UPDATE user_push_tokens
@@ -214,11 +296,19 @@ export class NotificationsService implements OnModuleInit {
       sentCount += 1;
     }
 
-    this.logger.log(`sendTestPush complete userId=${userId} sentCount=${sentCount}`);
-    return { sentCount };
+    this.logger.log(
+      `sendTestPush complete userId=${userId} tokenCount=${sentTokenSet.size} sentCount=${sentCount} failedCount=${failedCount}`,
+    );
+
+    return {
+      failedCount,
+      failureReasons: Array.from(failureReasons),
+      sentCount,
+      tokenCount: sentTokenSet.size,
+    };
   }
 
-  async dispatchLearningReminders(): Promise<void> {
+  async dispatchLearningReminders(): Promise<LearningReminderDispatchResult> {
     const eligibleUsersResult =
       await this.databaseService.query<EligibleUserRow>(
         `
@@ -233,12 +323,24 @@ export class NotificationsService implements OnModuleInit {
       );
 
     const now = new Date();
+    const result: LearningReminderDispatchResult = {
+      checkedCount: 0,
+      sentCount: 0,
+      skippedAlreadySentCount: 0,
+      skippedCompletedTodayCount: 0,
+      skippedNoTokensCount: 0,
+      skippedOutsideWindowCount: 0,
+      skippedSendFailedCount: 0,
+    };
 
     for (const user of eligibleUsersResult.rows) {
+      result.checkedCount += 1;
+
       const userDate = this.getLocalDateKey(now, user.timezone);
       const userTime = this.getLocalTimeKey(now, user.timezone);
 
-      if (!this.isWithinDispatchWindow(user.learning_reminder_time, userTime)) {
+      if (!this.isReminderDue(user.learning_reminder_time, userTime)) {
+        result.skippedOutsideWindowCount += 1;
         continue;
       }
 
@@ -256,6 +358,7 @@ export class NotificationsService implements OnModuleInit {
       );
 
       if (alreadySent.rows[0]) {
+        result.skippedAlreadySentCount += 1;
         continue;
       }
 
@@ -274,35 +377,46 @@ export class NotificationsService implements OnModuleInit {
       );
 
       if (completedToday.rows[0]) {
+        result.skippedCompletedTodayCount += 1;
         continue;
       }
 
       const tokens = await this.databaseService.query<PushTokenRow>(
         `
-          SELECT device_id, expo_push_token
+          SELECT device_id, push_token
           FROM user_push_tokens
           WHERE user_id = $1
+            AND provider = 'fcm'
+            AND push_token IS NOT NULL
             AND is_active = true
         `,
         [user.user_id],
       );
 
       if (tokens.rows.length === 0) {
+        result.skippedNoTokensCount += 1;
         continue;
       }
 
       const messageBody = this.pickMessageBody(now);
       const sentTokenSet = new Set<string>();
+      let userSentCount = 0;
 
       for (const tokenRow of tokens.rows) {
-        if (sentTokenSet.has(tokenRow.expo_push_token)) {
+        if (sentTokenSet.has(tokenRow.push_token)) {
           continue;
         }
 
-        sentTokenSet.add(tokenRow.expo_push_token);
-        const isSent = await this.sendExpoPush(tokenRow.expo_push_token, messageBody);
+        sentTokenSet.add(tokenRow.push_token);
+        const sendResult = await this.sendFcmPush(tokenRow.push_token, messageBody);
 
-        if (!isSent) {
+        if (sendResult.sent) {
+          userSentCount += 1;
+          result.sentCount += 1;
+          continue;
+        }
+
+        if (sendResult.shouldDeactivateToken) {
           await this.databaseService.query(
             `
               UPDATE user_push_tokens
@@ -314,6 +428,11 @@ export class NotificationsService implements OnModuleInit {
         }
       }
 
+      if (userSentCount === 0) {
+        result.skippedSendFailedCount += 1;
+        continue;
+      }
+
       await this.databaseService.query(
         `
           INSERT INTO user_learning_reminder_dispatches (user_id, reminder_date, sent_at)
@@ -323,6 +442,8 @@ export class NotificationsService implements OnModuleInit {
         [user.user_id, userDate],
       );
     }
+
+    return result;
   }
 
   private async ensurePreferencesRow(userId: string): Promise<void> {
@@ -354,7 +475,7 @@ export class NotificationsService implements OnModuleInit {
     }).format(serverNow);
   }
 
-  private isWithinDispatchWindow(
+  private isReminderDue(
     targetTime: string,
     currentTime: string,
   ): boolean {
@@ -365,13 +486,7 @@ export class NotificationsService implements OnModuleInit {
       return false;
     }
 
-    const toMinutes = (value: string) => {
-      const [hour, minute] = value.split(':').map(Number);
-      return hour * 60 + minute;
-    };
-
-    const delta = Math.abs(toMinutes(currentTime) - toMinutes(targetTime));
-    return delta < DISPATCH_WINDOW_MINUTES;
+    return targetTime === currentTime;
   }
 
   private pickMessageBody(now: Date): string {
@@ -384,29 +499,119 @@ export class NotificationsService implements OnModuleInit {
     return variants[now.getUTCDate() % variants.length] ?? variants[0];
   }
 
-  private async sendExpoPush(to: string, body: string, title = 'Readovo'): Promise<boolean> {
+  private createMessagingClient(): Messaging | null {
     try {
-      const response = await fetch(EXPO_PUSH_URL, {
-        body: JSON.stringify({
-          body,
-          sound: 'default',
-          title,
-          to,
+      const existingApp = getApps()[0];
+      const app = existingApp ?? this.initializeFirebaseApp();
+      return getMessaging(app);
+    } catch (error) {
+      this.logger.warn(`Firebase Admin SDK is not configured: ${String(error)}`);
+      return null;
+    }
+  }
+
+  private initializeFirebaseApp(): App {
+    const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+    const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH;
+    const projectId = process.env.FIREBASE_PROJECT_ID;
+    const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+    const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+
+    if (serviceAccountPath) {
+      return initializeApp({
+        credential: cert(
+          JSON.parse(readFileSync(serviceAccountPath, 'utf8')) as Record<string, string>,
+        ),
+      });
+    }
+
+    if (serviceAccountJson) {
+      return initializeApp({
+        credential: cert(JSON.parse(serviceAccountJson) as Record<string, string>),
+      });
+    }
+
+    if (projectId && clientEmail && privateKey) {
+      return initializeApp({
+        credential: cert({
+          clientEmail,
+          privateKey,
+          projectId,
         }),
-        headers: {
-          'Content-Type': 'application/json',
+      });
+    }
+
+    return initializeApp({
+      credential: applicationDefault(),
+      projectId,
+    });
+  }
+
+  private async sendFcmPush(
+    to: string,
+    body: string,
+    title = 'Readovo',
+  ): Promise<PushSendResult> {
+    if (!this.messaging) {
+      this.logger.warn('Push dispatch skipped because Firebase Admin SDK is not configured.');
+      return {
+        failureReason: 'Firebase Admin SDK is not configured.',
+        sent: false,
+        shouldDeactivateToken: false,
+      };
+    }
+
+    try {
+      await this.messaging.send({
+        android: {
+          notification: {
+            channelId: 'default',
+            sound: 'default',
+          },
+          priority: 'high',
         },
-        method: 'POST',
+        notification: {
+          body,
+          title,
+        },
+        token: to,
       });
 
-      if (!response.ok) {
-        return false;
-      }
-
-      return true;
+      return {
+        sent: true,
+        shouldDeactivateToken: false,
+      };
     } catch (error) {
       this.logger.error(`Push dispatch failed for token ${to}`, error);
+      return {
+        failureReason: this.getFcmErrorMessage(error),
+        sent: false,
+        shouldDeactivateToken: this.isInvalidFcmTokenError(error),
+      };
+    }
+  }
+
+  private getFcmErrorMessage(error: unknown): string {
+    if (typeof error !== 'object' || error === null) {
+      return 'Unknown Firebase Cloud Messaging error.';
+    }
+
+    const code = 'code' in error ? String(error.code) : undefined;
+    const message = 'message' in error ? String(error.message) : undefined;
+
+    return [code, message].filter(Boolean).join(': ') || 'Unknown Firebase Cloud Messaging error.';
+  }
+
+  private isInvalidFcmTokenError(error: unknown): boolean {
+    if (typeof error !== 'object' || error === null || !('code' in error)) {
       return false;
     }
+
+    const code = String(error.code);
+
+    return (
+      code === 'messaging/invalid-registration-token' ||
+      code === 'messaging/registration-token-not-registered'
+    );
   }
 }

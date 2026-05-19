@@ -10,8 +10,9 @@ type LearningReminderPreferencesResponse = {
 
 type RegisterPushTokenPayload = {
   deviceId: string;
-  expoPushToken: string;
+  pushToken: string;
   platform: 'android' | 'ios';
+  provider: 'fcm';
 };
 
 export async function getLearningReminderPreferences(
@@ -62,7 +63,26 @@ export async function registerPushToken(
   }
 }
 
-export async function sendRemoteTestPush(userId: string): Promise<{ sentCount: number }> {
+type SendRemoteTestPushResponse = {
+  failedCount: number;
+  failureReasons: string[];
+  sentCount: number;
+  tokenCount: number;
+};
+
+type LearningReminderDispatchResponse = {
+  checkedCount: number;
+  skippedAlreadySentCount: number;
+  skippedCompletedTodayCount: number;
+  skippedNoTokensCount: number;
+  skippedOutsideWindowCount: number;
+  skippedSendFailedCount: number;
+  sentCount: number;
+};
+
+export async function sendRemoteTestPush(
+  userId: string,
+): Promise<SendRemoteTestPushResponse> {
   const response = await authenticatedFetch(`${API_BASE_URL}/notifications/test-push/${userId}`, {
     body: JSON.stringify({}),
     headers: {
@@ -75,5 +95,41 @@ export async function sendRemoteTestPush(userId: string): Promise<{ sentCount: n
     throw new Error('settings.learningReminders.remoteTestFailed');
   }
 
-  return response.json() as Promise<{ sentCount: number }>;
+  return response.json() as Promise<SendRemoteTestPushResponse>;
+}
+
+export async function dispatchLearningRemindersNow(): Promise<LearningReminderDispatchResponse> {
+  const response = await authenticatedFetch(
+    `${API_BASE_URL}/notifications/learning-reminders/dispatch`,
+    {
+      body: JSON.stringify({}),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      method: 'POST',
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error('settings.learningReminders.dispatchFailed');
+  }
+
+  return response.json() as Promise<LearningReminderDispatchResponse>;
+}
+
+export async function clearTodayLearningReminderDispatch(
+  userId: string,
+): Promise<{ deletedCount: number }> {
+  const response = await authenticatedFetch(
+    `${API_BASE_URL}/notifications/learning-reminders/dispatch/today/${userId}`,
+    {
+      method: 'DELETE',
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error('settings.learningReminders.clearDispatchFailed');
+  }
+
+  return response.json() as Promise<{ deletedCount: number }>;
 }

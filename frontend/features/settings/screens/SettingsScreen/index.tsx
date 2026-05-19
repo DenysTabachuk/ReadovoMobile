@@ -2,17 +2,20 @@ import { Pressable, ScrollView, View } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
+import * as Notifications from 'expo-notifications';
 import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
 
+import { Button } from '@/components/button';
 import { CheckboxRow } from '@/components/checkboxRow';
-import { OptionPickerField } from '@/components/optionPickerField';
 import { useAuth } from '@/providers/authProvider';
-import { type LearningReminderTime, usePreferences } from '@/providers/preferencesProvider';
+import { usePreferences } from '@/providers/preferencesProvider';
 import { LanguageSelector } from '@/components/languageSelector';
+import { ModalSheet } from '@/components/modalSheet';
 import { ScreenContainer } from '@/components/screenContainer';
 import { ThemedText } from '@/components/themedText';
 import { IconSymbol } from '@/components/iconSymbol';
+import { TimePickerField } from '@/components/timePickerField';
 
 import { styles } from './styles';
 
@@ -28,8 +31,8 @@ export default function SettingsScreen() {
     setThemePreference,
   } = usePreferences();
   const isDarkTheme = colorScheme === 'dark';
+  const [pendingReminderEnabled, setPendingReminderEnabled] = useState<boolean | null>(null);
   const [versionTapCount, setVersionTapCount] = useState(0);
-  const reminderTimeOptions = ['09:00', '12:00', '15:00', '18:00', '19:00', '20:00', '21:00'];
   const appVersion = Constants.expoConfig?.version ?? 'dev';
 
   const handleToggleTheme = () => {
@@ -39,6 +42,40 @@ export default function SettingsScreen() {
   const handleLogout = async () => {
     await signOut();
     router.replace('/login');
+  };
+
+  const handleLearningReminderPress = async () => {
+    const nextEnabled = !learningReminderEnabled;
+
+    if (!nextEnabled) {
+      setPendingReminderEnabled(false);
+      return;
+    }
+
+    try {
+      const permissions = await Notifications.getPermissionsAsync();
+      if (!permissions.granted && permissions.canAskAgain) {
+        await setLearningReminderEnabled(true);
+        return;
+      }
+    } catch {
+      // Fall through to the in-app confirmation if permission state cannot be read.
+    }
+
+    setPendingReminderEnabled(true);
+  };
+
+  const handleCloseLearningReminderModal = () => {
+    setPendingReminderEnabled(null);
+  };
+
+  const handleConfirmLearningReminderChange = async () => {
+    if (pendingReminderEnabled === null) {
+      return;
+    }
+
+    await setLearningReminderEnabled(pendingReminderEnabled);
+    setPendingReminderEnabled(null);
   };
 
   const handleVersionPress = () => {
@@ -108,24 +145,53 @@ export default function SettingsScreen() {
               checked={learningReminderEnabled}
               label={t('settings.learningReminders.toggleLabel')}
               onPress={() => {
-                void setLearningReminderEnabled(!learningReminderEnabled);
+                void handleLearningReminderPress();
               }}
             />
           </View>
-          <OptionPickerField
+          <TimePickerField
             containerStyle={styles.learningReminderTimeField}
             label={t('settings.learningReminders.timeLabel')}
-            onSelect={(value) => {
-              void setLearningReminderTime(value as LearningReminderTime);
+            onChange={(value) => {
+              void setLearningReminderTime(value);
             }}
-            options={reminderTimeOptions.map((value) => ({
-              label: value,
-              value,
-            }))}
-            selectedValue={learningReminderTime}
-            title={t('settings.learningReminders.timePickerTitle')}
+            value={learningReminderTime}
           />
         </View>
+
+        <ModalSheet
+          footer={
+            <View style={styles.modalFooter}>
+              <Button
+                onPress={handleCloseLearningReminderModal}
+                style={styles.modalButton}
+                variant="secondary">
+                {t('settings.learningReminders.confirmModal.cancel')}
+              </Button>
+              <Button
+                onPress={() => void handleConfirmLearningReminderChange()}
+                style={styles.modalButton}>
+                {pendingReminderEnabled
+                  ? t('settings.learningReminders.confirmModal.enableConfirm')
+                  : t('settings.learningReminders.confirmModal.disableConfirm')}
+              </Button>
+            </View>
+          }
+          onClose={handleCloseLearningReminderModal}
+          open={pendingReminderEnabled !== null}
+          title={
+            pendingReminderEnabled
+              ? t('settings.learningReminders.confirmModal.enableTitle')
+              : t('settings.learningReminders.confirmModal.disableTitle')
+          }>
+          <View style={styles.modalContent}>
+            <ThemedText type="description">
+              {pendingReminderEnabled
+                ? t('settings.learningReminders.confirmModal.enableDescription')
+                : t('settings.learningReminders.confirmModal.disableDescription')}
+            </ThemedText>
+          </View>
+        </ModalSheet>
 
         <View style={styles.section}>
           <ThemedText type="sectionTitle">{t('settings.account.title')}</ThemedText>

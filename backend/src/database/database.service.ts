@@ -296,7 +296,8 @@ export class DatabaseService implements OnModuleDestroy, OnModuleInit {
       CREATE TABLE IF NOT EXISTS user_push_tokens (
         user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         device_id text NOT NULL,
-        expo_push_token text NOT NULL,
+        push_token text,
+        provider text NOT NULL DEFAULT 'fcm',
         platform text NOT NULL,
         is_active boolean NOT NULL DEFAULT true,
         created_at timestamptz NOT NULL DEFAULT now(),
@@ -307,8 +308,41 @@ export class DatabaseService implements OnModuleDestroy, OnModuleInit {
     `);
 
     await this.query(`
-      CREATE UNIQUE INDEX IF NOT EXISTS user_push_tokens_expo_push_token_idx
-      ON user_push_tokens (expo_push_token);
+      ALTER TABLE user_push_tokens
+      ADD COLUMN IF NOT EXISTS push_token text,
+      ADD COLUMN IF NOT EXISTS provider text NOT NULL DEFAULT 'fcm';
+    `);
+
+    await this.query(`
+      ALTER TABLE user_push_tokens
+      ALTER COLUMN expo_push_token DROP NOT NULL;
+    `).catch((error: unknown) => {
+      const code =
+        typeof error === 'object' && error !== null && 'code' in error
+          ? String(error.code)
+          : '';
+
+      if (code !== '42703') {
+        throw error;
+      }
+    });
+
+    await this.query(`
+      UPDATE user_push_tokens
+      SET provider = 'expo'
+      WHERE push_token IS NULL
+        AND EXISTS (
+          SELECT 1
+          FROM information_schema.columns
+          WHERE table_name = 'user_push_tokens'
+            AND column_name = 'expo_push_token'
+        );
+    `);
+
+    await this.query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS user_push_tokens_push_token_idx
+      ON user_push_tokens (push_token)
+      WHERE push_token IS NOT NULL;
     `);
 
     await this.query(`

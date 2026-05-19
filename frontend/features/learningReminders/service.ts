@@ -1,5 +1,4 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Constants from 'expo-constants';
 // eslint-disable-next-line import/no-unresolved
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
@@ -53,8 +52,16 @@ async function requestPushPermission(): Promise<boolean> {
   return requested.granted;
 }
 
-function getProjectId(): string | undefined {
-  return Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId;
+async function ensureAndroidNotificationChannel(): Promise<void> {
+  if (Platform.OS !== 'android') {
+    return;
+  }
+
+  await Notifications.setNotificationChannelAsync('default', {
+    importance: Notifications.AndroidImportance.DEFAULT,
+    name: 'default',
+    sound: 'default',
+  });
 }
 
 export async function registerCurrentDevicePushToken(
@@ -67,19 +74,26 @@ export async function registerCurrentDevicePushToken(
     return false;
   }
 
-  const projectId = getProjectId();
-  const pushTokenResponse = await Notifications.getExpoPushTokenAsync(
-    projectId ? { projectId } : undefined,
-  );
+  await ensureAndroidNotificationChannel();
+
+  const pushTokenResponse = await Notifications.getDevicePushTokenAsync();
+  if (pushTokenResponse.type !== 'android') {
+    console.warn(
+      `[LearningReminders] Firebase Cloud Messaging token registration is supported only on Android. tokenType=${pushTokenResponse.type}`,
+    );
+    return false;
+  }
+
   const deviceId = await getDeviceId();
   console.log(
-    `[LearningReminders] got expo token and device id. deviceId=${deviceId}, tokenPrefix=${pushTokenResponse.data.slice(0, 24)}`,
+    `[LearningReminders] got FCM token and device id. deviceId=${deviceId}, tokenPrefix=${pushTokenResponse.data.slice(0, 24)}`,
   );
 
   await registerPushToken(userId, {
     deviceId,
-    expoPushToken: pushTokenResponse.data,
-    platform: Platform.OS === 'ios' ? 'ios' : 'android',
+    platform: 'android',
+    provider: 'fcm',
+    pushToken: pushTokenResponse.data,
   });
   console.log('[LearningReminders] registerPushToken request completed');
 
