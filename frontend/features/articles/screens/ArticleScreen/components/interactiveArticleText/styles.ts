@@ -72,6 +72,10 @@ export const styles = StyleSheet.create({
     includeFontPadding: false,
     lineHeight: Typography.paragraph.lineHeight,
   },
+  speakingSentence: {
+    backgroundColor: 'rgba(242, 201, 76, 0.22)',
+    borderRadius: 6,
+  },
   table: {
     borderRadius: 12,
     borderWidth: 1,
@@ -106,6 +110,18 @@ export const styles = StyleSheet.create({
     flexGrow: 0,
     flexShrink: 0,
     width: 140,
+  },
+  wordPickBlock: {
+    backgroundColor: 'rgba(111, 63, 240, 0.06)',
+    borderLeftColor: 'rgba(111, 63, 240, 0.5)',
+    borderLeftWidth: 3,
+    borderRadius: 6,
+    paddingLeft: Spacing.sm,
+  },
+  wordPickHint: {
+    alignSelf: 'flex-end',
+    marginBottom: -Spacing.xs,
+    opacity: 0.85,
   },
 });
 

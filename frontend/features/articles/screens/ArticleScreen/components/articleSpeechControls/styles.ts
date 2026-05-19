@@ -9,9 +9,10 @@ export const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   container: {
-    borderColor: 'rgba(128, 128, 128, 0.24)',
-    borderRadius: 12,
-    borderWidth: 1,
+    backgroundColor: 'rgba(111, 63, 240, 0.06)',
+    borderLeftColor: '#6f3ff0',
+    borderLeftWidth: 4,
+    borderRadius: 8,
     gap: Spacing.md,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.md,

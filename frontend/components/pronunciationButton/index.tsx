@@ -28,7 +28,6 @@ export function PronunciationButton({ word }: PronunciationButtonProps) {
   useEffect(() => {
     return () => {
       isMountedRef.current = false;
-      void Speech.stop();
     };
   }, []);
 

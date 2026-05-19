@@ -1,7 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import {
+  Fragment,
   memo,
   useCallback,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -44,6 +46,10 @@ type InteractiveArticleTextProps = {
   ListHeaderComponent?: ReactElement | null;
   onScroll?: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
   onVisibleBlockIndexChange?: (sourceIndex: number) => void;
+  onVisibleBlockRangeChange?: (range: {
+    firstSourceIndex: number;
+    lastSourceIndex: number;
+  }) => void;
   onWordPress: (selection: {
     context: string;
     sentenceKey?: string;
@@ -74,6 +80,14 @@ type TouchableInlineTextProps = {
   style: StyleProp<TextStyle>;
 };
 
+type PlainInlineTextProps = {
+  nodes: InlineNode[];
+  onPress?: () => void;
+  prefix: string;
+  speakingTokenKey?: string;
+  style: StyleProp<TextStyle>;
+};
+
 type TouchableListItemProps = {
   item: InlineNode[];
   itemIndex: number;
@@ -84,20 +98,48 @@ type TouchableListItemProps = {
   speakingTokenKey?: string;
 };
 
+type ArticleBlockRowProps = {
+  activeInteractiveBlockKey?: string;
+  block: ArticleBlock;
+  blockKey: string;
+  chevronColor: string;
+  collapsed?: boolean;
+  onActivateInteractiveBlock: (blockKey: string) => void;
+  onToggleHeading: (headingKey: string) => void;
+  onWordPress: InteractiveArticleTextProps['onWordPress'];
+  selectedTokenKeys?: string[];
+  speakingTokenKey?: string;
+};
+
+type PlainTextSegment = {
+  bold?: boolean;
+  italic?: boolean;
+  key: string;
+  text: string;
+};
+
+type PlainSentenceGroup = {
+  key: string;
+  parts: TouchableTextPart[];
+  sentenceKey?: string;
+};
+
+type TouchableTextSentenceGroup = {
+  key: string;
+  parts: TouchableTextPart[];
+  sentenceKey?: string;
+};
+
 const LIST_ITEM_PATTERN = /^([*#-]+|[\u2022\u25cf\u25aa\u25e6]+|[A-Za-z0-9]+[.)])\s*(.*)$/;
 const SECTION_HEADING_PATTERN = /^(={2,})\s*(.*?)\s*\1$/;
 
-// FlatList virtualization tuning for large articles:
-// - INITIAL_RENDER_BLOCK_COUNT: blocks rendered immediately when the screen opens.
-// - MAX_RENDER_BATCH_SIZE: max blocks added in one background render batch.
-// - RENDER_BATCH_INTERVAL_MS: delay between render batches; higher values reduce JS pressure.
-// - VIRTUALIZED_WINDOW_SIZE: number of viewport-heights kept mounted around the visible area.
-const INITIAL_RENDER_BLOCK_COUNT = 10;
-const MAX_RENDER_BATCH_SIZE = 10;
-const RENDER_BATCH_INTERVAL_MS = 50;
-const VIRTUALIZED_WINDOW_SIZE = 9;
-
-
+// Keep a larger plain-text window mounted so fast scrolls do not reveal batched cells.
+const INITIAL_RENDER_BLOCK_COUNT = 18;
+const MAX_RENDER_BATCH_SIZE = 24;
+const RENDER_BATCH_INTERVAL_MS = 16;
+const VIRTUALIZED_WINDOW_SIZE = 13;
+const ENABLE_SPEECH_SENTENCE_HIGHLIGHT = true;
+const ENABLE_SPEECH_WORD_HIGHLIGHT = false;
 
 export function InteractiveArticleText({
   blocks,
@@ -105,6 +147,7 @@ export function InteractiveArticleText({
   ListHeaderComponent,
   onScroll,
   onVisibleBlockIndexChange,
+  onVisibleBlockRangeChange,
   onWordPress,
   scrollEventThrottle = 16,
   scrollRef,
@@ -112,11 +155,16 @@ export function InteractiveArticleText({
   speakingTokenKey,
   text,
 }: InteractiveArticleTextProps) {
+  const [activeInteractiveBlockKey, setActiveInteractiveBlockKey] = useState<
+    string | undefined
+  >();
   const [collapsedHeadings, setCollapsedHeadings] = useState<Record<string, boolean>>({});
+  const onVisibleBlockIndexChangeRef = useRef(onVisibleBlockIndexChange);
+  const onVisibleBlockRangeChangeRef = useRef(onVisibleBlockRangeChange);
   const chevronColor = useThemeColor({ dark: '#9ba1a6', light: '#687076' }, 'icon');
   const resolvedBlocks = useMemo(() => {
     if (blocks && blocks.length > 0) {
-      return normalizeBlocksForWordSelection(blocks);
+      return blocks;
     }
 
     return parsePlainTextToBlocks(text ?? '');
@@ -170,123 +218,52 @@ export function InteractiveArticleText({
     return items;
   }, [collapsedHeadings, resolvedBlocks]);
 
-  const renderBlock = useCallback((block: ArticleBlock, blockKey: string) => {
-    if (block.type === 'paragraph') {
-      return (
-        <TouchableInlineText
-          key={blockKey}
-          nodes={block.children}
-          onWordPress={onWordPress}
-          prefix={blockKey}
-          selectedTokenKeys={selectedTokenKeys}
-          speakingTokenKey={speakingTokenKey}
-          style={styles.paragraph}
-        />
-      );
-    }
-
-    if (block.type === 'list') {
-      return (
-        <View key={blockKey} style={styles.list}>
-          {block.items.map((item, itemIndex) => (
-            <TouchableListItem
-              item={item}
-              itemIndex={itemIndex}
-              key={`${blockKey}-item-${itemIndex}`}
-              onWordPress={onWordPress}
-              ordered={block.ordered}
-              prefix={`${blockKey}-item-${itemIndex}`}
-              selectedTokenKeys={selectedTokenKeys}
-              speakingTokenKey={speakingTokenKey}
-            />
-          ))}
-        </View>
-      );
-    }
-
-    if (block.type === 'table') {
-      return (
-        <ArticleTableBlock
-          key={blockKey}
-          renderCellContent={({ cell, prefix, selectedTokenKey: currentSelectedTokenKey }) =>
-            renderTableCellText({
-              cell,
-              onWordPress,
-              prefix,
-              selectedTokenKey: currentSelectedTokenKey,
-              speakingTokenKey,
-            })
-          }
-          rows={block.rows}
-          selectedTokenKey={selectedTokenKeys?.[0]}
-        />
-      );
-    }
-
-    if (block.type === 'formula') {
-      return (
-        <ArticleFormulaBlock
-          altText={block.altText}
-          heightEx={block.heightEx}
-          key={blockKey}
-          svg={block.svg}
-          widthEx={block.widthEx}
-        />
-      );
-    }
-
-    if (block.type !== 'image') {
-      return null;
-    }
-
-    return (
-      <ArticleImageBlock
-        alt={block.alt}
-        caption={block.caption}
-        key={blockKey}
-        src={block.src}
-      />
-    );
-  }, [onWordPress, selectedTokenKeys, speakingTokenKey]);
+  const handleToggleHeading = useCallback((headingKey: string) => {
+    setCollapsedHeadings((current) => ({
+      ...current,
+      [headingKey]: !current[headingKey],
+    }));
+  }, []);
+  const handleActivateInteractiveBlock = useCallback((blockKey: string) => {
+    setActiveInteractiveBlockKey(blockKey);
+  }, []);
+  useEffect(() => {
+    onVisibleBlockIndexChangeRef.current = onVisibleBlockIndexChange;
+  }, [onVisibleBlockIndexChange]);
+  useEffect(() => {
+    onVisibleBlockRangeChangeRef.current = onVisibleBlockRangeChange;
+  }, [onVisibleBlockRangeChange]);
   const renderItem = useCallback<ListRenderItem<ArticleBlockListItem>>(
     ({ item }) => {
-      const { block } = item;
-
-      if (block.type === 'heading') {
-        const isCollapsed = Boolean(collapsedHeadings[item.key]);
-
-        return (
-          <Pressable
-            onPress={() =>
-              setCollapsedHeadings((current) => ({
-                ...current,
-                [item.key]: !current[item.key],
-              }))
-            }
-            style={styles.collapsibleHeading}>
-            <ThemedText
-              style={[
-                styles.heading,
-                block.level === 1 ? styles.headingLevel1 : null,
-                block.level === 2 ? styles.headingLevel2 : null,
-                block.level === 3 ? styles.headingLevel3 : null,
-              ]}
-              type={getHeadingTypographyType(block.level)}>
-              {block.text}
-            </ThemedText>
-            <Ionicons
-              color={chevronColor}
-              name="chevron-down"
-              size={18}
-              style={isCollapsed ? null : styles.collapsibleArrowExpanded}
-            />
-          </Pressable>
-        );
-      }
-
-      return renderBlock(block, item.key);
+      return (
+        <ArticleBlockRow
+          activeInteractiveBlockKey={activeInteractiveBlockKey}
+          block={item.block}
+          blockKey={item.key}
+          chevronColor={chevronColor}
+          collapsed={Boolean(collapsedHeadings[item.key])}
+          onActivateInteractiveBlock={handleActivateInteractiveBlock}
+          onToggleHeading={handleToggleHeading}
+          onWordPress={onWordPress}
+          selectedTokenKeys={selectedTokenKeys}
+          speakingTokenKey={
+            ENABLE_SPEECH_SENTENCE_HIGHLIGHT || ENABLE_SPEECH_WORD_HIGHLIGHT
+              ? speakingTokenKey
+              : undefined
+          }
+        />
+      );
     },
-    [chevronColor, collapsedHeadings, renderBlock],
+    [
+      activeInteractiveBlockKey,
+      chevronColor,
+      collapsedHeadings,
+      handleActivateInteractiveBlock,
+      handleToggleHeading,
+      onWordPress,
+      selectedTokenKeys,
+      speakingTokenKey,
+    ],
   );
   const viewabilityConfig = useRef({
     itemVisiblePercentThreshold: 12,
@@ -301,13 +278,24 @@ export function InteractiveArticleText({
         item?: ArticleBlockListItem;
       }>;
     }) => {
-      const firstVisibleItem = viewableItems
+      const sortedVisibleItems = viewableItems
         .filter((viewableItem) => viewableItem.index !== null)
-        .sort((leftItem, rightItem) => (leftItem.index ?? 0) - (rightItem.index ?? 0))[0]
-        ?.item;
+        .sort((leftItem, rightItem) => (leftItem.index ?? 0) - (rightItem.index ?? 0));
+      const firstVisibleItem = sortedVisibleItems[0]?.item;
+      const lastVisibleItem = sortedVisibleItems[sortedVisibleItems.length - 1]?.item;
 
       if (typeof firstVisibleItem?.sourceIndex === 'number') {
-        onVisibleBlockIndexChange?.(firstVisibleItem.sourceIndex);
+        onVisibleBlockIndexChangeRef.current?.(firstVisibleItem.sourceIndex);
+      }
+
+      if (
+        typeof firstVisibleItem?.sourceIndex === 'number' &&
+        typeof lastVisibleItem?.sourceIndex === 'number'
+      ) {
+        onVisibleBlockRangeChangeRef.current?.({
+          firstSourceIndex: firstVisibleItem.sourceIndex,
+          lastSourceIndex: lastVisibleItem.sourceIndex,
+        });
       }
     },
   ).current;
@@ -342,6 +330,385 @@ export function InteractiveArticleText({
   );
 }
 
+const ArticleBlockRow = memo(function ArticleBlockRow({
+  activeInteractiveBlockKey,
+  block,
+  blockKey,
+  chevronColor,
+  collapsed = false,
+  onActivateInteractiveBlock,
+  onToggleHeading,
+  onWordPress,
+  selectedTokenKeys,
+  speakingTokenKey,
+}: ArticleBlockRowProps) {
+  const handleToggleHeading = useCallback(() => {
+    onToggleHeading(blockKey);
+  }, [blockKey, onToggleHeading]);
+  const handleActivateInteractiveBlock = useCallback(() => {
+    onActivateInteractiveBlock(blockKey);
+  }, [blockKey, onActivateInteractiveBlock]);
+  const isInteractiveBlock = activeInteractiveBlockKey === blockKey;
+
+  if (block.type === 'heading') {
+    return (
+      <Pressable onPress={handleToggleHeading} style={styles.collapsibleHeading}>
+        <ThemedText
+          style={[
+            styles.heading,
+            block.level === 1 ? styles.headingLevel1 : null,
+            block.level === 2 ? styles.headingLevel2 : null,
+            block.level === 3 ? styles.headingLevel3 : null,
+          ]}
+          type={getHeadingTypographyType(block.level)}>
+          {block.text}
+        </ThemedText>
+        <Ionicons
+          color={chevronColor}
+          name="chevron-down"
+          size={18}
+          style={collapsed ? null : styles.collapsibleArrowExpanded}
+        />
+      </Pressable>
+    );
+  }
+
+  if (block.type === 'paragraph') {
+    if (!isInteractiveBlock) {
+      return (
+          <PlainInlineText
+            nodes={block.children}
+            onPress={handleActivateInteractiveBlock}
+            prefix={blockKey}
+            speakingTokenKey={speakingTokenKey}
+            style={styles.paragraph}
+        />
+      );
+    }
+
+    return (
+      <View style={styles.wordPickBlock}>
+        <Ionicons
+          color="rgba(111, 63, 240, 0.5)"
+          name="language-outline"
+          size={16}
+          style={styles.wordPickHint}
+        />
+        <TouchableInlineText
+          nodes={normalizeInlineNodesForWordSelection(block.children)}
+          onWordPress={onWordPress}
+          prefix={blockKey}
+          selectedTokenKeys={selectedTokenKeys}
+          speakingTokenKey={speakingTokenKey}
+          style={styles.paragraph}
+        />
+      </View>
+    );
+  }
+
+  if (block.type === 'list') {
+    return (
+      <View style={[styles.list, isInteractiveBlock ? styles.wordPickBlock : null]}>
+        {block.items.map((item, itemIndex) => (
+          isInteractiveBlock ? (
+            <TouchableListItem
+              item={normalizeInlineNodesForWordSelection(item)}
+              itemIndex={itemIndex}
+              key={`${blockKey}-item-${itemIndex}`}
+              onWordPress={onWordPress}
+              ordered={block.ordered}
+              prefix={`${blockKey}-item-${itemIndex}`}
+              selectedTokenKeys={selectedTokenKeys}
+              speakingTokenKey={speakingTokenKey}
+            />
+          ) : (
+            <PlainListItem
+              item={item}
+              itemIndex={itemIndex}
+              key={`${blockKey}-item-${itemIndex}`}
+              onPress={handleActivateInteractiveBlock}
+              ordered={block.ordered}
+              prefix={`${blockKey}-item-${itemIndex}`}
+              speakingTokenKey={speakingTokenKey}
+            />
+          )
+        ))}
+        {isInteractiveBlock ? (
+          <Ionicons
+            color="rgba(111, 63, 240, 0.5)"
+            name="language-outline"
+            size={16}
+            style={styles.wordPickHint}
+          />
+        ) : null}
+      </View>
+    );
+  }
+
+  if (block.type === 'table') {
+    return (
+      <ArticleTableBlock
+        renderCellContent={({ cell, prefix, selectedTokenKey: currentSelectedTokenKey }) =>
+          renderTableCellText({
+            cell,
+            onWordPress,
+            prefix,
+            selectedTokenKey: currentSelectedTokenKey,
+            speakingTokenKey,
+          })
+        }
+        rows={block.rows}
+        selectedTokenKey={selectedTokenKeys?.[0]}
+      />
+    );
+  }
+
+  if (block.type === 'formula') {
+    return (
+      <ArticleFormulaBlock
+        altText={block.altText}
+        heightEx={block.heightEx}
+        svg={block.svg}
+        widthEx={block.widthEx}
+      />
+    );
+  }
+
+  if (block.type !== 'image') {
+    return null;
+  }
+
+  return <ArticleImageBlock alt={block.alt} caption={block.caption} src={block.src} />;
+}, areArticleBlockRowPropsEqual);
+
+function areArticleBlockRowPropsEqual(
+  previousProps: ArticleBlockRowProps,
+  nextProps: ArticleBlockRowProps,
+): boolean {
+  if (
+    previousProps.block !== nextProps.block ||
+    previousProps.blockKey !== nextProps.blockKey ||
+    previousProps.chevronColor !== nextProps.chevronColor ||
+    previousProps.collapsed !== nextProps.collapsed ||
+    previousProps.onActivateInteractiveBlock !== nextProps.onActivateInteractiveBlock ||
+    previousProps.onToggleHeading !== nextProps.onToggleHeading ||
+    previousProps.onWordPress !== nextProps.onWordPress
+  ) {
+    return false;
+  }
+
+  const wasInteractiveBlock =
+    previousProps.activeInteractiveBlockKey === previousProps.blockKey;
+  const isInteractiveBlock = nextProps.activeInteractiveBlockKey === nextProps.blockKey;
+
+  if (wasInteractiveBlock !== isInteractiveBlock) {
+    return false;
+  }
+
+  if (nextProps.block.type === 'heading') {
+    return true;
+  }
+
+  const tokenPrefix = getArticleBlockTokenPrefix(nextProps);
+
+  return (
+    isSpeakingTokenChangeIrrelevant({
+      nextSpeakingTokenKey: nextProps.speakingTokenKey,
+      prefix: tokenPrefix,
+      previousSpeakingTokenKey: previousProps.speakingTokenKey,
+    }) &&
+    isSelectedTokensChangeIrrelevant({
+      nextSelectedTokenKeys: nextProps.selectedTokenKeys,
+      previousSelectedTokenKeys: previousProps.selectedTokenKeys,
+      prefix: tokenPrefix,
+    })
+  );
+}
+
+function getArticleBlockTokenPrefix(props: ArticleBlockRowProps): string {
+  return props.block.type === 'table' ? 'table' : props.blockKey;
+}
+
+const PlainInlineText = memo(function PlainInlineText({
+  nodes,
+  onPress,
+  prefix,
+  speakingTokenKey,
+  style,
+}: PlainInlineTextProps) {
+  const shouldHighlightSentence =
+    ENABLE_SPEECH_SENTENCE_HIGHLIGHT &&
+    isTokenKeyInsidePrefix(speakingTokenKey, prefix);
+  const highlightedSentenceContent = useMemo(() => {
+    if (!shouldHighlightSentence) {
+      return null;
+    }
+
+    const parts = splitTextToTouchableParts(
+      normalizeInlineNodesForWordSelection(nodes),
+      prefix,
+    );
+    const speakingSentenceKey = getSpeakingSentenceKey(parts, speakingTokenKey);
+
+    if (!speakingSentenceKey) {
+      return null;
+    }
+
+    return createPlainSentenceGroups(parts).map((group) => {
+      const renderedParts = group.parts.map(renderPlainTouchablePart);
+
+      if (group.sentenceKey === speakingSentenceKey) {
+        return (
+          <ThemedText key={group.key} style={styles.speakingSentence} type="paragraph">
+            {renderedParts}
+          </ThemedText>
+        );
+      }
+
+      return <Fragment key={group.key}>{renderedParts}</Fragment>;
+    });
+  }, [nodes, prefix, shouldHighlightSentence, speakingTokenKey]);
+  const segments = useMemo(() => createPlainTextSegments(nodes), [nodes]);
+
+  if (highlightedSentenceContent) {
+    return (
+      <ThemedText onPress={onPress} style={style} type="paragraph">
+        {highlightedSentenceContent}
+      </ThemedText>
+    );
+  }
+
+  if (segments.length === 1) {
+    const segment = segments[0];
+
+    return (
+      <ThemedText
+        onPress={onPress}
+        style={[
+          style,
+          segment?.bold ? styles.inlineBold : null,
+          segment?.italic ? styles.inlineItalic : null,
+        ]}
+        type="paragraph">
+        {segment?.text ?? ''}
+      </ThemedText>
+    );
+  }
+
+  return (
+    <ThemedText onPress={onPress} style={style} type="paragraph">
+      {segments.map((segment) => (
+        <ThemedText
+          key={segment.key}
+          onPress={onPress}
+          style={[
+            segment.bold ? styles.inlineBold : null,
+            segment.italic ? styles.inlineItalic : null,
+          ]}
+          type="paragraph">
+          {segment.text}
+        </ThemedText>
+      ))}
+    </ThemedText>
+  );
+});
+
+const PlainListItem = memo(function PlainListItem({
+  item,
+  itemIndex,
+  onPress,
+  ordered,
+  prefix,
+  speakingTokenKey,
+}: {
+  item: InlineNode[];
+  itemIndex: number;
+  onPress: () => void;
+  ordered: boolean;
+  prefix: string;
+  speakingTokenKey?: string;
+}) {
+  return (
+    <View style={styles.listItem}>
+      <ThemedText style={styles.listBullet} type="paragraph">
+        {ordered ? `${itemIndex + 1}.` : '\u2022'}
+      </ThemedText>
+      <PlainInlineText
+        nodes={item}
+        onPress={onPress}
+        prefix={prefix}
+        speakingTokenKey={speakingTokenKey}
+        style={styles.listItemText}
+      />
+    </View>
+  );
+});
+
+function renderPlainTouchablePart(part: TouchableTextPart) {
+  return (
+    <ThemedText
+      key={part.key}
+      style={[
+        part.bold ? styles.inlineBold : null,
+        part.italic ? styles.inlineItalic : null,
+      ]}
+      type="paragraph">
+      {part.text}
+    </ThemedText>
+  );
+}
+
+function createPlainSentenceGroups(parts: TouchableTextPart[]): PlainSentenceGroup[] {
+  const groups: PlainSentenceGroup[] = [];
+
+  parts.forEach((part) => {
+    const sentenceKey = part.type === 'word' ? part.sentenceKey : undefined;
+    const currentGroup = groups[groups.length - 1];
+
+    if (
+      currentGroup &&
+      (!sentenceKey || currentGroup.sentenceKey === sentenceKey)
+    ) {
+      currentGroup.parts.push(part);
+      return;
+    }
+
+    groups.push({
+      key: sentenceKey ?? part.key,
+      parts: [part],
+      sentenceKey,
+    });
+  });
+
+  return groups;
+}
+
+function createPlainTextSegments(nodes: InlineNode[]): PlainTextSegment[] {
+  const segments: PlainTextSegment[] = [];
+
+  nodes.forEach((node, index) => {
+    const previousSegment = segments[segments.length - 1];
+
+    if (
+      previousSegment &&
+      Boolean(previousSegment.bold) === Boolean(node.bold) &&
+      Boolean(previousSegment.italic) === Boolean(node.italic)
+    ) {
+      previousSegment.text += node.text;
+      return;
+    }
+
+    segments.push({
+      bold: node.bold,
+      italic: node.italic,
+      key: `plain-${index}`,
+      text: node.text,
+    });
+  });
+
+  return segments;
+}
+
 function renderTouchableParts(params: {
   nodes: InlineNode[];
   onWordPress: InteractiveArticleTextProps['onWordPress'];
@@ -368,39 +735,113 @@ function renderTouchablePartsFromParts(params: {
     ...(params.selectedTokenKeys ?? []),
     ...(params.selectedTokenKey ? [params.selectedTokenKey] : []),
   ]);
+  const speakingSentenceKey = ENABLE_SPEECH_SENTENCE_HIGHLIGHT
+    ? getSpeakingSentenceKey(params.parts, params.speakingTokenKey)
+    : undefined;
+  const sentenceGroups = createTouchableTextSentenceGroups(params.parts);
 
-  return params.parts.map((part) => {
-    if (part.type === 'text') {
+  return sentenceGroups.map((group) => {
+    const renderedParts = group.parts.map((part) =>
+      renderTouchablePart({
+        onWordPress: params.onWordPress,
+        part,
+        selectedTokenKeySet,
+        speakingTokenKey: ENABLE_SPEECH_WORD_HIGHLIGHT
+          ? params.speakingTokenKey
+          : undefined,
+      }),
+    );
+
+    if (group.sentenceKey && group.sentenceKey === speakingSentenceKey) {
       return (
-        <ThemedText
-          key={part.key}
-          style={[
-            part.bold ? styles.inlineBold : null,
-            part.italic ? styles.inlineItalic : null,
-          ]}
-          type="paragraph">
-          {part.text}
+        <ThemedText key={group.key} style={styles.speakingSentence} type="paragraph">
+          {renderedParts}
         </ThemedText>
       );
     }
 
-    return (
-      <TouchableWord
-        key={part.key}
-        bold={part.bold}
-        contextSentence={part.contextSentence}
-        italic={part.italic}
-        onPress={params.onWordPress}
-        selected={selectedTokenKeySet.has(part.key)}
-        sentenceKey={part.sentenceKey}
-        sentenceWordIndex={part.sentenceWordIndex}
-        speaking={params.speakingTokenKey === part.key}
-        text={part.text}
-        tokenKey={part.key}
-        word={part.word}
-      />
-    );
+    return <Fragment key={group.key}>{renderedParts}</Fragment>;
   });
+}
+
+function renderTouchablePart(params: {
+  onWordPress: InteractiveArticleTextProps['onWordPress'];
+  part: TouchableTextPart;
+  selectedTokenKeySet: ReadonlySet<string>;
+  speakingTokenKey?: string;
+}) {
+  const { part } = params;
+
+  if (part.type === 'text') {
+    return (
+      <ThemedText
+        key={part.key}
+        style={[
+          part.bold ? styles.inlineBold : null,
+          part.italic ? styles.inlineItalic : null,
+        ]}
+        type="paragraph">
+        {part.text}
+      </ThemedText>
+    );
+  }
+
+  return (
+    <TouchableWord
+      key={part.key}
+      bold={part.bold}
+      contextSentence={part.contextSentence}
+      italic={part.italic}
+      onPress={params.onWordPress}
+      selected={params.selectedTokenKeySet.has(part.key)}
+      sentenceKey={part.sentenceKey}
+      sentenceWordIndex={part.sentenceWordIndex}
+      speaking={params.speakingTokenKey === part.key}
+      text={part.text}
+      tokenKey={part.key}
+      word={part.word}
+    />
+  );
+}
+
+function getSpeakingSentenceKey(
+  parts: TouchableTextPart[],
+  speakingTokenKey: string | undefined,
+): string | undefined {
+  if (!speakingTokenKey) {
+    return undefined;
+  }
+
+  return parts.find(
+    (part) => part.type === 'word' && part.key === speakingTokenKey,
+  )?.sentenceKey;
+}
+
+function createTouchableTextSentenceGroups(
+  parts: TouchableTextPart[],
+): TouchableTextSentenceGroup[] {
+  const groups: TouchableTextSentenceGroup[] = [];
+
+  parts.forEach((part) => {
+    const sentenceKey = part.type === 'word' ? part.sentenceKey : undefined;
+    const currentGroup = groups[groups.length - 1];
+
+    if (
+      currentGroup &&
+      (!sentenceKey || currentGroup.sentenceKey === sentenceKey)
+    ) {
+      currentGroup.parts.push(part);
+      return;
+    }
+
+    groups.push({
+      key: sentenceKey ?? part.key,
+      parts: [part],
+      sentenceKey,
+    });
+  });
+
+  return groups;
 }
 
 const TouchableInlineText = memo(function TouchableInlineText({
@@ -463,7 +904,11 @@ function areTouchableInlineTextPropsEqual(
     previousProps.onWordPress === nextProps.onWordPress &&
     previousProps.prefix === nextProps.prefix &&
     previousProps.style === nextProps.style &&
-    previousProps.speakingTokenKey === nextProps.speakingTokenKey &&
+    isSpeakingTokenChangeIrrelevant({
+      nextSpeakingTokenKey: nextProps.speakingTokenKey,
+      prefix: nextProps.prefix,
+      previousSpeakingTokenKey: previousProps.speakingTokenKey,
+    }) &&
     isSelectedTokensChangeIrrelevant({
       nextSelectedTokenKeys: nextProps.selectedTokenKeys,
       previousSelectedTokenKeys: previousProps.selectedTokenKeys,
@@ -482,13 +927,38 @@ function areTouchableListItemPropsEqual(
     previousProps.onWordPress === nextProps.onWordPress &&
     previousProps.ordered === nextProps.ordered &&
     previousProps.prefix === nextProps.prefix &&
-    previousProps.speakingTokenKey === nextProps.speakingTokenKey &&
+    isSpeakingTokenChangeIrrelevant({
+      nextSpeakingTokenKey: nextProps.speakingTokenKey,
+      prefix: nextProps.prefix,
+      previousSpeakingTokenKey: previousProps.speakingTokenKey,
+    }) &&
     isSelectedTokensChangeIrrelevant({
       nextSelectedTokenKeys: nextProps.selectedTokenKeys,
       previousSelectedTokenKeys: previousProps.selectedTokenKeys,
       prefix: nextProps.prefix,
     })
   );
+}
+
+function isSpeakingTokenChangeIrrelevant(params: {
+  nextSpeakingTokenKey?: string;
+  prefix: string;
+  previousSpeakingTokenKey?: string;
+}): boolean {
+  const wasSpeakingInsidePrefix = isTokenKeyInsidePrefix(
+    params.previousSpeakingTokenKey,
+    params.prefix,
+  );
+  const isSpeakingInsidePrefix = isTokenKeyInsidePrefix(
+    params.nextSpeakingTokenKey,
+    params.prefix,
+  );
+
+  if (!wasSpeakingInsidePrefix && !isSpeakingInsidePrefix) {
+    return true;
+  }
+
+  return params.previousSpeakingTokenKey === params.nextSpeakingTokenKey;
 }
 
 function isSelectedTokensChangeIrrelevant(params: {
@@ -523,7 +993,7 @@ function isTokenKeyInsidePrefix(
   tokenKey: string | undefined,
   prefix: string,
 ): boolean {
-  return tokenKey?.startsWith(`${prefix}-word-`) ?? false;
+  return tokenKey?.startsWith(`${prefix}-`) ?? false;
 }
 
 function renderTableCellText(params: {

@@ -14,11 +14,15 @@ type ArticleSpeechStatus = 'idle' | 'paused' | 'playing';
 
 type StopReason = 'pause' | 'reset' | 'stop' | null;
 
+const ACTIVE_TOKEN_UPDATE_INTERVAL_MS = 300;
+
 export function useArticleSpeech(blocks?: ArticleBlock[]) {
   const chunks = useMemo(() => createArticleSpeechChunks(blocks), [blocks]);
   const [activeTokenKey, setActiveTokenKey] = useState<string | undefined>();
   const [status, setStatus] = useState<ArticleSpeechStatus>('idle');
+  const activeTokenKeyRef = useRef<string | undefined>();
   const chunkIndexRef = useRef(0);
+  const lastActiveTokenUpdateAtRef = useRef(0);
   const wordIndexRef = useRef(0);
   const sessionIdRef = useRef(0);
   const stopReasonRef = useRef<StopReason>(null);
@@ -37,8 +41,32 @@ export function useArticleSpeech(blocks?: ArticleBlock[]) {
   const resetSpeechState = useCallback(() => {
     chunkIndexRef.current = 0;
     wordIndexRef.current = 0;
+    activeTokenKeyRef.current = undefined;
+    lastActiveTokenUpdateAtRef.current = 0;
     setActiveTokenKey(undefined);
     setStatus('idle');
+  }, []);
+
+  const publishActiveTokenKey = useCallback((tokenKey: string, force = false) => {
+    if (activeTokenKeyRef.current === tokenKey) {
+      return;
+    }
+
+    const now = Date.now();
+    const isNextTokenInDifferentBlock =
+      getBlockIndexFromTokenKey(activeTokenKeyRef.current) !==
+      getBlockIndexFromTokenKey(tokenKey);
+
+    activeTokenKeyRef.current = tokenKey;
+
+    if (
+      force ||
+      isNextTokenInDifferentBlock ||
+      now - lastActiveTokenUpdateAtRef.current >= ACTIVE_TOKEN_UPDATE_INTERVAL_MS
+    ) {
+      lastActiveTokenUpdateAtRef.current = now;
+      setActiveTokenKey(tokenKey);
+    }
   }, []);
 
   const speakFrom = useCallback(
@@ -56,7 +84,7 @@ export function useArticleSpeech(blocks?: ArticleBlock[]) {
 
       chunkIndexRef.current = chunkIndex;
       wordIndexRef.current = wordIndex;
-      setActiveTokenKey(firstWord.tokenKey);
+      publishActiveTokenKey(firstWord.tokenKey, true);
       setStatus('playing');
 
       Speech.speak(playableChunk.text, {
@@ -74,7 +102,7 @@ export function useArticleSpeech(blocks?: ArticleBlock[]) {
           }
 
           wordIndexRef.current = wordIndex + nextWordIndex;
-          setActiveTokenKey(nextWord.tokenKey);
+          publishActiveTokenKey(nextWord.tokenKey);
         },
         onDone: () => {
           if (sessionIdRef.current !== sessionId) {
@@ -117,7 +145,7 @@ export function useArticleSpeech(blocks?: ArticleBlock[]) {
         rate: 0.92,
       });
     },
-    [chunks, resetSpeechState],
+    [chunks, publishActiveTokenKey, resetSpeechState],
   );
 
   const stop = useCallback(async () => {
@@ -269,4 +297,15 @@ function getGlobalWordIndex(
     .reduce((sum, chunk) => sum + chunk.words.length, 0);
 
   return previousWords + wordIndex;
+}
+
+function getBlockIndexFromTokenKey(tokenKey: string | undefined): number | null {
+  const match = tokenKey?.match(/^block-(\d+)(?:-|$)/);
+  const blockIndex = match?.[1] ? Number(match[1]) : NaN;
+
+  if (!Number.isFinite(blockIndex)) {
+    return null;
+  }
+
+  return blockIndex;
 }

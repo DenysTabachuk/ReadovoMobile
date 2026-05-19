@@ -63,16 +63,7 @@ export const styles = StyleSheet.create({
     top: 0,
     zIndex: 20,
   },
-  floatingSpeechControlsInner: {
-    shadowColor: '#000000',
-    shadowOffset: {
-      height: 2,
-      width: 0,
-    },
-    shadowOpacity: 0.16,
-    shadowRadius: 8,
-    elevation: 6,
-  },
+  floatingSpeechControlsInner: {},
   header: {
     gap: Spacing.sm,
   },

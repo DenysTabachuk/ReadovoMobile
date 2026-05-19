@@ -3,7 +3,16 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import * as Linking from 'expo-linking';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Animated, FlatList, Pressable, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Animated,
+  FlatList,
+  type LayoutChangeEvent,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+  Pressable,
+  View,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
@@ -75,8 +84,10 @@ type SelectedTextFragment = {
 
 const DEFAULT_SIMPLIFICATION_LEVEL: SimplifyArticleLevel = 'A2';
 const TRANSLATION_SHEET_OPEN_DELAY_MS = 1000;
+const TRANSLATION_PROGRESS_UPDATE_INTERVAL_MS = 50;
 const FLOATING_SPEECH_CONTROLS_HIDDEN_OFFSET = -120;
 const FLOATING_SPEECH_CONTROLS_ANIMATION_DURATION_MS = 220;
+const SCROLL_TO_TOP_THRESHOLD = 300;
 const TEXT_VIEW_MODES = ['original', 'adaptation', 'summary'] as const;
 type ArticleTextViewMode = (typeof TEXT_VIEW_MODES)[number];
 const TEXT_MODE_LABEL_KEYS: Record<ArticleTextViewMode, 'original' | 'adapted' | 'summary'> = {
@@ -122,14 +133,23 @@ export default function ArticleScreen() {
   const [isQuizModePickerOpen, setIsQuizModePickerOpen] = useState(false);
   const [isTranslationSheetOpen, setIsTranslationSheetOpen] = useState(false);
   const [translationSheetOpenProgress, setTranslationSheetOpenProgress] = useState(0);
-  const [scrollOffsetY, setScrollOffsetY] = useState(0);
-  const [speechControlsBottomY, setSpeechControlsBottomY] = useState<number | null>(
-    null,
-  );
+  const [scrollToTopOffsetY, setScrollToTopOffsetY] = useState(0);
+  const [isScrolledPastSpeechControls, setIsScrolledPastSpeechControls] =
+    useState(false);
   const [firstVisibleBlockIndex, setFirstVisibleBlockIndex] = useState(0);
+  const [visibleBlockIndexRange, setVisibleBlockIndexRange] = useState({
+    first: 0,
+    last: 0,
+  });
   const [isFloatingSpeechControlsRendered, setIsFloatingSpeechControlsRendered] =
     useState(false);
   const articleListRef = useRef<FlatList>(null);
+  const scrollOffsetYRef = useRef(0);
+  const speechControlsBottomYRef = useRef<number | null>(null);
+  const isScrollToTopVisibleRef = useRef(false);
+  const isScrolledPastSpeechControlsRef = useRef(false);
+  const firstVisibleBlockIndexRef = useRef(0);
+  const visibleBlockIndexRangeRef = useRef({ first: 0, last: 0 });
   const floatingSpeechControlsOpacity = useRef(new Animated.Value(0)).current;
   const floatingSpeechControlsTranslateY = useRef(
     new Animated.Value(FLOATING_SPEECH_CONTROLS_HIDDEN_OFFSET),
@@ -530,7 +550,7 @@ export default function ArticleScreen() {
       const nextProgress = Math.min(1, elapsedMs / TRANSLATION_SHEET_OPEN_DELAY_MS);
 
       setTranslationSheetOpenProgress(nextProgress);
-    }, 16);
+    }, TRANSLATION_PROGRESS_UPDATE_INTERVAL_MS);
 
     return () => {
       clearTimeout(timeoutId);
@@ -661,6 +681,10 @@ export default function ArticleScreen() {
     ),
     [handleToggleSavedArticle, iconColor, isCurrentArticleSaved, savedAccentColor, t],
   );
+  const selectedTokenKeys = useMemo(
+    () => selectedTokens.map((token) => token.tokenKey),
+    [selectedTokens],
+  );
   const displayedText = useMemo(() => {
     return article?.content ?? '';
   }, [article?.content]);
@@ -702,15 +726,19 @@ export default function ArticleScreen() {
   ]);
   const currentPendingTransformationType = simplifyMutation.variables;
   const shouldShowFloatingSpeechControls =
-    articleSpeech.status !== 'idle' &&
-    speechControlsBottomY !== null &&
-    scrollOffsetY > speechControlsBottomY + Spacing.sm;
+    articleSpeech.status !== 'idle' && isScrolledPastSpeechControls;
   const currentSpeechBlockIndex = useMemo(
     () => getBlockIndexFromTokenKey(articleSpeech.activeTokenKey),
     [articleSpeech.activeTokenKey],
   );
+  const isCurrentSpeechBlockVisible =
+    currentSpeechBlockIndex !== null &&
+    currentSpeechBlockIndex >= visibleBlockIndexRange.first &&
+    currentSpeechBlockIndex <= visibleBlockIndexRange.last;
   const shouldShowCurrentSpeechButton =
-    articleSpeech.status !== 'idle' && Boolean(articleSpeech.activeTokenKey);
+    articleSpeech.status !== 'idle' &&
+    Boolean(articleSpeech.activeTokenKey) &&
+    !isCurrentSpeechBlockVisible;
   const shouldShowArticleCta =
     articleSpeech.status === 'idle' && !isAdaptSettingsOpen && !isQuizModePickerOpen;
   const navigationButtonBottomOffset = shouldShowArticleCta ? 160 : Spacing.xLg;
@@ -730,6 +758,73 @@ export default function ArticleScreen() {
       },
     ],
   };
+
+  const updateScrollThresholdState = useCallback((nextScrollOffsetY: number) => {
+    scrollOffsetYRef.current = nextScrollOffsetY;
+
+    const isScrollToTopVisible = nextScrollOffsetY > SCROLL_TO_TOP_THRESHOLD;
+
+    if (isScrollToTopVisibleRef.current !== isScrollToTopVisible) {
+      isScrollToTopVisibleRef.current = isScrollToTopVisible;
+      setScrollToTopOffsetY(
+        isScrollToTopVisible ? SCROLL_TO_TOP_THRESHOLD + 1 : 0,
+      );
+    }
+
+    const speechControlsBottomY = speechControlsBottomYRef.current;
+    const isPastSpeechControls =
+      speechControlsBottomY !== null &&
+      nextScrollOffsetY > speechControlsBottomY + Spacing.sm;
+
+    if (isScrolledPastSpeechControlsRef.current !== isPastSpeechControls) {
+      isScrolledPastSpeechControlsRef.current = isPastSpeechControls;
+      setIsScrolledPastSpeechControls(isPastSpeechControls);
+    }
+  }, []);
+
+  const handleArticleScroll = useCallback(
+    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      updateScrollThresholdState(event.nativeEvent.contentOffset.y);
+    },
+    [updateScrollThresholdState],
+  );
+
+  const handleSpeechControlsLayout = useCallback((event: LayoutChangeEvent) => {
+    const { height, y } = event.nativeEvent.layout;
+
+    speechControlsBottomYRef.current = y + height;
+    updateScrollThresholdState(scrollOffsetYRef.current);
+  }, [updateScrollThresholdState]);
+
+  const handleVisibleBlockIndexChange = useCallback((sourceIndex: number) => {
+    if (firstVisibleBlockIndexRef.current === sourceIndex) {
+      return;
+    }
+
+    firstVisibleBlockIndexRef.current = sourceIndex;
+    setFirstVisibleBlockIndex(sourceIndex);
+  }, []);
+
+  const handleVisibleBlockRangeChange = useCallback(
+    (range: { firstSourceIndex: number; lastSourceIndex: number }) => {
+      const nextRange = {
+        first: range.firstSourceIndex,
+        last: range.lastSourceIndex,
+      };
+      const currentRange = visibleBlockIndexRangeRef.current;
+
+      if (
+        currentRange.first === nextRange.first &&
+        currentRange.last === nextRange.last
+      ) {
+        return;
+      }
+
+      visibleBlockIndexRangeRef.current = nextRange;
+      setVisibleBlockIndexRange(nextRange);
+    },
+    [],
+  );
 
   const handleScrollToCurrentSpeechWord = useCallback(() => {
     if (currentSpeechBlockIndex === null) {
@@ -960,11 +1055,7 @@ export default function ArticleScreen() {
 
             <ArticleSpeechControls
               disabled={!articleSpeech.canSpeak}
-              onLayout={(event) => {
-                const { height, y } = event.nativeEvent.layout;
-
-                setSpeechControlsBottomY(y + height);
-              }}
+              onLayout={handleSpeechControlsLayout}
               onRestart={articleSpeech.restart}
               onStop={() => {
                 void articleSpeech.stop();
@@ -975,13 +1066,12 @@ export default function ArticleScreen() {
             />
           </View>
         }
-        onScroll={(event) => {
-          setScrollOffsetY(event.nativeEvent.contentOffset.y);
-        }}
-        onVisibleBlockIndexChange={setFirstVisibleBlockIndex}
+        onScroll={handleArticleScroll}
+        onVisibleBlockIndexChange={handleVisibleBlockIndexChange}
+        onVisibleBlockRangeChange={handleVisibleBlockRangeChange}
         onWordPress={handleWordPress}
         scrollRef={articleListRef}
-        selectedTokenKeys={selectedTokens.map((token) => token.tokenKey)}
+        selectedTokenKeys={selectedTokenKeys}
         speakingTokenKey={articleSpeech.activeTokenKey}
         text={displayedText}
       />
@@ -1011,7 +1101,8 @@ export default function ArticleScreen() {
       <ScrollToTopButton
         bottomOffset={navigationButtonBottomOffset}
         rightOffset={Spacing.md}
-        scrollOffsetY={scrollOffsetY}
+        scrollOffsetY={scrollToTopOffsetY}
+        threshold={SCROLL_TO_TOP_THRESHOLD}
         scrollRef={articleListRef}
       />
       {shouldShowCurrentSpeechButton ? (
