@@ -107,7 +107,7 @@
   "articles": {
     "title": "Wikipedia articles",
     "description": "A fresh set of random articles for reading practice.",
-    "searchPlaceholder": "Search for a topic, person, place, or event",
+    "searchPlaceholder": "Search articles",
     "searchResults": "{{count}} articles found",
     "randomResults": "{{count}} articles in this set",
     "clearFilters": "Clear",

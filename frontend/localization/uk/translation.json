@@ -107,7 +107,7 @@
   "articles": {
     "title": "Статті з Wikipedia",
     "description": "Свіжа добірка випадкових статей для практики читання.",
-    "searchPlaceholder": "Пошук за темою, людиною, місцем або подією",
+    "searchPlaceholder": "Пошук статей",
     "searchResults": "Знайдено статей: {{count}}",
     "randomResults": "Статей у добірці: {{count}}",
     "clearFilters": "Очистити",
