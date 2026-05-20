@@ -353,8 +353,8 @@ describe('ArticlesService', () => {
       level: 'A2',
       originalLength: 120,
       questions: undefined,
-      targetPercent: 25,
       title: 'Solar System',
+      transformationType: 'summary',
     });
   });
 
@@ -393,7 +393,7 @@ describe('ArticlesService', () => {
 
     expect(createChatCompletionMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        max_completion_tokens: 2048,
+        max_completion_tokens: 32768,
         model: 'llama-3.3-70b-versatile',
       }),
     );
@@ -413,8 +413,8 @@ describe('ArticlesService', () => {
       adaptedLength: 41,
       level: 'A2',
       originalLength: 17,
-      targetPercent: 25,
       title: 'Solar System',
+      transformationType: 'summary',
     });
   });
 
@@ -455,9 +455,9 @@ describe('ArticlesService', () => {
     };
     const prompt = String(request.messages[1]?.content ?? '');
 
-    expect(prompt).toContain('keep approximately the original length');
-    expect(prompt).toContain('without summarizing');
-    expect(response.targetPercent).toBe(100);
+    expect(prompt).toContain('Summarize and shorten the article');
+    expect(prompt).toContain('Hard maximum');
+    expect(response.transformationType).toBe('summary');
   });
 
   it('parses structured simplification response with blocks and questions', async () => {
@@ -759,7 +759,6 @@ describe('ArticlesService', () => {
 
     expect(createChatCompletionMock).toHaveBeenCalledTimes(1);
     expect(queryMock).toHaveBeenCalledTimes(2);
-    expect(response.targetPercent).toBe(25);
     expect(response.adaptedBlocks[0]).toEqual({
       children: [{ text: 'Solar System summary 25%.', type: 'text' }],
       type: 'paragraph',
@@ -768,9 +767,9 @@ describe('ArticlesService', () => {
 
   it('simplifies long structured articles in chunks and preserves selected media blocks', async () => {
     const firstParagraph =
-      `${'The Sun gives Earth light and heat. '.repeat(760)}`.trim();
+      `${'The Sun gives Earth light and heat. '.repeat(250)}`.trim();
     const secondParagraph =
-      `${'Planets move around the Sun in space. '.repeat(760)}`.trim();
+      `${'Planets move around the Sun in space. '.repeat(250)}`.trim();
     const text = `${firstParagraph}\n\n${secondParagraph}`;
 
     createChatCompletionMock
@@ -926,6 +925,7 @@ describe('ArticlesService', () => {
                     'Scientists study volcanoes. Lava flows down the mountain during an eruption.',
                   term: 'eruption',
                   termKind: 'word',
+                  translation: 'виверження',
                   type: 'single_choice',
                 },
               ],
@@ -945,7 +945,7 @@ describe('ArticlesService', () => {
     };
     const prompt = String(request.messages[1]?.content ?? '');
 
-    expect(prompt).toContain('Aim for 5 questions');
+    expect(prompt).toContain('Generate up to 5 questions');
     expect(response).toEqual({
       questions: [
         {
@@ -963,6 +963,7 @@ describe('ArticlesService', () => {
             'Scientists study volcanoes. Lava flows down the mountain during an eruption.',
           term: 'eruption',
           termKind: 'word',
+          translation: 'виверження',
           type: 'single_choice',
         },
       ],
@@ -992,6 +993,7 @@ describe('ArticlesService', () => {
                   sourceExcerpt: 'The forest canopy protects many insects.',
                   term: 'mysterious',
                   termKind: 'word',
+                  translation: 'С‚Р°С”РјРЅРёС‡РёР№',
                   type: 'single_choice',
                 },
                 {
@@ -1008,6 +1010,7 @@ describe('ArticlesService', () => {
                   sourceExcerpt: 'The forest canopy protects many insects.',
                   term: 'the',
                   termKind: 'word',
+                  translation: 'С†Рµ',
                   type: 'single_choice',
                 },
                 {
@@ -1025,6 +1028,7 @@ describe('ArticlesService', () => {
                   sourceExcerpt: 'The forest canopy protects many insects.',
                   term: 'forest canopy',
                   termKind: 'phrase',
+                  translation: 'Р»С–СЃРѕРІРёР№ РїРѕР»РѕРі',
                   type: 'single_choice',
                 },
               ],
@@ -1056,6 +1060,7 @@ describe('ArticlesService', () => {
         sourceExcerpt: 'The forest canopy protects many insects.',
         term: 'forest canopy',
         termKind: 'phrase',
+        translation: 'Р»С–СЃРѕРІРёР№ РїРѕР»РѕРі',
         type: 'single_choice',
       },
     ]);
@@ -1084,6 +1089,7 @@ describe('ArticlesService', () => {
                     'The policy language created ambiguity for both investors and regulators.',
                   term: 'ambiguity',
                   termKind: 'word',
+                  translation: 'неоднозначність',
                   type: 'single_choice',
                 },
               ],
@@ -1124,6 +1130,7 @@ describe('ArticlesService', () => {
       "format": "definition",
       "term": "mathematician",
       "termKind": "word",
+      "translation": "математик",
       "prompt": "A person who works with numbers is called",
       "sourceExcerpt": "Alan Turing was an English mathematician.",
       "options": [
@@ -1140,6 +1147,7 @@ describe('ArticlesService', () => {
       "format": "definition",
       "term": "algorithm",
       "termKind": "word",
+      "translation": "алгоритм",
       "prompt": "A set of steps for solving a problem is called",
       "sourceExcerpt": "The machine could follow an algorithm.",
       "options": [
@@ -1156,6 +1164,7 @@ describe('ArticlesService', () => {
       "format": "definition",
       "term": "computer science",
       "termKind": "phrase",
+      "translation": "комп'ютерні науки",
       "prompt": "The study of computers is called",
       "sourceExcerpt": "He helped develop theoretical computer science.",
       "options": [
@@ -1172,6 +1181,7 @@ describe('ArticlesService', () => {
       "format": "definition",
       "term": "artificial intelligence",
       "termKind": "phrase",
+      "translation": "штучний інтелект",
       "prompt": "Machines that try to think like humans use",
       "sourceExcerpt": "Turing wrote about artificial intelligence.",
       "options": [
@@ -1188,6 +1198,7 @@ describe('ArticlesService', () => {
       "format": "definition",
       "term": "codebreaking",
       "termKind": "word",
+      "translation": "зламування кодів",
       "prompt": "Finding the meaning of secret messages is called",
       "sourceExcerpt": "He worked at Britain's codebreaking centre.",
       "options": [
@@ -1204,6 +1215,7 @@ describe('ArticlesService', () => {
       "format": "definition",
       "term": "chemical basis",
       "termKind": "phrase",
+      "translation": "хімічна основа",
       "prompt": "The study of chemical processes is called`,
           },
         },

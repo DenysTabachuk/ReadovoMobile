@@ -140,6 +140,7 @@ function RootLayoutContent() {
                     options={{ headerShown: false }}
                   />
                   <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                  <Stack.Screen name="dictionary-test" />
                   <Stack.Screen name="article/[id]" />
                   <Stack.Screen name="article-quiz/[id]" />
                   <Stack.Screen

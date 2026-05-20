@@ -162,6 +162,7 @@ export type ArticleVocabularyQuizQuestion = ArticleQuizQuestion & {
   sourceExcerpt?: string;
   term: string;
   termKind: 'word' | 'phrase';
+  translation: string;
   type: 'single_choice';
 };
 

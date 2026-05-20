@@ -30,25 +30,32 @@ function generateDeviceId(): string {
 async function getDeviceId(): Promise<string> {
   const stored = await AsyncStorage.getItem(DEVICE_ID_STORAGE_KEY);
   if (stored) {
+    console.log(`[LearningReminders] using stored deviceId=${stored}`);
     return stored;
   }
 
   const nextValue = generateDeviceId();
   await AsyncStorage.setItem(DEVICE_ID_STORAGE_KEY, nextValue);
+  console.log(`[LearningReminders] generated new deviceId=${nextValue}`);
   return nextValue;
 }
 
 async function requestPushPermission(): Promise<boolean> {
+  console.log('[LearningReminders] reading push permissions');
   const existing = await Notifications.getPermissionsAsync();
+  console.log('[LearningReminders] existing push permissions', existing);
   if (existing.granted) {
     return true;
   }
 
   if (!existing.canAskAgain) {
+    console.warn('[LearningReminders] push permission denied and cannot ask again');
     return false;
   }
 
+  console.log('[LearningReminders] requesting push permissions');
   const requested = await Notifications.requestPermissionsAsync();
+  console.log('[LearningReminders] requested push permissions', requested);
   return requested.granted;
 }
 
@@ -57,11 +64,13 @@ async function ensureAndroidNotificationChannel(): Promise<void> {
     return;
   }
 
+  console.log('[LearningReminders] creating Android notification channel default');
   await Notifications.setNotificationChannelAsync('default', {
     importance: Notifications.AndroidImportance.DEFAULT,
     name: 'default',
     sound: 'default',
   });
+  console.log('[LearningReminders] Android notification channel default ready');
 }
 
 export async function registerCurrentDevicePushToken(
@@ -76,7 +85,12 @@ export async function registerCurrentDevicePushToken(
 
   await ensureAndroidNotificationChannel();
 
+  console.log('[LearningReminders] requesting native device push token');
   const pushTokenResponse = await Notifications.getDevicePushTokenAsync();
+  console.log('[LearningReminders] native device push token response', {
+    tokenPrefix: pushTokenResponse.data.slice(0, 24),
+    tokenType: pushTokenResponse.type,
+  });
   if (pushTokenResponse.type !== 'android') {
     console.warn(
       `[LearningReminders] Firebase Cloud Messaging token registration is supported only on Android. tokenType=${pushTokenResponse.type}`,

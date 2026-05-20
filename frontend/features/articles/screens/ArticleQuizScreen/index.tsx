@@ -1,6 +1,6 @@
-import { useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
@@ -13,7 +13,12 @@ import { Colors } from '@/constants/theme';
 import { getArticleQuizSessionKey } from '@/features/articles';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useAuth } from '@/providers/authProvider';
-import { type ArticleQuizSessionResponse } from '@/api/wikipedia';
+import { createDictionaryWord } from '@/api/dictionary';
+import {
+  type ArticleQuizSessionResponse,
+  type ArticleVocabularyQuizQuestion,
+} from '@/api/wikipedia';
+import { useBanner } from '@/components/banner';
 
 import {
   normalizeLevel,
@@ -31,8 +36,12 @@ export default function ArticleQuizScreen() {
   const queryClient = useQueryClient();
   const colorScheme = useColorScheme();
   const { currentUser } = useAuth();
+  const { showBanner } = useBanner();
   const [quizResult, setQuizResult] = useState<QuizSessionResult | null>(null);
   const [quizAttempt, setQuizAttempt] = useState(0);
+  const [savedVocabularyQuestionIds, setSavedVocabularyQuestionIds] = useState<
+    Set<string>
+  >(() => new Set());
   const params = useLocalSearchParams<{
     id?: string | string[];
     level?: string | string[];
@@ -79,6 +88,73 @@ export default function ArticleQuizScreen() {
     quizLevel,
     quizTargetLength,
   });
+  const saveVocabularyMutation = useMutation({
+    mutationFn: (question: ArticleVocabularyQuizQuestion) =>
+      createDictionaryWord(currentUser?.id ?? '', {
+        context: question.sourceExcerpt ?? article?.title ?? question.term,
+        translation: question.translation,
+        word: question.term,
+      }),
+    onError: () => {
+      showBanner({
+        title: t('dictionary.saveError'),
+        variant: 'error',
+      });
+    },
+    onSuccess: (_word, question) => {
+      setSavedVocabularyQuestionIds((currentIds) => {
+        const nextIds = new Set(currentIds);
+
+        nextIds.add(question.id);
+
+        return nextIds;
+      });
+      void queryClient.invalidateQueries({
+        queryKey: ['dictionary', 'words', currentUser?.id],
+      });
+      showBanner({
+        title: t('dictionary.saved'),
+        variant: 'success',
+      });
+    },
+  });
+  const renderVocabularySaveAction = useCallback(
+    (question: unknown) => {
+      if (
+        quizMode !== 'vocabulary' ||
+        !currentUser?.id ||
+        !isArticleVocabularyQuizQuestion(question)
+      ) {
+        return null;
+      }
+
+      const isSaved = savedVocabularyQuestionIds.has(question.id);
+      const isSaving =
+        saveVocabularyMutation.isPending &&
+        saveVocabularyMutation.variables?.id === question.id;
+
+      return (
+        <Button
+          disabled={isSaved || isSaving}
+          onPress={() => saveVocabularyMutation.mutate(question)}
+          style={styles.quizFooterButton}
+          variant="secondary">
+          {isSaved
+            ? t('dictionary.saved')
+            : isSaving
+              ? t('common.loading', { defaultValue: 'Saving...' })
+              : t('translation.addToDictionary')}
+        </Button>
+      );
+    },
+    [
+      currentUser?.id,
+      quizMode,
+      saveVocabularyMutation,
+      savedVocabularyQuestionIds,
+      t,
+    ],
+  );
 
   useEffect(() => {
     if (!isArticleError) {
@@ -184,6 +260,7 @@ export default function ArticleQuizScreen() {
             void progressMutation.mutateAsync(result);
           }}
           questions={quizSession.questions}
+          renderSubmittedQuestionAction={renderVocabularySaveAction}
         />
       ) : (
         <View style={styles.setupContent}>
@@ -202,4 +279,16 @@ export default function ArticleQuizScreen() {
       )}
     </ScreenContainer>
   );
+}
+
+function isArticleVocabularyQuizQuestion(
+  question: unknown,
+): question is ArticleVocabularyQuizQuestion {
+  if (!question || typeof question !== 'object') {
+    return false;
+  }
+
+  const candidate = question as Partial<ArticleVocabularyQuizQuestion>;
+
+  return Boolean(candidate.term && candidate.translation);
 }

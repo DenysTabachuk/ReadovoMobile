@@ -24,7 +24,11 @@ export const styles = StyleSheet.create({
     color: '#217a3b',
   },
   footer: {
+    gap: Spacing.sm,
     marginTop: 'auto',
+  },
+  footerButton: {
+    width: '100%',
   },
   disabledOption: {
     opacity: 0.6,

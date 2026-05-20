@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
@@ -40,6 +41,15 @@ export class DictionaryController {
     @Body() body: CreateDictionaryWordRequest,
   ): Promise<DictionaryWord> {
     return this.dictionaryService.createWord(userId, body);
+  }
+
+  @Delete('users/:userId/words/:wordId')
+  @UseGuards(UserAuthGuard)
+  deleteWord(
+    @Param('userId') userId: string,
+    @Param('wordId') wordId: string,
+  ): Promise<DictionaryWord> {
+    return this.dictionaryService.deleteWord(userId, wordId);
   }
 
   @Patch('users/:userId/words/:wordId/progress')

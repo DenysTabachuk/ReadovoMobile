@@ -167,6 +167,7 @@ export type ArticleVocabularyQuizQuestion = ArticleQuizQuestion & {
   sourceExcerpt?: string;
   term: string;
   termKind: ArticleVocabularyQuizTermKind;
+  translation: string;
   type: 'single_choice';
 };
 

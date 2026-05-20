@@ -15,12 +15,33 @@ type RegisterPushTokenPayload = {
   provider: 'fcm';
 };
 
+async function logFailedResponse(
+  operation: string,
+  response: Response,
+): Promise<void> {
+  let body = '';
+
+  try {
+    body = await response.text();
+  } catch (error) {
+    console.error(`[LearningRemindersApi] ${operation} failed to read error body`, error);
+  }
+
+  console.error(`[LearningRemindersApi] ${operation} failed`, {
+    body,
+    status: response.status,
+    statusText: response.statusText,
+    url: response.url,
+  });
+}
+
 export async function getLearningReminderPreferences(
   userId: string,
 ): Promise<LearningReminderPreferencesResponse> {
   const response = await authenticatedFetch(`${API_BASE_URL}/notifications/preferences/${userId}`);
 
   if (!response.ok) {
+    await logFailedResponse('getLearningReminderPreferences', response);
     throw new Error('settings.learningReminders.fetchFailed');
   }
 
@@ -40,6 +61,7 @@ export async function updateLearningReminderPreferences(
   });
 
   if (!response.ok) {
+    await logFailedResponse('updateLearningReminderPreferences', response);
     throw new Error('settings.learningReminders.updateFailed');
   }
 
@@ -59,6 +81,7 @@ export async function registerPushToken(
   });
 
   if (!response.ok) {
+    await logFailedResponse('registerPushToken', response);
     throw new Error('settings.learningReminders.registerTokenFailed');
   }
 }
@@ -92,6 +115,7 @@ export async function sendRemoteTestPush(
   });
 
   if (!response.ok) {
+    await logFailedResponse('sendRemoteTestPush', response);
     throw new Error('settings.learningReminders.remoteTestFailed');
   }
 
@@ -111,6 +135,7 @@ export async function dispatchLearningRemindersNow(): Promise<LearningReminderDi
   );
 
   if (!response.ok) {
+    await logFailedResponse('dispatchLearningRemindersNow', response);
     throw new Error('settings.learningReminders.dispatchFailed');
   }
 
@@ -128,6 +153,7 @@ export async function clearTodayLearningReminderDispatch(
   );
 
   if (!response.ok) {
+    await logFailedResponse('clearTodayLearningReminderDispatch', response);
     throw new Error('settings.learningReminders.clearDispatchFailed');
   }
 

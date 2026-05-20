@@ -18,6 +18,8 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: Spacing.sm,
     justifyContent: 'center',
+    maxWidth: '100%',
+    width: '100%',
   },
   leftAccessory: {
     alignItems: 'center',
@@ -32,6 +34,9 @@ export const styles = StyleSheet.create({
     borderColor: buttonBlue,
   },
   text: {
+    flex: 1,
+    flexShrink: 1,
+    minWidth: 0,
     textAlign: 'center',
   },
   primaryText: {

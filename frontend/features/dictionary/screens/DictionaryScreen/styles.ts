@@ -204,10 +204,19 @@ export const styles = StyleSheet.create({
     paddingTop: Spacing.lg,
   },
   testHeader: {
-    alignItems: 'flex-start',
+    alignItems: 'center',
     flexDirection: 'row',
     gap: Spacing.md,
-    justifyContent: 'space-between',
+  },
+  testBackButton: {
+    alignItems: 'center',
+    borderRadius: 8,
+    height: 40,
+    justifyContent: 'center',
+    width: 40,
+  },
+  testHeaderTitle: {
+    flex: 1,
   },
   questionWord: {
     textAlign: 'center',
@@ -237,5 +246,16 @@ export const styles = StyleSheet.create({
   },
   testError: {
     color: '#c2410c',
+  },
+  wordModalActions: {
+    gap: Spacing.sm,
+    paddingTop: Spacing.md,
+  },
+  confirmModalActions: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+  },
+  confirmModalButton: {
+    flex: 1,
   },
 });
