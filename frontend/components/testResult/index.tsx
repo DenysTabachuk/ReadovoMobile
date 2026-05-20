@@ -1,5 +1,6 @@
 import { Video, ResizeMode } from 'expo-av';
-import { View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -52,6 +53,11 @@ export function TestResult({
   const tier = resolveResultTier(result.percentage);
   const animationSource = resolveAnimationSource(tier, colorScheme);
   const message = resolveResultMessage(tier, t);
+  const [isVideoReady, setIsVideoReady] = useState(false);
+
+  useEffect(() => {
+    setIsVideoReady(false);
+  }, [animationSource]);
 
   return (
     <View style={styles.container}>
@@ -63,14 +69,32 @@ export function TestResult({
           <View style={styles.purpleGlowInner} />
           <View style={styles.purpleGlowCore} />
           <View style={styles.videoMask}>
-          <Video
-            isLooping
-            isMuted
-            shouldPlay
-            resizeMode={ResizeMode.CONTAIN}
-            source={animationSource}
-            style={[styles.backgroundVideo, { backgroundColor: palette.background }]}
+            <Video
+              isLooping
+              isMuted
+              onError={() => setIsVideoReady(true)}
+              onLoadStart={() => setIsVideoReady(false)}
+              onReadyForDisplay={() => setIsVideoReady(true)}
+              shouldPlay
+              resizeMode={ResizeMode.CONTAIN}
+              source={animationSource}
+              style={[
+                styles.backgroundVideo,
+                {
+                  backgroundColor: palette.background,
+                  opacity: isVideoReady ? 0.94 : 0,
+                },
+              ]}
             />
+            {!isVideoReady ? (
+              <View
+                style={[
+                  styles.videoLoader,
+                  { backgroundColor: palette.background },
+                ]}>
+                <ActivityIndicator color={palette.tint} size="large" />
+              </View>
+            ) : null}
           </View>
         </View>
       </View>

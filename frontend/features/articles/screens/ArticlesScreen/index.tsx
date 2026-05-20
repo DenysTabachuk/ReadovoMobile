@@ -426,17 +426,6 @@ export default function ArticlesScreen() {
     setRecommendedArticles(true);
     setPersonalFilter(value);
   }, []);
-  const handleToggleFilters = useCallback((isCollapsed: boolean) => {
-    if (!isCollapsed) {
-      return;
-    }
-
-    listRef.current?.scrollToOffset({
-      animated: true,
-      offset: 0,
-    });
-  }, []);
-
   const openArticle = useCallback((article: WikipediaArticle) => {
     if (isOpeningArticleRef.current) {
       return;
@@ -548,7 +537,6 @@ export default function ArticlesScreen() {
               onChangeSearchValue={handleChangeSearchValue}
               onChangeSortByFilter={handleChangeSortByFilter}
               onClearFilters={clearFilters}
-              onToggleFilters={handleToggleFilters}
               preferImagesFirst={preferImagesFirst}
               readyAdaptationEnabled={readyAdaptationEnabled}
               readyLevelFilter={readyLevelFilter}

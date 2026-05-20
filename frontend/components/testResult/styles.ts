@@ -28,7 +28,6 @@ export const styles = StyleSheet.create({
   },
   backgroundVideo: {
     height: '100%',
-    opacity: 0.94,
     width: '100%',
   },
   videoMask: {
@@ -36,6 +35,11 @@ export const styles = StyleSheet.create({
     height: 300,
     overflow: 'hidden',
     width: 300,
+  },
+  videoLoader: {
+    alignItems: 'center',
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
   },
   container: {
     alignItems: 'center',
