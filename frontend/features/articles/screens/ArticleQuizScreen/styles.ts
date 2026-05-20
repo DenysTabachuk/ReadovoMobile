@@ -21,6 +21,13 @@ export const styles = StyleSheet.create({
     gap: Spacing.md,
     paddingBottom: 0,
   },
+  confirmModalActions: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+  },
+  confirmModalButton: {
+    flex: 1,
+  },
   setupContent: {
     flex: 1,
     justifyContent: 'space-between',

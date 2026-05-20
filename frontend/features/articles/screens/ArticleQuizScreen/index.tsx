@@ -1,11 +1,16 @@
+import {
+  usePreventRemove,
+  type NavigationAction,
+} from '@react-navigation/native';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { Stack, useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/button';
 import { ArticleQuizRunner, type QuizSessionResult } from '@/components/articleQuizRunner';
+import { ModalSheet } from '@/components/modalSheet';
 import { ScreenContainer } from '@/components/screenContainer';
 import { TestResult } from '@/components/testResult';
 import { ThemedText } from '@/components/themedText';
@@ -33,12 +38,16 @@ import { useCompleteArticleQuiz } from './useCompleteArticleQuiz';
 export default function ArticleQuizScreen() {
   const { t } = useTranslation();
   const router = useRouter();
+  const navigation = useNavigation();
   const queryClient = useQueryClient();
   const colorScheme = useColorScheme();
   const { currentUser } = useAuth();
   const { showBanner } = useBanner();
   const [quizResult, setQuizResult] = useState<QuizSessionResult | null>(null);
   const [quizAttempt, setQuizAttempt] = useState(0);
+  const [isExitQuizConfirmOpen, setIsExitQuizConfirmOpen] = useState(false);
+  const [pendingExitAction, setPendingExitAction] =
+    useState<NavigationAction | null>(null);
   const [savedVocabularyQuestionIds, setSavedVocabularyQuestionIds] = useState<
     Set<string>
   >(() => new Set());
@@ -87,6 +96,13 @@ export default function ArticleQuizScreen() {
     currentUserId: currentUser?.id ?? undefined,
     quizLevel,
     quizTargetLength,
+  });
+  const shouldConfirmExit =
+    Boolean(quizSession?.questions?.length) && quizResult === null;
+
+  usePreventRemove(shouldConfirmExit, ({ data }) => {
+    setPendingExitAction(data.action);
+    setIsExitQuizConfirmOpen(true);
   });
   const saveVocabularyMutation = useMutation({
     mutationFn: (question: ArticleVocabularyQuizQuestion) =>
@@ -163,6 +179,18 @@ export default function ArticleQuizScreen() {
 
     router.back();
   }, [isArticleError, router]);
+
+  const handleConfirmExitQuiz = useCallback(() => {
+    setIsExitQuizConfirmOpen(false);
+
+    if (pendingExitAction) {
+      navigation.dispatch(pendingExitAction);
+      setPendingExitAction(null);
+      return;
+    }
+
+    router.back();
+  }, [navigation, pendingExitAction, router]);
 
   if (articleId === null) {
     return (
@@ -277,6 +305,35 @@ export default function ArticleQuizScreen() {
           </View>
         </View>
       )}
+      <ModalSheet
+        footer={
+          <View style={styles.confirmModalActions}>
+            <Button
+              onPress={() => {
+                setPendingExitAction(null);
+                setIsExitQuizConfirmOpen(false);
+              }}
+              style={styles.confirmModalButton}
+              variant="secondary">
+              {t('dictionary.test.exitCancel')}
+            </Button>
+            <Button
+              onPress={handleConfirmExitQuiz}
+              style={styles.confirmModalButton}>
+              {t('dictionary.test.exitConfirm')}
+            </Button>
+          </View>
+        }
+        onClose={() => {
+          setPendingExitAction(null);
+          setIsExitQuizConfirmOpen(false);
+        }}
+        open={isExitQuizConfirmOpen}
+        title={t('dictionary.test.exitTitle')}>
+        <ThemedText type="body">
+          {t('dictionary.test.exitDescription')}
+        </ThemedText>
+      </ModalSheet>
     </ScreenContainer>
   );
 }
