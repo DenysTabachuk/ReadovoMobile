@@ -2,6 +2,10 @@ import { StyleSheet } from 'react-native';
 
 import { Spacing } from '@/constants/spacing';
 
+const DAY_CELL_SIZE = 36;
+const CALENDAR_GRID_GAP = 8;
+const CALENDAR_GRID_ROWS = 6;
+
 export const styles = StyleSheet.create({
   card: {
     borderRadius: 18,
@@ -43,10 +47,10 @@ export const styles = StyleSheet.create({
   dayCell: {
     alignItems: 'center',
     borderRadius: 14,
-    height: 36,
+    height: DAY_CELL_SIZE,
     justifyContent: 'center',
     position: 'relative',
-    width: 36,
+    width: DAY_CELL_SIZE,
   },
   dayCellDark: {
     borderColor: '#4a4360',
@@ -100,8 +104,8 @@ export const styles = StyleSheet.create({
     borderWidth: 2,
   },
   emptyDayCell: {
-    height: 36,
-    width: 36,
+    height: DAY_CELL_SIZE,
+    width: DAY_CELL_SIZE,
   },
   futureDayTextDark: {
     color: '#6f6a86',
@@ -112,7 +116,10 @@ export const styles = StyleSheet.create({
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: CALENDAR_GRID_GAP,
+    minHeight:
+      DAY_CELL_SIZE * CALENDAR_GRID_ROWS +
+      CALENDAR_GRID_GAP * (CALENDAR_GRID_ROWS - 1),
   },
   headerRow: {
     alignItems: 'center',
@@ -206,6 +213,6 @@ export const styles = StyleSheet.create({
   weekHeaderText: {
     fontSize: 12,
     textAlign: 'center',
-    width: 36,
+    width: DAY_CELL_SIZE,
   },
 });

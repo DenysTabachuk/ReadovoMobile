@@ -85,6 +85,7 @@ export default function ArticlesScreen() {
   const [readySummaryEnabled, setReadySummaryEnabled] = useState(false);
   const [recommendedArticles, setRecommendedArticles] = useState(true);
   const [personalFilter, setPersonalFilter] = useState<ArticlePersonalFilter>(null);
+  const [isFiltersCollapsed, setIsFiltersCollapsed] = useState(true);
   const [isManualRefresh, setIsManualRefresh] = useState(false);
   const [scrollOffsetY, setScrollOffsetY] = useState(0);
   const [expandedAdaptationArticleIds, setExpandedAdaptationArticleIds] =
@@ -426,6 +427,11 @@ export default function ArticlesScreen() {
     setRecommendedArticles(true);
     setPersonalFilter(value);
   }, []);
+
+  const toggleFiltersCollapsed = useCallback(() => {
+    setIsFiltersCollapsed((current) => !current);
+  }, []);
+
   const openArticle = useCallback((article: WikipediaArticle) => {
     if (isOpeningArticleRef.current) {
       return;
@@ -523,6 +529,7 @@ export default function ArticlesScreen() {
             <ArticlesToolbar
               categoryFilter={categoryFilter}
               personalFilter={personalFilter}
+              isFiltersCollapsed={isFiltersCollapsed}
               isRefreshingResults={isUpdatingResults}
               isSearchActive={debouncedSearchValue.length > 0}
               onChangeRecommendedArticles={handleChangeRecommendedArticles}
@@ -537,6 +544,7 @@ export default function ArticlesScreen() {
               onChangeSearchValue={handleChangeSearchValue}
               onChangeSortByFilter={handleChangeSortByFilter}
               onClearFilters={clearFilters}
+              onToggleFiltersCollapsed={toggleFiltersCollapsed}
               preferImagesFirst={preferImagesFirst}
               readyAdaptationEnabled={readyAdaptationEnabled}
               readyLevelFilter={readyLevelFilter}

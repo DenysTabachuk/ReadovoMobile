@@ -34,6 +34,8 @@ const weekDayTranslationKeys = [
   'streak.calendar.weekdays.sun',
 ] as const;
 
+const CALENDAR_GRID_CELL_COUNT = 42;
+
 function getStatusStyle(status: CalendarDayStatus) {
   if (status === 'completed' || status === 'today_completed') {
     return styles.dayCompleted;
@@ -165,12 +167,24 @@ export function ActivityCalendar({
     const monthDays = calendarQuery.data?.days ?? [];
 
     if (monthDays.length === 0) {
-      return [] as (StreakCalendarDay | null)[];
+      return Array.from(
+        { length: CALENDAR_GRID_CELL_COUNT },
+        () => null,
+      ) as (StreakCalendarDay | null)[];
     }
 
     const offset = getMonthStartOffset(monthDays[0].date);
     const lead = Array.from({ length: offset }, () => null);
-    return [...lead, ...monthDays];
+    const cells = [...lead, ...monthDays];
+    const trailingCellCount = Math.max(
+      CALENDAR_GRID_CELL_COUNT - cells.length,
+      0,
+    );
+
+    return [
+      ...cells,
+      ...Array.from({ length: trailingCellCount }, () => null),
+    ];
   }, [calendarQuery.data?.days]);
 
   const goPrevMonth = () => {

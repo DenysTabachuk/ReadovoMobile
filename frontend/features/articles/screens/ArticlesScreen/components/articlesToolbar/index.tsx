@@ -63,6 +63,7 @@ type ArticlesToolbarProps = {
   categoryFilter: ArticleCategoryFilter;
   personalFilter: ArticlePersonalFilter;
   isRefreshingResults: boolean;
+  isFiltersCollapsed: boolean;
   isSearchActive: boolean;
   preferImagesFirst: boolean;
   readyAdaptationEnabled: boolean;
@@ -84,12 +85,14 @@ type ArticlesToolbarProps = {
   onChangeSortByFilter: (value: ArticleSortFilter) => void;
   onClearFilters: () => void;
   onChangePersonalFilter: (value: ArticlePersonalFilter) => void;
+  onToggleFiltersCollapsed: () => void;
 };
 
 export function ArticlesToolbar({
   categoryFilter,
   personalFilter,
   isRefreshingResults,
+  isFiltersCollapsed,
   isSearchActive,
   preferImagesFirst,
   readyAdaptationEnabled,
@@ -111,10 +114,10 @@ export function ArticlesToolbar({
   onChangeSortByFilter,
   onClearFilters,
   onChangePersonalFilter,
+  onToggleFiltersCollapsed,
 }: ArticlesToolbarProps) {
   const { t } = useTranslation();
   const [isRecommendedInfoOpen, setIsRecommendedInfoOpen] = useState(false);
-  const [isFiltersCollapsed, setIsFiltersCollapsed] = useState(true);
   const [filtersContentHeight, setFiltersContentHeight] = useState(0);
   const filtersProgress = useSharedValue(0);
   const colorScheme = useColorScheme();
@@ -278,12 +281,6 @@ export function ArticlesToolbar({
     paddingTop: Spacing.sm * filtersProgress.value,
     paddingBottom: Spacing.sm * filtersProgress.value,
   }));
-
-  const toggleFilters = useCallback(() => {
-    setIsFiltersCollapsed((current) => {
-      return !current;
-    });
-  }, []);
 
   return (
     <View style={styles.container}>
@@ -721,7 +718,7 @@ export function ArticlesToolbar({
         <Animated.View style={[styles.sheetHeader, animatedHeaderStyle]}>
           <Pressable
             style={styles.sheetHeaderButton}
-            onPress={toggleFilters}>
+            onPress={onToggleFiltersCollapsed}>
             <View style={styles.sheetTitleRow}>
               <ThemedText
                 type="bodyStrong"
