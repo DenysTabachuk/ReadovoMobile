@@ -266,7 +266,7 @@ export function InteractiveArticleText({
     ],
   );
   const viewabilityConfig = useRef({
-    itemVisiblePercentThreshold: 12,
+    itemVisiblePercentThreshold: 35,
     minimumViewTime: 80,
   }).current;
   const handleViewableItemsChanged = useRef(

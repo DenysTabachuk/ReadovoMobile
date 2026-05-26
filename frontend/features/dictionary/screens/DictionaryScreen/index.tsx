@@ -8,6 +8,7 @@ import {
   RefreshControl,
   View,
   type DimensionValue,
+  type GestureResponderEvent,
   type ListRenderItem,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -175,27 +176,39 @@ export default function DictionaryScreen() {
       const inProgressColors = getProgressBadgeColors('in_progress', colorScheme);
       const isDarkTheme = colorScheme === 'dark';
 
+      const handleProgressPress = (event: GestureResponderEvent) => {
+        event.stopPropagation();
+        setOpenProgressMenuWordId((current) =>
+          current === item.id ? null : item.id,
+        );
+      };
+
+      const handleMoveBackToInProgress = (event: GestureResponderEvent) => {
+        event.stopPropagation();
+        wordProgressMutation.mutate({
+          progress: 'in_progress',
+          wordId: item.id,
+        });
+      };
+
       return (
-        <View style={[styles.wordCard, { borderColor }]}>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => setSelectedWord(item)}
+          style={[styles.wordCard, { borderColor }]}>
           <View style={styles.cardHeader}>
-            <Pressable
-              onPress={() => setSelectedWord(item)}
-              style={styles.wordTitleGroup}>
+            <View style={styles.wordTitleGroup}>
               <ThemedText type="sectionTitle" style={styles.wordText}>
                 {item.word}
               </ThemedText>
               <ThemedText type="body" style={styles.wordPreviewText}>
                 {item.translation}
               </ThemedText>
-            </Pressable>
+            </View>
             <View style={styles.progressControl}>
               <Pressable
                 disabled={item.progress !== 'learned'}
-                onPress={() => {
-                  setOpenProgressMenuWordId((current) =>
-                    current === item.id ? null : item.id,
-                  );
-                }}
+                onPress={handleProgressPress}
                 style={[
                   styles.progressBadge,
                   { backgroundColor: progressColors.backgroundColor },
@@ -221,12 +234,7 @@ export default function DictionaryScreen() {
                   </ThemedText>
                   <Pressable
                     disabled={wordProgressMutation.isPending}
-                    onPress={() => {
-                      wordProgressMutation.mutate({
-                        progress: 'in_progress',
-                        wordId: item.id,
-                      });
-                    }}
+                    onPress={handleMoveBackToInProgress}
                     style={[
                       styles.progressBadge,
                       styles.progressMenuBadge,
@@ -268,7 +276,7 @@ export default function DictionaryScreen() {
               {t('dictionary.tapHint')}
             </ThemedText>
           </View>
-        </View>
+        </Pressable>
       );
     },
     [

@@ -169,7 +169,6 @@ export default function ArticleScreen() {
   const floatingSpeechControlsTranslateY = useRef(
     new Animated.Value(FLOATING_SPEECH_CONTROLS_HIDDEN_OFFSET),
   ).current;
-  const currentSpeechButtonRotation = useRef(new Animated.Value(0)).current;
   const selectedFragment = useMemo(
     () => buildSelectedFragment(selectedTokens),
     [selectedTokens],
@@ -841,16 +840,8 @@ export default function ArticleScreen() {
     currentSpeechBlockIndex !== null && currentSpeechBlockIndex < firstVisibleBlockIndex
       ? 'up'
       : 'down';
-  const currentSpeechButtonIconStyle = {
-    transform: [
-      {
-        rotate: currentSpeechButtonRotation.interpolate({
-          inputRange: [0, 1],
-          outputRange: ['0deg', '180deg'],
-        }),
-      },
-    ],
-  };
+  const currentSpeechButtonIconName =
+    currentSpeechButtonDirection === 'up' ? 'arrow-up' : 'arrow-down';
 
   const updateScrollThresholdState = useCallback((nextScrollOffsetY: number) => {
     scrollOffsetYRef.current = nextScrollOffsetY;
@@ -980,14 +971,6 @@ export default function ArticleScreen() {
     floatingSpeechControlsTranslateY,
     shouldShowFloatingSpeechControls,
   ]);
-
-  useEffect(() => {
-    Animated.timing(currentSpeechButtonRotation, {
-      duration: 180,
-      toValue: currentSpeechButtonDirection === 'up' ? 1 : 0,
-      useNativeDriver: true,
-    }).start();
-  }, [currentSpeechButtonDirection, currentSpeechButtonRotation]);
 
   useEffect(() => {
     if (!article || !currentUser?.id) {
@@ -1243,9 +1226,7 @@ export default function ArticleScreen() {
             styles.scrollToCurrentSpeechButton,
             { bottom: currentSpeechButtonBottomOffset },
           ]}>
-          <Animated.View style={currentSpeechButtonIconStyle}>
-            <Ionicons color="#11181C" name="arrow-down" size={24} />
-          </Animated.View>
+          <Ionicons color="#11181C" name={currentSpeechButtonIconName} size={24} />
         </Pressable>
       ) : null}
       <WordTranslationSheet

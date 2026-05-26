@@ -66,7 +66,9 @@ export class NotificationsController {
     );
     try {
       await this.notificationsService.registerPushToken(userId, payload);
-      this.logger.log(`registerPushToken success userId=${userId} deviceId=${payload.deviceId}`);
+      this.logger.log(
+        `registerPushToken success userId=${userId} deviceId=${payload.deviceId}`,
+      );
       return { ok: true };
     } catch (error) {
       this.logger.error(
@@ -98,7 +100,10 @@ export class NotificationsController {
   ): Promise<SendTestPushResult> {
     this.logger.log(`sendTestPush request userId=${userId}`);
     try {
-      const result = await this.notificationsService.sendTestPush(userId, payload);
+      const result = await this.notificationsService.sendTestPush(
+        userId,
+        payload,
+      );
       this.logger.log(
         `sendTestPush result userId=${userId} tokenCount=${result.tokenCount} sentCount=${result.sentCount} failedCount=${result.failedCount} reasons=${result.failureReasons.join(' | ')}`,
       );
@@ -117,12 +122,16 @@ export class NotificationsController {
     @Param('userId') userId: string,
   ): Promise<{ deletedCount: number }> {
     if (process.env.NODE_ENV === 'production') {
-      throw new ForbiddenException('Clearing reminder dispatches is disabled in production.');
+      throw new ForbiddenException(
+        'Clearing reminder dispatches is disabled in production.',
+      );
     }
 
     this.logger.log(`clear today reminder dispatch requested userId=${userId}`);
     const result =
-      await this.notificationsService.clearTodayLearningReminderDispatch(userId);
+      await this.notificationsService.clearTodayLearningReminderDispatch(
+        userId,
+      );
     this.logger.log(
       `clear today reminder dispatch completed userId=${userId} deletedCount=${result.deletedCount}`,
     );
@@ -133,7 +142,9 @@ export class NotificationsController {
   @Post('learning-reminders/dispatch')
   async dispatchLearningRemindersForDevelopment(): Promise<LearningReminderDispatchResult> {
     if (process.env.NODE_ENV === 'production') {
-      throw new ForbiddenException('Manual reminder dispatch is disabled in production.');
+      throw new ForbiddenException(
+        'Manual reminder dispatch is disabled in production.',
+      );
     }
 
     this.logger.log('manual learning reminder dispatch requested');

@@ -1,4 +1,11 @@
-import { Controller, Delete, Get, Param, Post, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 
 import { UserAuthGuard } from '../auth/user-auth.guard';
 import { MascotService } from './mascot.service';

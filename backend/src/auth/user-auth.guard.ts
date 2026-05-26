@@ -27,13 +27,17 @@ export class UserAuthGuard implements CanActivate {
     const [scheme, token] = authHeader.split(' ');
 
     if (scheme !== 'Bearer' || !token) {
-      throw new UnauthorizedException('Authorization bearer token is required.');
+      throw new UnauthorizedException(
+        'Authorization bearer token is required.',
+      );
     }
 
     const authUser = this.jwtService.verifyAccessToken(token);
 
     if (request.params.userId && request.params.userId !== authUser.id) {
-      throw new ForbiddenException('Authenticated user does not match route user.');
+      throw new ForbiddenException(
+        'Authenticated user does not match route user.',
+      );
     }
 
     request.authUser = authUser;

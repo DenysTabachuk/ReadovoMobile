@@ -156,6 +156,7 @@ export type ArticleQuizQuestion = {
 
 export type ArticleVocabularyQuizQuestionFormat =
   | 'translation'
+  | 'reverse_translation'
   | 'definition'
   | 'cloze'
   | 'synonym';

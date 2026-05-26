@@ -53,7 +53,16 @@ export class StreakService {
       profile,
       localToday,
     );
-    const refreshedProfile = reconciled ?? profile;
+    let refreshedProfile = reconciled ?? profile;
+
+    if (refreshedProfile.broken_streak_info?.canRestore === false) {
+      await this.rebuildProfileFromHistory(
+        userId,
+        refreshedProfile.timezone,
+        localToday,
+      );
+      refreshedProfile = await this.ensureProfile(userId);
+    }
 
     const [history, claimedRows, balanceRow] = await Promise.all([
       this.getRecentHistory(userId),
@@ -225,6 +234,7 @@ export class StreakService {
 
     const profile = await this.ensureProfile(userId);
     const broken = profile.broken_streak_info;
+    const localToday = this.getLocalDateKey(new Date(), profile.timezone);
 
     if (!broken?.canRestore) {
       throw new BadRequestException('Restore is not available.');
@@ -255,24 +265,12 @@ export class StreakService {
       [userId, broken.brokenAt],
     );
 
-    await this.databaseService.query(
-      `
-        UPDATE user_streak_profiles
-        SET current_streak = $2,
-            longest_streak = GREATEST(longest_streak, $2),
-            broken_streak_info = jsonb_set(
-              COALESCE(broken_streak_info, '{}'::jsonb),
-              '{canRestore}',
-              'false'::jsonb,
-              true
-            ),
-            updated_at = now()
-        WHERE user_id = $1
-      `,
-      [userId, broken.previousStreak],
+    const rebuiltCurrentStreak = await this.rebuildProfileFromHistory(
+      userId,
+      profile.timezone,
+      localToday,
     );
-
-    await this.unlockMilestones(userId, broken.previousStreak);
+    await this.unlockMilestones(userId, rebuiltCurrentStreak);
 
     return this.getProfile(userId);
   }
@@ -295,12 +293,18 @@ export class StreakService {
 
     const day = await this.getHistoryDay(userId, date);
 
-    if (day?.status === 'completed' || day?.status === 'frozen' || day?.status === 'restored') {
+    if (
+      day?.status === 'completed' ||
+      day?.status === 'frozen' ||
+      day?.status === 'restored'
+    ) {
       throw new BadRequestException('This day is already protected.');
     }
 
     if (day?.status !== 'missed') {
-      throw new BadRequestException('Freeze can only be applied to a missed day.');
+      throw new BadRequestException(
+        'Freeze can only be applied to a missed day.',
+      );
     }
 
     if (await this.hasReachedFreezeLimitForBreak(userId, date)) {
@@ -336,7 +340,10 @@ export class StreakService {
     return this.getProfile(userId);
   }
 
-  async purchaseFreezeToken(userId: string, price: number): Promise<StreakState> {
+  async purchaseFreezeToken(
+    userId: string,
+    price: number,
+  ): Promise<StreakState> {
     if (price !== FREEZE_TOKEN_PRICE) {
       throw new BadRequestException('Invalid freeze token price.');
     }
@@ -505,11 +512,7 @@ export class StreakService {
             updated_at = now()
         WHERE user_id = $1
       `,
-      [
-        userId,
-        currentStreak,
-        brokenInfo ? JSON.stringify(brokenInfo) : null,
-      ],
+      [userId, currentStreak, brokenInfo ? JSON.stringify(brokenInfo) : null],
     );
 
     return {
@@ -568,7 +571,9 @@ export class StreakService {
       }
     }
 
-    const todayRow = result.rows.find((day) => day.activity_date === localToday);
+    const todayRow = result.rows.find(
+      (day) => day.activity_date === localToday,
+    );
 
     if (todayRow && protectedStatuses.has(todayRow.status)) {
       currentStreak += 1;

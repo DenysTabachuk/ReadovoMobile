@@ -52,7 +52,6 @@ const DEFAULT_TARGET_LENGTH: ArticleSimplificationTargetLength = 'short';
 const DEFAULT_ARTICLE_TRANSFORMATION_TYPE: ArticleTextTransformationType =
   'summary';
 const GROQ_MODEL = 'llama-3.3-70b-versatile';
-const GROQ_MODEL_CONTEXT_WINDOW_TOKENS = 131072;
 const GROQ_MODEL_MAX_OUTPUT_TOKENS = 32768;
 const GROQ_REQUEST_TIMEOUT_MS = 180000;
 // Keep chunks well below the model context window. Source blocks are also sent as JSON,
@@ -62,6 +61,11 @@ const MAX_SUMMARY_CHUNK_CHARS = 12000;
 const MAX_SIMPLIFICATION_CHUNK_COMPLETION_TOKENS = GROQ_MODEL_MAX_OUTPUT_TOKENS;
 const MAX_SIMPLIFICATION_COMPLETION_TOKENS = GROQ_MODEL_MAX_OUTPUT_TOKENS;
 const MAX_VOCABULARY_QUIZ_COMPLETION_TOKENS = 5000;
+const VOCABULARY_QUIZ_FORMAT_SEQUENCE: ArticleVocabularyQuizQuestionFormat[] = [
+  'translation',
+  'reverse_translation',
+  'cloze',
+];
 const MAX_ARTICLE_LIMIT = 50;
 const WIKIMEDIA_USER_AGENT = 'Readovo/1.0';
 const WIKIPEDIA_LANGUAGE_CODE = 'en';
@@ -1005,32 +1009,30 @@ export class ArticlesService {
 
       // Groq runs only on the backend so the API key never reaches the app.
       const client = this.getGroqClient(apiKey);
-      const maxChunkChars = this.getMaxTransformationChunkChars(
-        transformationType,
-      );
-      const parsedResponse =
-        this.shouldChunkSimplificationInput({
-          maxChunkChars,
-          sourceBlocks,
-          text,
-        })
-          ? await this.simplifyArticleInChunks({
-              client,
-              level,
-              maxChunkChars,
-              sourceBlocks,
-              text,
-              transformationType,
-              title,
-            })
-          : await this.simplifySingleArticleInput({
-              client,
-              level,
-              sourceBlocks,
-              text,
-              transformationType,
-              title,
-            });
+      const maxChunkChars =
+        this.getMaxTransformationChunkChars(transformationType);
+      const parsedResponse = this.shouldChunkSimplificationInput({
+        maxChunkChars,
+        sourceBlocks,
+        text,
+      })
+        ? await this.simplifyArticleInChunks({
+            client,
+            level,
+            maxChunkChars,
+            sourceBlocks,
+            text,
+            transformationType,
+            title,
+          })
+        : await this.simplifySingleArticleInput({
+            client,
+            level,
+            sourceBlocks,
+            text,
+            transformationType,
+            title,
+          });
       const adaptedBlocks = parsedResponse.adaptedBlocks;
 
       if (adaptedBlocks.length === 0) {
@@ -1965,10 +1967,7 @@ export class ArticlesService {
         return;
       }
 
-      if (
-        currentChunk.length + part.length + 2 >
-        maxChunkChars
-      ) {
+      if (currentChunk.length + part.length + 2 > maxChunkChars) {
         chunks.push(currentChunk);
         currentChunk = part;
         return;
@@ -2061,10 +2060,7 @@ export class ArticlesService {
     return [block];
   }
 
-  private splitTextBySentences(
-    text: string,
-    maxChunkChars: number,
-  ): string[] {
+  private splitTextBySentences(text: string, maxChunkChars: number): string[] {
     const sentences =
       text
         .match(/[^.!?\n]+(?:[.!?]+(?=\s|$)|$)/g)
@@ -2089,10 +2085,7 @@ export class ArticlesService {
           continue;
         }
 
-        if (
-          currentChunk.length + sentencePart.length + 1 >
-          maxChunkChars
-        ) {
+        if (currentChunk.length + sentencePart.length + 1 > maxChunkChars) {
           chunks.push(currentChunk);
           currentChunk = sentencePart;
           continue;
@@ -2123,10 +2116,7 @@ export class ArticlesService {
         continue;
       }
 
-      if (
-        currentChunk.length + word.length + 1 >
-        maxChunkChars
-      ) {
+      if (currentChunk.length + word.length + 1 > maxChunkChars) {
         chunks.push(currentChunk);
         currentChunk = word;
         continue;
@@ -2550,17 +2540,20 @@ Rules:
 - Allowed target terms: one word or one short phrase of up to 5 words.
 ${learnerLevelRule}
 - Respect learner level when choosing target terms. For lower levels, prefer simpler but still meaningful vocabulary from the text.
-- Generate up to ${params.targetQuestionCount} questions. Use fewer when that gives a cleaner, more useful quiz.
-- Minimum quality matters more than quantity. Never exceed ${params.targetQuestionCount} questions.
+- Generate exactly ${params.targetQuestionCount} questions when the text contains enough useful vocabulary.
+- Return at least 5 questions whenever the text has 5 useful words or phrases worth learning.
+- Use fewer than 5 only when the text genuinely does not contain enough useful vocabulary. Never exceed ${params.targetQuestionCount} questions.
 - Each question must test exactly one target term.
 - Include "translation" for every question: the best general Ukrainian translation of "term" for saving to a learner dictionary.
 - Use only "single_choice" questions with exactly 4 options and exactly 1 correct option.
-- Use a natural mix of these formats when appropriate:
+- Use this exact format sequence for the returned questions, then repeat it if more questions are needed: ${VOCABULARY_QUIZ_FORMAT_SEQUENCE.map((format) => `"${format}"`).join(', ')}.
+- Question 1 must use "translation", question 2 "reverse_translation", question 3 "cloze", question 4 "translation", and so on.
+- Allowed formats:
   - "translation": choose the best Ukrainian translation of the target term.
-  - "definition": choose the English definition that best matches the term in this text.
+  - "reverse_translation": choose the English target term that matches a Ukrainian translation prompt.
   - "cloze": complete a sentence from the text or a very similar context with the correct term.
-  - "synonym": choose the closest English synonym or near-meaning when that is natural.
-- Do not force all formats if they do not fit the selected vocabulary.
+- For "translation", the correct option text must be the Ukrainian translation.
+- For "reverse_translation" and "cloze", the correct option text must be the exact target term from the source text.
 - Wrong options must be plausible, not silly.
 - Do not invent target terms that are missing from the text. Only distractors may be invented.
 - For "cloze", hide the term with "____".
@@ -2574,7 +2567,7 @@ ${learnerLevelRule}
     {
       "id": string,
       "type": "single_choice",
-      "format": "translation" | "definition" | "cloze" | "synonym",
+      "format": "translation" | "reverse_translation" | "cloze",
       "term": string,
       "termKind": "word" | "phrase",
       "translation": string,
@@ -3295,19 +3288,27 @@ ${params.text}`;
   private getVocabularyQuestionTarget(text: string): number {
     const wordCount = this.countWords(text);
 
-    if (wordCount <= 10000) {
-      return 5;
+    if (wordCount <= 1200) {
+      return 6;
     }
 
-    if (wordCount <= 25000) {
+    if (wordCount <= 5000) {
       return 8;
     }
 
-    if (wordCount <= 50000) {
+    if (wordCount <= 10000) {
       return 10;
     }
 
-    return 12;
+    if (wordCount <= 25000) {
+      return 12;
+    }
+
+    if (wordCount <= 50000) {
+      return 14;
+    }
+
+    return 16;
   }
 
   private getQuestionCountRule(
@@ -3429,7 +3430,7 @@ ${params.text}`;
 
     const usedTerms = new Set<string>();
     const diagnostics: string[] = [];
-    const questions: ArticleVocabularyQuizQuestion[] = [];
+    const validQuestions: ArticleVocabularyQuizQuestion[] = [];
 
     rawQuestions.forEach((question, index) => {
       const normalizedQuestion = this.normalizeVocabularyQuestion(
@@ -3462,8 +3463,11 @@ ${params.text}`;
       }
 
       usedTerms.add(normalizedTerm);
-      questions.push(normalizedQuestion.question);
+      validQuestions.push(normalizedQuestion.question);
     });
+
+    const questions =
+      this.createVocabularyQuestionsWithScheduledFormats(validQuestions);
 
     if (questions.length > params.targetQuestionCount) {
       diagnostics.push(
@@ -3620,6 +3624,161 @@ ${params.text}`;
     };
   }
 
+  private createVocabularyQuestionsWithScheduledFormats(
+    questions: ArticleVocabularyQuizQuestion[],
+  ): ArticleVocabularyQuizQuestion[] {
+    return questions.map((question, index) =>
+      this.createVocabularyQuestionWithFormat(
+        question,
+        this.getVocabularyQuestionFormatForIndex(index),
+        questions,
+      ),
+    );
+  }
+
+  private createVocabularyQuestionWithFormat(
+    question: ArticleVocabularyQuizQuestion,
+    format: ArticleVocabularyQuizQuestionFormat,
+    questions: ArticleVocabularyQuizQuestion[],
+  ): ArticleVocabularyQuizQuestion {
+    const correctOptionText =
+      format === 'translation' ? question.translation : question.term;
+    const distractorTexts = this.getVocabularyQuestionDistractorTexts(
+      question,
+      questions,
+      format,
+      correctOptionText,
+    );
+    const options = [
+      {
+        id: `${question.id}:correct`,
+        text: correctOptionText,
+      },
+      ...distractorTexts.map((text, index) => ({
+        id: `${question.id}:distractor:${index + 1}`,
+        text,
+      })),
+    ];
+
+    return {
+      ...question,
+      correctOptionIds: [`${question.id}:correct`],
+      format,
+      options,
+      prompt: this.createVocabularyQuestionPrompt(question, format),
+      type: 'single_choice',
+    };
+  }
+
+  private getVocabularyQuestionDistractorTexts(
+    question: ArticleVocabularyQuizQuestion,
+    questions: ArticleVocabularyQuizQuestion[],
+    format: ArticleVocabularyQuizQuestionFormat,
+    correctOptionText: string,
+  ): string[] {
+    const normalizedCorrectOptionText =
+      this.normalizeVocabularyOptionText(correctOptionText);
+    const seenTexts = new Set([normalizedCorrectOptionText]);
+    const distractorTexts: string[] = [];
+    const candidateTexts =
+      format === 'translation'
+        ? questions.map((candidate) => candidate.translation)
+        : questions.map((candidate) => candidate.term);
+
+    for (const candidateText of candidateTexts) {
+      const normalizedCandidateText =
+        this.normalizeVocabularyOptionText(candidateText);
+
+      if (
+        !candidateText ||
+        normalizedCandidateText ===
+          this.normalizeVocabularyOptionText(
+            format === 'translation' ? question.translation : question.term,
+          ) ||
+        seenTexts.has(normalizedCandidateText)
+      ) {
+        continue;
+      }
+
+      seenTexts.add(normalizedCandidateText);
+      distractorTexts.push(candidateText);
+
+      if (distractorTexts.length === 3) {
+        return distractorTexts;
+      }
+    }
+
+    for (const option of question.options) {
+      const normalizedOptionText = this.normalizeVocabularyOptionText(
+        option.text,
+      );
+
+      if (
+        !option.text ||
+        question.correctOptionIds.includes(option.id) ||
+        seenTexts.has(normalizedOptionText)
+      ) {
+        continue;
+      }
+
+      seenTexts.add(normalizedOptionText);
+      distractorTexts.push(option.text);
+
+      if (distractorTexts.length === 3) {
+        break;
+      }
+    }
+
+    return distractorTexts;
+  }
+
+  private normalizeVocabularyOptionText(text: string): string {
+    return text.trim().replace(/\s+/g, ' ').toLowerCase();
+  }
+
+  private createVocabularyQuestionPrompt(
+    question: ArticleVocabularyQuizQuestion,
+    format: ArticleVocabularyQuizQuestionFormat,
+  ): string {
+    if (format === 'translation') {
+      return `Оберіть український переклад: ${question.term}`;
+    }
+
+    if (format === 'reverse_translation') {
+      return `Оберіть англійський відповідник: ${question.translation}`;
+    }
+
+    return this.createVocabularyClozePrompt(question);
+  }
+
+  private createVocabularyClozePrompt(
+    question: ArticleVocabularyQuizQuestion,
+  ): string {
+    const sourceExcerpt = question.sourceExcerpt?.trim();
+
+    if (sourceExcerpt) {
+      const escapedTerm = question.term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const termPattern = new RegExp(`\\b${escapedTerm}\\b`, 'i');
+      const clozePrompt = sourceExcerpt.replace(termPattern, '____');
+
+      if (clozePrompt !== sourceExcerpt) {
+        return clozePrompt;
+      }
+    }
+
+    return 'Complete the sentence with the correct English word or phrase: ____';
+  }
+
+  private getVocabularyQuestionFormatForIndex(
+    index: number,
+  ): ArticleVocabularyQuizQuestionFormat {
+    return (
+      VOCABULARY_QUIZ_FORMAT_SEQUENCE[
+        index % VOCABULARY_QUIZ_FORMAT_SEQUENCE.length
+      ] ?? 'translation'
+    );
+  }
+
   private truncateForLog(value: string, maxLength = 4000): string {
     return value.length > maxLength
       ? `${value.slice(0, maxLength)}... [truncated ${value.length - maxLength} chars]`
@@ -3696,6 +3855,7 @@ ${params.text}`;
   ): ArticleVocabularyQuizQuestionFormat | null {
     if (
       format === 'translation' ||
+      format === 'reverse_translation' ||
       format === 'definition' ||
       format === 'cloze' ||
       format === 'synonym'

@@ -313,10 +313,12 @@ export class DatabaseService implements OnModuleDestroy, OnModuleInit {
       ADD COLUMN IF NOT EXISTS provider text NOT NULL DEFAULT 'fcm';
     `);
 
-    await this.query(`
+    await this.query(
+      `
       ALTER TABLE user_push_tokens
       ALTER COLUMN expo_push_token DROP NOT NULL;
-    `).catch((error: unknown) => {
+    `,
+    ).catch((error: unknown) => {
       const code =
         typeof error === 'object' && error !== null && 'code' in error
           ? String(error.code)

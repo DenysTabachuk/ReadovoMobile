@@ -37,7 +37,10 @@ describe('AuthService', () => {
     >
   >;
   let usersRepository: jest.Mocked<
-    Pick<UsersRepository, 'create' | 'findByEmail' | 'findById' | 'updatePassword'>
+    Pick<
+      UsersRepository,
+      'create' | 'findByEmail' | 'findById' | 'updatePassword'
+    >
   >;
   let refreshTokensRepository: jest.Mocked<
     Pick<RefreshTokensRepository, 'create' | 'findActiveByUserId' | 'revoke'>

@@ -359,10 +359,7 @@ export class DictionaryService {
     return {
       format: generatedQuestion.format,
       options,
-      prompt: this.createDictionaryTestQuestionPrompt(
-        word,
-        generatedQuestion,
-      ),
+      prompt: this.createDictionaryTestQuestionPrompt(word, generatedQuestion),
       word: word.word,
       wordId: word.id,
     };
@@ -467,8 +464,10 @@ Rules:
         this.getDictionaryQuestionFormatForIndex(index),
       ]),
     );
-    const generatedQuestionsByWordId =
-      new Map<string, GeneratedDictionaryTestQuestion>();
+    const generatedQuestionsByWordId = new Map<
+      string,
+      GeneratedDictionaryTestQuestion
+    >();
 
     for (const rawQuestion of parsed.questions) {
       if (!rawQuestion || typeof rawQuestion !== 'object') {
@@ -481,9 +480,8 @@ Rules:
         format?: unknown;
         wordId?: unknown;
       };
-      const wordId = typeof candidate.wordId === 'string'
-        ? candidate.wordId.trim()
-        : '';
+      const wordId =
+        typeof candidate.wordId === 'string' ? candidate.wordId.trim() : '';
       const word = wordsById.get(wordId);
       const format =
         expectedFormatsByWordId.get(wordId) ??
@@ -497,9 +495,10 @@ Rules:
         candidate.distractors,
         this.getCorrectAnswerText(word, format),
       );
-      const clozePrompt = typeof candidate.clozePrompt === 'string'
-        ? candidate.clozePrompt.trim().replace(/\s+/g, ' ')
-        : undefined;
+      const clozePrompt =
+        typeof candidate.clozePrompt === 'string'
+          ? candidate.clozePrompt.trim().replace(/\s+/g, ' ')
+          : undefined;
 
       if (distractors.length === DICTIONARY_TEST_DISTRACTOR_COUNT) {
         generatedQuestionsByWordId.set(word.id, {

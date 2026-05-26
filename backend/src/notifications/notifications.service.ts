@@ -54,12 +54,9 @@ export class NotificationsService implements OnModuleInit {
   }
 
   onModuleInit(): void {
-    setInterval(
-      () => {
-        void this.dispatchLearningReminders();
-      },
-      DISPATCH_INTERVAL_MS,
-    );
+    setInterval(() => {
+      void this.dispatchLearningReminders();
+    }, DISPATCH_INTERVAL_MS);
   }
 
   async getLearningReminderPreferences(
@@ -136,7 +133,9 @@ export class NotificationsService implements OnModuleInit {
     }
 
     if (payload.platform !== 'android') {
-      throw new BadRequestException('FCM push tokens are currently supported only for Android.');
+      throw new BadRequestException(
+        'FCM push tokens are currently supported only for Android.',
+      );
     }
 
     if (payload.pushToken.trim().length < 32) {
@@ -201,7 +200,9 @@ export class NotificationsService implements OnModuleInit {
     );
   }
 
-  async clearTodayLearningReminderDispatch(userId: string): Promise<{ deletedCount: number }> {
+  async clearTodayLearningReminderDispatch(
+    userId: string,
+  ): Promise<{ deletedCount: number }> {
     const profile = await this.databaseService.query<{ timezone: string }>(
       `
         SELECT timezone
@@ -255,7 +256,8 @@ export class NotificationsService implements OnModuleInit {
     }
 
     const title = payload.title?.trim() || 'Readovo test push';
-    const body = payload.body?.trim() || 'This is a remote push test from backend.';
+    const body =
+      payload.body?.trim() || 'This is a remote push test from backend.';
     let failedCount = 0;
     let sentCount = 0;
     const failureReasons = new Set<string>();
@@ -267,7 +269,11 @@ export class NotificationsService implements OnModuleInit {
       }
 
       sentTokenSet.add(tokenRow.push_token);
-      const sendResult = await this.sendFcmPush(tokenRow.push_token, body, title);
+      const sendResult = await this.sendFcmPush(
+        tokenRow.push_token,
+        body,
+        title,
+      );
       this.logger.log(
         `sendTestPush token delivery userId=${userId} deviceId=${tokenRow.device_id} sent=${String(sendResult.sent)}`,
       );
@@ -408,7 +414,10 @@ export class NotificationsService implements OnModuleInit {
         }
 
         sentTokenSet.add(tokenRow.push_token);
-        const sendResult = await this.sendFcmPush(tokenRow.push_token, messageBody);
+        const sendResult = await this.sendFcmPush(
+          tokenRow.push_token,
+          messageBody,
+        );
 
         if (sendResult.sent) {
           userSentCount += 1;
@@ -475,10 +484,7 @@ export class NotificationsService implements OnModuleInit {
     }).format(serverNow);
   }
 
-  private isReminderDue(
-    targetTime: string,
-    currentTime: string,
-  ): boolean {
+  private isReminderDue(targetTime: string, currentTime: string): boolean {
     if (
       !/^\d{2}:\d{2}$/.test(targetTime) ||
       !/^\d{2}:\d{2}$/.test(currentTime)
@@ -505,7 +511,9 @@ export class NotificationsService implements OnModuleInit {
       const app = existingApp ?? this.initializeFirebaseApp();
       return getMessaging(app);
     } catch (error) {
-      this.logger.warn(`Firebase Admin SDK is not configured: ${String(error)}`);
+      this.logger.warn(
+        `Firebase Admin SDK is not configured: ${String(error)}`,
+      );
       return null;
     }
   }
@@ -520,14 +528,19 @@ export class NotificationsService implements OnModuleInit {
     if (serviceAccountPath) {
       return initializeApp({
         credential: cert(
-          JSON.parse(readFileSync(serviceAccountPath, 'utf8')) as Record<string, string>,
+          JSON.parse(readFileSync(serviceAccountPath, 'utf8')) as Record<
+            string,
+            string
+          >,
         ),
       });
     }
 
     if (serviceAccountJson) {
       return initializeApp({
-        credential: cert(JSON.parse(serviceAccountJson) as Record<string, string>),
+        credential: cert(
+          JSON.parse(serviceAccountJson) as Record<string, string>,
+        ),
       });
     }
 
@@ -553,7 +566,9 @@ export class NotificationsService implements OnModuleInit {
     title = 'Readovo',
   ): Promise<PushSendResult> {
     if (!this.messaging) {
-      this.logger.warn('Push dispatch skipped because Firebase Admin SDK is not configured.');
+      this.logger.warn(
+        'Push dispatch skipped because Firebase Admin SDK is not configured.',
+      );
       return {
         failureReason: 'Firebase Admin SDK is not configured.',
         sent: false,
@@ -599,7 +614,10 @@ export class NotificationsService implements OnModuleInit {
     const code = 'code' in error ? String(error.code) : undefined;
     const message = 'message' in error ? String(error.message) : undefined;
 
-    return [code, message].filter(Boolean).join(': ') || 'Unknown Firebase Cloud Messaging error.';
+    return (
+      [code, message].filter(Boolean).join(': ') ||
+      'Unknown Firebase Cloud Messaging error.'
+    );
   }
 
   private isInvalidFcmTokenError(error: unknown): boolean {

@@ -5,6 +5,19 @@ import { ArticlesService } from './articles.service';
 
 const createChatCompletionMock = jest.fn();
 
+type GroqChatCompletionRequest = {
+  messages: Array<{ content?: string }>;
+};
+
+function getFirstGroqPrompt(): string {
+  const calls = createChatCompletionMock.mock.calls as Array<
+    [GroqChatCompletionRequest]
+  >;
+  const request = calls[0]?.[0];
+
+  return String(request?.messages[1]?.content ?? '');
+}
+
 jest.mock('groq-sdk', () => ({
   __esModule: true,
   default: jest.fn().mockImplementation(() => ({
@@ -337,7 +350,7 @@ describe('ArticlesService', () => {
     });
 
     expect(createChatCompletionMock).not.toHaveBeenCalled();
-    expect(response).toEqual({
+    expect(response).toMatchObject({
       adaptedBlocks: [
         {
           children: [
@@ -450,10 +463,7 @@ describe('ArticlesService', () => {
       text: 'Long article text',
       title: 'Solar System',
     });
-    const request = createChatCompletionMock.mock.calls[0]?.[0] as {
-      messages: Array<{ content?: string }>;
-    };
-    const prompt = String(request.messages[1]?.content ?? '');
+    const prompt = getFirstGroqPrompt();
 
     expect(prompt).toContain('Summarize and shorten the article');
     expect(prompt).toContain('Hard maximum');
@@ -905,27 +915,58 @@ describe('ArticlesService', () => {
               questions: [
                 {
                   correctOptionIds: ['a'],
-                  format: 'definition',
+                  format: 'translation',
                   id: 'vq-1',
                   options: [
-                    {
-                      id: 'a',
-                      text: 'a sudden event when a volcano throws out lava',
-                    },
-                    { id: 'b', text: 'a machine that measures wind speed' },
-                    { id: 'c', text: 'a flat area near a river' },
-                    {
-                      id: 'd',
-                      text: 'a person who climbs mountains for sport',
-                    },
+                    { id: 'a', text: 'eruption' },
+                    { id: 'b', text: 'wind' },
+                    { id: 'c', text: 'river' },
+                    { id: 'd', text: 'mountain' },
                   ],
                   prompt:
-                    'Which definition best matches "eruption" in the text?',
+                    'Choose the best Ukrainian translation of "eruption".',
                   sourceExcerpt:
                     'Scientists study volcanoes. Lava flows down the mountain during an eruption.',
                   term: 'eruption',
                   termKind: 'word',
                   translation: 'виверження',
+                  type: 'single_choice',
+                },
+                {
+                  correctOptionIds: ['a'],
+                  format: 'translation',
+                  id: 'vq-2',
+                  options: [
+                    { id: 'a', text: 'лава' },
+                    { id: 'b', text: 'хмара' },
+                    { id: 'c', text: 'трава' },
+                    { id: 'd', text: 'море' },
+                  ],
+                  prompt: 'Choose the best Ukrainian translation of "lava".',
+                  sourceExcerpt:
+                    'Lava flows down the mountain during an eruption.',
+                  term: 'lava',
+                  termKind: 'word',
+                  translation: 'лава',
+                  type: 'single_choice',
+                },
+                {
+                  correctOptionIds: ['a'],
+                  format: 'translation',
+                  id: 'vq-3',
+                  options: [
+                    { id: 'a', text: 'гора' },
+                    { id: 'b', text: 'долина' },
+                    { id: 'c', text: 'річка' },
+                    { id: 'd', text: 'стежка' },
+                  ],
+                  prompt:
+                    'Choose the best Ukrainian translation of "mountain".',
+                  sourceExcerpt:
+                    'Lava flows down the mountain during an eruption.',
+                  term: 'mountain',
+                  termKind: 'word',
+                  translation: 'гора',
                   type: 'single_choice',
                 },
               ],
@@ -940,35 +981,30 @@ describe('ArticlesService', () => {
       text: 'Scientists study volcanoes. Lava flows down the mountain during an eruption.',
       title: 'Volcanoes',
     });
-    const request = createChatCompletionMock.mock.calls[0]?.[0] as {
-      messages: Array<{ content?: string }>;
-    };
-    const prompt = String(request.messages[1]?.content ?? '');
+    const prompt = getFirstGroqPrompt();
 
-    expect(prompt).toContain('Generate up to 5 questions');
-    expect(response).toEqual({
-      questions: [
-        {
-          correctOptionIds: ['a'],
-          format: 'definition',
-          id: 'vq-1',
-          options: [
-            { id: 'a', text: 'a sudden event when a volcano throws out lava' },
-            { id: 'b', text: 'a machine that measures wind speed' },
-            { id: 'c', text: 'a flat area near a river' },
-            { id: 'd', text: 'a person who climbs mountains for sport' },
-          ],
-          prompt: 'Which definition best matches "eruption" in the text?',
-          sourceExcerpt:
-            'Scientists study volcanoes. Lava flows down the mountain during an eruption.',
-          term: 'eruption',
-          termKind: 'word',
-          translation: 'виверження',
-          type: 'single_choice',
-        },
-      ],
-      resolvedLevel: 'B1',
+    expect(prompt).toContain(
+      'Question 1 must use "translation", question 2 "reverse_translation", question 3 "cloze"',
+    );
+    expect(response.resolvedLevel).toBe('B1');
+    expect(response.questions).toHaveLength(3);
+    expect(response.questions[0]).toMatchObject({
+      correctOptionIds: ['vq-1:correct'],
+      format: 'translation',
+      id: 'vq-1',
+      sourceExcerpt:
+        'Scientists study volcanoes. Lava flows down the mountain during an eruption.',
+      term: 'eruption',
+      termKind: 'word',
+      type: 'single_choice',
     });
+    expect(response.questions.map((question) => question.format)).toEqual([
+      'translation',
+      'reverse_translation',
+      'cloze',
+    ]);
+    expect(response.questions[0]?.options).toHaveLength(4);
+    expect(response.questions[0]?.prompt).toContain('eruption');
   });
 
   it('filters out vocabulary quiz questions with invalid target terms', async () => {
@@ -993,7 +1029,7 @@ describe('ArticlesService', () => {
                   sourceExcerpt: 'The forest canopy protects many insects.',
                   term: 'mysterious',
                   termKind: 'word',
-                  translation: 'С‚Р°С”РјРЅРёС‡РёР№',
+                  translation: 'таємничий',
                   type: 'single_choice',
                 },
                 {
@@ -1010,7 +1046,7 @@ describe('ArticlesService', () => {
                   sourceExcerpt: 'The forest canopy protects many insects.',
                   term: 'the',
                   termKind: 'word',
-                  translation: 'С†Рµ',
+                  translation: 'це',
                   type: 'single_choice',
                 },
                 {
@@ -1028,7 +1064,7 @@ describe('ArticlesService', () => {
                   sourceExcerpt: 'The forest canopy protects many insects.',
                   term: 'forest canopy',
                   termKind: 'phrase',
-                  translation: 'Р»С–СЃРѕРІРёР№ РїРѕР»РѕРі',
+                  translation: 'полог',
                   type: 'single_choice',
                 },
               ],
@@ -1044,26 +1080,18 @@ describe('ArticlesService', () => {
       title: 'Forests',
     });
 
-    expect(response.questions).toEqual([
-      {
-        correctOptionIds: ['b'],
-        format: 'translation',
-        id: 'vq-3',
-        options: [
-          { id: 'a', text: 'лісова стежка' },
-          { id: 'b', text: 'лісовий полог' },
-          { id: 'c', text: 'гірський схил' },
-          { id: 'd', text: 'нічний вітер' },
-        ],
-        prompt:
-          'Choose the best Ukrainian translation of "forest canopy" as used in the text.',
-        sourceExcerpt: 'The forest canopy protects many insects.',
-        term: 'forest canopy',
-        termKind: 'phrase',
-        translation: 'Р»С–СЃРѕРІРёР№ РїРѕР»РѕРі',
-        type: 'single_choice',
-      },
-    ]);
+    expect(response.questions).toHaveLength(1);
+    expect(response.questions[0]).toMatchObject({
+      correctOptionIds: ['vq-3:correct'],
+      format: 'translation',
+      id: 'vq-3',
+      prompt: 'Оберіть український переклад: forest canopy',
+      sourceExcerpt: 'The forest canopy protects many insects.',
+      term: 'forest canopy',
+      termKind: 'phrase',
+      type: 'single_choice',
+    });
+    expect(response.questions[0]?.options).toHaveLength(4);
   });
 
   it('preserves requested C1 level for vocabulary quiz generation', async () => {
@@ -1075,16 +1103,16 @@ describe('ArticlesService', () => {
               questions: [
                 {
                   correctOptionIds: ['c'],
-                  format: 'synonym',
+                  format: 'translation',
                   id: 'vq-1',
                   options: [
-                    { id: 'a', text: 'refusal' },
-                    { id: 'b', text: 'delay' },
+                    { id: 'a', text: 'відмова' },
+                    { id: 'b', text: 'затримка' },
                     { id: 'c', text: 'uncertainty' },
-                    { id: 'd', text: 'victory' },
+                    { id: 'd', text: 'перемога' },
                   ],
                   prompt:
-                    'Which word is closest in meaning to "ambiguity" in the text?',
+                    'Choose the best Ukrainian translation of "ambiguity".',
                   sourceExcerpt:
                     'The policy language created ambiguity for both investors and regulators.',
                   term: 'ambiguity',
@@ -1105,10 +1133,7 @@ describe('ArticlesService', () => {
       text: 'The policy language created ambiguity for both investors and regulators.',
       title: 'Policy Language',
     });
-    const request = createChatCompletionMock.mock.calls[0]?.[0] as {
-      messages: Array<{ content?: string }>;
-    };
-    const prompt = String(request.messages[1]?.content ?? '');
+    const prompt = getFirstGroqPrompt();
 
     expect(prompt).toContain('Learner level is fixed at C1.');
     expect(prompt).toContain('Set "resolvedLevel" to "C1"');
@@ -1127,7 +1152,7 @@ describe('ArticlesService', () => {
     {
       "id": "q1",
       "type": "single_choice",
-      "format": "definition",
+      "format": "translation",
       "term": "mathematician",
       "termKind": "word",
       "translation": "математик",
@@ -1144,7 +1169,7 @@ describe('ArticlesService', () => {
     {
       "id": "q2",
       "type": "single_choice",
-      "format": "definition",
+      "format": "reverse_translation",
       "term": "algorithm",
       "termKind": "word",
       "translation": "алгоритм",
@@ -1161,7 +1186,7 @@ describe('ArticlesService', () => {
     {
       "id": "q3",
       "type": "single_choice",
-      "format": "definition",
+      "format": "cloze",
       "term": "computer science",
       "termKind": "phrase",
       "translation": "комп'ютерні науки",
@@ -1195,7 +1220,7 @@ describe('ArticlesService', () => {
     {
       "id": "q5",
       "type": "single_choice",
-      "format": "definition",
+      "format": "synonym",
       "term": "codebreaking",
       "termKind": "word",
       "translation": "зламування кодів",
@@ -1236,6 +1261,13 @@ describe('ArticlesService', () => {
       'computer science',
       'artificial intelligence',
       'codebreaking',
+    ]);
+    expect(response.questions.map((question) => question.format)).toEqual([
+      'translation',
+      'reverse_translation',
+      'cloze',
+      'translation',
+      'reverse_translation',
     ]);
   });
 });

@@ -393,6 +393,15 @@
     "adaptationReadyDescription": "An adapted version for {{level}} is ready. You can use it without waiting for a new adaptation.",
     "readyAdaptedShort": "Already adapted",
     "readySummaryShort": "Already summarized",
+    "simplificationMetrics": {
+      "title": "What changed",
+      "words": "Words",
+      "sentences": "Sentences",
+      "averageSentence": "Avg. sentence",
+      "averageWord": "Avg. word",
+      "wordsSuffix": "w",
+      "charactersSuffix": "ch"
+    },
     "speech": {
       "title": "Listen to text",
       "ready": "Ready to play",

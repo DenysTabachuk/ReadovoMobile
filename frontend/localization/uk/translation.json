@@ -393,6 +393,15 @@
     "adaptationReadyDescription": "Адаптована версія для рівня {{level}} вже готова. Можна використати її без нового очікування.",
     "readyAdaptedShort": "Вже адаптований",
     "readySummaryShort": "Вже сумаризований",
+    "simplificationMetrics": {
+      "title": "Що змінилося",
+      "words": "Слова",
+      "sentences": "Речення",
+      "averageSentence": "Сер. речення",
+      "averageWord": "Сер. довж. слова",
+      "wordsSuffix": "сл.",
+      "charactersSuffix": "С"
+    },
     "speech": {
       "title": "Прослухати текст",
       "ready": "Готово до відтворення",

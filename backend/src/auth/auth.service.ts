@@ -252,7 +252,9 @@ export class AuthService {
       throw new UnauthorizedException('Refresh token is invalid.');
     }
 
-    const user = await this.usersRepository.findById(matchingRefreshToken.userId);
+    const user = await this.usersRepository.findById(
+      matchingRefreshToken.userId,
+    );
 
     if (!user) {
       throw new UnauthorizedException('Refresh token is invalid.');
