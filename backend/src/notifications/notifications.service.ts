@@ -554,10 +554,16 @@ export class NotificationsService implements OnModuleInit {
       });
     }
 
-    return initializeApp({
-      credential: applicationDefault(),
-      projectId,
-    });
+    if (projectId) {
+      return initializeApp({
+        credential: applicationDefault(),
+        projectId,
+      });
+    }
+
+    throw new Error(
+      'Firebase credentials are missing. Set FIREBASE_SERVICE_ACCOUNT_JSON or FIREBASE_PROJECT_ID/FIREBASE_CLIENT_EMAIL/FIREBASE_PRIVATE_KEY.',
+    );
   }
 
   private async sendFcmPush(
