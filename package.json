@@ -1,5 +1,11 @@
 {
   "scripts": {
+    "frontend:start:local": "npm --prefix frontend run start:local",
+    "frontend:start:render": "npm --prefix frontend run start:render",
+    "frontend:start:android:local": "npm --prefix frontend run start:android:local",
+    "frontend:start:android:render": "npm --prefix frontend run start:android:render",
+    "android:local": "npm --prefix frontend run android:local",
+    "android:render": "npm --prefix frontend run android:render",
     "mock:api": "json-server --watch mock-api/db.json --host 0.0.0.0 --port 3101 --routes mock-api/routes.json --middlewares mock-api/server.js",
     "db:down": "docker compose down",
     "db:up": "docker compose up -d postgres"
