@@ -61,6 +61,24 @@ export class DatabaseService implements OnModuleDestroy, OnModuleInit {
     `);
 
     await this.query(`
+      CREATE TABLE IF NOT EXISTS user_refresh_tokens (
+        id uuid PRIMARY KEY,
+        user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        token_hash text NOT NULL,
+        token_salt text NOT NULL,
+        expires_at timestamptz NOT NULL,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        revoked_at timestamptz
+      );
+    `);
+
+    await this.query(`
+      CREATE INDEX IF NOT EXISTS user_refresh_tokens_user_active_idx
+      ON user_refresh_tokens (user_id, expires_at DESC)
+      WHERE revoked_at IS NULL;
+    `);
+
+    await this.query(`
       CREATE TABLE IF NOT EXISTS user_achievements (
         user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         achievement_id text NOT NULL,
@@ -262,6 +280,79 @@ export class DatabaseService implements OnModuleDestroy, OnModuleInit {
         reward_coins integer NOT NULL,
         claimed_at timestamptz NOT NULL DEFAULT now(),
         PRIMARY KEY (user_id, milestone)
+      );
+    `);
+
+    await this.query(`
+      CREATE TABLE IF NOT EXISTS user_notification_preferences (
+        user_id uuid PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+        learning_reminders_enabled boolean NOT NULL DEFAULT false,
+        learning_reminder_time text NOT NULL DEFAULT '19:00',
+        updated_at timestamptz NOT NULL DEFAULT now()
+      );
+    `);
+
+    await this.query(`
+      CREATE TABLE IF NOT EXISTS user_push_tokens (
+        user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        device_id text NOT NULL,
+        push_token text,
+        provider text NOT NULL DEFAULT 'fcm',
+        platform text NOT NULL,
+        is_active boolean NOT NULL DEFAULT true,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        last_seen_at timestamptz NOT NULL DEFAULT now(),
+        updated_at timestamptz NOT NULL DEFAULT now(),
+        PRIMARY KEY (user_id, device_id)
+      );
+    `);
+
+    await this.query(`
+      ALTER TABLE user_push_tokens
+      ADD COLUMN IF NOT EXISTS push_token text,
+      ADD COLUMN IF NOT EXISTS provider text NOT NULL DEFAULT 'fcm';
+    `);
+
+    await this.query(
+      `
+      ALTER TABLE user_push_tokens
+      ALTER COLUMN expo_push_token DROP NOT NULL;
+    `,
+    ).catch((error: unknown) => {
+      const code =
+        typeof error === 'object' && error !== null && 'code' in error
+          ? String(error.code)
+          : '';
+
+      if (code !== '42703') {
+        throw error;
+      }
+    });
+
+    await this.query(`
+      UPDATE user_push_tokens
+      SET provider = 'expo'
+      WHERE push_token IS NULL
+        AND EXISTS (
+          SELECT 1
+          FROM information_schema.columns
+          WHERE table_name = 'user_push_tokens'
+            AND column_name = 'expo_push_token'
+        );
+    `);
+
+    await this.query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS user_push_tokens_push_token_idx
+      ON user_push_tokens (push_token)
+      WHERE push_token IS NOT NULL;
+    `);
+
+    await this.query(`
+      CREATE TABLE IF NOT EXISTS user_learning_reminder_dispatches (
+        user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        reminder_date date NOT NULL,
+        sent_at timestamptz NOT NULL DEFAULT now(),
+        PRIMARY KEY (user_id, reminder_date)
       );
     `);
   }

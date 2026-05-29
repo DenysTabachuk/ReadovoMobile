@@ -59,6 +59,40 @@ export const styles = StyleSheet.create({
     paddingHorizontal: Spacing.sm,
     paddingVertical: Spacing.xs,
   },
+  progressFilterAllText: {
+    flex: 1,
+  },
+  progressFilterBadge: {
+    alignSelf: 'flex-start',
+  },
+  progressFilterButton: {
+    alignItems: 'center',
+    borderRadius: 12,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    justifyContent: 'space-between',
+    minHeight: 48,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+  },
+  progressFilterField: {
+    gap: Spacing.xs,
+  },
+  progressFilterOption: {
+    alignItems: 'center',
+    borderRadius: 12,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    justifyContent: 'space-between',
+    minHeight: 56,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+  },
+  progressFilterOptions: {
+    gap: Spacing.sm,
+  },
   progressControl: {
     alignItems: 'flex-end',
     gap: Spacing.xs,
@@ -170,10 +204,19 @@ export const styles = StyleSheet.create({
     paddingTop: Spacing.lg,
   },
   testHeader: {
-    alignItems: 'flex-start',
+    alignItems: 'center',
     flexDirection: 'row',
     gap: Spacing.md,
-    justifyContent: 'space-between',
+  },
+  testBackButton: {
+    alignItems: 'center',
+    borderRadius: 8,
+    height: 40,
+    justifyContent: 'center',
+    width: 40,
+  },
+  testHeaderTitle: {
+    flex: 1,
   },
   questionWord: {
     textAlign: 'center',
@@ -203,5 +246,16 @@ export const styles = StyleSheet.create({
   },
   testError: {
     color: '#c2410c',
+  },
+  wordModalActions: {
+    gap: Spacing.sm,
+    paddingTop: Spacing.md,
+  },
+  confirmModalActions: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+  },
+  confirmModalButton: {
+    flex: 1,
   },
 });

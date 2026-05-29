@@ -21,11 +21,19 @@ export type CreateDictionaryWordRequest = {
 
 export type DictionaryTestQuestionOption = {
   id: string;
+  text: string;
   translation: string;
 };
 
+export type DictionaryTestQuestionFormat =
+  | 'translation'
+  | 'reverse_translation'
+  | 'cloze';
+
 export type DictionaryTestQuestion = {
+  format: DictionaryTestQuestionFormat;
   options: DictionaryTestQuestionOption[];
+  prompt: string;
   word: string;
   wordId: string;
 };

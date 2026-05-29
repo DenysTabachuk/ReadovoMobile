@@ -107,7 +107,7 @@
   "articles": {
     "title": "Wikipedia articles",
     "description": "A fresh set of random articles for reading practice.",
-    "searchPlaceholder": "Search for a topic, person, place, or event",
+    "searchPlaceholder": "Search articles",
     "searchResults": "{{count}} articles found",
     "randomResults": "{{count}} articles in this set",
     "clearFilters": "Clear",
@@ -223,15 +223,28 @@
     "loading": "Loading dictionary...",
     "emptyTitle": "No saved words yet",
     "emptyDescription": "Tap a word in an article and add it to the dictionary after translation.",
+    "emptyFilteredTitle": "No words match this filter",
+    "emptyFilteredDescription": "Change the filter to see other words from your dictionary.",
     "tapHint": "Tap to see more",
     "errorTitle": "Dictionary is unavailable",
     "errorDescription": "We could not load saved words right now.",
     "retry": "Try again",
     "saved": "Word saved to dictionary",
     "saveError": "Could not save the word. Try again.",
+    "deleted": "Word deleted from dictionary",
+    "deleteAction": "Delete",
+    "deleteCancel": "Cancel",
+    "deleteConfirm": "Delete",
+    "deleteDescription": "Delete \"{{word}}\" from your dictionary? This cannot be undone.",
+    "deleteError": "Could not delete the word.",
+    "deleteErrorDescription": "Check your connection and try again.",
+    "deleteLoading": "Deleting...",
+    "deleteTitle": "Delete word?",
     "progressUpdateError": "Could not update word progress.",
     "progressUpdateErrorDescription": "Check your connection and try again.",
     "progressMenuHint": "Move this word back if you do not feel confident yet.",
+    "progressFilterLabel": "Word status",
+    "progressFilterTitle": "Choose word status",
     "filter": {
       "all": "All",
       "words": "Words",
@@ -246,6 +259,12 @@
       "title": "Dictionary test",
       "start": "Review",
       "loading": "Preparing test...",
+      "errorTitle": "Test is unavailable",
+      "exitAction": "Exit dictionary test",
+      "exitCancel": "Stay",
+      "exitConfirm": "Exit test",
+      "exitDescription": "The current test will close without a result. Are you sure you want to exit?",
+      "exitTitle": "Exit test?",
       "disabledTitle": "Add a few more words to start",
       "disabledDescription": "The review button stays locked until you save {{count}} more word for a 4-option test.",
       "progress": "Question {{current}} of {{total}}",
@@ -256,7 +275,7 @@
       "next": "Next",
       "finish": "Finish",
       "close": "Close",
-      "error": "Could not prepare the test. Add at least 4 words and try again.",
+      "error": "Could not prepare the test. Try again later.",
       "answerError": "Could not save the answer.",
       "done": "Done",
       "retry": "Try the test again",
@@ -271,6 +290,28 @@
   "settings": {
     "title": "Settings",
     "description": "Adjust the app appearance and language.",
+    "version": "Version {{version}}",
+    "learningReminders": {
+      "sectionTitle": "Learning reminders",
+      "description": "Get a daily reminder if you have not completed any learning test today.",
+      "toggleLabel": "Enable reminders",
+      "timeLabel": "Reminder time",
+      "timePickerTitle": "Choose reminder time",
+      "confirmModal": {
+        "cancel": "Cancel",
+        "disableConfirm": "Turn off",
+        "disableDescription": "You will stop receiving daily learning reminders. You can turn them back on at any time.",
+        "disableTitle": "Turn off reminders?",
+        "enableConfirm": "Turn on",
+        "enableDescription": "Readovo will remind you once per day if you have not completed a learning test. If system notifications are disabled, enable them in device settings.",
+        "enableTitle": "Turn on reminders?"
+      },
+      "messages": [
+        "Take a short test today and keep your progress moving.",
+        "A quick quiz now will keep your learning streak alive.",
+        "Return to Readovo and complete a test to stay on track."
+      ]
+    },
     "theme": {
       "title": "Theme",
       "light": "Light",
@@ -352,6 +393,26 @@
     "adaptationReadyDescription": "An adapted version for {{level}} is ready. You can use it without waiting for a new adaptation.",
     "readyAdaptedShort": "Already adapted",
     "readySummaryShort": "Already summarized",
+    "simplificationMetrics": {
+      "title": "What changed",
+      "words": "Words",
+      "sentences": "Sentences",
+      "averageSentence": "Avg. sentence",
+      "averageWord": "Avg. word",
+      "wordsSuffix": "w",
+      "charactersSuffix": "ch"
+    },
+    "speech": {
+      "title": "Listen to text",
+      "ready": "Ready to play",
+      "playing": "Playing now",
+      "paused": "Paused",
+      "playAction": "Play article audio",
+      "pauseAction": "Pause article audio",
+      "restartAction": "Restart article audio",
+      "stopAction": "Stop article audio",
+      "scrollToCurrentAction": "Scroll to the word being read"
+    },
     "summaryReadyBadge": "Summary ready",
     "summaryReadyTitle": "This summary is already ready",
     "summaryReadyDescription": "{{level}} summary is ready. You can use it without waiting for a new summary.",
@@ -436,10 +497,17 @@
     "emptySlot": "No items in this category yet.",
     "equipped": "Equipped",
     "equip": "Equip",
+    "owned": "Owned",
     "buy": "Buy",
+    "buying": "Buying...",
+    "cancel": "Cancel",
+    "confirmBuy": "Buy",
     "purchaseSuccessTitle": "Purchase successful",
     "purchaseSuccessDescription": "{{itemName}} added to your wardrobe for {{price}} coins.",
+    "purchaseConfirmTitle": "Buy item",
+    "purchaseConfirmDescription": "Buy {{itemName}} for {{price}} coins?",
     "clearSlot": "Remove item",
+    "clearAll": "Remove all",
     "errors": {
       "loadFailed": "Could not load wardrobe.",
       "buyFailed": "Could not complete the purchase. Try again.",
@@ -460,6 +528,32 @@
     }
   },
   "streak": {
+    "achievements": {
+      "3": {
+        "description": "Keep your streak for 3 days in a row.",
+        "title": "3-day streak"
+      },
+      "7": {
+        "description": "Keep your streak for 7 days in a row.",
+        "title": "7-day streak"
+      },
+      "14": {
+        "description": "Keep your streak for 14 days in a row.",
+        "title": "14-day streak"
+      },
+      "30": {
+        "description": "Keep your streak for 30 days in a row.",
+        "title": "30-day streak"
+      },
+      "100": {
+        "description": "Keep your streak for 100 days in a row.",
+        "title": "100-day streak"
+      }
+    },
+    "banner": {
+      "description": "Today's test is saved. Current streak: {{count}} days.",
+      "title": "Streak continued"
+    },
     "calendar": {
       "weekdays": {
         "mon": "Mon",
@@ -470,6 +564,34 @@
         "sat": "Sat",
         "sun": "Sun"
       }
+    },
+    "freeze": {
+      "applying": "Applying...",
+      "buy": "Buy",
+      "buying": "Buying...",
+      "cancel": "Cancel",
+      "confirm": "Use token",
+      "description": "A freeze token protects one missed day. One streak break can be covered by up to 3 freezes.",
+      "limitReached": "Limit",
+      "modalDescription": "Use a freeze token for {{date}}?",
+      "modalTitle": "Freeze day",
+      "notEnoughCoins": "Not enough coins to buy one.",
+      "purchaseConfirm": "Buy",
+      "purchaseDescription": "Buy one freeze token for 100 coins?",
+      "purchaseTitle": "Buy freeze",
+      "title": "Streak freezes",
+      "tokensAvailable": "Available: {{count}}"
+    },
+    "errors": {
+      "dayAlreadyProtected": "This day is already protected.",
+      "freezeDayLimitReached": "This streak break already has the maximum of 3 freezes.",
+      "freezeFailed": "Could not apply the freeze.",
+      "freezeLimitReached": "You already have the maximum number of freeze tokens.",
+      "freezeOnlyMissed": "Only a missed day can be frozen.",
+      "freezeWindowExpired": "This day can no longer be frozen.",
+      "noFreezeTokens": "You do not have any freeze tokens.",
+      "notEnoughCoins": "Not enough coins.",
+      "purchaseFreezeFailed": "Could not buy a freeze."
     },
     "summary": {
       "status": {

@@ -1,3 +1,4 @@
+import { authenticatedFetch } from '@/api/auth/authenticatedFetch';
 import { API_BASE_URL } from '@/api/auth/constants';
 
 import { type MascotAccessorySlot, type MascotProfile } from './types';
@@ -7,7 +8,7 @@ type ErrorResponseBody = {
 };
 
 export async function getMascotProfile(userId: string): Promise<MascotProfile> {
-  const response = await fetch(`${API_BASE_URL}/mascot/profile/${userId}`);
+  const response = await authenticatedFetch(`${API_BASE_URL}/mascot/profile/${userId}`);
 
   if (!response.ok) {
     throw new Error('mascot.errors.loadFailed');
@@ -20,7 +21,7 @@ export async function buyMascotItem(
   userId: string,
   itemId: string,
 ): Promise<MascotProfile> {
-  const response = await fetch(
+  const response = await authenticatedFetch(
     `${API_BASE_URL}/mascot/profile/${userId}/items/${itemId}/buy`,
     { method: 'POST' },
   );
@@ -36,7 +37,7 @@ export async function equipMascotItem(
   userId: string,
   itemId: string,
 ): Promise<MascotProfile> {
-  const response = await fetch(
+  const response = await authenticatedFetch(
     `${API_BASE_URL}/mascot/profile/${userId}/items/${itemId}/equip`,
     { method: 'POST' },
   );
@@ -52,7 +53,7 @@ export async function clearMascotSlot(
   userId: string,
   slot: MascotAccessorySlot,
 ): Promise<MascotProfile> {
-  const response = await fetch(`${API_BASE_URL}/mascot/profile/${userId}/slots/${slot}`, {
+  const response = await authenticatedFetch(`${API_BASE_URL}/mascot/profile/${userId}/slots/${slot}`, {
     method: 'DELETE',
   });
 

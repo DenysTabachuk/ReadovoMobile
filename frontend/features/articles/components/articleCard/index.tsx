@@ -7,7 +7,7 @@ import {
   type WikipediaArticle,
 } from '@/api/wikipedia';
 import { ThemedText } from '@/components/themedText';
-import { IconSymbol } from '@/components/ui/iconSymbol';
+import { IconSymbol } from '@/components/iconSymbol';
 
 import { ArticleThumbnail } from '../articleThumbnail';
 import { styles } from './styles';

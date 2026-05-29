@@ -4,6 +4,7 @@ export {
   equipMascotItem,
   getMascotProfile,
 } from './api';
+export { Mascot } from './components/mascot';
 export {
   getMascotCatalogItem,
   getMascotItemsBySlot,

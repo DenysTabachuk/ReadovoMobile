@@ -2,6 +2,8 @@ import { API_BASE_URL } from './constants';
 import {
   type LoginUserRequest,
   type LoginUserResponse,
+  type GoogleLoginRequest,
+  type GoogleLoginResponse,
   type RegisterUserRequest,
   type RegisterUserResponse,
   type RequestPasswordResetRequest,
@@ -18,6 +20,8 @@ import {
 
 export type {
   AuthUser,
+  GoogleLoginRequest,
+  GoogleLoginResponse,
   LoginUserRequest,
   LoginUserResponse,
   RegisterUserRequest,
@@ -58,6 +62,28 @@ export async function loginUser(
   }
 
   return response.json() as Promise<LoginUserResponse>;
+}
+
+export async function loginWithGoogle(
+  request: GoogleLoginRequest,
+): Promise<GoogleLoginResponse> {
+  const response = await fetch(`${API_BASE_URL}/auth/google`, {
+    body: JSON.stringify(request),
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    method: 'POST',
+  });
+
+  if (response.status === 401) {
+    throw new Error('auth.errors.googleSignInFailed');
+  }
+
+  if (!response.ok) {
+    throw new Error('auth.errors.default');
+  }
+
+  return response.json() as Promise<GoogleLoginResponse>;
 }
 
 export async function registerUser(

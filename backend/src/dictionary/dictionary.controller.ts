@@ -1,13 +1,16 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
   Post,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 
+import { UserAuthGuard } from '../auth/user-auth.guard';
 import { DictionaryService } from './dictionary.service';
 import {
   type CreateDictionaryWordRequest,
@@ -26,11 +29,13 @@ export class DictionaryController {
   constructor(private readonly dictionaryService: DictionaryService) {}
 
   @Get('users/:userId/words')
+  @UseGuards(UserAuthGuard)
   findAll(@Param('userId') userId: string): Promise<DictionaryWord[]> {
     return this.dictionaryService.findAll(userId);
   }
 
   @Post('users/:userId/words')
+  @UseGuards(UserAuthGuard)
   createWord(
     @Param('userId') userId: string,
     @Body() body: CreateDictionaryWordRequest,
@@ -38,7 +43,17 @@ export class DictionaryController {
     return this.dictionaryService.createWord(userId, body);
   }
 
+  @Delete('users/:userId/words/:wordId')
+  @UseGuards(UserAuthGuard)
+  deleteWord(
+    @Param('userId') userId: string,
+    @Param('wordId') wordId: string,
+  ): Promise<DictionaryWord> {
+    return this.dictionaryService.deleteWord(userId, wordId);
+  }
+
   @Patch('users/:userId/words/:wordId/progress')
+  @UseGuards(UserAuthGuard)
   updateWordProgress(
     @Param('userId') userId: string,
     @Param('wordId') wordId: string,
@@ -63,6 +78,7 @@ export class DictionaryController {
   }
 
   @Get('users/:userId/test')
+  @UseGuards(UserAuthGuard)
   createTest(
     @Param('userId') userId: string,
     @Query('limit') limit?: string,
@@ -71,6 +87,7 @@ export class DictionaryController {
   }
 
   @Post('users/:userId/test/answer')
+  @UseGuards(UserAuthGuard)
   submitTestAnswer(
     @Param('userId') userId: string,
     @Body() body: SubmitDictionaryTestAnswerRequest,

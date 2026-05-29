@@ -18,6 +18,10 @@ export type LoginUserRequest = {
   password: string;
 };
 
+export type GoogleLoginRequest = {
+  idToken: string;
+};
+
 export type RequestPasswordResetRequest = {
   email: string;
 };
@@ -49,13 +53,19 @@ export type RegisterUserResponse = {
   verificationExpiresAt: string;
 };
 
-export type LoginUserResponse = {
+export type AuthSessionResponse = {
+  accessToken: string;
+  accessTokenExpiresAt: string;
+  refreshToken: string;
+  refreshTokenExpiresAt: string;
   user: AuthUser;
 };
 
-export type VerifyEmailResponse = {
-  user: AuthUser;
-};
+export type LoginUserResponse = AuthSessionResponse;
+
+export type GoogleLoginResponse = AuthSessionResponse;
+
+export type VerifyEmailResponse = AuthSessionResponse;
 
 export type ResendVerificationCodeResponse = {
   email: string;

@@ -52,14 +52,20 @@ const DEFAULT_TARGET_LENGTH: ArticleSimplificationTargetLength = 'short';
 const DEFAULT_ARTICLE_TRANSFORMATION_TYPE: ArticleTextTransformationType =
   'summary';
 const GROQ_MODEL = 'llama-3.3-70b-versatile';
-const GROQ_MODEL_CONTEXT_WINDOW_TOKENS = 131072;
 const GROQ_MODEL_MAX_OUTPUT_TOKENS = 32768;
 const GROQ_REQUEST_TIMEOUT_MS = 180000;
-// This is a character-based heuristic aligned upward with the documented 131,072-token context window.
-const MAX_SIMPLIFICATION_CHUNK_CHARS = GROQ_MODEL_CONTEXT_WINDOW_TOKENS;
+// Keep chunks well below the model context window. Source blocks are also sent as JSON,
+// so using the full context window as a character limit makes summaries collapse into tiny overviews.
+const MAX_ADAPTATION_CHUNK_CHARS = 30000;
+const MAX_SUMMARY_CHUNK_CHARS = 12000;
 const MAX_SIMPLIFICATION_CHUNK_COMPLETION_TOKENS = GROQ_MODEL_MAX_OUTPUT_TOKENS;
 const MAX_SIMPLIFICATION_COMPLETION_TOKENS = GROQ_MODEL_MAX_OUTPUT_TOKENS;
-const MAX_VOCABULARY_QUIZ_COMPLETION_TOKENS = GROQ_MODEL_MAX_OUTPUT_TOKENS;
+const MAX_VOCABULARY_QUIZ_COMPLETION_TOKENS = 5000;
+const VOCABULARY_QUIZ_FORMAT_SEQUENCE: ArticleVocabularyQuizQuestionFormat[] = [
+  'translation',
+  'reverse_translation',
+  'cloze',
+];
 const MAX_ARTICLE_LIMIT = 50;
 const WIKIMEDIA_USER_AGENT = 'Readovo/1.0';
 const WIKIPEDIA_LANGUAGE_CODE = 'en';
@@ -157,6 +163,20 @@ const VOCABULARY_QUIZ_STOPWORDS = new Set([
   'who',
   'will',
   'with',
+  'about',
+  'above',
+  'across',
+  'after',
+  'against',
+  'along',
+  'around',
+  'before',
+  'behind',
+  'below',
+  'between',
+  'during',
+  'through',
+  'under',
   'you',
   'your',
 ]);
@@ -989,24 +1009,30 @@ export class ArticlesService {
 
       // Groq runs only on the backend so the API key never reaches the app.
       const client = this.getGroqClient(apiKey);
-      const parsedResponse =
-        text.length > MAX_SIMPLIFICATION_CHUNK_CHARS
-          ? await this.simplifyArticleInChunks({
-              client,
-              level,
-              sourceBlocks,
-              text,
-              transformationType,
-              title,
-            })
-          : await this.simplifySingleArticleInput({
-              client,
-              level,
-              sourceBlocks,
-              text,
-              transformationType,
-              title,
-            });
+      const maxChunkChars =
+        this.getMaxTransformationChunkChars(transformationType);
+      const parsedResponse = this.shouldChunkSimplificationInput({
+        maxChunkChars,
+        sourceBlocks,
+        text,
+      })
+        ? await this.simplifyArticleInChunks({
+            client,
+            level,
+            maxChunkChars,
+            sourceBlocks,
+            text,
+            transformationType,
+            title,
+          })
+        : await this.simplifySingleArticleInput({
+            client,
+            level,
+            sourceBlocks,
+            text,
+            transformationType,
+            title,
+          });
       const adaptedBlocks = parsedResponse.adaptedBlocks;
 
       if (adaptedBlocks.length === 0) {
@@ -1020,6 +1046,9 @@ export class ArticlesService {
 
       const adaptedLength =
         this.extractPlainTextFromArticleBlocks(adaptedBlocks).length;
+      this.logger.log(
+        `${this.getTransformationLogLabel(transformationType)} length ratio: title="${title}", level=${level}, originalLength=${originalLength}, adaptedLength=${adaptedLength}, ratio=${originalLength > 0 ? (adaptedLength / originalLength).toFixed(2) : '0'}`,
+      );
       const response: SimplifyArticleResponse = {
         adaptedBlocks,
         adaptedLength,
@@ -1238,25 +1267,28 @@ export class ArticlesService {
   private async simplifyArticleInChunks(params: {
     client: Groq;
     level: ArticleSimplificationLevel;
+    maxChunkChars: number;
     sourceBlocks?: ArticleBlock[];
     text: string;
     transformationType: ArticleTextTransformationType;
     title: string;
   }): Promise<SimplificationModelResponse> {
     const chunks = this.createSimplificationChunks({
+      maxChunkChars: params.maxChunkChars,
       sourceBlocks: params.sourceBlocks,
       text: params.text,
     });
     const adaptedChunkResponses: SimplificationModelResponse[] = [];
 
     this.logger.log(
-      `Chunked ${params.transformationType} started: title="${params.title}", level=${params.level}, chunks=${chunks.length}`,
+      `Chunked ${params.transformationType} started: title="${params.title}", level=${params.level}, chunks=${chunks.length}, maxChunkChars=${params.maxChunkChars}`,
     );
 
     for (const chunk of chunks) {
       const prompt = this.createChunkSimplificationPrompt({
         chunk,
         level: params.level,
+        sourceWordCount: this.countWords(params.text),
         transformationType: params.transformationType,
         title: params.title,
       });
@@ -1272,6 +1304,12 @@ export class ArticlesService {
       const parsedResponse = this.parseSimplificationModelResponse(rawResponse);
 
       if (parsedResponse.adaptedBlocks.length > 0) {
+        const chunkAdaptedLength = this.extractPlainTextFromArticleBlocks(
+          parsedResponse.adaptedBlocks,
+        ).length;
+        this.logger.log(
+          `Chunked ${params.transformationType} chunk completed: title="${params.title}", chunk=${chunk.index}/${chunk.total}, sourceLength=${chunk.text.length}, adaptedLength=${chunkAdaptedLength}, ratio=${chunk.text.length > 0 ? (chunkAdaptedLength / chunk.text.length).toFixed(2) : '0'}`,
+        );
         adaptedChunkResponses.push(parsedResponse);
       }
     }
@@ -1820,22 +1858,59 @@ export class ArticlesService {
     };
   }
 
+  private getMaxTransformationChunkChars(
+    transformationType: ArticleTextTransformationType,
+  ): number {
+    return transformationType === 'summary'
+      ? MAX_SUMMARY_CHUNK_CHARS
+      : MAX_ADAPTATION_CHUNK_CHARS;
+  }
+
+  private shouldChunkSimplificationInput(params: {
+    maxChunkChars: number;
+    sourceBlocks?: ArticleBlock[];
+    text: string;
+  }): boolean {
+    if (params.text.length > params.maxChunkChars) {
+      return true;
+    }
+
+    if (!params.sourceBlocks?.length) {
+      return false;
+    }
+
+    const blockPromptLength = params.sourceBlocks.reduce(
+      (total, block) => total + this.getArticleBlockPromptText(block).length,
+      0,
+    );
+
+    return blockPromptLength > params.maxChunkChars;
+  }
+
   private createSimplificationChunks(params: {
+    maxChunkChars: number;
     sourceBlocks?: ArticleBlock[];
     text: string;
   }): SimplificationChunk[] {
     if (params.sourceBlocks?.length) {
-      return this.createBlockSimplificationChunks(params.sourceBlocks);
+      return this.createBlockSimplificationChunks(
+        params.sourceBlocks,
+        params.maxChunkChars,
+      );
     }
 
-    return this.createTextSimplificationChunks(params.text);
+    return this.createTextSimplificationChunks(
+      params.text,
+      params.maxChunkChars,
+    );
   }
 
   private createBlockSimplificationChunks(
     sourceBlocks: ArticleBlock[],
+    maxChunkChars: number,
   ): SimplificationChunk[] {
     const splitBlocks = sourceBlocks.flatMap((block) =>
-      this.splitOversizedBlock(block),
+      this.splitOversizedBlock(block, maxChunkChars),
     );
     const chunkBlocks: ArticleBlock[][] = [];
     let currentBlocks: ArticleBlock[] = [];
@@ -1856,7 +1931,7 @@ export class ArticlesService {
 
       if (
         currentBlocks.length > 0 &&
-        currentLength + blockLength > MAX_SIMPLIFICATION_CHUNK_CHARS
+        currentLength + blockLength > maxChunkChars
       ) {
         flushChunk();
       }
@@ -1875,7 +1950,10 @@ export class ArticlesService {
     }));
   }
 
-  private createTextSimplificationChunks(text: string): SimplificationChunk[] {
+  private createTextSimplificationChunks(
+    text: string,
+    maxChunkChars: number,
+  ): SimplificationChunk[] {
     const paragraphs = text
       .split(/\n{2,}/)
       .map((paragraph) => paragraph.trim())
@@ -1889,10 +1967,7 @@ export class ArticlesService {
         return;
       }
 
-      if (
-        currentChunk.length + part.length + 2 >
-        MAX_SIMPLIFICATION_CHUNK_CHARS
-      ) {
+      if (currentChunk.length + part.length + 2 > maxChunkChars) {
         chunks.push(currentChunk);
         currentChunk = part;
         return;
@@ -1902,12 +1977,15 @@ export class ArticlesService {
     };
 
     for (const paragraph of paragraphs) {
-      if (paragraph.length <= MAX_SIMPLIFICATION_CHUNK_CHARS) {
+      if (paragraph.length <= maxChunkChars) {
         appendTextPart(paragraph);
         continue;
       }
 
-      for (const sentenceGroup of this.splitTextBySentences(paragraph)) {
+      for (const sentenceGroup of this.splitTextBySentences(
+        paragraph,
+        maxChunkChars,
+      )) {
         appendTextPart(sentenceGroup);
       }
     }
@@ -1923,16 +2001,20 @@ export class ArticlesService {
     }));
   }
 
-  private splitOversizedBlock(block: ArticleBlock): ArticleBlock[] {
+  private splitOversizedBlock(
+    block: ArticleBlock,
+    maxChunkChars: number,
+  ): ArticleBlock[] {
     const blockLength = this.getArticleBlockPromptText(block).length;
 
-    if (blockLength <= MAX_SIMPLIFICATION_CHUNK_CHARS) {
+    if (blockLength <= maxChunkChars) {
       return [block];
     }
 
     if (block.type === 'paragraph') {
       return this.splitTextBySentences(
         this.extractTextFromInlineNodes(block.children),
+        maxChunkChars,
       ).map((text) => ({
         children: this.createPlainTextInlineNodes(text),
         type: 'paragraph',
@@ -1957,7 +2039,7 @@ export class ArticlesService {
 
         if (
           currentRows.length > 0 &&
-          currentLength + rowLength > MAX_SIMPLIFICATION_CHUNK_CHARS
+          currentLength + rowLength > maxChunkChars
         ) {
           chunks.push({ rows: currentRows, type: 'table' });
           currentRows = [];
@@ -1978,14 +2060,14 @@ export class ArticlesService {
     return [block];
   }
 
-  private splitTextBySentences(text: string): string[] {
+  private splitTextBySentences(text: string, maxChunkChars: number): string[] {
     const sentences =
       text
         .match(/[^.!?\n]+(?:[.!?]+(?=\s|$)|$)/g)
         ?.map((sentence) => sentence.trim()) ?? [];
 
     if (sentences.length === 0) {
-      return [text.slice(0, MAX_SIMPLIFICATION_CHUNK_CHARS)];
+      return [text.slice(0, maxChunkChars)];
     }
 
     const chunks: string[] = [];
@@ -1993,8 +2075,8 @@ export class ArticlesService {
 
     for (const sentence of sentences) {
       const sentenceParts =
-        sentence.length > MAX_SIMPLIFICATION_CHUNK_CHARS
-          ? this.splitOversizedSentence(sentence)
+        sentence.length > maxChunkChars
+          ? this.splitOversizedSentence(sentence, maxChunkChars)
           : [sentence];
 
       for (const sentencePart of sentenceParts) {
@@ -2003,10 +2085,7 @@ export class ArticlesService {
           continue;
         }
 
-        if (
-          currentChunk.length + sentencePart.length + 1 >
-          MAX_SIMPLIFICATION_CHUNK_CHARS
-        ) {
+        if (currentChunk.length + sentencePart.length + 1 > maxChunkChars) {
           chunks.push(currentChunk);
           currentChunk = sentencePart;
           continue;
@@ -2023,7 +2102,10 @@ export class ArticlesService {
     return chunks;
   }
 
-  private splitOversizedSentence(sentence: string): string[] {
+  private splitOversizedSentence(
+    sentence: string,
+    maxChunkChars: number,
+  ): string[] {
     const words = sentence.split(/\s+/).filter(Boolean);
     const chunks: string[] = [];
     let currentChunk = '';
@@ -2034,10 +2116,7 @@ export class ArticlesService {
         continue;
       }
 
-      if (
-        currentChunk.length + word.length + 1 >
-        MAX_SIMPLIFICATION_CHUNK_CHARS
-      ) {
+      if (currentChunk.length + word.length + 1 > maxChunkChars) {
         chunks.push(currentChunk);
         currentChunk = word;
         continue;
@@ -2159,10 +2238,15 @@ export class ArticlesService {
   private createChunkSimplificationPrompt(params: {
     chunk: SimplificationChunk;
     level: ArticleSimplificationLevel;
+    sourceWordCount: number;
     transformationType: ArticleTextTransformationType;
     title: string;
   }): string {
     if (params.transformationType === 'adaptation') {
+      const adaptationLengthRule = this.getAdaptationLengthRule(
+        params.chunk.text,
+      );
+
       return `Rewrite this chunk of a longer English Wikipedia article in simpler English for a learner.
 
 Article title: ${params.title}
@@ -2172,6 +2256,7 @@ Learner level: ${params.level}
 Rules:
 - Keep the same meaning, the same order of ideas, and the important supporting details.
 - Do not summarize, compress, or intentionally shorten this chunk.
+- ${adaptationLengthRule}
 - Do not add facts.
 - Keep related ideas together and do not cut a sentence in the middle.
 - Use simple, natural English for level ${params.level}.
@@ -2205,8 +2290,9 @@ Source text:
 ${params.chunk.text}`;
     }
 
-    const summaryLengthRule = this.getSummaryMinimumLengthRule(
+    const summaryLengthRule = this.getSummaryLengthRule(
       params.chunk.text,
+      params.sourceWordCount,
     );
 
     return `Summarize this chunk of a longer English Wikipedia article for an English learner.
@@ -2216,6 +2302,8 @@ Chunk: ${params.chunk.index} of ${params.chunk.total}
 Learner level: ${params.level}
 
 Rules:
+- Summarize and shorten this chunk; keep only the central explanation, key facts, and essential supporting details.
+- The summary chunk must be clearly shorter than the source chunk.
 - Preserve meaning and local context.
 - Do not add facts.
 - Do not cut a sentence in the middle.
@@ -2261,6 +2349,8 @@ ${params.chunk.text}`;
     title: string;
   }): string {
     if (params.transformationType === 'adaptation') {
+      const adaptationLengthRule = this.getAdaptationLengthRule(params.text);
+
       return `You are helping to adapt English educational texts for language learners.
 
 Rewrite the following English Wikipedia article for a user with level ${params.level}.
@@ -2269,6 +2359,7 @@ Rules:
 - Preserve the full meaning, the sequence of ideas, and the important supporting details.
 - Do not summarize, compress, or intentionally shorten the article.
 - Do not turn it into a recap or a short overview.
+- ${adaptationLengthRule}
 - Do not add facts that are not in the original text.
 - Use simple and natural English.
 - Adapt vocabulary and grammar to level ${params.level}.
@@ -2310,14 +2401,15 @@ ${params.text}`;
     }
 
     const questionRule = this.getQuestionCountRule('medium');
-    const summaryLengthRule = this.getSummaryMinimumLengthRule(params.text);
+    const summaryLengthRule = this.getSummaryLengthRule(params.text);
 
     return `You are helping to create educational English summaries for language learners.
 
 Summarize the following English Wikipedia article for a user with level ${params.level}.
 
 Rules:
-- Keep the central explanation, the most important facts, and the key supporting details.
+- Summarize and shorten the article; keep only the central explanation, the most important facts, and essential supporting details.
+- The summary must be clearly shorter than the original article and must not be longer than an adapted version of the same article.
 - Do not add facts that are not in the original text.
 - Use simple and natural English.
 - Adapt vocabulary and grammar to level ${params.level}.
@@ -2329,7 +2421,7 @@ Rules:
 - If a difficult word is important, keep it but explain it simply.
 - Make the text coherent, not just a list of sentences or bullet notes.
 - This is not a micro-summary and not a 5-sentence overview.
-- Keep enough detail so the reader can understand the topic without reopening the original article immediately.
+- Keep enough detail so the reader can understand the topic, but remove repetition, side details, and nonessential examples.
 - ${summaryLengthRule}
 - Return a valid JSON object only, without markdown fences or extra text.
 - JSON schema:
@@ -2448,16 +2540,20 @@ Rules:
 - Allowed target terms: one word or one short phrase of up to 5 words.
 ${learnerLevelRule}
 - Respect learner level when choosing target terms. For lower levels, prefer simpler but still meaningful vocabulary from the text.
-- Aim for ${params.targetQuestionCount} questions. Use fewer only if the text truly has too few suitable target terms. Never exceed ${params.targetQuestionCount}.
-- Minimum quality matters more than quantity.
+- Generate exactly ${params.targetQuestionCount} questions when the text contains enough useful vocabulary.
+- Return at least 5 questions whenever the text has 5 useful words or phrases worth learning.
+- Use fewer than 5 only when the text genuinely does not contain enough useful vocabulary. Never exceed ${params.targetQuestionCount} questions.
 - Each question must test exactly one target term.
+- Include "translation" for every question: the best general Ukrainian translation of "term" for saving to a learner dictionary.
 - Use only "single_choice" questions with exactly 4 options and exactly 1 correct option.
-- Use a natural mix of these formats when appropriate:
+- Use this exact format sequence for the returned questions, then repeat it if more questions are needed: ${VOCABULARY_QUIZ_FORMAT_SEQUENCE.map((format) => `"${format}"`).join(', ')}.
+- Question 1 must use "translation", question 2 "reverse_translation", question 3 "cloze", question 4 "translation", and so on.
+- Allowed formats:
   - "translation": choose the best Ukrainian translation of the target term.
-  - "definition": choose the English definition that best matches the term in this text.
+  - "reverse_translation": choose the English target term that matches a Ukrainian translation prompt.
   - "cloze": complete a sentence from the text or a very similar context with the correct term.
-  - "synonym": choose the closest English synonym or near-meaning when that is natural.
-- Do not force all formats if they do not fit the selected vocabulary.
+- For "translation", the correct option text must be the Ukrainian translation.
+- For "reverse_translation" and "cloze", the correct option text must be the exact target term from the source text.
 - Wrong options must be plausible, not silly.
 - Do not invent target terms that are missing from the text. Only distractors may be invented.
 - For "cloze", hide the term with "____".
@@ -2471,9 +2567,10 @@ ${learnerLevelRule}
     {
       "id": string,
       "type": "single_choice",
-      "format": "translation" | "definition" | "cloze" | "synonym",
+      "format": "translation" | "reverse_translation" | "cloze",
       "term": string,
       "termKind": "word" | "phrase",
+      "translation": string,
       "prompt": string,
       "sourceExcerpt": string,
       "options": [{ "id": string, "text": string }],
@@ -2490,22 +2587,49 @@ Text:
 ${params.text}`;
   }
 
-  private getSummaryMinimumLengthRule(sourceText: string): string {
+  private getSummaryLengthRule(
+    sourceText: string,
+    wholeArticleWordCount = this.countWords(sourceText),
+  ): string {
+    const sourceWordCount = this.countWords(sourceText);
+    const maxPercent = this.getSummaryMaxPercent(wholeArticleWordCount);
+    const maxSummaryWords = Math.max(
+      1,
+      Math.ceil(sourceWordCount * maxPercent),
+    );
+    const percentLabel = Math.round(maxPercent * 100);
+
+    return `Keep the summary shorter than the source. Hard maximum: no more than ${maxSummaryWords} words (${percentLabel}% of this source text, based on the full article size).`;
+  }
+
+  private getSummaryMaxPercent(wordCount: number): number {
+    if (wordCount <= 2000) {
+      return 0.6;
+    }
+
+    if (wordCount <= 10000) {
+      return 0.35;
+    }
+
+    if (wordCount <= 25000) {
+      return 0.25;
+    }
+
+    return 0.15;
+  }
+
+  private getAdaptationLengthRule(sourceText: string): string {
     const wordCount = this.countWords(sourceText);
 
     if (wordCount <= 220) {
-      return 'Keep the summary substantial: usually at least 2 short paragraphs and at least about 100 words unless the source itself is shorter.';
+      return 'Keep all source information that is useful for understanding. Simplify wording and sentence structure, but do not remove facts, examples, explanations, or context just to make the text shorter.';
     }
 
-    if (wordCount <= 700) {
-      return 'Keep the summary substantial: usually at least 3 paragraphs and at least about 180 words unless the source itself is shorter.';
+    if (wordCount <= 900) {
+      return 'Keep every major point and the supporting details. The adapted text may use simpler words and shorter sentences, but it must not become shorter by dropping sections, examples, dates, names, causes, effects, or explanations.';
     }
 
-    if (wordCount <= 1400) {
-      return 'Keep the summary substantial: usually at least 4 paragraphs and at least about 260 words unless the source itself is shorter.';
-    }
-
-    return 'Keep the summary substantial: usually at least 5 paragraphs and at least about 340 words unless the source itself is shorter.';
+    return 'For long articles, preserve all major sections and supporting details. Do not compress the article into an overview. Do not drop paragraphs because the article is long. Split complex ideas into simpler sentences instead of deleting them.';
   }
 
   private parseSimplificationModelResponse(
@@ -3164,23 +3288,27 @@ ${params.text}`;
   private getVocabularyQuestionTarget(text: string): number {
     const wordCount = this.countWords(text);
 
-    if (wordCount <= 180) {
-      return 5;
+    if (wordCount <= 1200) {
+      return 6;
     }
 
-    if (wordCount <= 420) {
-      return 7;
+    if (wordCount <= 5000) {
+      return 8;
     }
 
-    if (wordCount <= 750) {
+    if (wordCount <= 10000) {
       return 10;
     }
 
-    if (wordCount <= 1100) {
+    if (wordCount <= 25000) {
       return 12;
     }
 
-    return 15;
+    if (wordCount <= 50000) {
+      return 14;
+    }
+
+    return 16;
   }
 
   private getQuestionCountRule(
@@ -3302,7 +3430,7 @@ ${params.text}`;
 
     const usedTerms = new Set<string>();
     const diagnostics: string[] = [];
-    const questions: ArticleVocabularyQuizQuestion[] = [];
+    const validQuestions: ArticleVocabularyQuizQuestion[] = [];
 
     rawQuestions.forEach((question, index) => {
       const normalizedQuestion = this.normalizeVocabularyQuestion(
@@ -3335,8 +3463,11 @@ ${params.text}`;
       }
 
       usedTerms.add(normalizedTerm);
-      questions.push(normalizedQuestion.question);
+      validQuestions.push(normalizedQuestion.question);
     });
+
+    const questions =
+      this.createVocabularyQuestionsWithScheduledFormats(validQuestions);
 
     if (questions.length > params.targetQuestionCount) {
       diagnostics.push(
@@ -3376,6 +3507,7 @@ ${params.text}`;
       sourceExcerpt?: unknown;
       term?: unknown;
       termKind?: unknown;
+      translation?: unknown;
       type?: unknown;
     };
     const prompt = this.getStringValue(candidate.prompt);
@@ -3385,6 +3517,7 @@ ${params.text}`;
       this.normalizeVocabularyTermKind(candidate.termKind) ??
       (term.includes(' ') ? 'phrase' : 'word');
     const sourceExcerpt = this.getStringValue(candidate.sourceExcerpt);
+    const translation = this.getStringValue(candidate.translation);
     const type =
       candidate.type === 'single_choice' || candidate.type === undefined
         ? 'single_choice'
@@ -3402,6 +3535,10 @@ ${params.text}`;
 
     if (!term) {
       return { reason: 'term is empty' };
+    }
+
+    if (!translation) {
+      return { reason: 'translation is empty' };
     }
 
     if (!format) {
@@ -3427,6 +3564,24 @@ ${params.text}`;
     if (!this.isUsefulVocabularyTerm(term)) {
       return {
         reason: `term "${term}" is not useful vocabulary for the quiz`,
+      };
+    }
+
+    if (this.hasRepeatedAdjacentVocabularyToken(term)) {
+      return {
+        reason: `term "${term}" contains repeated adjacent words`,
+      };
+    }
+
+    if (this.isStopwordHeavyVocabularyPhrase(term)) {
+      return {
+        reason: `term "${term}" looks like a sentence fragment, not a vocabulary item`,
+      };
+    }
+
+    if (!this.isUsefulVocabularyTranslation(term, translation)) {
+      return {
+        reason: `translation for term "${term}" is too broad or not dictionary-like`,
       };
     }
 
@@ -3463,9 +3618,165 @@ ${params.text}`;
         sourceExcerpt: sourceExcerpt || undefined,
         term,
         termKind: inferredTermKind,
+        translation,
         type,
       },
     };
+  }
+
+  private createVocabularyQuestionsWithScheduledFormats(
+    questions: ArticleVocabularyQuizQuestion[],
+  ): ArticleVocabularyQuizQuestion[] {
+    return questions.map((question, index) =>
+      this.createVocabularyQuestionWithFormat(
+        question,
+        this.getVocabularyQuestionFormatForIndex(index),
+        questions,
+      ),
+    );
+  }
+
+  private createVocabularyQuestionWithFormat(
+    question: ArticleVocabularyQuizQuestion,
+    format: ArticleVocabularyQuizQuestionFormat,
+    questions: ArticleVocabularyQuizQuestion[],
+  ): ArticleVocabularyQuizQuestion {
+    const correctOptionText =
+      format === 'translation' ? question.translation : question.term;
+    const distractorTexts = this.getVocabularyQuestionDistractorTexts(
+      question,
+      questions,
+      format,
+      correctOptionText,
+    );
+    const options = [
+      {
+        id: `${question.id}:correct`,
+        text: correctOptionText,
+      },
+      ...distractorTexts.map((text, index) => ({
+        id: `${question.id}:distractor:${index + 1}`,
+        text,
+      })),
+    ];
+
+    return {
+      ...question,
+      correctOptionIds: [`${question.id}:correct`],
+      format,
+      options,
+      prompt: this.createVocabularyQuestionPrompt(question, format),
+      type: 'single_choice',
+    };
+  }
+
+  private getVocabularyQuestionDistractorTexts(
+    question: ArticleVocabularyQuizQuestion,
+    questions: ArticleVocabularyQuizQuestion[],
+    format: ArticleVocabularyQuizQuestionFormat,
+    correctOptionText: string,
+  ): string[] {
+    const normalizedCorrectOptionText =
+      this.normalizeVocabularyOptionText(correctOptionText);
+    const seenTexts = new Set([normalizedCorrectOptionText]);
+    const distractorTexts: string[] = [];
+    const candidateTexts =
+      format === 'translation'
+        ? questions.map((candidate) => candidate.translation)
+        : questions.map((candidate) => candidate.term);
+
+    for (const candidateText of candidateTexts) {
+      const normalizedCandidateText =
+        this.normalizeVocabularyOptionText(candidateText);
+
+      if (
+        !candidateText ||
+        normalizedCandidateText ===
+          this.normalizeVocabularyOptionText(
+            format === 'translation' ? question.translation : question.term,
+          ) ||
+        seenTexts.has(normalizedCandidateText)
+      ) {
+        continue;
+      }
+
+      seenTexts.add(normalizedCandidateText);
+      distractorTexts.push(candidateText);
+
+      if (distractorTexts.length === 3) {
+        return distractorTexts;
+      }
+    }
+
+    for (const option of question.options) {
+      const normalizedOptionText = this.normalizeVocabularyOptionText(
+        option.text,
+      );
+
+      if (
+        !option.text ||
+        question.correctOptionIds.includes(option.id) ||
+        seenTexts.has(normalizedOptionText)
+      ) {
+        continue;
+      }
+
+      seenTexts.add(normalizedOptionText);
+      distractorTexts.push(option.text);
+
+      if (distractorTexts.length === 3) {
+        break;
+      }
+    }
+
+    return distractorTexts;
+  }
+
+  private normalizeVocabularyOptionText(text: string): string {
+    return text.trim().replace(/\s+/g, ' ').toLowerCase();
+  }
+
+  private createVocabularyQuestionPrompt(
+    question: ArticleVocabularyQuizQuestion,
+    format: ArticleVocabularyQuizQuestionFormat,
+  ): string {
+    if (format === 'translation') {
+      return `Оберіть український переклад: ${question.term}`;
+    }
+
+    if (format === 'reverse_translation') {
+      return `Оберіть англійський відповідник: ${question.translation}`;
+    }
+
+    return this.createVocabularyClozePrompt(question);
+  }
+
+  private createVocabularyClozePrompt(
+    question: ArticleVocabularyQuizQuestion,
+  ): string {
+    const sourceExcerpt = question.sourceExcerpt?.trim();
+
+    if (sourceExcerpt) {
+      const escapedTerm = question.term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const termPattern = new RegExp(`\\b${escapedTerm}\\b`, 'i');
+      const clozePrompt = sourceExcerpt.replace(termPattern, '____');
+
+      if (clozePrompt !== sourceExcerpt) {
+        return clozePrompt;
+      }
+    }
+
+    return 'Complete the sentence with the correct English word or phrase: ____';
+  }
+
+  private getVocabularyQuestionFormatForIndex(
+    index: number,
+  ): ArticleVocabularyQuizQuestionFormat {
+    return (
+      VOCABULARY_QUIZ_FORMAT_SEQUENCE[
+        index % VOCABULARY_QUIZ_FORMAT_SEQUENCE.length
+      ] ?? 'translation'
+    );
   }
 
   private truncateForLog(value: string, maxLength = 4000): string {
@@ -3544,6 +3855,7 @@ ${params.text}`;
   ): ArticleVocabularyQuizQuestionFormat | null {
     if (
       format === 'translation' ||
+      format === 'reverse_translation' ||
       format === 'definition' ||
       format === 'cloze' ||
       format === 'synonym'
@@ -3598,6 +3910,53 @@ ${params.text}`;
     }
 
     return true;
+  }
+
+  private hasRepeatedAdjacentVocabularyToken(term: string): boolean {
+    const tokens = this.normalizeTextForSourceMatch(term)
+      .split(' ')
+      .filter(Boolean);
+
+    return tokens.some(
+      (token, index) => index > 0 && token === tokens[index - 1],
+    );
+  }
+
+  private isStopwordHeavyVocabularyPhrase(term: string): boolean {
+    const tokens = this.normalizeTextForSourceMatch(term)
+      .split(' ')
+      .filter(Boolean);
+
+    if (tokens.length < 4) {
+      return false;
+    }
+
+    const stopwordCount = tokens.filter((token) =>
+      VOCABULARY_QUIZ_STOPWORDS.has(token),
+    ).length;
+
+    return stopwordCount >= 2;
+  }
+
+  private isUsefulVocabularyTranslation(
+    term: string,
+    translation: string,
+  ): boolean {
+    const normalizedTranslation = translation.trim();
+
+    if (!normalizedTranslation || /[a-z]{3,}/i.test(normalizedTranslation)) {
+      return false;
+    }
+
+    const termTokenCount = this.normalizeTextForSourceMatch(term)
+      .split(' ')
+      .filter(Boolean).length;
+    const translationTokenCount = normalizedTranslation
+      .split(/\s+/)
+      .filter(Boolean).length;
+    const maxTranslationTokens = termTokenCount <= 1 ? 4 : 6;
+
+    return translationTokenCount <= maxTranslationTokens;
   }
 
   private hasDuplicateOptionTexts(
@@ -3677,8 +4036,8 @@ ${params.text}`;
   }): string {
     const cacheNamespace =
       params.transformationType === 'adaptation'
-        ? 'adaptation-v1'
-        : 'summary-v2';
+        ? 'adaptation-v2'
+        : 'summary-v6';
     const digest = createHash('sha256')
       .update(
         `${cacheNamespace}::${params.articleId ?? 'no-id'}::${params.title}::${params.level}::${params.sourceHash}`,

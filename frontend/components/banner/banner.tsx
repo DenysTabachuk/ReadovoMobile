@@ -27,7 +27,7 @@ export function Banner({
   const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme();
   const isDarkTheme = colorScheme === 'dark';
-  const variantStyle = resolveVariantStyle(variant);
+  const variantStyle = resolveVariantStyle(variant, isDarkTheme);
 
   return (
     <Animated.View
@@ -63,7 +63,7 @@ export function Banner({
   );
 }
 
-function resolveVariantStyle(variant: ShowBannerOptions['variant']) {
+function resolveVariantStyle(variant: ShowBannerOptions['variant'], isDarkTheme: boolean) {
   if (variant === 'success') {
     return styles.success;
   }
@@ -74,6 +74,10 @@ function resolveVariantStyle(variant: ShowBannerOptions['variant']) {
 
   if (variant === 'achievement') {
     return styles.achievement;
+  }
+
+  if (variant === 'streak') {
+    return isDarkTheme ? styles.streakDark : styles.streakLight;
   }
 
   return styles.error;

@@ -1,3 +1,4 @@
+import { authenticatedFetch } from '@/api/auth/authenticatedFetch';
 import { API_BASE_URL } from '@/api/auth/constants';
 import { type WikipediaArticle, type WikipediaArticleDetail } from '@/api/wikipedia';
 
@@ -31,7 +32,7 @@ export function isArticleSaved(
 }
 
 export async function readSavedArticles(userId: string): Promise<SavedArticle[]> {
-  const response = await fetch(
+  const response = await authenticatedFetch(
     `${API_BASE_URL}/api/users/${userId}/articles/saved`,
   );
 
@@ -46,7 +47,7 @@ export async function saveArticleForLater(
   userId: string,
   article: WikipediaArticle,
 ): Promise<SavedArticle[]> {
-  const response = await fetch(
+  const response = await authenticatedFetch(
     `${API_BASE_URL}/api/users/${userId}/articles/saved`,
     {
       body: JSON.stringify(article),
@@ -68,7 +69,7 @@ export async function removeSavedArticle(
   userId: string,
   articleId: number,
 ): Promise<SavedArticle[]> {
-  const response = await fetch(
+  const response = await authenticatedFetch(
     `${API_BASE_URL}/api/users/${userId}/articles/saved/${articleId}`,
     {
       method: 'DELETE',

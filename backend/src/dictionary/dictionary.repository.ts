@@ -89,6 +89,25 @@ export class DictionaryRepository {
     return row ? this.toDictionaryWord(row) : undefined;
   }
 
+  async deleteById(
+    id: string,
+    userId: string,
+  ): Promise<DictionaryWord | undefined> {
+    const result = await this.databaseService.query<DictionaryWordRow>(
+      `
+        DELETE FROM dictionary_words
+        WHERE id = $1
+          AND user_id = $2
+        RETURNING id, user_id, word, translation, context, progress, correct_answers_count, last_reviewed_at, created_at
+      `,
+      [id, userId],
+    );
+
+    const row = result.rows[0];
+
+    return row ? this.toDictionaryWord(row) : undefined;
+  }
+
   async findReviewCandidates(
     userId: string,
     limit: number,

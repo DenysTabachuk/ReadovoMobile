@@ -17,18 +17,13 @@ export const styles = StyleSheet.create({
     marginBottom: Spacing.xs,
   },
   sheetHeader: {
-    alignItems: 'center',
-    justifyContent: 'center',
     marginHorizontal: -Spacing.md,
-    minHeight: 68,
-    paddingHorizontal: Spacing.md,
-    paddingTop: Spacing.sm,
-    paddingBottom: Spacing.sm,
   },
-  sheetHeaderCollapsed: {
-    minHeight: 44,
-    paddingTop: 0,
-    paddingBottom: 0,
+  sheetHeaderButton: {
+    alignItems: 'center',
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: Spacing.md,
   },
   sheetTitleRow: {
     alignItems: 'center',
@@ -39,16 +34,8 @@ export const styles = StyleSheet.create({
   sheetContainer: {
     borderRadius: 18,
     borderWidth: 1,
-    gap: Spacing.sm,
     overflow: 'hidden',
     paddingHorizontal: Spacing.md,
-    paddingTop: Spacing.md,
-    paddingBottom: Spacing.md,
-  },
-  sheetContainerCollapsed: {
-    gap: 0,
-    paddingTop: 0,
-    paddingBottom: 0,
   },
   filtersContentAnimated: {
     overflow: 'hidden',

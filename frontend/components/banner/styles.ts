@@ -29,7 +29,7 @@ export const styles = StyleSheet.create({
     shadowRadius: 12,
   },
   success: {
-    backgroundColor: '#1caa5f',
+    backgroundColor: '#52c41a',
   },
   error: {
     backgroundColor: '#c04135',
@@ -37,6 +37,16 @@ export const styles = StyleSheet.create({
   reward: {
     backgroundColor: '#d9902f',
     borderColor: '#ffe1a3',
+  },
+  streakLight: {
+    backgroundColor: '#d7f0df',
+    borderColor: '#98d7aa',
+    borderLeftColor: '#52c41a',
+  },
+  streakDark: {
+    backgroundColor: '#1f7a3f',
+    borderColor: '#2f8f50',
+    borderLeftColor: '#52c41a',
   },
   achievement: {
     backgroundColor: '#f3edff',
@@ -61,9 +71,28 @@ export const styles = StyleSheet.create({
     height: 40,
     width: 40,
   },
+  streakIcon: {
+    marginHorizontal: Spacing.sm,
+  },
   achievementBadge: {
     height: 56,
     width: 56,
+  },
+  achievementIconCircle: {
+    alignItems: 'center',
+    borderRadius: 28,
+    borderWidth: 1,
+    height: 56,
+    justifyContent: 'center',
+    width: 56,
+  },
+  achievementIconCircleDark: {
+    backgroundColor: '#3a2461',
+    borderColor: '#7d5fd1',
+  },
+  achievementIconCircleLight: {
+    backgroundColor: '#fff7db',
+    borderColor: '#f2bf4a',
   },
   textContent: {
     flex: 1,
@@ -77,6 +106,9 @@ export const styles = StyleSheet.create({
     ...Typography.body,
     color: '#fff',
   },
+  streakTextLight: {
+    color: '#11181c',
+  },
   achievementTitle: {
     ...Typography.bodyStrong,
   },
@@ -85,7 +117,7 @@ export const styles = StyleSheet.create({
     color: '#6f7080',
   },
   achievementStatus: {
-    color: '#0c8f42',
+    color: '#52c41a',
     fontSize: 13,
     fontWeight: '600',
   },
@@ -99,7 +131,7 @@ export const styles = StyleSheet.create({
     width: 18,
   },
   achievementRewardText: {
-    color: '#0c8f42',
+    color: '#52c41a',
     fontSize: 14,
     fontWeight: '600',
     lineHeight: 20,

@@ -107,7 +107,7 @@
   "articles": {
     "title": "Статті з Wikipedia",
     "description": "Свіжа добірка випадкових статей для практики читання.",
-    "searchPlaceholder": "Пошук за темою, людиною, місцем або подією",
+    "searchPlaceholder": "Пошук статей",
     "searchResults": "Знайдено статей: {{count}}",
     "randomResults": "Статей у добірці: {{count}}",
     "clearFilters": "Очистити",
@@ -223,15 +223,28 @@
     "loading": "Завантажуємо словник...",
     "emptyTitle": "Збережених слів ще немає",
     "emptyDescription": "Натисніть слово у статті й додайте його до словника після перекладу.",
+    "emptyFilteredTitle": "Немає слів за цим фільтром",
+    "emptyFilteredDescription": "Змініть фільтр, щоб побачити інші слова зі словника.",
     "tapHint": "Тапніть щоб побачити більше",
     "errorTitle": "Словник недоступний",
     "errorDescription": "Зараз не вдалося завантажити збережені слова.",
     "retry": "Спробувати ще",
     "saved": "Слово збережено у словник",
     "saveError": "Не вдалося зберегти слово. Спробуйте ще раз.",
+    "deleted": "Слово видалено зі словника",
+    "deleteAction": "Видалити",
+    "deleteCancel": "Скасувати",
+    "deleteConfirm": "Видалити",
+    "deleteDescription": "Видалити \"{{word}}\" зі словника? Цю дію не можна скасувати.",
+    "deleteError": "Не вдалося видалити слово.",
+    "deleteErrorDescription": "Перевірте з'єднання та спробуйте ще раз.",
+    "deleteLoading": "Видаляємо...",
+    "deleteTitle": "Видалити слово?",
     "progressUpdateError": "Не вдалося оновити прогрес слова.",
     "progressUpdateErrorDescription": "Перевірте з'єднання та спробуйте ще раз.",
     "progressMenuHint": "Поверніть слово назад, якщо ще не почуваєтесь упевнено.",
+    "progressFilterLabel": "Статус слова",
+    "progressFilterTitle": "Оберіть статус слова",
     "filter": {
       "all": "Усі",
       "words": "Слова",
@@ -246,6 +259,12 @@
       "title": "Тест словника",
       "start": "Повторити",
       "loading": "Готуємо тест...",
+      "errorTitle": "Тест недоступний",
+      "exitAction": "Вийти з тесту словника",
+      "exitCancel": "Залишитись",
+      "exitConfirm": "Вийти з тесту",
+      "exitDescription": "Поточний тест закриється без результату. Ви точно хочете вийти?",
+      "exitTitle": "Вийти з тесту?",
       "disabledTitle": "Додайте ще кілька слів, щоб почати",
       "disabledDescription": "Кнопка повторення буде активною, коли ви збережете ще {{count}} слово для тесту з 4 варіантами відповіді.",
       "progress": "Питання {{current}} з {{total}}",
@@ -256,7 +275,7 @@
       "next": "Далі",
       "finish": "Завершити",
       "close": "Закрити",
-      "error": "Не вдалося підготувати тест. Додайте щонайменше 4 слова й спробуйте ще раз.",
+      "error": "Не вдалося підготувати тест. Спробуйте ще раз пізніше.",
       "answerError": "Не вдалося зберегти відповідь.",
       "done": "Все, завершили",
       "retry": "Пройти тест ще раз",
@@ -271,6 +290,28 @@
   "settings": {
     "title": "Налаштування",
     "description": "Змініть вигляд застосунку та мову інтерфейсу.",
+    "version": "Версія {{version}}",
+    "learningReminders": {
+      "sectionTitle": "Нагадування про навчання",
+      "description": "Отримуйте щоденне нагадування, якщо сьогодні ще не виконали жодного навчального тесту.",
+      "toggleLabel": "Увімкнути нагадування",
+      "timeLabel": "Час нагадування",
+      "timePickerTitle": "Оберіть час нагадування",
+      "confirmModal": {
+        "cancel": "Скасувати",
+        "disableConfirm": "Вимкнути",
+        "disableDescription": "Ви більше не отримуватимете щоденні нагадування про навчання. Їх можна знову увімкнути будь-коли.",
+        "disableTitle": "Вимкнути нагадування?",
+        "enableConfirm": "Увімкнути",
+        "enableDescription": "Readovo нагадуватиме раз на день, якщо ви ще не виконали навчальний тест. Якщо системні сповіщення вимкнені, увімкніть їх у налаштуваннях пристрою.",
+        "enableTitle": "Увімкнути нагадування?"
+      },
+      "messages": [
+        "Пройдіть короткий тест сьогодні, щоб підтримати прогрес.",
+        "Швидкий тест допоможе зберегти навчальну серію.",
+        "Поверніться до Readovo й виконайте тест, щоб не збитися з ритму."
+      ]
+    },
     "theme": {
       "title": "Тема",
       "light": "Світла",
@@ -352,6 +393,26 @@
     "adaptationReadyDescription": "Адаптована версія для рівня {{level}} вже готова. Можна використати її без нового очікування.",
     "readyAdaptedShort": "Вже адаптований",
     "readySummaryShort": "Вже сумаризований",
+    "simplificationMetrics": {
+      "title": "Що змінилося",
+      "words": "Слова",
+      "sentences": "Речення",
+      "averageSentence": "Сер. речення",
+      "averageWord": "Сер. довж. слова",
+      "wordsSuffix": "сл.",
+      "charactersSuffix": "С"
+    },
+    "speech": {
+      "title": "Прослухати текст",
+      "ready": "Готово до відтворення",
+      "playing": "Зараз відтворюється",
+      "paused": "Пауза",
+      "playAction": "Увімкнути озвучення статті",
+      "pauseAction": "Поставити озвучення статті на паузу",
+      "restartAction": "Почати озвучення статті спочатку",
+      "stopAction": "Зупинити озвучення статті",
+      "scrollToCurrentAction": "Перейти до слова, яке зараз читається"
+    },
     "summaryReadyBadge": "Стислий виклад готовий",
     "summaryReadyTitle": "Цей стислий виклад уже готовий",
     "summaryReadyDescription": "Стислий виклад для рівня {{level}} вже готовий. Можна використати його без нового очікування.",
@@ -436,10 +497,17 @@
     "emptySlot": "У цій категорії ще немає предметів.",
     "equipped": "Одягнено",
     "equip": "Одягнути",
+    "owned": "У вас вже є",
     "buy": "Купити",
+    "buying": "Купуємо...",
+    "cancel": "Скасувати",
+    "confirmBuy": "Купити",
     "purchaseSuccessTitle": "Покупка успішна",
     "purchaseSuccessDescription": "{{itemName}} додано до гардероба за {{price}} монет.",
+    "purchaseConfirmTitle": "Купити предмет",
+    "purchaseConfirmDescription": "Купити {{itemName}} за {{price}} монет?",
     "clearSlot": "Зняти предмет",
+    "clearAll": "Зняти все",
     "errors": {
       "loadFailed": "Не вдалося завантажити гардероб.",
       "buyFailed": "Не вдалося завершити покупку. Спробуйте ще раз.",
@@ -460,6 +528,32 @@
     }
   },
   "streak": {
+    "achievements": {
+      "3": {
+        "description": "Тримайте streak 3 дні поспіль.",
+        "title": "3 дні streak"
+      },
+      "7": {
+        "description": "Тримайте streak 7 днів поспіль.",
+        "title": "7 днів streak"
+      },
+      "14": {
+        "description": "Тримайте streak 14 днів поспіль.",
+        "title": "14 днів streak"
+      },
+      "30": {
+        "description": "Тримайте streak 30 днів поспіль.",
+        "title": "30 днів streak"
+      },
+      "100": {
+        "description": "Тримайте streak 100 днів поспіль.",
+        "title": "100 днів streak"
+      }
+    },
+    "banner": {
+      "description": "Сьогоднішній тест зараховано. Поточний streak: {{count}} дн.",
+      "title": "Відрізок продовжено"
+    },
     "calendar": {
       "weekdays": {
         "mon": "Пн",
@@ -470,6 +564,34 @@
         "sat": "Сб",
         "sun": "Нд"
       }
+    },
+    "freeze": {
+      "applying": "Застосовуємо...",
+      "buy": "Купити",
+      "buying": "Купуємо...",
+      "cancel": "Скасувати",
+      "confirm": "Використати",
+      "description": "Freeze-токен захищає один пропущений день. Один розрив streak можна закрити максимум 3 заморозками.",
+      "limitReached": "Ліміт",
+      "modalDescription": "Використати freeze-токен для {{date}}?",
+      "modalTitle": "Заморозити день",
+      "notEnoughCoins": "Недостатньо монет для покупки.",
+      "purchaseConfirm": "Купити",
+      "purchaseDescription": "Купити один freeze-токен за 100 монет?",
+      "purchaseTitle": "Купити заморозку",
+      "title": "Заморозки streak",
+      "tokensAvailable": "Доступно: {{count}}"
+    },
+    "errors": {
+      "dayAlreadyProtected": "Цей день уже захищено.",
+      "freezeDayLimitReached": "Цей розрив уже має максимум 3 заморозки.",
+      "freezeFailed": "Не вдалося застосувати заморозку.",
+      "freezeLimitReached": "У вас уже максимум freeze-токенів.",
+      "freezeOnlyMissed": "Заморозити можна лише пропущений день.",
+      "freezeWindowExpired": "Цей день уже не можна заморозити.",
+      "noFreezeTokens": "У вас немає freeze-токенів.",
+      "notEnoughCoins": "Недостатньо монет.",
+      "purchaseFreezeFailed": "Не вдалося купити заморозку."
     },
     "summary": {
       "status": {

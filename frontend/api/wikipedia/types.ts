@@ -153,6 +153,7 @@ export type ArticleQuizQuestion = {
 
 export type ArticleVocabularyQuizQuestionFormat =
   | 'translation'
+  | 'reverse_translation'
   | 'definition'
   | 'cloze'
   | 'synonym';
@@ -162,6 +163,7 @@ export type ArticleVocabularyQuizQuestion = ArticleQuizQuestion & {
   sourceExcerpt?: string;
   term: string;
   termKind: 'word' | 'phrase';
+  translation: string;
   type: 'single_choice';
 };
 

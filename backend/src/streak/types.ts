@@ -67,6 +67,14 @@ export type RestoreStreakDto = {
   price: number;
 };
 
+export type ApplyStreakFreezeDto = {
+  date: string;
+};
+
+export type PurchaseStreakFreezeDto = {
+  price: number;
+};
+
 export type CompleteStreakActivityResponse = {
   pendingSync?: boolean;
   streak: StreakState;

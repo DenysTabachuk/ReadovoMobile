@@ -1,3 +1,4 @@
+import { authenticatedFetch } from '@/api/auth/authenticatedFetch';
 import { API_BASE_URL } from '@/api/auth/constants';
 import { type WikipediaArticle, type WikipediaArticleDetail } from '@/api/wikipedia';
 
@@ -31,7 +32,7 @@ export function isArticleRecentlyOpened(
 }
 
 export async function readRecentArticles(userId: string): Promise<RecentArticle[]> {
-  const response = await fetch(
+  const response = await authenticatedFetch(
     `${API_BASE_URL}/api/users/${userId}/articles/recent`,
   );
 
@@ -46,7 +47,7 @@ export async function recordRecentArticle(
   userId: string,
   article: WikipediaArticle,
 ): Promise<RecentArticle[]> {
-  const response = await fetch(
+  const response = await authenticatedFetch(
     `${API_BASE_URL}/api/users/${userId}/articles/recent`,
     {
       body: JSON.stringify(article),

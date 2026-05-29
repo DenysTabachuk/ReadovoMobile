@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { type ReactNode, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -44,6 +44,7 @@ export type QuizSessionResult = {
 
 type ArticleQuizRunnerProps = {
   onFinish: (result: QuizSessionResult) => void;
+  renderSubmittedQuestionAction?: (question: QuizQuestion) => ReactNode;
   onSubmitAnswer?: (
     question: QuizQuestion,
     selectedOptionIds: string[],
@@ -53,6 +54,7 @@ type ArticleQuizRunnerProps = {
 
 export function ArticleQuizRunner({
   onFinish,
+  renderSubmittedQuestionAction,
   onSubmitAnswer,
   questions,
 }: ArticleQuizRunnerProps) {
@@ -272,13 +274,17 @@ export function ArticleQuizRunner({
       <View style={styles.footer}>
         <Button
           disabled={isSubmitting || (isSubmitted ? false : selectedOptionIds.length === 0)}
-          onPress={handlePrimaryPress}>
+          onPress={handlePrimaryPress}
+          style={styles.footerButton}>
           {isSubmitted
             ? isLastQuestion
               ? t('dictionary.test.finish')
               : t('dictionary.test.next')
             : t('dictionary.test.check', { defaultValue: 'Check answer' })}
         </Button>
+        {isSubmitted && renderSubmittedQuestionAction
+          ? renderSubmittedQuestionAction(currentQuestion)
+          : null}
       </View>
     </View>
   );

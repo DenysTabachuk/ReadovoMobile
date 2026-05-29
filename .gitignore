@@ -30,7 +30,8 @@ ios/
 
 # Local secrets and Firebase app config
 backend/secrets/
-frontend/android/app/google-services.json
+google-services.json
+firebase-adminsdk-*.json
 
 # Logs
 logs/

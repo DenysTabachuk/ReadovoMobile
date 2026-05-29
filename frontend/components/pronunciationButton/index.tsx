@@ -4,7 +4,7 @@ import { Pressable, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { ThemedText } from '@/components/themedText';
-import { IconSymbol } from '@/components/ui/iconSymbol';
+import { IconSymbol } from '@/components/iconSymbol';
 import { useThemeColor } from '@/hooks/use-theme-color';
 
 import { styles } from './styles';
@@ -28,7 +28,6 @@ export function PronunciationButton({ word }: PronunciationButtonProps) {
   useEffect(() => {
     return () => {
       isMountedRef.current = false;
-      void Speech.stop();
     };
   }, []);
 

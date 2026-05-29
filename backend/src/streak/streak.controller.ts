@@ -1,15 +1,27 @@
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 
+import { UserAuthGuard } from '../auth/user-auth.guard';
 import { StreakService } from './streak.service';
 import {
+  type ApplyStreakFreezeDto,
   type CompleteStreakActivityDto,
   type CompleteStreakActivityResponse,
+  type PurchaseStreakFreezeDto,
   type RestoreStreakDto,
   type StreakCalendarMonthResponse,
   type StreakState,
 } from './types';
 
 @Controller('streak')
+@UseGuards(UserAuthGuard)
 export class StreakController {
   constructor(private readonly streakService: StreakService) {}
 
@@ -45,5 +57,21 @@ export class StreakController {
     @Body() payload: RestoreStreakDto,
   ): Promise<StreakState> {
     return this.streakService.restore(userId, payload.price);
+  }
+
+  @Post('profile/:userId/freeze')
+  async applyFreeze(
+    @Param('userId') userId: string,
+    @Body() payload: ApplyStreakFreezeDto,
+  ): Promise<StreakState> {
+    return this.streakService.applyFreeze(userId, payload.date);
+  }
+
+  @Post('profile/:userId/freeze-token/purchase')
+  async purchaseFreezeToken(
+    @Param('userId') userId: string,
+    @Body() payload: PurchaseStreakFreezeDto,
+  ): Promise<StreakState> {
+    return this.streakService.purchaseFreezeToken(userId, payload.price);
   }
 }

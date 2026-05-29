@@ -1,7 +1,9 @@
 import { Body, Controller, Logger, Post } from '@nestjs/common';
 
 import { AuthService } from './auth.service';
+import { type GoogleLoginDto } from './dto/google-login.dto';
 import { type LoginUserDto } from './dto/login-user.dto';
+import { type RefreshSessionDto } from './dto/refresh-session.dto';
 import { type RegisterUserDto } from './dto/register-user.dto';
 import { type RequestPasswordResetDto } from './dto/request-password-reset.dto';
 import { type ResetPasswordDto } from './dto/reset-password.dto';
@@ -27,6 +29,20 @@ export class AuthController {
   @Post('login')
   async login(@Body() loginUserDto: LoginUserDto): Promise<LoginUserResponse> {
     return this.authService.login(loginUserDto);
+  }
+
+  @Post('google')
+  async loginWithGoogle(
+    @Body() googleLoginDto: GoogleLoginDto,
+  ): Promise<LoginUserResponse> {
+    return this.authService.loginWithGoogle(googleLoginDto);
+  }
+
+  @Post('refresh')
+  async refreshSession(
+    @Body() refreshSessionDto: RefreshSessionDto,
+  ): Promise<LoginUserResponse> {
+    return this.authService.refreshSession(refreshSessionDto);
   }
 
   @Post('register')

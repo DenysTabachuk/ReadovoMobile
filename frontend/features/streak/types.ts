@@ -65,6 +65,14 @@ export type RestoreStreakRequest = {
   price: number;
 };
 
+export type ApplyStreakFreezeRequest = {
+  date: string;
+};
+
+export type PurchaseStreakFreezeRequest = {
+  price: number;
+};
+
 export type CompleteActivityResponse = {
   pendingSync?: boolean;
   streak: StreakState;

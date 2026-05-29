@@ -1,11 +1,13 @@
 ﻿import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import {
+  applyStreakFreeze,
   completeStreakActivity,
   getStreakProfile,
+  purchaseStreakFreezeToken,
   restoreBrokenStreak,
 } from './api';
-import { STREAK_RESTORE_PRICE } from './constants';
+import { STREAK_FREEZE_TOKEN_PRICE, STREAK_RESTORE_PRICE } from './constants';
 import {
   type CompleteActivityRequest,
   type StreakActivityType,
@@ -130,7 +132,29 @@ export function getStreakReminderState(streak: StreakState): StreakReminderState
   };
 }
 
+export function didCompleteStreakToday(
+  previousStreak: StreakState | null | undefined,
+  nextStreak: StreakState | null | undefined,
+): boolean {
+  return (
+    Boolean(previousStreak) &&
+    previousStreak?.todayStatus !== 'completed' &&
+    nextStreak?.todayStatus === 'completed'
+  );
+}
+
 export async function restoreStreakForCoins(userId: string): Promise<StreakState> {
   return restoreBrokenStreak(userId, { price: STREAK_RESTORE_PRICE });
+}
+
+export async function applyFreezeToMissedDay(
+  userId: string,
+  date: string,
+): Promise<StreakState> {
+  return applyStreakFreeze(userId, { date });
+}
+
+export async function buyStreakFreezeToken(userId: string): Promise<StreakState> {
+  return purchaseStreakFreezeToken(userId, { price: STREAK_FREEZE_TOKEN_PRICE });
 }
 

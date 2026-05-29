@@ -3,30 +3,38 @@ import {
   useCallback,
   useEffect,
   useMemo,
-  useRef,
   useState,
   type ComponentProps,
 } from 'react';
 import {
   ActivityIndicator,
-  Animated,
-  Easing,
   Pressable,
   ScrollView,
   Switch,
   TextInput,
   View,
 } from 'react-native';
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import { useTranslation } from 'react-i18next';
 
 import { ModalSheet } from '@/components/modalSheet';
 import { OptionPickerField } from '@/components/optionPickerField';
 import { Button } from '@/components/button';
 import { ThemedText } from '@/components/themedText';
+import { Spacing } from '@/constants/spacing';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 
 import { styles } from './styles';
+
+const FILTERS_ANIMATION_MS = 280;
+const FILTERS_COLLAPSED_HEADER_HEIGHT = 44;
+const FILTERS_EXPANDED_HEADER_HEIGHT = 68;
 
 export type ArticlePersonalFilter = 'recent' | 'saved' | null;
 export type ArticleSortFilter = 'default' | 'length_desc' | 'length_asc';
@@ -55,6 +63,7 @@ type ArticlesToolbarProps = {
   categoryFilter: ArticleCategoryFilter;
   personalFilter: ArticlePersonalFilter;
   isRefreshingResults: boolean;
+  isFiltersCollapsed: boolean;
   isSearchActive: boolean;
   preferImagesFirst: boolean;
   readyAdaptationEnabled: boolean;
@@ -66,7 +75,6 @@ type ArticlesToolbarProps = {
   savedArticlesCount: number;
   searchValue: string;
   sortByFilter: ArticleSortFilter;
-  onToggleFilters?: (isCollapsed: boolean) => void;
   onChangeCategoryFilter: (value: ArticleCategoryFilter) => void;
   onChangePreferImagesFirst: (value: boolean) => void;
   onChangeReadyLevelFilter: (value: ArticleReadyLevelFilter) => void;
@@ -77,12 +85,14 @@ type ArticlesToolbarProps = {
   onChangeSortByFilter: (value: ArticleSortFilter) => void;
   onClearFilters: () => void;
   onChangePersonalFilter: (value: ArticlePersonalFilter) => void;
+  onToggleFiltersCollapsed: () => void;
 };
 
 export function ArticlesToolbar({
   categoryFilter,
   personalFilter,
   isRefreshingResults,
+  isFiltersCollapsed,
   isSearchActive,
   preferImagesFirst,
   readyAdaptationEnabled,
@@ -94,7 +104,6 @@ export function ArticlesToolbar({
   savedArticlesCount,
   searchValue,
   sortByFilter,
-  onToggleFilters,
   onChangeCategoryFilter,
   onChangePreferImagesFirst,
   onChangeReadyLevelFilter,
@@ -105,13 +114,12 @@ export function ArticlesToolbar({
   onChangeSortByFilter,
   onClearFilters,
   onChangePersonalFilter,
+  onToggleFiltersCollapsed,
 }: ArticlesToolbarProps) {
   const { t } = useTranslation();
   const [isRecommendedInfoOpen, setIsRecommendedInfoOpen] = useState(false);
-  const [isFiltersCollapsed, setIsFiltersCollapsed] = useState(true);
   const [filtersContentHeight, setFiltersContentHeight] = useState(0);
-  const collapseProgress = useRef(new Animated.Value(1)).current;
-  const opacityProgress = useRef(new Animated.Value(1)).current;
+  const filtersProgress = useSharedValue(0);
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
   const borderColor = useThemeColor({ light: '#d0d7de', dark: '#2d3336' }, 'text');
@@ -240,40 +248,39 @@ export function ArticlesToolbar({
     onChangeSearchValue('');
   }, [onChangeSearchValue]);
   useEffect(() => {
-    Animated.timing(collapseProgress, {
-      duration: 300,
-      easing: Easing.linear,
-      toValue: isFiltersCollapsed ? 0 : 1,
-      useNativeDriver: false,
-    }).start();
-  }, [collapseProgress, isFiltersCollapsed]);
-  useEffect(() => {
-    Animated.timing(opacityProgress, {
-      duration: 200,
-      easing: Easing.linear,
-      toValue: isFiltersCollapsed ? 0 : 1,
-      useNativeDriver: false,
-    }).start();
-  }, [isFiltersCollapsed, opacityProgress]);
+    filtersProgress.value = withTiming(isFiltersCollapsed ? 0 : 1, {
+      duration: FILTERS_ANIMATION_MS,
+      easing: Easing.inOut(Easing.cubic),
+    });
+  }, [filtersProgress, isFiltersCollapsed]);
 
-  const animatedContentStyle = useMemo(
+  const animatedContentStyle = useAnimatedStyle(
     () => ({
-      height: collapseProgress.interpolate({
-        inputRange: [0, 1],
-        outputRange: [0, Math.max(filtersContentHeight, 1)],
-      }),
-      opacity: opacityProgress,
+      height: Math.max(filtersContentHeight, 1) * filtersProgress.value,
+      marginBottom: Spacing.sm * filtersProgress.value,
+      opacity: filtersProgress.value,
+      transform: [
+        {
+          translateY: (1 - filtersProgress.value) * -8,
+        },
+      ],
     }),
-    [collapseProgress, filtersContentHeight, opacityProgress],
+    [filtersContentHeight],
   );
 
-  const toggleFilters = useCallback(() => {
-    setIsFiltersCollapsed((current) => {
-      const next = !current;
-      onToggleFilters?.(next);
-      return next;
-    });
-  }, [onToggleFilters]);
+  const animatedSheetContainerStyle = useAnimatedStyle(() => ({
+    paddingTop: Spacing.md * filtersProgress.value,
+    paddingBottom: Spacing.md * filtersProgress.value,
+  }));
+
+  const animatedHeaderStyle = useAnimatedStyle(() => ({
+    minHeight:
+      FILTERS_COLLAPSED_HEADER_HEIGHT +
+      (FILTERS_EXPANDED_HEADER_HEIGHT - FILTERS_COLLAPSED_HEADER_HEIGHT) *
+        filtersProgress.value,
+    paddingTop: Spacing.sm * filtersProgress.value,
+    paddingBottom: Spacing.sm * filtersProgress.value,
+  }));
 
   return (
     <View style={styles.container}>
@@ -314,10 +321,10 @@ export function ArticlesToolbar({
         ) : null}
       </View>
 
-      <View
+      <Animated.View
         style={[
           styles.sheetContainer,
-          isFiltersCollapsed ? styles.sheetContainerCollapsed : null,
+          animatedSheetContainerStyle,
           {
             backgroundColor: sectionCardColor,
             borderColor,
@@ -708,28 +715,27 @@ export function ArticlesToolbar({
             </>
           </View>
         </Animated.View>
-        <Pressable
-          style={[
-            styles.sheetHeader,
-            isFiltersCollapsed ? styles.sheetHeaderCollapsed : null,
-          ]}
-          onPress={toggleFilters}>
-          <View style={styles.sheetTitleRow}>
-            <ThemedText
-              type="bodyStrong"
-              style={{ color: textColor }}>
-              {isFiltersCollapsed
-                ? t('articles.showFilters')
-                : t('articles.hideFilters')}
-            </ThemedText>
-            <Ionicons
-              color={mutedTextColor}
-              name={isFiltersCollapsed ? 'chevron-down' : 'chevron-up'}
-              size={16}
-            />
-          </View>
-        </Pressable>
-      </View>
+        <Animated.View style={[styles.sheetHeader, animatedHeaderStyle]}>
+          <Pressable
+            style={styles.sheetHeaderButton}
+            onPress={onToggleFiltersCollapsed}>
+            <View style={styles.sheetTitleRow}>
+              <ThemedText
+                type="bodyStrong"
+                style={{ color: textColor }}>
+                {isFiltersCollapsed
+                  ? t('articles.showFilters')
+                  : t('articles.hideFilters')}
+              </ThemedText>
+              <Ionicons
+                color={mutedTextColor}
+                name={isFiltersCollapsed ? 'chevron-down' : 'chevron-up'}
+                size={16}
+              />
+            </View>
+          </Pressable>
+        </Animated.View>
+      </Animated.View>
 
       <View style={styles.resultsRow}>
         <View style={styles.resultsStatus}>

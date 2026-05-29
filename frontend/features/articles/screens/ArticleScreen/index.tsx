@@ -3,7 +3,16 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import * as Linking from 'expo-linking';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Animated,
+  FlatList,
+  type LayoutChangeEvent,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+  Pressable,
+  View,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
@@ -29,7 +38,7 @@ import { ScreenContainer } from '@/components/screenContainer';
 import { ScrollToTopButton } from '@/components/scrollToTopButton';
 import { SegmentedToggle } from '@/components/segmentedToggle';
 import { ThemedText } from '@/components/themedText';
-import { IconSymbol } from '@/components/ui/iconSymbol';
+import { IconSymbol } from '@/components/iconSymbol';
 import { Spacing } from '@/constants/spacing';
 import { Colors } from '@/constants/theme';
 import {
@@ -53,8 +62,10 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useAuth } from '@/providers/authProvider';
 
+import { ArticleSpeechControls } from './components/articleSpeechControls';
 import { InteractiveArticleText } from './components/interactiveArticleText';
 import { styles } from './styles';
+import { useArticleSpeech } from './useArticleSpeech';
 
 type SelectedTextToken = {
   context: string;
@@ -70,9 +81,20 @@ type SelectedTextFragment = {
   tokenKeys: string[];
   words: string[];
 };
+type TextComplexityMetrics = {
+  averageSentenceWords: number;
+  averageWordLength: number;
+  characterCount: number;
+  sentenceCount: number;
+  wordCount: number;
+};
 
 const DEFAULT_SIMPLIFICATION_LEVEL: SimplifyArticleLevel = 'A2';
 const TRANSLATION_SHEET_OPEN_DELAY_MS = 1000;
+const TRANSLATION_PROGRESS_UPDATE_INTERVAL_MS = 50;
+const FLOATING_SPEECH_CONTROLS_HIDDEN_OFFSET = -120;
+const FLOATING_SPEECH_CONTROLS_ANIMATION_DURATION_MS = 220;
+const SCROLL_TO_TOP_THRESHOLD = 300;
 const TEXT_VIEW_MODES = ['original', 'adaptation', 'summary'] as const;
 type ArticleTextViewMode = (typeof TEXT_VIEW_MODES)[number];
 const TEXT_MODE_LABEL_KEYS: Record<ArticleTextViewMode, 'original' | 'adapted' | 'summary'> = {
@@ -90,6 +112,14 @@ export default function ArticleScreen() {
   const iconColor = useThemeColor({}, 'icon');
   const tintColor = Colors[colorScheme ?? 'light'].tint;
   const savedAccentColor = colorScheme === 'dark' ? '#c4a7ff' : tintColor;
+  const metricsBackgroundColor = useThemeColor(
+    { dark: '#171c1d', light: '#f5f7fa' },
+    'background',
+  );
+  const metricsBorderColor = useThemeColor(
+    { dark: '#2d3336', light: '#d0d7de' },
+    'text',
+  );
   const adaptationReadyBorderColor = useThemeColor(
     { dark: '#2b6f43', light: '#9dddb7' },
     'icon',
@@ -118,8 +148,27 @@ export default function ArticleScreen() {
   const [isQuizModePickerOpen, setIsQuizModePickerOpen] = useState(false);
   const [isTranslationSheetOpen, setIsTranslationSheetOpen] = useState(false);
   const [translationSheetOpenProgress, setTranslationSheetOpenProgress] = useState(0);
-  const [scrollOffsetY, setScrollOffsetY] = useState(0);
+  const [scrollToTopOffsetY, setScrollToTopOffsetY] = useState(0);
+  const [isScrolledPastSpeechControls, setIsScrolledPastSpeechControls] =
+    useState(false);
+  const [firstVisibleBlockIndex, setFirstVisibleBlockIndex] = useState(0);
+  const [visibleBlockIndexRange, setVisibleBlockIndexRange] = useState({
+    first: 0,
+    last: 0,
+  });
+  const [isFloatingSpeechControlsRendered, setIsFloatingSpeechControlsRendered] =
+    useState(false);
   const articleListRef = useRef<FlatList>(null);
+  const scrollOffsetYRef = useRef(0);
+  const speechControlsBottomYRef = useRef<number | null>(null);
+  const isScrollToTopVisibleRef = useRef(false);
+  const isScrolledPastSpeechControlsRef = useRef(false);
+  const firstVisibleBlockIndexRef = useRef(0);
+  const visibleBlockIndexRangeRef = useRef({ first: 0, last: 0 });
+  const floatingSpeechControlsOpacity = useRef(new Animated.Value(0)).current;
+  const floatingSpeechControlsTranslateY = useRef(
+    new Animated.Value(FLOATING_SPEECH_CONTROLS_HIDDEN_OFFSET),
+  ).current;
   const selectedFragment = useMemo(
     () => buildSelectedFragment(selectedTokens),
     [selectedTokens],
@@ -461,14 +510,14 @@ export default function ArticleScreen() {
       value: ArticleTextViewMode;
     }> = [{ label: t('article.textModeShort.original'), value: 'original' }];
 
-    if (generatedArticles.adaptation || isSelectedAdaptationAvailable) {
+    if (isSelectedAdaptationAvailable) {
       options.push({
         label: t('article.textModeShort.adapted'),
         value: 'adaptation',
       });
     }
 
-    if (generatedArticles.summary || isSelectedSummaryAvailable) {
+    if (isSelectedSummaryAvailable) {
       options.push({
         label: t('article.textModeShort.summary'),
         value: 'summary',
@@ -477,8 +526,6 @@ export default function ArticleScreen() {
 
     return options;
   }, [
-    generatedArticles.adaptation,
-    generatedArticles.summary,
     isSelectedAdaptationAvailable,
     isSelectedSummaryAvailable,
     t,
@@ -515,7 +562,7 @@ export default function ArticleScreen() {
       const nextProgress = Math.min(1, elapsedMs / TRANSLATION_SHEET_OPEN_DELAY_MS);
 
       setTranslationSheetOpenProgress(nextProgress);
-    }, 16);
+    }, TRANSLATION_PROGRESS_UPDATE_INTERVAL_MS);
 
     return () => {
       clearTimeout(timeoutId);
@@ -529,16 +576,25 @@ export default function ArticleScreen() {
   }, []);
 
   const handleAddToDictionary = useCallback(() => {
-    if (!currentUser?.id || !selectedFragment || !translation?.translation) {
+    const dictionaryTranslation =
+      translation?.baseTranslation ?? translation?.translation;
+
+    if (!currentUser?.id || !selectedFragment || !dictionaryTranslation) {
       return;
     }
 
     dictionaryMutation.mutate({
       context: selectedFragment.context,
-      translation: translation.translation,
+      translation: dictionaryTranslation,
       word: selectedFragment.text,
     });
-  }, [currentUser?.id, dictionaryMutation, selectedFragment, translation?.translation]);
+  }, [
+    currentUser?.id,
+    dictionaryMutation,
+    selectedFragment,
+    translation?.baseTranslation,
+    translation?.translation,
+  ]);
 
   const handleOpenAdaptSettings = useCallback(() => {
     setIsAdaptSettingsOpen(true);
@@ -588,7 +644,7 @@ export default function ArticleScreen() {
     setSelectedTokens([]);
     setIsTranslationSheetOpen(false);
 
-    if (generatedArticles.adaptation?.level === selectedLevel || generatedArticles.adaptation) {
+    if (generatedArticles.adaptation?.level === selectedLevel) {
       setSelectedTextViewMode('adaptation');
       return;
     }
@@ -606,7 +662,7 @@ export default function ArticleScreen() {
     setSelectedTokens([]);
     setIsTranslationSheetOpen(false);
 
-    if (generatedArticles.summary?.level === selectedLevel || generatedArticles.summary) {
+    if (generatedArticles.summary?.level === selectedLevel) {
       setSelectedTextViewMode('summary');
       return;
     }
@@ -627,6 +683,17 @@ export default function ArticleScreen() {
 
     savedArticleMutation.mutate();
   }, [savedArticleMutation]);
+  useEffect(() => {
+    if (selectedTextViewMode === 'original') {
+      return;
+    }
+
+    const selectedGeneratedArticle = generatedArticles[selectedTextViewMode];
+
+    if (selectedGeneratedArticle?.level !== selectedLevel) {
+      setSelectedTextViewMode('original');
+    }
+  }, [generatedArticles, selectedLevel, selectedTextViewMode]);
   const renderSavedHeaderButton = useCallback(
     () => (
       <Pressable
@@ -646,6 +713,10 @@ export default function ArticleScreen() {
     ),
     [handleToggleSavedArticle, iconColor, isCurrentArticleSaved, savedAccentColor, t],
   );
+  const selectedTokenKeys = useMemo(
+    () => selectedTokens.map((token) => token.tokenKey),
+    [selectedTokens],
+  );
   const displayedText = useMemo(() => {
     return article?.content ?? '';
   }, [article?.content]);
@@ -654,8 +725,10 @@ export default function ArticleScreen() {
       return null;
     }
 
-    return generatedArticles[selectedTextViewMode] ?? null;
-  }, [generatedArticles, selectedTextViewMode]);
+    const generatedArticle = generatedArticles[selectedTextViewMode];
+
+    return generatedArticle?.level === selectedLevel ? generatedArticle : null;
+  }, [generatedArticles, selectedLevel, selectedTextViewMode]);
   const displayedBlocks = useMemo(() => {
     if (!article) {
       return undefined;
@@ -667,13 +740,73 @@ export default function ArticleScreen() {
 
     return stripDuplicateTitleHeading(article.blocks, article.title);
   }, [article, displayedGeneratedArticle]);
+  const simplificationMetrics = useMemo(() => {
+    if (!article || !displayedGeneratedArticle) {
+      return null;
+    }
+
+    return {
+      adapted: getTextComplexityMetrics(
+        extractTextFromArticleBlocks(displayedGeneratedArticle.adaptedBlocks),
+      ),
+      original: getTextComplexityMetrics(article.content),
+    };
+  }, [article, displayedGeneratedArticle]);
+  const transformationStateText = useMemo(() => {
+    if (
+      selectedTextViewMode === 'adaptation' &&
+      displayedGeneratedArticle?.transformationType === 'adaptation'
+    ) {
+      return t('article.adaptedState', {
+        adaptedLength: displayedGeneratedArticle.adaptedLength,
+        level: displayedGeneratedArticle.level,
+        originalLength: displayedGeneratedArticle.originalLength,
+      });
+    }
+
+    if (
+      selectedTextViewMode === 'summary' &&
+      displayedGeneratedArticle?.transformationType === 'summary'
+    ) {
+      return t('article.summarizedState', {
+        adaptedLength: displayedGeneratedArticle.adaptedLength,
+        level: displayedGeneratedArticle.level,
+        originalLength: displayedGeneratedArticle.originalLength,
+      });
+    }
+
+    if (
+      latestGeneratedTransformationType === 'adaptation' &&
+      generatedArticles.adaptation?.level === selectedLevel
+    ) {
+      return t('article.originalStateWithAdaptation', {
+        level: generatedArticles.adaptation.level,
+      });
+    }
+
+    if (
+      latestGeneratedTransformationType === 'summary' &&
+      generatedArticles.summary?.level === selectedLevel
+    ) {
+      return t('article.originalStateWithSummary', {
+        level: generatedArticles.summary.level,
+      });
+    }
+
+    return null;
+  }, [
+    displayedGeneratedArticle,
+    generatedArticles.adaptation,
+    generatedArticles.summary,
+    latestGeneratedTransformationType,
+    selectedLevel,
+    selectedTextViewMode,
+    t,
+  ]);
+  const articleSpeech = useArticleSpeech(displayedBlocks);
   const shouldRenderHeroImage = useMemo(() => {
     if (!article?.thumbnailUrl || hasImageLoadError) {
       return false;
-    }
-
-    if (displayedGeneratedArticle) {
-      return true;
     }
 
     return !hasDuplicateArticleImage(article.thumbnailUrl, displayedBlocks ?? article.blocks);
@@ -681,14 +814,163 @@ export default function ArticleScreen() {
     article?.blocks,
     article?.thumbnailUrl,
     displayedBlocks,
-    displayedGeneratedArticle,
     hasImageLoadError,
   ]);
   const currentPendingTransformationType = simplifyMutation.variables;
+  const shouldShowFloatingSpeechControls =
+    articleSpeech.status !== 'idle' && isScrolledPastSpeechControls;
+  const currentSpeechBlockIndex = useMemo(
+    () => getBlockIndexFromTokenKey(articleSpeech.activeTokenKey),
+    [articleSpeech.activeTokenKey],
+  );
+  const isCurrentSpeechBlockVisible =
+    currentSpeechBlockIndex !== null &&
+    currentSpeechBlockIndex >= visibleBlockIndexRange.first &&
+    currentSpeechBlockIndex <= visibleBlockIndexRange.last;
+  const shouldShowCurrentSpeechButton =
+    articleSpeech.status !== 'idle' &&
+    Boolean(articleSpeech.activeTokenKey) &&
+    !isCurrentSpeechBlockVisible;
+  const shouldShowArticleCta =
+    articleSpeech.status === 'idle' && !isAdaptSettingsOpen && !isQuizModePickerOpen;
+  const navigationButtonBottomOffset = shouldShowArticleCta ? 160 : Spacing.xLg;
+  const currentSpeechButtonBottomOffset =
+    navigationButtonBottomOffset + 64;
+  const currentSpeechButtonDirection =
+    currentSpeechBlockIndex !== null && currentSpeechBlockIndex < firstVisibleBlockIndex
+      ? 'up'
+      : 'down';
+  const currentSpeechButtonIconName =
+    currentSpeechButtonDirection === 'up' ? 'arrow-up' : 'arrow-down';
+
+  const updateScrollThresholdState = useCallback((nextScrollOffsetY: number) => {
+    scrollOffsetYRef.current = nextScrollOffsetY;
+
+    const isScrollToTopVisible = nextScrollOffsetY > SCROLL_TO_TOP_THRESHOLD;
+
+    if (isScrollToTopVisibleRef.current !== isScrollToTopVisible) {
+      isScrollToTopVisibleRef.current = isScrollToTopVisible;
+      setScrollToTopOffsetY(
+        isScrollToTopVisible ? SCROLL_TO_TOP_THRESHOLD + 1 : 0,
+      );
+    }
+
+    const speechControlsBottomY = speechControlsBottomYRef.current;
+    const isPastSpeechControls =
+      speechControlsBottomY !== null &&
+      nextScrollOffsetY > speechControlsBottomY + Spacing.sm;
+
+    if (isScrolledPastSpeechControlsRef.current !== isPastSpeechControls) {
+      isScrolledPastSpeechControlsRef.current = isPastSpeechControls;
+      setIsScrolledPastSpeechControls(isPastSpeechControls);
+    }
+  }, []);
+
+  const handleArticleScroll = useCallback(
+    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      updateScrollThresholdState(event.nativeEvent.contentOffset.y);
+    },
+    [updateScrollThresholdState],
+  );
+
+  const handleSpeechControlsLayout = useCallback((event: LayoutChangeEvent) => {
+    const { height, y } = event.nativeEvent.layout;
+
+    speechControlsBottomYRef.current = y + height;
+    updateScrollThresholdState(scrollOffsetYRef.current);
+  }, [updateScrollThresholdState]);
+
+  const handleVisibleBlockIndexChange = useCallback((sourceIndex: number) => {
+    if (firstVisibleBlockIndexRef.current === sourceIndex) {
+      return;
+    }
+
+    firstVisibleBlockIndexRef.current = sourceIndex;
+    setFirstVisibleBlockIndex(sourceIndex);
+  }, []);
+
+  const handleVisibleBlockRangeChange = useCallback(
+    (range: { firstSourceIndex: number; lastSourceIndex: number }) => {
+      const nextRange = {
+        first: range.firstSourceIndex,
+        last: range.lastSourceIndex,
+      };
+      const currentRange = visibleBlockIndexRangeRef.current;
+
+      if (
+        currentRange.first === nextRange.first &&
+        currentRange.last === nextRange.last
+      ) {
+        return;
+      }
+
+      visibleBlockIndexRangeRef.current = nextRange;
+      setVisibleBlockIndexRange(nextRange);
+    },
+    [],
+  );
+
+  const handleScrollToCurrentSpeechWord = useCallback(() => {
+    if (currentSpeechBlockIndex === null) {
+      return;
+    }
+
+    articleListRef.current?.scrollToIndex({
+      animated: true,
+      index: currentSpeechBlockIndex,
+      viewPosition: 0.36,
+    });
+  }, [currentSpeechBlockIndex]);
 
   useEffect(() => {
     setHasImageLoadError(false);
   }, [article?.thumbnailUrl]);
+
+  useEffect(() => {
+    if (shouldShowFloatingSpeechControls) {
+      setIsFloatingSpeechControlsRendered(true);
+      floatingSpeechControlsOpacity.stopAnimation();
+      floatingSpeechControlsTranslateY.stopAnimation();
+      Animated.parallel([
+        Animated.timing(floatingSpeechControlsOpacity, {
+          duration: FLOATING_SPEECH_CONTROLS_ANIMATION_DURATION_MS,
+          toValue: 1,
+          useNativeDriver: true,
+        }),
+        Animated.spring(floatingSpeechControlsTranslateY, {
+          damping: 18,
+          mass: 0.8,
+          stiffness: 180,
+          toValue: 0,
+          useNativeDriver: true,
+        }),
+      ]).start();
+      return;
+    }
+
+    floatingSpeechControlsOpacity.stopAnimation();
+    floatingSpeechControlsTranslateY.stopAnimation();
+    Animated.parallel([
+      Animated.timing(floatingSpeechControlsOpacity, {
+        duration: FLOATING_SPEECH_CONTROLS_ANIMATION_DURATION_MS,
+        toValue: 0,
+        useNativeDriver: true,
+      }),
+      Animated.timing(floatingSpeechControlsTranslateY, {
+        duration: FLOATING_SPEECH_CONTROLS_ANIMATION_DURATION_MS,
+        toValue: FLOATING_SPEECH_CONTROLS_HIDDEN_OFFSET,
+        useNativeDriver: true,
+      }),
+    ]).start(({ finished }) => {
+      if (finished) {
+        setIsFloatingSpeechControlsRendered(false);
+      }
+    });
+  }, [
+    floatingSpeechControlsOpacity,
+    floatingSpeechControlsTranslateY,
+    shouldShowFloatingSpeechControls,
+  ]);
 
   useEffect(() => {
     if (!article || !currentUser?.id) {
@@ -817,51 +1099,136 @@ export default function ArticleScreen() {
               </Pressable>
             </View>
 
-            {latestGeneratedTransformationType ? (
+            {transformationStateText ? (
               <View style={styles.articleMeta}>
                 <ThemedText type="description" style={styles.infoText}>
-                  {selectedTextViewMode === 'adaptation' && generatedArticles.adaptation
-                    ? t('article.adaptedState', {
-                        adaptedLength: generatedArticles.adaptation.adaptedLength,
-                        level: generatedArticles.adaptation.level,
-                        originalLength: generatedArticles.adaptation.originalLength,
-                      })
-                    : selectedTextViewMode === 'summary' && generatedArticles.summary
-                      ? t('article.summarizedState', {
-                          adaptedLength: generatedArticles.summary.adaptedLength,
-                          level: generatedArticles.summary.level,
-                          originalLength: generatedArticles.summary.originalLength,
-                        })
-                      : latestGeneratedTransformationType === 'adaptation' &&
-                          generatedArticles.adaptation
-                        ? t('article.originalStateWithAdaptation', {
-                            level: generatedArticles.adaptation.level,
-                          })
-                        : latestGeneratedTransformationType === 'summary' &&
-                            generatedArticles.summary
-                          ? t('article.originalStateWithSummary', {
-                              level: generatedArticles.summary.level,
-                            })
-                          : null}
+                  {transformationStateText}
                 </ThemedText>
               </View>
             ) : null}
+
+            {simplificationMetrics ? (
+              <View
+                style={[
+                  styles.simplificationMetricsCard,
+                  {
+                    backgroundColor: metricsBackgroundColor,
+                    borderColor: metricsBorderColor,
+                  },
+                ]}>
+                <View style={styles.simplificationMetricsHeader}>
+                  <Ionicons color={tintColor} name="analytics-outline" size={18} />
+                  <ThemedText type="bodyStrong">
+                    {t('article.simplificationMetrics.title', {
+                      defaultValue: 'What changed',
+                    })}
+                  </ThemedText>
+                </View>
+                <View style={styles.simplificationMetricsGrid}>
+                  <MetricComparison
+                    adaptedValue={simplificationMetrics.adapted.wordCount}
+                    label={t('article.simplificationMetrics.words', {
+                      defaultValue: 'Words',
+                    })}
+                    originalValue={simplificationMetrics.original.wordCount}
+                  />
+                  <MetricComparison
+                    adaptedValue={simplificationMetrics.adapted.sentenceCount}
+                    label={t('article.simplificationMetrics.sentences', {
+                      defaultValue: 'Sentences',
+                    })}
+                    originalValue={simplificationMetrics.original.sentenceCount}
+                  />
+                  <MetricComparison
+                    adaptedValue={simplificationMetrics.adapted.averageSentenceWords}
+                    label={t('article.simplificationMetrics.averageSentence', {
+                      defaultValue: 'Avg. sentence',
+                    })}
+                    originalValue={simplificationMetrics.original.averageSentenceWords}
+                    suffix={t('article.simplificationMetrics.wordsSuffix', {
+                      defaultValue: 'w',
+                    })}
+                  />
+                  <MetricComparison
+                    adaptedValue={simplificationMetrics.adapted.averageWordLength}
+                    decimals={1}
+                    label={t('article.simplificationMetrics.averageWord', {
+                      defaultValue: 'Avg. word',
+                    })}
+                    originalValue={simplificationMetrics.original.averageWordLength}
+                    suffix={t('article.simplificationMetrics.charactersSuffix', {
+                      defaultValue: 'ch',
+                    })}
+                  />
+                </View>
+              </View>
+            ) : null}
+
+            <ArticleSpeechControls
+              disabled={!articleSpeech.canSpeak}
+              onLayout={handleSpeechControlsLayout}
+              onRestart={articleSpeech.restart}
+              onStop={() => {
+                void articleSpeech.stop();
+              }}
+              onTogglePlayPause={articleSpeech.togglePlayPause}
+              progress={articleSpeech.progress}
+              status={articleSpeech.status}
+            />
           </View>
         }
-        onScroll={(event) => {
-          setScrollOffsetY(event.nativeEvent.contentOffset.y);
-        }}
+        onScroll={handleArticleScroll}
+        onVisibleBlockIndexChange={handleVisibleBlockIndexChange}
+        onVisibleBlockRangeChange={handleVisibleBlockRangeChange}
         onWordPress={handleWordPress}
         scrollRef={articleListRef}
-        selectedTokenKeys={selectedTokens.map((token) => token.tokenKey)}
+        selectedTokenKeys={selectedTokenKeys}
+        speakingTokenKey={articleSpeech.activeTokenKey}
         text={displayedText}
       />
+      {isFloatingSpeechControlsRendered ? (
+        <Animated.View
+          style={[
+            styles.floatingSpeechControls,
+            { backgroundColor: Colors[colorScheme ?? 'light'].background },
+            {
+              opacity: floatingSpeechControlsOpacity,
+              transform: [{ translateY: floatingSpeechControlsTranslateY }],
+            },
+          ]}>
+          <ArticleSpeechControls
+            disabled={!articleSpeech.canSpeak}
+            onRestart={articleSpeech.restart}
+            onStop={() => {
+              void articleSpeech.stop();
+            }}
+            onTogglePlayPause={articleSpeech.togglePlayPause}
+            progress={articleSpeech.progress}
+            status={articleSpeech.status}
+            style={styles.floatingSpeechControlsInner}
+          />
+        </Animated.View>
+      ) : null}
       <ScrollToTopButton
-        bottomOffset={160}
+        bottomOffset={navigationButtonBottomOffset}
         rightOffset={Spacing.md}
-        scrollOffsetY={scrollOffsetY}
+        scrollOffsetY={scrollToTopOffsetY}
+        threshold={SCROLL_TO_TOP_THRESHOLD}
         scrollRef={articleListRef}
       />
+      {shouldShowCurrentSpeechButton ? (
+        <Pressable
+          accessibilityLabel={t('article.speech.scrollToCurrentAction')}
+          accessibilityRole="button"
+          hitSlop={8}
+          onPress={handleScrollToCurrentSpeechWord}
+          style={[
+            styles.scrollToCurrentSpeechButton,
+            { bottom: currentSpeechButtonBottomOffset },
+          ]}>
+          <Ionicons color="#11181C" name={currentSpeechButtonIconName} size={24} />
+        </Pressable>
+      ) : null}
       <WordTranslationSheet
         baseTranslation={translation?.baseTranslation}
         context={selectedFragment?.context}
@@ -1004,7 +1371,7 @@ export default function ArticleScreen() {
           </View>
         )}
       </ModalSheet>
-      {!isAdaptSettingsOpen && !isQuizModePickerOpen ? (
+      {shouldShowArticleCta ? (
         <Cta
           layout="vertical"
           primaryAction={{
@@ -1021,6 +1388,93 @@ export default function ArticleScreen() {
       ) : null}
     </ScreenContainer>
   );
+}
+
+function MetricComparison({
+  adaptedValue,
+  decimals = 0,
+  label,
+  originalValue,
+  suffix = '',
+}: {
+  adaptedValue: number;
+  decimals?: number;
+  label: string;
+  originalValue: number;
+  suffix?: string;
+}) {
+  const formatValue = (value: number) => {
+    const formatted =
+      decimals > 0 ? value.toFixed(decimals) : String(Math.round(value));
+
+    return suffix ? `${formatted} ${suffix}` : formatted;
+  };
+
+  return (
+    <View style={styles.simplificationMetricItem}>
+      <ThemedText type="description" style={styles.simplificationMetricLabel}>
+        {label}
+      </ThemedText>
+      <View style={styles.simplificationMetricValues}>
+        <ThemedText type="bodyStrong">{formatValue(originalValue)}</ThemedText>
+        <Ionicons color="#7c7c7c" name="arrow-forward" size={14} />
+        <ThemedText type="bodyStrong">{formatValue(adaptedValue)}</ThemedText>
+      </View>
+    </View>
+  );
+}
+
+function extractTextFromArticleBlocks(blocks: ArticleBlock[]): string {
+  return blocks
+    .map((block) => {
+      if (block.type === 'heading') {
+        return block.text;
+      }
+
+      if (block.type === 'paragraph') {
+        return block.children.map((node) => node.text).join('');
+      }
+
+      if (block.type === 'list') {
+        return block.items
+          .map((item) => item.map((node) => node.text).join(''))
+          .join('\n');
+      }
+
+      if (block.type === 'table') {
+        return block.rows
+          .map((row) => row.map((cell) => cell.text).join(' '))
+          .join('\n');
+      }
+
+      if (block.type === 'formula') {
+        return block.altText;
+      }
+
+      return [block.alt, block.caption].filter(Boolean).join(' ');
+    })
+    .filter(Boolean)
+    .join('\n\n');
+}
+
+function getTextComplexityMetrics(text: string): TextComplexityMetrics {
+  const normalizedText = text.replace(/\s+/g, ' ').trim();
+  const words = normalizedText.match(/[A-Za-z]+(?:['-][A-Za-z]+)?/g) ?? [];
+  const sentences =
+    normalizedText.match(/[^.!?]+(?:[.!?]+(?=\s|$)|$)/g)?.filter((sentence) =>
+      sentence.trim(),
+    ) ?? [];
+  const totalWordLength = words.reduce((total, word) => total + word.length, 0);
+  const sentenceCount = Math.max(sentences.length, 1);
+  const wordCount = words.length;
+
+  return {
+    averageSentenceWords: wordCount / sentenceCount,
+    averageWordLength: wordCount > 0 ? totalWordLength / wordCount : 0,
+    characterCount: normalizedText.length,
+    sentenceCount: sentences.length,
+    wordCount,
+  };
 }
 
 function stripDuplicateTitleHeading(
@@ -1117,6 +1571,17 @@ function isSameAdaptation(
     adaptation.level === level &&
     adaptation.transformationType === transformationType
   );
+}
+
+function getBlockIndexFromTokenKey(tokenKey: string | undefined): number | null {
+  const match = tokenKey?.match(/^block-(\d+)(?:-|$)/);
+  const blockIndex = match?.[1] ? Number(match[1]) : NaN;
+
+  if (!Number.isFinite(blockIndex)) {
+    return null;
+  }
+
+  return blockIndex;
 }
 
 function buildSelectedFragment(
