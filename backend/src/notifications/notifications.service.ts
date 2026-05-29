@@ -12,7 +12,7 @@ import {
   type App,
 } from 'firebase-admin/app';
 import { getMessaging, type Messaging } from 'firebase-admin/messaging';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 
 import { DatabaseService } from '../database/database.service';
 import type {
@@ -525,21 +525,21 @@ export class NotificationsService implements OnModuleInit {
     const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
     const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
 
-    if (serviceAccountPath) {
+    if (serviceAccountJson) {
+      return initializeApp({
+        credential: cert(
+          JSON.parse(serviceAccountJson) as Record<string, string>,
+        ),
+      });
+    }
+
+    if (serviceAccountPath && existsSync(serviceAccountPath)) {
       return initializeApp({
         credential: cert(
           JSON.parse(readFileSync(serviceAccountPath, 'utf8')) as Record<
             string,
             string
           >,
-        ),
-      });
-    }
-
-    if (serviceAccountJson) {
-      return initializeApp({
-        credential: cert(
-          JSON.parse(serviceAccountJson) as Record<string, string>,
         ),
       });
     }
