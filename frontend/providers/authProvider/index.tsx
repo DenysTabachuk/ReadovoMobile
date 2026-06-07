@@ -134,9 +134,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
   );
 
   const signOut = useCallback(async () => {
+    const  googleSignOutPromise= import('@/auth/googleAuth')
+      .then(({ signOutFromGoogle }) => signOutFromGoogle())
+      .catch((error) => {
+        console.warn('Failed to clear Google sign-in session', error);
+      });
+
     await Promise.all([
       clearAuthTokens(),
       AsyncStorage.removeItem(AUTH_STORAGE_KEYS.userProfile),
+      googleSignOutPromise,
     ]);
     setCurrentUser(null);
     setIsAuthenticated(false);

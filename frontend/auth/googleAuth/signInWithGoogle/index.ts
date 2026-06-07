@@ -22,6 +22,9 @@ async function ensureGooglePlayServices() {
 
 async function requestGoogleSignIn() {
   try {
+    // Clear the previous native Google session so a new sign-in can show
+    // the account chooser instead of silently reusing the last account.
+    await GoogleSignin.signOut();
     return await GoogleSignin.signIn();
   } catch (error) {
     logGoogleSignInError('signIn', error);
