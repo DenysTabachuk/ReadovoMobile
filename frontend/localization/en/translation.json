@@ -591,7 +591,19 @@
       "freezeWindowExpired": "This day can no longer be frozen.",
       "noFreezeTokens": "You do not have any freeze tokens.",
       "notEnoughCoins": "Not enough coins.",
-      "purchaseFreezeFailed": "Could not buy a freeze."
+      "purchaseFreezeFailed": "Could not buy a freeze.",
+      "restoreFailed": "Could not restore the streak."
+    },
+    "restore": {
+      "balance": "Your balance",
+      "cancel": "Not now",
+      "confirm": "Restore",
+      "cost": "Restore cost",
+      "description": "Restore your previous {{count}}-day streak? The missed day will be marked as restored.",
+      "notEnoughCoins": "You do not have enough coins to restore this streak.",
+      "restoring": "Restoring...",
+      "success": "Streak restored",
+      "title": "Restore streak"
     },
     "summary": {
       "status": {

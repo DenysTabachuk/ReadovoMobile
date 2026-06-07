@@ -35,11 +35,25 @@ export const styles = StyleSheet.create({
     borderColor: '#3a3553',
   },
   ctaRowDisabled: {
-    opacity: 0.75,
+    opacity: 0.55,
   },
   ctaRowLight: {
     backgroundColor: '#f1ebff',
     borderColor: '#d8ccf6',
+  },
+  ctaRowPressed: {
+    opacity: 0.78,
+  },
+  ctaRowRestoreDark: {
+    backgroundColor: '#c86c08',
+    borderColor: '#f0a64a',
+  },
+  ctaRowRestoreLight: {
+    backgroundColor: '#d97706',
+    borderColor: '#b85f00',
+  },
+  ctaRowRestoreText: {
+    color: '#ffffff',
   },
   ctaRowText: {
     fontSize: 14,
