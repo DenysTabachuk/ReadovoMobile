@@ -10,6 +10,9 @@ import {
   type UpdateDictionaryWordProgressRequest,
 } from './types';
 
+const DUPLICATE_DICTIONARY_WORD_MESSAGE =
+  'Word or phrase already exists in dictionary.';
+
 export type {
   CreateDictionaryWordRequest,
   DictionaryTest,
@@ -46,10 +49,29 @@ export async function createDictionaryWord(
   });
 
   if (!response.ok) {
-    throw new Error('dictionary.saveError');
+    throw new Error(await resolveCreateDictionaryWordError(response));
   }
 
   return response.json() as Promise<DictionaryWord>;
+}
+
+async function resolveCreateDictionaryWordError(
+  response: Response,
+): Promise<string> {
+  try {
+    const body = (await response.json()) as { message?: unknown };
+    const message = Array.isArray(body.message)
+      ? body.message[0]
+      : body.message;
+
+    if (message === DUPLICATE_DICTIONARY_WORD_MESSAGE) {
+      return 'dictionary.alreadyExists';
+    }
+  } catch {
+    // Fall back to the generic save error when the backend does not return JSON.
+  }
+
+  return 'dictionary.saveError';
 }
 
 export async function deleteDictionaryWord(

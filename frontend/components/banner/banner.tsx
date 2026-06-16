@@ -72,6 +72,10 @@ function resolveVariantStyle(variant: ShowBannerOptions['variant'], isDarkTheme:
     return styles.reward;
   }
 
+  if (variant === 'info') {
+    return styles.info;
+  }
+
   if (variant === 'achievement') {
     return styles.achievement;
   }

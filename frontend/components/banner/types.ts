@@ -2,7 +2,13 @@ import { type ComponentProps } from 'react';
 import { type Ionicons } from '@expo/vector-icons';
 import { type ImageSourcePropType } from 'react-native';
 
-export type BannerVariant = 'success' | 'error' | 'reward' | 'achievement' | 'streak';
+export type BannerVariant =
+  | 'success'
+  | 'error'
+  | 'info'
+  | 'reward'
+  | 'achievement'
+  | 'streak';
 
 export type AchievementBannerDetails = {
   badge?: ImageSourcePropType;

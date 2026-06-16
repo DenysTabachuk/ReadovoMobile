@@ -279,10 +279,15 @@ export default function ArticleScreen() {
       translation: string;
       word: string;
     }) => createDictionaryWord(currentUser?.id ?? '', { context, translation, word }),
-    onError: () => {
+    onError: (mutationError) => {
+      const errorKey =
+        mutationError instanceof Error
+          ? mutationError.message
+          : 'dictionary.saveError';
+
       showBanner({
-        title: t('dictionary.saveError'),
-        variant: 'error',
+        title: t(errorKey, { defaultValue: t('dictionary.saveError') }),
+        variant: errorKey === 'dictionary.alreadyExists' ? 'info' : 'error',
       });
     },
     onSuccess: () => {

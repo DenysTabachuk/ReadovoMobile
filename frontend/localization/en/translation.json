@@ -230,6 +230,7 @@
     "errorDescription": "We could not load saved words right now.",
     "retry": "Try again",
     "saved": "Word saved to dictionary",
+    "alreadyExists": "This word is already in your dictionary.",
     "saveError": "Could not save the word. Try again.",
     "deleted": "Word deleted from dictionary",
     "deleteAction": "Delete",
