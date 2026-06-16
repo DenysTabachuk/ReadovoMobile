@@ -40,12 +40,12 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/icon.png",
-          "imageWidth": 240,
+          "image": "./assets/mascot/base/octopus.png",
+          "imageWidth": 320,
           "resizeMode": "contain",
-          "backgroundColor": "#5B1FEB",
+          "backgroundColor": "#f7f3ff",
           "dark": {
-            "backgroundColor": "#5B1FEB"
+            "backgroundColor": "#151718"
           }
         }
       ],
