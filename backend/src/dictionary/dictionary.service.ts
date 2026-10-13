@@ -142,7 +142,7 @@ export class DictionaryService {
   }
 
   async getSimilarWords(request: SimilarWordsRequest): Promise<string[]> {
-    const wordList = await this.resolveWordList(request.wordList);
+    const wordList = this.resolveWordList(request.wordList);
 
     return this.dictionaryEmbeddingService.getSimilarWords(
       request.word ?? '',
@@ -151,7 +151,7 @@ export class DictionaryService {
   }
 
   async generateQuizOptions(request: QuizOptionsRequest): Promise<string[]> {
-    const wordList = await this.resolveWordList(request.wordList);
+    const wordList = this.resolveWordList(request.wordList);
 
     return this.dictionaryEmbeddingService.generateQuizOptions(
       request.correctWord ?? '',
@@ -271,7 +271,7 @@ export class DictionaryService {
     return updatedWord;
   }
 
-  private async resolveWordList(wordList?: string[]): Promise<string[]> {
+  private resolveWordList(wordList?: string[]): string[] {
     if (wordList?.length) {
       return wordList;
     }

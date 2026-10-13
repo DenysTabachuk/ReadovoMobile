@@ -1,0 +1,259 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum DictionaryWordProgress {
+  new
+  in_progress
+  learned
+
+  @@map("dictionary_word_progress")
+}
+
+enum StreakDayStatus {
+  completed
+  missed
+  frozen
+  restored
+
+  @@map("streak_day_status")
+}
+
+model User {
+  id                  String                         @id @db.Uuid
+  email               String                         @unique
+  passwordHash        String                         @map("password_hash")
+  passwordSalt        String                         @map("password_salt")
+  lessonsCompleted    Int                            @default(0) @map("lessons_completed")
+  testsCompleted      Int                            @default(0) @map("tests_completed")
+  wordsLearned        Int                            @default(0) @map("words_learned")
+  balance             Int                            @default(0)
+  createdAt           DateTime                       @default(now()) @map("created_at") @db.Timestamptz(6)
+  achievements        UserAchievement[]
+  dictionaryWords     DictionaryWord[]
+  learningDispatches  UserLearningReminderDispatch[]
+  mascotProfile       UserMascotProfile?
+  notificationProfile UserNotificationPreference?
+  pushTokens          UserPushToken[]
+  recentArticles      UserRecentArticle[]
+  refreshTokens       UserRefreshToken[]
+  savedArticles       UserSavedArticle[]
+  streakAchievements  UserStreakAchievement[]
+  streakHistory       UserStreakHistory[]
+  streakProfile       UserStreakProfile?
+
+  @@map("users")
+}
+
+model PendingUserRegistration {
+  id                    String   @id @db.Uuid
+  email                 String   @unique
+  passwordHash          String   @map("password_hash")
+  passwordSalt          String   @map("password_salt")
+  verificationCodeHash  String   @map("verification_code_hash")
+  verificationCodeSalt  String   @map("verification_code_salt")
+  verificationExpiresAt DateTime @map("verification_expires_at") @db.Timestamptz(6)
+  createdAt             DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@map("pending_user_registrations")
+}
+
+model PasswordResetRequest {
+  id                    String    @id @db.Uuid
+  email                 String    @unique
+  verificationCodeHash  String    @map("verification_code_hash")
+  verificationCodeSalt  String    @map("verification_code_salt")
+  verificationExpiresAt DateTime  @map("verification_expires_at") @db.Timestamptz(6)
+  resetTokenHash        String?   @map("reset_token_hash")
+  resetTokenSalt        String?   @map("reset_token_salt")
+  resetTokenExpiresAt   DateTime? @map("reset_token_expires_at") @db.Timestamptz(6)
+  createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@map("password_reset_requests")
+}
+
+model UserRefreshToken {
+  id        String    @id @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  tokenHash String    @map("token_hash")
+  tokenSalt String    @map("token_salt")
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz(6)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  revokedAt DateTime? @map("revoked_at") @db.Timestamptz(6)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([userId, expiresAt(sort: Desc)], map: "user_refresh_tokens_user_active_idx")
+  @@map("user_refresh_tokens")
+}
+
+model UserAchievement {
+  userId        String    @map("user_id") @db.Uuid
+  achievementId String    @map("achievement_id")
+  unlockedAt    DateTime  @default(now()) @map("unlocked_at") @db.Timestamptz(6)
+  claimedAt     DateTime? @map("claimed_at") @db.Timestamptz(6)
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([userId, achievementId])
+  @@map("user_achievements")
+}
+
+model UserMascotProfile {
+  userId             String   @id @map("user_id") @db.Uuid
+  equippedHeadItemId String?  @map("equipped_head_item_id")
+  equippedEyesItemId String?  @map("equipped_eyes_item_id")
+  equippedGlassesId  String?  @map("equipped_glasses_id")
+  equippedHatId      String?  @map("equipped_hat_id")
+  equippedBandanaId  String?  @map("equipped_bandana_id")
+  equippedEyePatchId String?  @map("equipped_eye_patch_id")
+  ownedItemIds       String[] @default([]) @map("owned_item_ids")
+  updatedAt          DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@map("user_mascot_profiles")
+}
+
+model ArticleSimplification {
+  cacheKey       String   @id @map("cache_key")
+  articleId      Int?     @map("article_id")
+  title          String
+  level          String
+  targetLength   String   @map("target_length")
+  targetPercent  Int?     @map("target_percent")
+  sourceHash     String?  @map("source_hash")
+  originalLength Int      @map("original_length")
+  adaptedText    String?  @map("adapted_text")
+  adaptedBlocks  Json?    @map("adapted_blocks")
+  questions      Json?
+  adaptedLength  Int      @map("adapted_length")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([articleId], map: "article_simplifications_article_id_idx")
+  @@map("article_simplifications")
+}
+
+model UserSavedArticle {
+  userId       String   @map("user_id") @db.Uuid
+  articleId    Int      @map("article_id")
+  title        String
+  extract      String
+  url          String
+  thumbnailUrl String?  @map("thumbnail_url")
+  savedAt      DateTime @default(now()) @map("saved_at") @db.Timestamptz(6)
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([userId, articleId])
+  @@index([userId, savedAt(sort: Desc)], map: "user_saved_articles_user_saved_at_idx")
+  @@map("user_saved_articles")
+}
+
+model UserRecentArticle {
+  userId       String   @map("user_id") @db.Uuid
+  articleId    Int      @map("article_id")
+  title        String
+  extract      String
+  url          String
+  thumbnailUrl String?  @map("thumbnail_url")
+  openedAt     DateTime @default(now()) @map("opened_at") @db.Timestamptz(6)
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([userId, articleId])
+  @@index([userId, openedAt(sort: Desc)], map: "user_recent_articles_user_opened_at_idx")
+  @@map("user_recent_articles")
+}
+
+model DictionaryWord {
+  id                  String                 @id @db.Uuid
+  userId              String?                @map("user_id") @db.Uuid
+  word                String
+  normalizedWord      String                 @map("normalized_word")
+  translation         String
+  context             String
+  progress            DictionaryWordProgress @default(new)
+  lastReviewedAt      DateTime?              @map("last_reviewed_at") @db.Timestamptz(6)
+  correctAnswersCount Int                    @default(0) @map("correct_answers_count")
+  createdAt           DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
+  user                User?                  @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([userId, normalizedWord], map: "dictionary_words_user_id_normalized_word_idx")
+  @@index([userId, createdAt(sort: Desc)], map: "dictionary_words_user_id_created_at_idx")
+  @@map("dictionary_words")
+}
+
+model UserStreakProfile {
+  userId           String    @id @map("user_id") @db.Uuid
+  currentStreak    Int       @default(0) @map("current_streak")
+  longestStreak    Int       @default(0) @map("longest_streak")
+  lastActivityDate DateTime? @map("last_activity_date") @db.Date
+  freezeTokens     Int       @default(1) @map("freeze_tokens")
+  timezone         String    @default("UTC")
+  brokenStreakInfo Json?     @map("broken_streak_info")
+  updatedAt        DateTime  @default(now()) @map("updated_at") @db.Timestamptz(6)
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@map("user_streak_profiles")
+}
+
+model UserStreakHistory {
+  userId       String          @map("user_id") @db.Uuid
+  activityDate DateTime        @map("activity_date") @db.Date
+  status       StreakDayStatus
+  createdAt    DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([userId, activityDate])
+  @@index([userId, activityDate(sort: Desc)], map: "user_streak_history_user_date_idx")
+  @@map("user_streak_history")
+}
+
+model UserStreakAchievement {
+  userId      String   @map("user_id") @db.Uuid
+  milestone   Int
+  rewardCoins Int      @map("reward_coins")
+  claimedAt   DateTime @default(now()) @map("claimed_at") @db.Timestamptz(6)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([userId, milestone])
+  @@map("user_streak_achievements")
+}
+
+model UserNotificationPreference {
+  userId                   String   @id @map("user_id") @db.Uuid
+  learningRemindersEnabled Boolean  @default(false) @map("learning_reminders_enabled")
+  learningReminderTime     String   @default("19:00") @map("learning_reminder_time")
+  updatedAt                DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+  user                     User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@map("user_notification_preferences")
+}
+
+model UserPushToken {
+  userId     String   @map("user_id") @db.Uuid
+  deviceId   String   @map("device_id")
+  pushToken  String?  @unique(map: "user_push_tokens_push_token_idx") @map("push_token")
+  provider   String   @default("fcm")
+  platform   String
+  isActive   Boolean  @default(true) @map("is_active")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  lastSeenAt DateTime @default(now()) @map("last_seen_at") @db.Timestamptz(6)
+  updatedAt  DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([userId, deviceId])
+  @@map("user_push_tokens")
+}
+
+model UserLearningReminderDispatch {
+  userId       String   @map("user_id") @db.Uuid
+  reminderDate DateTime @map("reminder_date") @db.Date
+  sentAt       DateTime @default(now()) @map("sent_at") @db.Timestamptz(6)
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([userId, reminderDate])
+  @@map("user_learning_reminder_dispatches")
+}

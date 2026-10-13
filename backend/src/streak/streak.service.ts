@@ -4,20 +4,31 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
-import { DatabaseService } from '../database/database.service';
 import {
-  type CalendarDayStatus,
+  dateOnlyToDate,
+  dateToDateOnly,
+  isDateOnly,
+} from '../common/database/date-only';
+import { Prisma } from '../generated/prisma/client';
+import { PrismaService } from '../prisma/prisma.service';
+import {
+  mapStreakHistory,
+  mapStreakProfile,
+  serializeBrokenStreakInfo,
+} from './streak.persistence';
+import {
   type BrokenStreakInfo,
+  type CalendarDayStatus,
   type CompleteStreakActivityDto,
   type CompleteStreakActivityResponse,
   type StreakAchievement,
   type StreakAchievementMilestone,
   type StreakCalendarDay,
   type StreakCalendarMonthResponse,
-  type StreakClaimedAchievementRow,
+  type StreakClaimedAchievementRecord,
   type StreakDayStatus,
-  type StreakHistoryRow,
-  type StreakProfileRow,
+  type StreakHistoryRecord,
+  type StreakProfileRecord,
   type StreakState,
   type StreakTodayStatus,
 } from './types';
@@ -41,7 +52,7 @@ type UserBalanceRow = { balance: number };
 
 @Injectable()
 export class StreakService {
-  constructor(private readonly databaseService: DatabaseService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async getProfile(userId: string): Promise<StreakState> {
     const profile = await this.ensureProfile(userId);
@@ -55,7 +66,7 @@ export class StreakService {
     );
     let refreshedProfile = reconciled ?? profile;
 
-    if (refreshedProfile.broken_streak_info?.canRestore === false) {
+    if (refreshedProfile.brokenStreakInfo?.canRestore === false) {
       await this.rebuildProfileFromHistory(
         userId,
         refreshedProfile.timezone,
@@ -114,19 +125,18 @@ export class StreakService {
     const monthDaysCount = new Date(Date.UTC(year, month, 0)).getUTCDate();
     const monthEnd = this.formatDateKeyUTC(year, month, monthDaysCount);
 
-    const historyResult = await this.databaseService.query<StreakHistoryRow>(
-      `
-        SELECT activity_date::text, status
-        FROM user_streak_history
-        WHERE user_id = $1
-          AND activity_date >= $2::date
-          AND activity_date <= $3::date
-      `,
-      [userId, monthStart, monthEnd],
-    );
+    const historyRows = await this.prisma.userStreakHistory.findMany({
+      where: {
+        activityDate: {
+          gte: dateOnlyToDate(monthStart),
+          lte: dateOnlyToDate(monthEnd),
+        },
+        userId,
+      },
+    });
 
     const historyMap = new Map(
-      historyResult.rows.map((row) => [row.activity_date, row.status]),
+      historyRows.map((row) => [dateToDateOnly(row.activityDate), row.status]),
     );
 
     const todayDate = new Date(`${localToday}T00:00:00.000Z`);
@@ -187,36 +197,31 @@ export class StreakService {
     const todayRow = await this.getHistoryDay(userId, localToday);
 
     if (todayRow?.status !== 'completed') {
-      const previousStreak = working.current_streak;
+      const previousStreak = working.currentStreak;
       const nextStreak = previousStreak > 0 ? previousStreak + 1 : 1;
 
-      await this.databaseService.query(
-        `
-          INSERT INTO user_streak_history (user_id, activity_date, status)
-          VALUES ($1, $2::date, 'completed')
-          ON CONFLICT (user_id, activity_date)
-          DO UPDATE SET status = 'completed'
-        `,
-        [userId, localToday],
-      );
+      const activityDate = dateOnlyToDate(localToday);
+      await this.prisma.userStreakHistory.upsert({
+        create: { activityDate, status: 'completed', userId },
+        update: { status: 'completed' },
+        where: { userId_activityDate: { activityDate, userId } },
+      });
 
-      await this.databaseService.query(
-        `
-          UPDATE user_streak_profiles
-          SET current_streak = $2,
-              longest_streak = GREATEST(longest_streak, $2),
-              last_activity_date = $3::date,
-              updated_at = now()
-          WHERE user_id = $1
-        `,
-        [userId, nextStreak, localToday],
-      );
+      await this.prisma.userStreakProfile.update({
+        data: {
+          currentStreak: nextStreak,
+          lastActivityDate: activityDate,
+          longestStreak: Math.max(working.longestStreak, nextStreak),
+          updatedAt: new Date(),
+        },
+        where: { userId },
+      });
 
       working = {
         ...working,
-        current_streak: nextStreak,
-        last_activity_date: localToday,
-        longest_streak: Math.max(working.longest_streak, nextStreak),
+        currentStreak: nextStreak,
+        lastActivityDate: localToday,
+        longestStreak: Math.max(working.longestStreak, nextStreak),
       };
 
       await this.unlockMilestones(userId, nextStreak);
@@ -233,7 +238,7 @@ export class StreakService {
     }
 
     const profile = await this.ensureProfile(userId);
-    const broken = profile.broken_streak_info;
+    const broken = profile.brokenStreakInfo;
     const localToday = this.getLocalDateKey(new Date(), profile.timezone);
 
     if (!broken?.canRestore) {
@@ -246,24 +251,17 @@ export class StreakService {
       throw new BadRequestException('Not enough coins.');
     }
 
-    await this.databaseService.query(
-      `
-        UPDATE users
-        SET balance = balance - $2
-        WHERE id = $1
-      `,
-      [userId, RESTORE_PRICE],
-    );
+    await this.prisma.user.update({
+      data: { balance: { decrement: RESTORE_PRICE } },
+      where: { id: userId },
+    });
 
-    await this.databaseService.query(
-      `
-        INSERT INTO user_streak_history (user_id, activity_date, status)
-        VALUES ($1, $2::date, 'restored')
-        ON CONFLICT (user_id, activity_date)
-        DO UPDATE SET status = 'restored'
-      `,
-      [userId, broken.brokenAt],
-    );
+    const brokenAt = dateOnlyToDate(broken.brokenAt);
+    await this.prisma.userStreakHistory.upsert({
+      create: { activityDate: brokenAt, status: 'restored', userId },
+      update: { status: 'restored' },
+      where: { userId_activityDate: { activityDate: brokenAt, userId } },
+    });
 
     const rebuiltCurrentStreak = await this.rebuildProfileFromHistory(
       userId,
@@ -276,7 +274,7 @@ export class StreakService {
   }
 
   async applyFreeze(userId: string, date: string): Promise<StreakState> {
-    if (!this.isDateKey(date)) {
+    if (!isDateOnly(date)) {
       throw new BadRequestException('Invalid freeze date.');
     }
 
@@ -287,7 +285,7 @@ export class StreakService {
 
     const refreshedProfile = await this.ensureProfile(userId);
 
-    if (refreshedProfile.freeze_tokens <= 0) {
+    if (refreshedProfile.freezeTokens <= 0) {
       throw new BadRequestException('No freeze tokens available.');
     }
 
@@ -311,24 +309,15 @@ export class StreakService {
       throw new BadRequestException('Freeze day limit reached.');
     }
 
-    await this.databaseService.query(
-      `
-        UPDATE user_streak_history
-        SET status = 'frozen'
-        WHERE user_id = $1 AND activity_date = $2::date
-      `,
-      [userId, date],
-    );
+    await this.prisma.userStreakHistory.updateMany({
+      data: { status: 'frozen' },
+      where: { activityDate: dateOnlyToDate(date), userId },
+    });
 
-    await this.databaseService.query(
-      `
-        UPDATE user_streak_profiles
-        SET freeze_tokens = freeze_tokens - 1,
-            updated_at = now()
-        WHERE user_id = $1
-      `,
-      [userId],
-    );
+    await this.prisma.userStreakProfile.update({
+      data: { freezeTokens: { decrement: 1 }, updatedAt: new Date() },
+      where: { userId },
+    });
 
     const rebuiltCurrentStreak = await this.rebuildProfileFromHistory(
       userId,
@@ -350,7 +339,7 @@ export class StreakService {
 
     const profile = await this.ensureProfile(userId);
 
-    if (profile.freeze_tokens >= MAX_FREEZE_TOKENS) {
+    if (profile.freezeTokens >= MAX_FREEZE_TOKENS) {
       throw new BadRequestException('Freeze token limit reached.');
     }
 
@@ -360,24 +349,18 @@ export class StreakService {
       throw new BadRequestException('Not enough coins.');
     }
 
-    await this.databaseService.query(
-      `
-        UPDATE users
-        SET balance = balance - $2
-        WHERE id = $1
-      `,
-      [userId, FREEZE_TOKEN_PRICE],
-    );
+    await this.prisma.user.update({
+      data: { balance: { decrement: FREEZE_TOKEN_PRICE } },
+      where: { id: userId },
+    });
 
-    await this.databaseService.query(
-      `
-        UPDATE user_streak_profiles
-        SET freeze_tokens = LEAST(freeze_tokens + 1, $2),
-            updated_at = now()
-        WHERE user_id = $1
-      `,
-      [userId, MAX_FREEZE_TOKENS],
-    );
+    await this.prisma.userStreakProfile.update({
+      data: {
+        freezeTokens: Math.min(profile.freezeTokens + 1, MAX_FREEZE_TOKENS),
+        updatedAt: new Date(),
+      },
+      where: { userId },
+    });
 
     return this.getProfile(userId);
   }
@@ -385,75 +368,53 @@ export class StreakService {
   private async ensureProfile(
     userId: string,
     timezone?: string,
-  ): Promise<StreakProfileRow> {
-    const user = await this.databaseService.query<{ id: string }>(
-      `SELECT id FROM users WHERE id = $1 LIMIT 1`,
-      [userId],
-    );
+  ): Promise<StreakProfileRecord> {
+    const user = await this.prisma.user.findUnique({
+      select: { id: true },
+      where: { id: userId },
+    });
 
-    if (!user.rows[0]) {
+    if (!user) {
       throw new NotFoundException('User not found.');
     }
 
     const resolvedTimezone = this.resolveTimezone(timezone);
+    const profile = await this.prisma.userStreakProfile.upsert({
+      create: { timezone: resolvedTimezone ?? 'UTC', userId },
+      update: resolvedTimezone ? { timezone: resolvedTimezone } : {},
+      where: { userId },
+    });
 
-    await this.databaseService.query(
-      `
-        INSERT INTO user_streak_profiles (user_id, timezone)
-        VALUES ($1, COALESCE($2, 'UTC'))
-        ON CONFLICT (user_id)
-        DO UPDATE SET timezone = COALESCE($2, user_streak_profiles.timezone)
-      `,
-      [userId, resolvedTimezone ?? null],
-    );
-
-    const profileResult = await this.databaseService.query<StreakProfileRow>(
-      `
-        SELECT
-          current_streak,
-          longest_streak,
-          last_activity_date::text,
-          freeze_tokens,
-          timezone,
-          broken_streak_info
-        FROM user_streak_profiles
-        WHERE user_id = $1
-        LIMIT 1
-      `,
-      [userId],
-    );
-
-    return profileResult.rows[0];
+    return mapStreakProfile(profile);
   }
 
   private async getHistoryDay(
     userId: string,
     date: string,
-  ): Promise<StreakHistoryRow | null> {
-    const result = await this.databaseService.query<StreakHistoryRow>(
-      `
-        SELECT activity_date::text, status
-        FROM user_streak_history
-        WHERE user_id = $1 AND activity_date = $2::date
-        LIMIT 1
-      `,
-      [userId, date],
-    );
+  ): Promise<StreakHistoryRecord | null> {
+    const row = await this.prisma.userStreakHistory.findUnique({
+      where: {
+        userId_activityDate: {
+          activityDate: dateOnlyToDate(date),
+          userId,
+        },
+      },
+    });
 
-    return result.rows[0] ?? null;
+    return row ? mapStreakHistory(row) : null;
   }
 
   private async reconcileMissingDays(
     userId: string,
-    profile: StreakProfileRow,
+    profile: StreakProfileRecord,
     localToday: string,
-  ): Promise<StreakProfileRow | null> {
-    if (!profile.last_activity_date) {
+  ): Promise<StreakProfileRecord | null> {
+    if (!profile.lastActivityDate) {
       return null;
     }
 
     const missingDays = this.getDatesBetween(
-      profile.last_activity_date,
+      profile.lastActivityDate,
       localToday,
     );
 
@@ -461,8 +422,8 @@ export class StreakService {
       return null;
     }
 
-    let currentStreak = profile.current_streak;
-    let brokenInfo = profile.broken_streak_info;
+    let currentStreak = profile.currentStreak;
+    let brokenInfo = profile.brokenStreakInfo;
 
     for (const day of missingDays) {
       const existing = await this.getHistoryDay(userId, day);
@@ -476,7 +437,7 @@ export class StreakService {
         brokenInfo = brokenInfo ?? {
           brokenAt: day,
           canRestore: true,
-          previousStreak: profile.current_streak,
+          previousStreak: profile.currentStreak,
           restorePrice: RESTORE_PRICE,
         };
         continue;
@@ -486,14 +447,12 @@ export class StreakService {
         continue;
       }
 
-      await this.databaseService.query(
-        `
-          INSERT INTO user_streak_history (user_id, activity_date, status)
-          VALUES ($1, $2::date, 'missed')
-          ON CONFLICT (user_id, activity_date) DO NOTHING
-        `,
-        [userId, day],
-      );
+      const activityDate = dateOnlyToDate(day);
+      await this.prisma.userStreakHistory.upsert({
+        create: { activityDate, status: 'missed', userId },
+        update: {},
+        where: { userId_activityDate: { activityDate, userId } },
+      });
 
       brokenInfo = {
         brokenAt: day,
@@ -504,21 +463,20 @@ export class StreakService {
       currentStreak = 0;
     }
 
-    await this.databaseService.query(
-      `
-        UPDATE user_streak_profiles
-        SET current_streak = $2,
-            broken_streak_info = $3,
-            updated_at = now()
-        WHERE user_id = $1
-      `,
-      [userId, currentStreak, brokenInfo ? JSON.stringify(brokenInfo) : null],
-    );
+    await this.prisma.userStreakProfile.update({
+      data: {
+        brokenStreakInfo:
+          serializeBrokenStreakInfo(brokenInfo) ?? Prisma.DbNull,
+        currentStreak,
+        updatedAt: new Date(),
+      },
+      where: { userId },
+    });
 
     return {
       ...profile,
-      broken_streak_info: brokenInfo,
-      current_streak: currentStreak,
+      brokenStreakInfo: brokenInfo,
+      currentStreak,
     };
   }
 
@@ -527,15 +485,12 @@ export class StreakService {
     timezone: string,
     localToday: string,
   ): Promise<number> {
-    const result = await this.databaseService.query<StreakHistoryRow>(
-      `
-        SELECT activity_date::text, status
-        FROM user_streak_history
-        WHERE user_id = $1
-        ORDER BY activity_date ASC
-      `,
-      [userId],
-    );
+    const history = (
+      await this.prisma.userStreakHistory.findMany({
+        orderBy: { activityDate: 'asc' },
+        where: { userId },
+      })
+    ).map(mapStreakHistory);
 
     const protectedStatuses = new Set<StreakDayStatus>([
       'completed',
@@ -547,22 +502,22 @@ export class StreakService {
     let lastActivityDate: string | null = null;
     let brokenInfo: BrokenStreakInfo | null = null;
 
-    for (const day of result.rows) {
-      if (day.activity_date >= localToday) {
+    for (const day of history) {
+      if (day.activityDate >= localToday) {
         continue;
       }
 
       if (protectedStatuses.has(day.status)) {
         currentStreak += 1;
         longestStreak = Math.max(longestStreak, currentStreak);
-        lastActivityDate = day.activity_date;
+        lastActivityDate = day.activityDate;
         brokenInfo = null;
         continue;
       }
 
       if (day.status === 'missed') {
         brokenInfo = {
-          brokenAt: day.activity_date,
+          brokenAt: day.activityDate,
           canRestore: true,
           previousStreak: currentStreak,
           restorePrice: RESTORE_PRICE,
@@ -571,37 +526,32 @@ export class StreakService {
       }
     }
 
-    const todayRow = result.rows.find(
-      (day) => day.activity_date === localToday,
-    );
+    const todayRow = history.find((day) => day.activityDate === localToday);
 
     if (todayRow && protectedStatuses.has(todayRow.status)) {
       currentStreak += 1;
       longestStreak = Math.max(longestStreak, currentStreak);
-      lastActivityDate = todayRow.activity_date;
+      lastActivityDate = todayRow.activityDate;
       brokenInfo = null;
     }
 
-    await this.databaseService.query(
-      `
-        UPDATE user_streak_profiles
-        SET current_streak = $2,
-            longest_streak = GREATEST(longest_streak, $3),
-            last_activity_date = $4::date,
-            broken_streak_info = $5,
-            timezone = $6,
-            updated_at = now()
-        WHERE user_id = $1
-      `,
-      [
-        userId,
+    await this.prisma.userStreakProfile.update({
+      data: {
+        brokenStreakInfo:
+          serializeBrokenStreakInfo(brokenInfo) ?? Prisma.DbNull,
         currentStreak,
-        longestStreak,
-        lastActivityDate,
-        brokenInfo ? JSON.stringify(brokenInfo) : null,
+        lastActivityDate: lastActivityDate
+          ? dateOnlyToDate(lastActivityDate)
+          : null,
         timezone,
-      ],
-    );
+        updatedAt: new Date(),
+      },
+      where: { userId },
+    });
+    await this.prisma.userStreakProfile.updateMany({
+      data: { longestStreak },
+      where: { longestStreak: { lt: longestStreak }, userId },
+    });
 
     return currentStreak;
   }
@@ -610,77 +560,70 @@ export class StreakService {
     userId: string,
     currentStreak: number,
   ): Promise<void> {
-    for (const milestone of STREAK_MILESTONES) {
-      if (currentStreak < milestone.milestone) {
-        continue;
-      }
-
-      const inserted = await this.databaseService.query<{ milestone: number }>(
-        `
-          INSERT INTO user_streak_achievements (user_id, milestone, reward_coins)
-          VALUES ($1, $2, $3)
-          ON CONFLICT (user_id, milestone) DO NOTHING
-          RETURNING milestone
-        `,
-        [userId, milestone.milestone, milestone.rewardCoins],
-      );
-
-      if (inserted.rows[0]) {
-        await this.databaseService.query(
-          `
-            UPDATE users
-            SET balance = balance + $2
-            WHERE id = $1
-          `,
-          [userId, milestone.rewardCoins],
-        );
-      }
-    }
-  }
-
-  private async getRecentHistory(userId: string): Promise<StreakHistoryRow[]> {
-    const result = await this.databaseService.query<StreakHistoryRow>(
-      `
-        SELECT activity_date::text, status
-        FROM user_streak_history
-        WHERE user_id = $1
-        ORDER BY activity_date DESC
-        LIMIT 90
-      `,
-      [userId],
+    const eligibleMilestones = STREAK_MILESTONES.filter(
+      (milestone) => currentStreak >= milestone.milestone,
     );
 
-    return result.rows;
+    if (eligibleMilestones.length === 0) {
+      return;
+    }
+
+    await this.prisma.$transaction(async (transaction) => {
+      const inserted =
+        await transaction.userStreakAchievement.createManyAndReturn({
+          data: eligibleMilestones.map((milestone) => ({
+            milestone: milestone.milestone,
+            rewardCoins: milestone.rewardCoins,
+            userId,
+          })),
+          select: { rewardCoins: true },
+          skipDuplicates: true,
+        });
+      const totalReward = inserted.reduce(
+        (total, milestone) => total + milestone.rewardCoins,
+        0,
+      );
+
+      if (totalReward > 0) {
+        await transaction.user.update({
+          data: { balance: { increment: totalReward } },
+          where: { id: userId },
+        });
+      }
+    });
+  }
+
+  private async getRecentHistory(
+    userId: string,
+  ): Promise<StreakHistoryRecord[]> {
+    const rows = await this.prisma.userStreakHistory.findMany({
+      orderBy: { activityDate: 'desc' },
+      take: 90,
+      where: { userId },
+    });
+
+    return rows.map(mapStreakHistory);
   }
 
   private async getClaimedAchievements(
     userId: string,
-  ): Promise<StreakClaimedAchievementRow[]> {
-    const result =
-      await this.databaseService.query<StreakClaimedAchievementRow>(
-        `
-        SELECT milestone, reward_coins, claimed_at
-        FROM user_streak_achievements
-        WHERE user_id = $1
-      `,
-        [userId],
-      );
+  ): Promise<StreakClaimedAchievementRecord[]> {
+    const rows = await this.prisma.userStreakAchievement.findMany({
+      where: { userId },
+    });
 
-    return result.rows;
+    return rows.map((row) => ({
+      claimedAt: row.claimedAt,
+      milestone: row.milestone,
+      rewardCoins: row.rewardCoins,
+    }));
   }
 
   private async getUserBalance(userId: string): Promise<UserBalanceRow> {
-    const result = await this.databaseService.query<UserBalanceRow>(
-      `
-        SELECT balance
-        FROM users
-        WHERE id = $1
-        LIMIT 1
-      `,
-      [userId],
-    );
-
-    const row = result.rows[0];
+    const row = await this.prisma.user.findUnique({
+      select: { balance: true },
+      where: { id: userId },
+    });
 
     if (!row) {
       throw new NotFoundException('User not found.');
@@ -690,9 +633,9 @@ export class StreakService {
   }
 
   private toState(
-    profile: StreakProfileRow,
-    history: StreakHistoryRow[],
-    claimedRows: StreakClaimedAchievementRow[],
+    profile: StreakProfileRecord,
+    history: StreakHistoryRecord[],
+    claimedRows: StreakClaimedAchievementRecord[],
     coinBalance: number,
     serverNow: Date,
     localToday: string,
@@ -704,36 +647,34 @@ export class StreakService {
         const claimed = claimedMap.get(milestone.milestone);
 
         return {
-          claimedAt: claimed?.claimed_at?.toISOString() ?? null,
+          claimedAt: claimed?.claimedAt.toISOString() ?? null,
           isUnlocked: Boolean(claimed),
           milestone: milestone.milestone,
           rewardCoins: milestone.rewardCoins,
         };
       });
 
-    const todayHistory = history.find(
-      (day) => day.activity_date === localToday,
-    );
+    const todayHistory = history.find((day) => day.activityDate === localToday);
     const todayStatus = this.resolveTodayStatus(profile, todayHistory?.status);
 
     const nextMilestone =
-      STREAK_MILESTONES.find((item) => item.milestone > profile.current_streak)
+      STREAK_MILESTONES.find((item) => item.milestone > profile.currentStreak)
         ?.milestone ?? 100;
 
-    const nextBonusInDays = Math.max(0, nextMilestone - profile.current_streak);
+    const nextBonusInDays = Math.max(0, nextMilestone - profile.currentStreak);
 
     return {
       activityHistory: history.map((day) => ({
-        date: day.activity_date,
+        date: day.activityDate,
         status: day.status,
       })),
-      brokenStreakInfo: profile.broken_streak_info,
+      brokenStreakInfo: profile.brokenStreakInfo,
       claimedStreakAchievements,
       coinBalance,
-      currentStreak: profile.current_streak,
-      freezeTokens: profile.freeze_tokens,
-      lastActivityDate: profile.last_activity_date,
-      longestStreak: profile.longest_streak,
+      currentStreak: profile.currentStreak,
+      freezeTokens: profile.freezeTokens,
+      lastActivityDate: profile.lastActivityDate,
+      longestStreak: profile.longestStreak,
       nextBonusInDays,
       nextMilestone,
       serverNow: serverNow.toISOString(),
@@ -742,14 +683,14 @@ export class StreakService {
   }
 
   private resolveTodayStatus(
-    profile: StreakProfileRow,
+    profile: StreakProfileRecord,
     todayHistoryStatus?: StreakDayStatus,
   ): StreakTodayStatus {
     if (todayHistoryStatus) {
       return todayHistoryStatus;
     }
 
-    if (profile.broken_streak_info?.canRestore) {
+    if (profile.brokenStreakInfo?.canRestore) {
       return 'broken';
     }
 
@@ -796,24 +737,17 @@ export class StreakService {
     return dates;
   }
 
-  private isDateKey(value: string): boolean {
-    return /^\d{4}-\d{2}-\d{2}$/.test(value);
-  }
-
   private async hasReachedFreezeLimitForBreak(
     userId: string,
     date: string,
   ): Promise<boolean> {
-    const result = await this.databaseService.query<StreakHistoryRow>(
-      `
-        SELECT activity_date::text, status
-        FROM user_streak_history
-        WHERE user_id = $1
-        ORDER BY activity_date ASC
-      `,
-      [userId],
-    );
-    const index = result.rows.findIndex((row) => row.activity_date === date);
+    const rows = (
+      await this.prisma.userStreakHistory.findMany({
+        orderBy: { activityDate: 'asc' },
+        where: { userId },
+      })
+    ).map(mapStreakHistory);
+    const index = rows.findIndex((row) => row.activityDate === date);
 
     if (index < 0) {
       return false;
@@ -822,7 +756,7 @@ export class StreakService {
     let frozenDays = 0;
 
     for (let cursor = index; cursor >= 0; cursor -= 1) {
-      const status = result.rows[cursor].status;
+      const status = rows[cursor].status;
 
       if (status === 'completed' || status === 'restored') {
         break;
@@ -833,8 +767,8 @@ export class StreakService {
       }
     }
 
-    for (let cursor = index + 1; cursor < result.rows.length; cursor += 1) {
-      const status = result.rows[cursor].status;
+    for (let cursor = index + 1; cursor < rows.length; cursor += 1) {
+      const status = rows[cursor].status;
 
       if (status === 'completed' || status === 'restored') {
         break;

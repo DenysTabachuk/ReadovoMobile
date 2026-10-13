@@ -1,90 +1,48 @@
 import { Injectable } from '@nestjs/common';
 
-import { DatabaseService } from '../database/database.service';
+import { type DictionaryWord as DictionaryWordModel } from '../generated/prisma/client';
+import { PrismaService } from '../prisma/prisma.service';
 import { type DictionaryWord, type DictionaryWordProgress } from './types';
-
-type DictionaryWordRow = {
-  context: string;
-  correct_answers_count: number;
-  created_at: Date;
-  id: string;
-  last_reviewed_at: Date | null;
-  progress: DictionaryWordProgress;
-  translation: string;
-  user_id: string;
-  word: string;
-};
 
 @Injectable()
 export class DictionaryRepository {
-  constructor(private readonly databaseService: DatabaseService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async create(word: DictionaryWord): Promise<DictionaryWord | null> {
-    const result = await this.databaseService.query<DictionaryWordRow>(
-      `
-        INSERT INTO dictionary_words (
-          id,
-          user_id,
-          word,
-          normalized_word,
-          translation,
-          context,
-          progress,
-          correct_answers_count,
-          created_at
-        )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-        ON CONFLICT (user_id, normalized_word) WHERE user_id IS NOT NULL
-        DO NOTHING
-        RETURNING id, user_id, word, translation, context, progress, correct_answers_count, last_reviewed_at, created_at
-      `,
-      [
-        word.id,
-        word.userId,
-        word.word,
-        word.word.trim().toLowerCase(),
-        word.translation,
-        word.context,
-        word.progress,
-        word.correctAnswersCount,
-        word.createdAt,
-      ],
-    );
+    const [created] = await this.prisma.dictionaryWord.createManyAndReturn({
+      data: {
+        context: word.context,
+        correctAnswersCount: word.correctAnswersCount,
+        createdAt: new Date(word.createdAt),
+        id: word.id,
+        normalizedWord: word.word.trim().toLowerCase(),
+        progress: word.progress,
+        translation: word.translation,
+        userId: word.userId,
+        word: word.word,
+      },
+      skipDuplicates: true,
+    });
 
-    const row = result.rows[0];
-
-    return row ? this.toDictionaryWord(row) : null;
+    return created ? this.toDictionaryWord(created) : null;
   }
 
   async findAll(userId: string): Promise<DictionaryWord[]> {
-    const result = await this.databaseService.query<DictionaryWordRow>(
-      `
-      SELECT id, user_id, word, translation, context, progress, correct_answers_count, last_reviewed_at, created_at
-      FROM dictionary_words
-      WHERE user_id = $1
-      ORDER BY created_at DESC
-    `,
-      [userId],
-    );
+    const rows = await this.prisma.dictionaryWord.findMany({
+      orderBy: { createdAt: 'desc' },
+      where: { userId },
+    });
 
-    return result.rows.map((row) => this.toDictionaryWord(row));
+    return rows.map((row) => this.toDictionaryWord(row));
   }
 
   async findById(
     id: string,
     userId: string,
   ): Promise<DictionaryWord | undefined> {
-    const result = await this.databaseService.query<DictionaryWordRow>(
-      `
-        SELECT id, user_id, word, translation, context, progress, correct_answers_count, last_reviewed_at, created_at
-        FROM dictionary_words
-        WHERE id = $1
-          AND user_id = $2
-      `,
-      [id, userId],
-    );
-
-    const row = result.rows[0];
+    const row = await this.prisma.dictionaryWord.findFirst({
+      where: { id, userId },
+    });
 
     return row ? this.toDictionaryWord(row) : undefined;
   }
@@ -93,17 +51,13 @@ export class DictionaryRepository {
     id: string,
     userId: string,
   ): Promise<DictionaryWord | undefined> {
-    const result = await this.databaseService.query<DictionaryWordRow>(
-      `
-        DELETE FROM dictionary_words
-        WHERE id = $1
-          AND user_id = $2
-        RETURNING id, user_id, word, translation, context, progress, correct_answers_count, last_reviewed_at, created_at
-      `,
-      [id, userId],
-    );
+    const row = await this.prisma.dictionaryWord.findFirst({
+      where: { id, userId },
+    });
 
-    const row = result.rows[0];
+    if (row) {
+      await this.prisma.dictionaryWord.deleteMany({ where: { id, userId } });
+    }
 
     return row ? this.toDictionaryWord(row) : undefined;
   }
@@ -112,18 +66,16 @@ export class DictionaryRepository {
     userId: string,
     limit: number,
   ): Promise<DictionaryWord[]> {
-    const result = await this.databaseService.query<DictionaryWordRow>(
-      `
-        SELECT id, user_id, word, translation, context, progress, correct_answers_count, last_reviewed_at, created_at
-        FROM dictionary_words
-        WHERE user_id = $1
-        ORDER BY last_reviewed_at ASC NULLS FIRST, created_at ASC
-        LIMIT $2
-      `,
-      [userId, limit],
-    );
+    const rows = await this.prisma.dictionaryWord.findMany({
+      orderBy: [
+        { lastReviewedAt: { sort: 'asc', nulls: 'first' } },
+        { createdAt: 'asc' },
+      ],
+      take: limit,
+      where: { userId },
+    });
 
-    return result.rows.map((row) => this.toDictionaryWord(row));
+    return rows.map((row) => this.toDictionaryWord(row));
   }
 
   async updateReviewResult(
@@ -133,20 +85,17 @@ export class DictionaryRepository {
     correctAnswersCount: number,
     reviewedAt: string,
   ): Promise<DictionaryWord | undefined> {
-    const result = await this.databaseService.query<DictionaryWordRow>(
-      `
-        UPDATE dictionary_words
-        SET progress = $3,
-            correct_answers_count = $4,
-            last_reviewed_at = $5
-        WHERE id = $1
-          AND user_id = $2
-        RETURNING id, user_id, word, translation, context, progress, correct_answers_count, last_reviewed_at, created_at
-      `,
-      [id, userId, progress, correctAnswersCount, reviewedAt],
-    );
-
-    const row = result.rows[0];
+    const updated = await this.prisma.dictionaryWord.updateMany({
+      data: {
+        correctAnswersCount,
+        lastReviewedAt: new Date(reviewedAt),
+        progress,
+      },
+      where: { id, userId },
+    });
+    const row = updated.count
+      ? await this.prisma.dictionaryWord.findUnique({ where: { id } })
+      : null;
 
     return row ? this.toDictionaryWord(row) : undefined;
   }
@@ -157,34 +106,28 @@ export class DictionaryRepository {
     progress: DictionaryWordProgress,
     correctAnswersCount: number,
   ): Promise<DictionaryWord | undefined> {
-    const result = await this.databaseService.query<DictionaryWordRow>(
-      `
-        UPDATE dictionary_words
-        SET progress = $3,
-            correct_answers_count = $4
-        WHERE id = $1
-          AND user_id = $2
-        RETURNING id, user_id, word, translation, context, progress, correct_answers_count, last_reviewed_at, created_at
-      `,
-      [id, userId, progress, correctAnswersCount],
-    );
-
-    const row = result.rows[0];
+    const updated = await this.prisma.dictionaryWord.updateMany({
+      data: { correctAnswersCount, progress },
+      where: { id, userId },
+    });
+    const row = updated.count
+      ? await this.prisma.dictionaryWord.findUnique({ where: { id } })
+      : null;
 
     return row ? this.toDictionaryWord(row) : undefined;
   }
 
-  private toDictionaryWord(row: DictionaryWordRow): DictionaryWord {
+  private toDictionaryWord(row: DictionaryWordModel): DictionaryWord {
     return {
       context: row.context,
-      correctAnswersCount: row.correct_answers_count,
-      createdAt: row.created_at.toISOString(),
+      correctAnswersCount: row.correctAnswersCount,
+      createdAt: row.createdAt.toISOString(),
       id: row.id,
-      lastReviewedAt: row.last_reviewed_at?.toISOString(),
+      lastReviewedAt: row.lastReviewedAt?.toISOString(),
       progress: row.progress,
       requiredCorrectAnswers: 5,
       translation: row.translation,
-      userId: row.user_id,
+      userId: row.userId ?? '',
       word: row.word,
     };
   }

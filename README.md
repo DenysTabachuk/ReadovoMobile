@@ -62,8 +62,14 @@ User: readovo
 Password: readovo_password
 ```
 
-The backend initializes the required local tables on startup, including auth,
-dictionary, articles, achievements, mascot, streak, and notification tables.
+The database schema is managed by versioned Prisma migrations. After starting
+PostgreSQL, apply all pending migrations:
+
+```bash
+npm run db:migrate
+```
+
+Application startup no longer creates or alters tables.
 
 ## Backend Setup
 

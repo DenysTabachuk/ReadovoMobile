@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Injectable,
   Logger,
+  OnModuleDestroy,
   OnModuleInit,
 } from '@nestjs/common';
 import {
@@ -14,7 +15,8 @@ import {
 import { getMessaging, type Messaging } from 'firebase-admin/messaging';
 import { existsSync, readFileSync } from 'node:fs';
 
-import { DatabaseService } from '../database/database.service';
+import { dateOnlyToDate } from '../common/database/date-only';
+import { PrismaService } from '../prisma/prisma.service';
 import type {
   LearningReminderDispatchResult,
   LearningReminderPreferences,
@@ -45,18 +47,26 @@ const DEFAULT_LEARNING_REMINDER_TIME = '19:00';
 const DISPATCH_INTERVAL_MS = 60 * 1000;
 
 @Injectable()
-export class NotificationsService implements OnModuleInit {
+export class NotificationsService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(NotificationsService.name);
   private readonly messaging: Messaging | null;
+  private dispatchTimer?: ReturnType<typeof setInterval>;
 
-  constructor(private readonly databaseService: DatabaseService) {
+  constructor(private readonly prisma: PrismaService) {
     this.messaging = this.createMessagingClient();
   }
 
   onModuleInit(): void {
-    setInterval(() => {
+    this.dispatchTimer = setInterval(() => {
       void this.dispatchLearningReminders();
     }, DISPATCH_INTERVAL_MS);
+  }
+
+  onModuleDestroy(): void {
+    if (this.dispatchTimer) {
+      clearInterval(this.dispatchTimer);
+      this.dispatchTimer = undefined;
+    }
   }
 
   async getLearningReminderPreferences(
@@ -64,24 +74,13 @@ export class NotificationsService implements OnModuleInit {
   ): Promise<LearningReminderPreferences> {
     await this.ensurePreferencesRow(userId);
 
-    const result = await this.databaseService.query<{
-      learning_reminder_time: string;
-      learning_reminders_enabled: boolean;
-    }>(
-      `
-        SELECT learning_reminders_enabled, learning_reminder_time
-        FROM user_notification_preferences
-        WHERE user_id = $1
-        LIMIT 1
-      `,
-      [userId],
-    );
-
-    const row = result.rows[0];
+    const row = await this.prisma.userNotificationPreference.findUniqueOrThrow({
+      where: { userId },
+    });
 
     return {
-      learningReminderTime: row.learning_reminder_time,
-      learningRemindersEnabled: row.learning_reminders_enabled,
+      learningReminderTime: row.learningReminderTime,
+      learningRemindersEnabled: row.learningRemindersEnabled,
     };
   }
 
@@ -96,23 +95,19 @@ export class NotificationsService implements OnModuleInit {
       throw new BadRequestException('Invalid reminder time format.');
     }
 
-    await this.databaseService.query(
-      `
-        INSERT INTO user_notification_preferences (
-          user_id,
-          learning_reminders_enabled,
-          learning_reminder_time,
-          updated_at
-        )
-        VALUES ($1, $2, $3, now())
-        ON CONFLICT (user_id)
-        DO UPDATE SET
-          learning_reminders_enabled = EXCLUDED.learning_reminders_enabled,
-          learning_reminder_time = EXCLUDED.learning_reminder_time,
-          updated_at = now()
-      `,
-      [userId, payload.learningRemindersEnabled, reminderTime],
-    );
+    await this.prisma.userNotificationPreference.upsert({
+      create: {
+        learningReminderTime: reminderTime,
+        learningRemindersEnabled: payload.learningRemindersEnabled,
+        userId,
+      },
+      update: {
+        learningReminderTime: reminderTime,
+        learningRemindersEnabled: payload.learningRemindersEnabled,
+        updatedAt: new Date(),
+      },
+      where: { userId },
+    });
 
     return this.getLearningReminderPreferences(userId);
   }
@@ -142,89 +137,63 @@ export class NotificationsService implements OnModuleInit {
       throw new BadRequestException('Invalid FCM push token.');
     }
 
-    await this.databaseService.query(
-      `
-        UPDATE user_push_tokens
-        SET is_active = false, updated_at = now()
-        WHERE push_token = $1
-          AND user_id <> $2
-      `,
-      [payload.pushToken, userId],
-    );
+    const now = new Date();
+    const pushToken = payload.pushToken.trim();
+    await this.prisma.userPushToken.updateMany({
+      data: { isActive: false, pushToken: null, updatedAt: now },
+      where: { pushToken, userId: { not: userId } },
+    });
 
-    await this.databaseService.query(
-      `
-        INSERT INTO user_push_tokens (
-          user_id,
-          device_id,
-          push_token,
-          provider,
-          platform,
-          is_active,
-          created_at,
-          last_seen_at,
-          updated_at
-        )
-        VALUES ($1, $2, $3, $4, $5, true, now(), now(), now())
-        ON CONFLICT (user_id, device_id)
-        DO UPDATE SET
-          push_token = EXCLUDED.push_token,
-          provider = EXCLUDED.provider,
-          platform = EXCLUDED.platform,
-          is_active = true,
-          last_seen_at = now(),
-          updated_at = now()
-      `,
-      [
+    await this.prisma.userPushToken.upsert({
+      create: {
+        deviceId: payload.deviceId,
+        isActive: true,
+        lastSeenAt: now,
+        platform: payload.platform,
+        provider: payload.provider,
+        pushToken,
+        updatedAt: now,
         userId,
-        payload.deviceId,
-        payload.pushToken.trim(),
-        payload.provider,
-        payload.platform,
-      ],
-    );
+      },
+      update: {
+        isActive: true,
+        lastSeenAt: now,
+        platform: payload.platform,
+        provider: payload.provider,
+        pushToken,
+        updatedAt: now,
+      },
+      where: {
+        userId_deviceId: { deviceId: payload.deviceId, userId },
+      },
+    });
     this.logger.log(
       `registerPushToken upsert done userId=${userId} deviceId=${payload.deviceId}`,
     );
   }
 
   async deactivatePushToken(userId: string, deviceId: string): Promise<void> {
-    await this.databaseService.query(
-      `
-        UPDATE user_push_tokens
-        SET is_active = false, updated_at = now()
-        WHERE user_id = $1
-          AND device_id = $2
-      `,
-      [userId, deviceId],
-    );
+    await this.prisma.userPushToken.updateMany({
+      data: { isActive: false, updatedAt: new Date() },
+      where: { deviceId, userId },
+    });
   }
 
   async clearTodayLearningReminderDispatch(
     userId: string,
   ): Promise<{ deletedCount: number }> {
-    const profile = await this.databaseService.query<{ timezone: string }>(
-      `
-        SELECT timezone
-        FROM user_streak_profiles
-        WHERE user_id = $1
-        LIMIT 1
-      `,
-      [userId],
-    );
-    const timezone = profile.rows[0]?.timezone ?? 'UTC';
+    const profile = await this.prisma.userStreakProfile.findUnique({
+      select: { timezone: true },
+      where: { userId },
+    });
+    const timezone = profile?.timezone ?? 'UTC';
     const today = this.getLocalDateKey(new Date(), timezone);
-    const result = await this.databaseService.query(
-      `
-        DELETE FROM user_learning_reminder_dispatches
-        WHERE user_id = $1
-          AND reminder_date = $2::date
-      `,
-      [userId, today],
-    );
+    const result = await this.prisma.userLearningReminderDispatch.deleteMany({
+      where: { reminderDate: dateOnlyToDate(today), userId },
+    });
 
     return {
-      deletedCount: result.rowCount ?? 0,
+      deletedCount: result.count,
     };
   }
 
@@ -233,19 +202,9 @@ export class NotificationsService implements OnModuleInit {
     payload: SendTestPushDto,
   ): Promise<SendTestPushResult> {
     this.logger.log(`sendTestPush start userId=${userId}`);
-    const tokens = await this.databaseService.query<PushTokenRow>(
-      `
-        SELECT device_id, push_token
-        FROM user_push_tokens
-        WHERE user_id = $1
-          AND provider = 'fcm'
-          AND push_token IS NOT NULL
-          AND is_active = true
-      `,
-      [userId],
-    );
+    const tokens = await this.getActivePushTokens(userId);
 
-    if (tokens.rows.length === 0) {
+    if (tokens.length === 0) {
       this.logger.warn(`sendTestPush no active tokens userId=${userId}`);
       return {
         failedCount: 0,
@@ -263,7 +222,7 @@ export class NotificationsService implements OnModuleInit {
     const failureReasons = new Set<string>();
     const sentTokenSet = new Set<string>();
 
-    for (const tokenRow of tokens.rows) {
+    for (const tokenRow of tokens) {
       if (sentTokenSet.has(tokenRow.push_token)) {
         continue;
       }
@@ -288,14 +247,7 @@ export class NotificationsService implements OnModuleInit {
           continue;
         }
 
-        await this.databaseService.query(
-          `
-            UPDATE user_push_tokens
-            SET is_active = false, updated_at = now()
-            WHERE user_id = $1 AND device_id = $2
-          `,
-          [userId, tokenRow.device_id],
-        );
+        await this.deactivatePushToken(userId, tokenRow.device_id);
         continue;
       }
 
@@ -315,18 +267,25 @@ export class NotificationsService implements OnModuleInit {
   }
 
   async dispatchLearningReminders(): Promise<LearningReminderDispatchResult> {
-    const eligibleUsersResult =
-      await this.databaseService.query<EligibleUserRow>(
-        `
-        SELECT
-          np.user_id,
-          np.learning_reminder_time,
-          sp.timezone
-        FROM user_notification_preferences np
-        JOIN user_streak_profiles sp ON sp.user_id = np.user_id
-        WHERE np.learning_reminders_enabled = true
-      `,
-      );
+    const eligiblePreferences =
+      await this.prisma.userNotificationPreference.findMany({
+        include: {
+          user: { select: { streakProfile: { select: { timezone: true } } } },
+        },
+        where: { learningRemindersEnabled: true },
+      });
+    const eligibleUsers: EligibleUserRow[] = eligiblePreferences.flatMap(
+      (preference) =>
+        preference.user.streakProfile
+          ? [
+              {
+                learning_reminder_time: preference.learningReminderTime,
+                timezone: preference.user.streakProfile.timezone,
+                user_id: preference.userId,
+              },
+            ]
+          : [],
+    );
 
     const now = new Date();
     const result: LearningReminderDispatchResult = {
@@ -339,7 +298,7 @@ export class NotificationsService implements OnModuleInit {
       skippedSendFailedCount: 0,
     };
 
-    for (const user of eligibleUsersResult.rows) {
+    for (const user of eligibleUsers) {
       result.checkedCount += 1;
 
       const userDate = this.getLocalDateKey(now, user.timezone);
@@ -350,56 +309,38 @@ export class NotificationsService implements OnModuleInit {
         continue;
       }
 
-      const alreadySent = await this.databaseService.query<{
-        reminder_date: string;
-      }>(
-        `
-          SELECT reminder_date::text
-          FROM user_learning_reminder_dispatches
-          WHERE user_id = $1
-            AND reminder_date = $2::date
-          LIMIT 1
-        `,
-        [user.user_id, userDate],
-      );
+      const reminderDate = dateOnlyToDate(userDate);
+      const alreadySent =
+        await this.prisma.userLearningReminderDispatch.findUnique({
+          where: {
+            userId_reminderDate: {
+              reminderDate,
+              userId: user.user_id,
+            },
+          },
+        });
 
-      if (alreadySent.rows[0]) {
+      if (alreadySent) {
         result.skippedAlreadySentCount += 1;
         continue;
       }
 
-      const completedToday = await this.databaseService.query<{
-        status: string;
-      }>(
-        `
-          SELECT status
-          FROM user_streak_history
-          WHERE user_id = $1
-            AND activity_date = $2::date
-            AND status = 'completed'
-          LIMIT 1
-        `,
-        [user.user_id, userDate],
-      );
+      const completedToday = await this.prisma.userStreakHistory.findFirst({
+        where: {
+          activityDate: reminderDate,
+          status: 'completed',
+          userId: user.user_id,
+        },
+      });
 
-      if (completedToday.rows[0]) {
+      if (completedToday) {
         result.skippedCompletedTodayCount += 1;
         continue;
       }
 
-      const tokens = await this.databaseService.query<PushTokenRow>(
-        `
-          SELECT device_id, push_token
-          FROM user_push_tokens
-          WHERE user_id = $1
-            AND provider = 'fcm'
-            AND push_token IS NOT NULL
-            AND is_active = true
-        `,
-        [user.user_id],
-      );
+      const tokens = await this.getActivePushTokens(user.user_id);
 
-      if (tokens.rows.length === 0) {
+      if (tokens.length === 0) {
         result.skippedNoTokensCount += 1;
         continue;
       }
@@ -408,7 +349,7 @@ export class NotificationsService implements OnModuleInit {
       const sentTokenSet = new Set<string>();
       let userSentCount = 0;
 
-      for (const tokenRow of tokens.rows) {
+      for (const tokenRow of tokens) {
         if (sentTokenSet.has(tokenRow.push_token)) {
           continue;
         }
@@ -426,14 +367,7 @@ export class NotificationsService implements OnModuleInit {
         }
 
         if (sendResult.shouldDeactivateToken) {
-          await this.databaseService.query(
-            `
-              UPDATE user_push_tokens
-              SET is_active = false, updated_at = now()
-              WHERE user_id = $1 AND device_id = $2
-            `,
-            [user.user_id, tokenRow.device_id],
-          );
+          await this.deactivatePushToken(user.user_id, tokenRow.device_id);
         }
       }
 
@@ -442,27 +376,44 @@ export class NotificationsService implements OnModuleInit {
         continue;
       }
 
-      await this.databaseService.query(
-        `
-          INSERT INTO user_learning_reminder_dispatches (user_id, reminder_date, sent_at)
-          VALUES ($1, $2::date, now())
-          ON CONFLICT (user_id, reminder_date) DO NOTHING
-        `,
-        [user.user_id, userDate],
-      );
+      await this.prisma.userLearningReminderDispatch.upsert({
+        create: { reminderDate, userId: user.user_id },
+        update: {},
+        where: {
+          userId_reminderDate: {
+            reminderDate,
+            userId: user.user_id,
+          },
+        },
+      });
     }
 
     return result;
   }
 
   private async ensurePreferencesRow(userId: string): Promise<void> {
-    await this.databaseService.query(
-      `
-        INSERT INTO user_notification_preferences (user_id)
-        VALUES ($1)
-        ON CONFLICT (user_id) DO NOTHING
-      `,
-      [userId],
+    await this.prisma.userNotificationPreference.upsert({
+      create: { userId },
+      update: {},
+      where: { userId },
+    });
+  }
+
+  private async getActivePushTokens(userId: string): Promise<PushTokenRow[]> {
+    const rows = await this.prisma.userPushToken.findMany({
+      select: { deviceId: true, pushToken: true },
+      where: {
+        isActive: true,
+        provider: 'fcm',
+        pushToken: { not: null },
+        userId,
+      },
+    });
+
+    return rows.flatMap((row) =>
+      row.pushToken
+        ? [{ device_id: row.deviceId, push_token: row.pushToken }]
+        : [],
     );
   }
 

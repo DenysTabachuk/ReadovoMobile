@@ -9,7 +9,9 @@ import { createHash } from 'node:crypto';
 import { createRequire } from 'node:module';
 import Groq from 'groq-sdk';
 
-import { DatabaseService } from '../database/database.service';
+import { toPrismaJson } from '../common/database/prisma-json';
+import { Prisma } from '../generated/prisma/client';
+import { PrismaService } from '../prisma/prisma.service';
 import {
   extractPlainTextFromBlocks,
   parseHtmlToBlocks,
@@ -443,11 +445,11 @@ type SimplificationModelResponse = {
 };
 
 type UserArticleRow = {
-  article_id: number;
+  articleId: number;
   extract: string;
-  opened_at?: Date | string;
-  saved_at?: Date | string;
-  thumbnail_url?: string;
+  openedAt?: Date | string;
+  savedAt?: Date | string;
+  thumbnailUrl?: string | null;
   title: string;
   url: string;
 };
@@ -459,7 +461,7 @@ export class ArticlesService {
   private groqClient: Groq | null = null;
   private mathJaxPromise: Promise<MathJaxModule> | null = null;
 
-  constructor(private readonly databaseService: DatabaseService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async getArticles(
     articleParams: GetWikipediaArticlesParams = {},
@@ -657,40 +659,41 @@ export class ArticlesService {
     }
 
     const articleIds = articles.map((article) => article.id);
-    const result = await this.databaseService.query<{
-      article_id: number;
-      level: string;
-      target_length: string;
-    }>(
-      `
-        SELECT DISTINCT article_id, level, target_length
-        FROM article_simplifications
-        WHERE article_id = ANY($1::int[])
-          AND adapted_blocks IS NOT NULL
-        ORDER BY level
-      `,
-      [articleIds],
-    );
+    const rows = await this.prisma.articleSimplification.findMany({
+      distinct: ['articleId', 'level', 'targetLength'],
+      orderBy: { level: 'asc' },
+      select: {
+        adaptedBlocks: true,
+        articleId: true,
+        level: true,
+        targetLength: true,
+      },
+      where: { articleId: { in: articleIds } },
+    });
     const adaptationsByArticleId = new Map<
       number,
       WikipediaArticle['availableAdaptations']
     >();
 
-    for (const row of result.rows) {
+    for (const row of rows) {
+      if (row.articleId === null || row.adaptedBlocks === null) {
+        continue;
+      }
+
       if (!this.isSelectableSummaryLevel(row.level)) {
         continue;
       }
 
       const currentAdaptations =
-        adaptationsByArticleId.get(row.article_id) ?? [];
+        adaptationsByArticleId.get(row.articleId) ?? [];
 
       currentAdaptations.push({
         level: row.level,
-        transformationType: this.isArticleTransformationType(row.target_length)
-          ? row.target_length
+        transformationType: this.isArticleTransformationType(row.targetLength)
+          ? row.targetLength
           : 'adaptation',
       });
-      adaptationsByArticleId.set(row.article_id, currentAdaptations);
+      adaptationsByArticleId.set(row.articleId, currentAdaptations);
     }
 
     return articles.map((article) => {
@@ -705,21 +708,11 @@ export class ArticlesService {
   async getSavedArticles(userId: string): Promise<UserSavedArticle[]> {
     await this.ensureUserExists(userId);
 
-    const result = await this.databaseService.query<UserArticleRow>(
-      `
-        SELECT article_id,
-               title,
-               extract,
-               url,
-               thumbnail_url,
-               saved_at
-        FROM user_saved_articles
-        WHERE user_id = $1
-        ORDER BY saved_at DESC
-      `,
-      [userId],
-    );
-    const articles = result.rows.map((row) => this.mapSavedArticleRow(row));
+    const rows = await this.prisma.userSavedArticle.findMany({
+      orderBy: { savedAt: 'desc' },
+      where: { userId },
+    });
+    const articles = rows.map((row) => this.mapSavedArticleRow(row));
 
     return this.attachAvailableAdaptations(articles);
   }
@@ -730,34 +723,18 @@ export class ArticlesService {
   ): Promise<UserSavedArticle[]> {
     await this.ensureUserExists(userId);
 
-    await this.databaseService.query(
-      `
-        INSERT INTO user_saved_articles (
-          user_id,
-          article_id,
-          title,
-          extract,
-          url,
-          thumbnail_url,
-          saved_at
-        )
-        VALUES ($1, $2, $3, $4, $5, $6, now())
-        ON CONFLICT (user_id, article_id) DO UPDATE
-        SET title = EXCLUDED.title,
-            extract = EXCLUDED.extract,
-            url = EXCLUDED.url,
-            thumbnail_url = EXCLUDED.thumbnail_url,
-            saved_at = EXCLUDED.saved_at
-      `,
-      [
-        userId,
-        article.id,
-        article.title,
-        article.extract,
-        article.url,
-        article.thumbnailUrl ?? null,
-      ],
-    );
+    const data = {
+      extract: article.extract,
+      savedAt: new Date(),
+      thumbnailUrl: article.thumbnailUrl ?? null,
+      title: article.title,
+      url: article.url,
+    };
+    await this.prisma.userSavedArticle.upsert({
+      create: { ...data, articleId: article.id, userId },
+      update: data,
+      where: { userId_articleId: { articleId: article.id, userId } },
+    });
 
     return this.getSavedArticles(userId);
   }
@@ -768,14 +745,9 @@ export class ArticlesService {
   ): Promise<UserSavedArticle[]> {
     await this.ensureUserExists(userId);
 
-    await this.databaseService.query(
-      `
-        DELETE FROM user_saved_articles
-        WHERE user_id = $1
-          AND article_id = $2
-      `,
-      [userId, articleId],
-    );
+    await this.prisma.userSavedArticle.deleteMany({
+      where: { articleId, userId },
+    });
 
     return this.getSavedArticles(userId);
   }
@@ -783,22 +755,12 @@ export class ArticlesService {
   async getRecentArticles(userId: string): Promise<UserRecentArticle[]> {
     await this.ensureUserExists(userId);
 
-    const result = await this.databaseService.query<UserArticleRow>(
-      `
-        SELECT article_id,
-               title,
-               extract,
-               url,
-               thumbnail_url,
-               opened_at
-        FROM user_recent_articles
-        WHERE user_id = $1
-        ORDER BY opened_at DESC
-        LIMIT 50
-      `,
-      [userId],
-    );
-    const articles = result.rows.map((row) => this.mapRecentArticleRow(row));
+    const rows = await this.prisma.userRecentArticle.findMany({
+      orderBy: { openedAt: 'desc' },
+      take: 50,
+      where: { userId },
+    });
+    const articles = rows.map((row) => this.mapRecentArticleRow(row));
 
     return this.attachAvailableAdaptations(articles);
   }
@@ -809,49 +771,31 @@ export class ArticlesService {
   ): Promise<UserRecentArticle[]> {
     await this.ensureUserExists(userId);
 
-    await this.databaseService.query(
-      `
-        INSERT INTO user_recent_articles (
-          user_id,
-          article_id,
-          title,
-          extract,
-          url,
-          thumbnail_url,
-          opened_at
-        )
-        VALUES ($1, $2, $3, $4, $5, $6, now())
-        ON CONFLICT (user_id, article_id) DO UPDATE
-        SET title = EXCLUDED.title,
-            extract = EXCLUDED.extract,
-            url = EXCLUDED.url,
-            thumbnail_url = EXCLUDED.thumbnail_url,
-            opened_at = EXCLUDED.opened_at
-      `,
-      [
-        userId,
-        article.id,
-        article.title,
-        article.extract,
-        article.url,
-        article.thumbnailUrl ?? null,
-      ],
-    );
+    const data = {
+      extract: article.extract,
+      openedAt: new Date(),
+      thumbnailUrl: article.thumbnailUrl ?? null,
+      title: article.title,
+      url: article.url,
+    };
+    await this.prisma.userRecentArticle.upsert({
+      create: { ...data, articleId: article.id, userId },
+      update: data,
+      where: { userId_articleId: { articleId: article.id, userId } },
+    });
 
-    await this.databaseService.query(
-      `
-        DELETE FROM user_recent_articles
-        WHERE user_id = $1
-          AND article_id NOT IN (
-            SELECT article_id
-            FROM user_recent_articles
-            WHERE user_id = $1
-            ORDER BY opened_at DESC
-            LIMIT 50
-          )
-      `,
-      [userId],
-    );
+    const retained = await this.prisma.userRecentArticle.findMany({
+      orderBy: { openedAt: 'desc' },
+      select: { articleId: true },
+      take: 50,
+      where: { userId },
+    });
+    await this.prisma.userRecentArticle.deleteMany({
+      where: {
+        articleId: { notIn: retained.map((row) => row.articleId) },
+        userId,
+      },
+    });
 
     return this.getRecentArticles(userId);
   }
@@ -866,45 +810,44 @@ export class ArticlesService {
 
     const requestedTransformationType = transformationType ?? 'adaptation';
 
-    const result = await this.databaseService.query<{
-      article_id: number;
-      level: string;
-      target_length: string;
-    }>(
-      `
-        SELECT DISTINCT article_id, level, target_length
-        FROM article_simplifications
-        WHERE article_id = ANY($1::int[])
-          AND adapted_blocks IS NOT NULL
-          ${
-            requestedTransformationType !== 'all'
-              ? 'AND target_length = $2'
-              : ''
-          }
-        ORDER BY article_id, level
-      `,
-      requestedTransformationType !== 'all'
-        ? [Array.from(new Set(articleIds)), requestedTransformationType]
-        : [Array.from(new Set(articleIds))],
-    );
+    const rows = await this.prisma.articleSimplification.findMany({
+      distinct: ['articleId', 'level', 'targetLength'],
+      orderBy: [{ articleId: 'asc' }, { level: 'asc' }],
+      select: {
+        adaptedBlocks: true,
+        articleId: true,
+        level: true,
+        targetLength: true,
+      },
+      where: {
+        articleId: { in: Array.from(new Set(articleIds)) },
+        ...(requestedTransformationType !== 'all'
+          ? { targetLength: requestedTransformationType }
+          : {}),
+      },
+    });
     const adaptationsByArticleId: ArticleAdaptationsByArticleId = {};
 
-    for (const row of result.rows) {
+    for (const row of rows) {
+      if (row.articleId === null || row.adaptedBlocks === null) {
+        continue;
+      }
+
       if (!this.isSelectableSummaryLevel(row.level)) {
         continue;
       }
 
-      if (!this.isArticleTransformationType(row.target_length)) {
+      if (!this.isArticleTransformationType(row.targetLength)) {
         continue;
       }
 
-      const articleId = String(row.article_id);
+      const articleId = String(row.articleId);
 
       adaptationsByArticleId[articleId] = [
         ...(adaptationsByArticleId[articleId] ?? []),
         {
           level: row.level,
-          transformationType: row.target_length,
+          transformationType: row.targetLength,
         },
       ];
     }
@@ -913,17 +856,12 @@ export class ArticlesService {
   }
 
   private async ensureUserExists(userId: string): Promise<void> {
-    const result = await this.databaseService.query(
-      `
-        SELECT id
-        FROM users
-        WHERE id = $1
-        LIMIT 1
-      `,
-      [userId],
-    );
+    const user = await this.prisma.user.findUnique({
+      select: { id: true },
+      where: { id: userId },
+    });
 
-    if (!result.rows[0]) {
+    if (!user) {
       throw new NotFoundException('User not found.');
     }
   }
@@ -931,9 +869,9 @@ export class ArticlesService {
   private mapSavedArticleRow(row: UserArticleRow): UserSavedArticle {
     return {
       extract: row.extract,
-      id: row.article_id,
-      savedAt: this.serializeTimestamp(row.saved_at),
-      thumbnailUrl: row.thumbnail_url ?? undefined,
+      id: row.articleId,
+      savedAt: this.serializeTimestamp(row.savedAt),
+      thumbnailUrl: row.thumbnailUrl ?? undefined,
       title: row.title,
       url: row.url,
     };
@@ -942,9 +880,9 @@ export class ArticlesService {
   private mapRecentArticleRow(row: UserArticleRow): UserRecentArticle {
     return {
       extract: row.extract,
-      id: row.article_id,
-      openedAt: this.serializeTimestamp(row.opened_at),
-      thumbnailUrl: row.thumbnail_url ?? undefined,
+      id: row.articleId,
+      openedAt: this.serializeTimestamp(row.openedAt),
+      thumbnailUrl: row.thumbnailUrl ?? undefined,
       title: row.title,
       url: row.url,
     };
@@ -4066,27 +4004,28 @@ ${params.text}`;
   private async getCachedSimplification(
     cacheKey: string,
   ): Promise<SimplifyArticleResponse | null> {
-    const result = await this.databaseService.query<SimplifiedArticleCacheRow>(
-      `
-        SELECT
-          title,
-          level,
-          target_length,
-          original_length,
-          adapted_blocks,
-          adapted_text,
-          adapted_length,
-          questions
-        FROM article_simplifications
-        WHERE cache_key = $1
-      `,
-      [cacheKey],
-    );
-    const row = result.rows[0];
+    const cached = await this.prisma.articleSimplification.findUnique({
+      where: { cacheKey },
+    });
 
-    if (!row) {
+    if (!cached) {
       return null;
     }
+
+    const row: SimplifiedArticleCacheRow = {
+      adapted_blocks: cached.adaptedBlocks as
+        SimplifiedArticleCacheRow['adapted_blocks'] | undefined,
+      adapted_length: cached.adaptedLength,
+      adapted_text: cached.adaptedText ?? undefined,
+      article_id: cached.articleId ?? undefined,
+      level: cached.level,
+      original_length: cached.originalLength,
+      questions: cached.questions as
+        SimplifiedArticleCacheRow['questions'] | undefined,
+      source_hash: cached.sourceHash ?? undefined,
+      target_length: cached.targetLength,
+      title: cached.title,
+    };
 
     const adaptedBlocks = this.normalizeCachedAdaptedBlocks(row);
 
@@ -4136,54 +4075,27 @@ ${params.text}`;
       params.response.adaptedBlocks,
     );
 
-    await this.databaseService.query(
-      `
-        INSERT INTO article_simplifications (
-          cache_key,
-          article_id,
-          title,
-          level,
-          target_length,
-          target_percent,
-          source_hash,
-          original_length,
-          adapted_text,
-          adapted_blocks,
-          questions,
-          adapted_length
-        )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb, $11::jsonb, $12)
-        ON CONFLICT (cache_key) DO UPDATE
-        SET
-          title = EXCLUDED.title,
-          article_id = EXCLUDED.article_id,
-          level = EXCLUDED.level,
-          target_length = EXCLUDED.target_length,
-          target_percent = EXCLUDED.target_percent,
-          source_hash = EXCLUDED.source_hash,
-          original_length = EXCLUDED.original_length,
-          adapted_text = EXCLUDED.adapted_text,
-          adapted_blocks = EXCLUDED.adapted_blocks,
-          questions = EXCLUDED.questions,
-          adapted_length = EXCLUDED.adapted_length
-      `,
-      [
-        params.cacheKey,
-        params.articleId,
-        params.response.title,
-        params.response.level,
-        params.response.transformationType,
-        null,
-        params.sourceHash,
-        params.response.originalLength,
-        adaptedText,
-        JSON.stringify(params.response.adaptedBlocks),
-        params.response.questions
-          ? JSON.stringify(params.response.questions)
-          : null,
-        params.response.adaptedLength,
-      ],
-    );
+    const data = {
+      adaptedBlocks: toPrismaJson(params.response.adaptedBlocks),
+      adaptedLength: params.response.adaptedLength,
+      adaptedText,
+      articleId: params.articleId,
+      level: params.response.level,
+      originalLength: params.response.originalLength,
+      questions: params.response.questions
+        ? toPrismaJson(params.response.questions)
+        : Prisma.DbNull,
+      sourceHash: params.sourceHash,
+      targetLength: params.response.transformationType,
+      targetPercent: null,
+      title: params.response.title,
+    };
+
+    await this.prisma.articleSimplification.upsert({
+      create: { ...data, cacheKey: params.cacheKey },
+      update: data,
+      where: { cacheKey: params.cacheKey },
+    });
   }
 
   private isSimplificationLevel(

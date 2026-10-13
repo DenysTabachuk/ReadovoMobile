@@ -5,6 +5,7 @@ node_modules/
 dist/
 build/
 web-build/
+backend/src/generated/prisma/
 
 # Expo
 .expo/

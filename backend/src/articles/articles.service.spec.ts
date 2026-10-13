@@ -1,6 +1,6 @@
 import { BadGatewayException } from '@nestjs/common';
 
-import { DatabaseService } from '../database/database.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { ArticlesService } from './articles.service';
 
 const createChatCompletionMock = jest.fn();
@@ -37,14 +37,21 @@ describe('ArticlesService', () => {
   beforeEach(() => {
     fetchMock = jest.fn();
     queryMock = jest.fn();
-    queryMock.mockResolvedValue({ rows: [] });
+    queryMock.mockResolvedValue(null);
     global.fetch = fetchMock as typeof fetch;
     createChatCompletionMock.mockReset();
     process.env.GROQ_API_KEY = 'test-key';
 
     service = new ArticlesService({
-      query: queryMock,
-    } as unknown as DatabaseService);
+      articleSimplification: {
+        findMany: jest.fn().mockResolvedValue([]),
+        findUnique: queryMock,
+        upsert: queryMock,
+      },
+      user: { findUnique: jest.fn() },
+      userRecentArticle: {},
+      userSavedArticle: {},
+    } as unknown as PrismaService);
   });
 
   afterEach(() => {
@@ -330,16 +337,19 @@ describe('ArticlesService', () => {
 
   it('returns a cached simplified article without calling Groq', async () => {
     queryMock.mockResolvedValueOnce({
-      rows: [
-        {
-          adapted_length: 32,
-          adapted_text: 'Simple text about the Solar System.',
-          level: 'A2',
-          original_length: 120,
-          target_length: 'short',
-          title: 'Solar System',
-        },
-      ],
+      adaptedBlocks: null,
+      adaptedLength: 32,
+      adaptedText: 'Simple text about the Solar System.',
+      articleId: null,
+      cacheKey: 'cache-key',
+      createdAt: new Date(),
+      level: 'A2',
+      originalLength: 120,
+      questions: null,
+      sourceHash: null,
+      targetLength: 'short',
+      targetPercent: null,
+      title: 'Solar System',
     });
 
     const response = await service.simplifyArticle({
@@ -372,9 +382,7 @@ describe('ArticlesService', () => {
   });
 
   it('simplifies an article with Groq and stores the result', async () => {
-    queryMock
-      .mockResolvedValueOnce({ rows: [] })
-      .mockResolvedValueOnce({ rows: [] });
+    queryMock.mockResolvedValueOnce(null).mockResolvedValueOnce(null);
     createChatCompletionMock.mockResolvedValue({
       choices: [
         {
@@ -432,9 +440,7 @@ describe('ArticlesService', () => {
   });
 
   it('keeps original length when target percent is 100', async () => {
-    queryMock
-      .mockResolvedValueOnce({ rows: [] })
-      .mockResolvedValueOnce({ rows: [] });
+    queryMock.mockResolvedValueOnce(null).mockResolvedValueOnce(null);
     createChatCompletionMock.mockResolvedValue({
       choices: [
         {
@@ -471,9 +477,7 @@ describe('ArticlesService', () => {
   });
 
   it('parses structured simplification response with blocks and questions', async () => {
-    queryMock
-      .mockResolvedValueOnce({ rows: [] })
-      .mockResolvedValueOnce({ rows: [] });
+    queryMock.mockResolvedValueOnce(null).mockResolvedValueOnce(null);
     createChatCompletionMock.mockResolvedValue({
       choices: [
         {
@@ -531,9 +535,7 @@ describe('ArticlesService', () => {
   });
 
   it('falls back to plain text paragraphs when adaptation response is not valid JSON', async () => {
-    queryMock
-      .mockResolvedValueOnce({ rows: [] })
-      .mockResolvedValueOnce({ rows: [] });
+    queryMock.mockResolvedValueOnce(null).mockResolvedValueOnce(null);
     createChatCompletionMock.mockResolvedValue({
       choices: [
         {
@@ -576,9 +578,7 @@ describe('ArticlesService', () => {
   });
 
   it('falls back when adaptedBlocks is an array of strings', async () => {
-    queryMock
-      .mockResolvedValueOnce({ rows: [] })
-      .mockResolvedValueOnce({ rows: [] });
+    queryMock.mockResolvedValueOnce(null).mockResolvedValueOnce(null);
     createChatCompletionMock.mockResolvedValue({
       choices: [
         {
@@ -624,9 +624,7 @@ describe('ArticlesService', () => {
   });
 
   it('falls back when adaptation text is nested in a loose JSON field', async () => {
-    queryMock
-      .mockResolvedValueOnce({ rows: [] })
-      .mockResolvedValueOnce({ rows: [] });
+    queryMock.mockResolvedValueOnce(null).mockResolvedValueOnce(null);
     createChatCompletionMock.mockResolvedValue({
       choices: [
         {
@@ -674,9 +672,7 @@ describe('ArticlesService', () => {
   });
 
   it('normalizes table rows returned as row objects', async () => {
-    queryMock
-      .mockResolvedValueOnce({ rows: [] })
-      .mockResolvedValueOnce({ rows: [] });
+    queryMock.mockResolvedValueOnce(null).mockResolvedValueOnce(null);
     createChatCompletionMock.mockResolvedValue({
       choices: [
         {
