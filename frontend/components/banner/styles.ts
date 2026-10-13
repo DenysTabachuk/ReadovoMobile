@@ -34,6 +34,11 @@ export const styles = StyleSheet.create({
   error: {
     backgroundColor: '#c04135',
   },
+  info: {
+    backgroundColor: '#0a7ea4',
+    borderColor: '#8bd3e6',
+    borderLeftColor: '#67c6e3',
+  },
   reward: {
     backgroundColor: '#d9902f',
     borderColor: '#ffe1a3',

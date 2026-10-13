@@ -111,10 +111,15 @@ export default function ArticleQuizScreen() {
         translation: question.translation,
         word: question.term,
       }),
-    onError: () => {
+    onError: (mutationError) => {
+      const errorKey =
+        mutationError instanceof Error
+          ? mutationError.message
+          : 'dictionary.saveError';
+
       showBanner({
-        title: t('dictionary.saveError'),
-        variant: 'error',
+        title: t(errorKey, { defaultValue: t('dictionary.saveError') }),
+        variant: errorKey === 'dictionary.alreadyExists' ? 'info' : 'error',
       });
     },
     onSuccess: (_word, question) => {

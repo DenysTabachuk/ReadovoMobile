@@ -1,7 +1,7 @@
 {
   "name": "readovo",
   "main": "expo-router/entry",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "scripts": {
     "start": "node ./scripts/start-dev.js --api=local",
     "start:local": "node ./scripts/start-dev.js --api=local",

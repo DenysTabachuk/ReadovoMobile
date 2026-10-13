@@ -12,6 +12,7 @@ database for local development.
 
 Expo Go is not sufficient for testing Google Sign-In or Firebase Cloud
 Messaging. Use a native development build for those features.
+- A physical Android device or Android emulator
 
 Commands below assume you are starting from the repository root.
 
@@ -27,8 +28,8 @@ cd ../frontend
 npm install
 ```
 
-The root package currently only contains helper scripts, but you can also install
-it if needed:
+The root package contains helper scripts. Install it as well if you want to use
+the root-level commands:
 
 ```bash
 cd ..
@@ -61,7 +62,8 @@ User: readovo
 Password: readovo_password
 ```
 
-The backend creates the `users` table automatically on startup.
+The backend initializes the required local tables on startup, including auth,
+dictionary, articles, achievements, mascot, streak, and notification tables.
 
 ## Backend Setup
 
@@ -70,6 +72,8 @@ Create `backend/.env` from `backend/.env.example`:
 ```env
 DATABASE_URL=postgres://readovo:readovo_password@localhost:5432/readovo
 PORT=3000
+GOOGLE_TRANSLATE_API_KEY=
+GROQ_API_KEY=
 SMTP_HOST=
 SMTP_PORT=587
 SMTP_SECURE=false
@@ -78,24 +82,24 @@ SMTP_PASSWORD=
 EMAIL_FROM=
 JWT_SECRET=change-this-to-a-long-random-secret
 GOOGLE_WEB_CLIENT_ID=
-FIREBASE_SERVICE_ACCOUNT_PATH=./secrets/firebase-service-account.json
-GROQ_API_KEY=
 GROQ_MODEL=openai/gpt-oss-120b
+FIREBASE_PROJECT_ID=
+FIREBASE_CLIENT_EMAIL=
+FIREBASE_PRIVATE_KEY=
+FIREBASE_SERVICE_ACCOUNT_PATH=./secrets/firebase-service-account.json
+# FIREBASE_SERVICE_ACCOUNT_JSON=
 ```
 
-`SMTP_*` and `EMAIL_FROM` are used to send email verification codes. If they are
-empty in local development, the backend logs the verification code.
+`SMTP_*` and `EMAIL_FROM` are used to send email verification and password reset
+codes. If SMTP is empty in local development, the backend logs the verification
+code.
 
-For Gmail, use an app password instead of your normal account password:
+`GROQ_API_KEY` is used for AI-generated article and dictionary quiz content.
+`GOOGLE_TRANSLATE_API_KEY` is used for translations.
 
-```env
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_SECURE=false
-SMTP_USER=your.email@gmail.com
-SMTP_PASSWORD=your_google_app_password
-EMAIL_FROM=Readovo <your.email@gmail.com>
-```
+Firebase credentials are used for push notifications. For local development,
+prefer `FIREBASE_SERVICE_ACCOUNT_PATH` and keep the service account file out of
+git.
 
 If SMTP is not configured, the backend does not send an email. It prints the
 verification code in the backend terminal instead.
@@ -118,46 +122,28 @@ Wi-Fi can reach it through your computer's local IP address.
 
 ## Frontend Setup
 
-Create `frontend/.env`:
+Create `frontend/.env` from `frontend/.env.example`:
 
 ```env
-EXPO_PUBLIC_API_URL=http://localhost:3000
-EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=
+EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=your-google-web-client-id
+EXPO_PUBLIC_RENDER_API_URL=https://readovomobile.onrender.com
 ```
 
-For Expo Go on a physical phone, use your computer's Wi-Fi IPv4 address:
+The frontend scripts set `EXPO_PUBLIC_API_URL`,
+`REACT_NATIVE_PACKAGER_HOSTNAME`, and `EXPO_PUBLIC_REACTOTRON_HOST`
+automatically for local runs. You usually do not need to hard-code your local IP
+in `.env`.
 
-```env
-EXPO_PUBLIC_API_URL=http://192.168.0.102:3000
-```
-
-To find the current IP on Windows:
+Start Expo with the local backend:
 
 ```bash
-ipconfig
+npm run frontend:start:local
 ```
 
-Look for the Wi-Fi adapter's `IPv4 Address`. The phone and computer must be on
-the same Wi-Fi network. If the IP changes, update `EXPO_PUBLIC_API_URL` and
-restart Expo.
-
-For Android emulator:
-
-```env
-EXPO_PUBLIC_API_URL=http://10.0.2.2:3000
-```
-
-For web or iOS simulator:
-
-```env
-EXPO_PUBLIC_API_URL=http://localhost:3000
-```
-
-Start Expo:
+Start Expo against the Render backend:
 
 ```bash
-cd frontend
-npm start -- --clear
+npm run frontend:start:render
 ```
 
 This starts Metro and is useful for Expo Go. For the native Android application,
@@ -219,6 +205,26 @@ npm run android:local
 
 The first build can take several minutes while Gradle downloads dependencies.
 The emulator also needs enough free space to stage and unpack the APK.
+
+Additional root-level Android commands are available for each backend:
+
+```bash
+# Start Expo and open Android with the local backend
+npm run frontend:start:android:local
+
+# Start Expo and open Android against the Render backend
+npm run frontend:start:android:render
+
+# Build and install the native app with the local backend
+npm run android:local
+
+# Build and install the native app against the Render backend
+npm run android:render
+```
+
+The scripts default to the first non-virtual local IPv4 address, preferring a
+`192.168.*` address. Set `READOVO_DEV_HOST` to override the detected host, or
+set `EXPO_PUBLIC_API_URL` to override the complete API URL.
 
 ## Firebase Push Notification Setup
 
@@ -295,22 +301,21 @@ npm run lint
 
 ## Common Issues
 
-### `Network Request Failed` in Expo Go
+### `Network Request Failed` on a physical device
 
-Do not use `localhost` from a physical phone. Use the computer's Wi-Fi IP in
-`frontend/.env`, for example:
+A physical phone cannot reach the development computer through `localhost`.
+The local scripts normally detect the computer's Wi-Fi address automatically.
+If detection selects the wrong interface, set `READOVO_DEV_HOST` to the
+computer's Wi-Fi IPv4 address and restart Expo.
 
-```env
-EXPO_PUBLIC_API_URL=http://192.168.0.102:3000
-```
+Also confirm that the phone and computer are on the same Wi-Fi network and that
+Windows Firewall allows Node.js and port `3000`.
 
-Then restart Expo:
+### Android installation reports insufficient storage
 
-```bash
-npm start -- --clear
-```
-
-Also check that Windows Firewall allows Node.js or port `3000`.
+The emulator needs enough free space to stage and unpack the APK. Remove unused
+apps or wipe the emulator data from Android Studio's Device Manager, then retry
+the native build command.
 
 ### Docker cannot connect
 
@@ -320,12 +325,14 @@ Start Docker Desktop first, then run:
 npm run db:up
 ```
 
+If another PostgreSQL instance already uses port `5432`, stop it or change the
+published port and update `DATABASE_URL` accordingly.
+
 ### `npm.ps1 cannot be loaded` on Windows
 
-If PowerShell blocks `npm` because script execution is disabled, use `npm.cmd`
-for that command:
+If PowerShell blocks `npm` because script execution is disabled, use `npm.cmd`:
 
-```bash
+```powershell
 npm.cmd install
 npm.cmd run start:dev
 ```

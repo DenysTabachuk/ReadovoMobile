@@ -1,9 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
+import * as NavigationBar from 'expo-navigation-bar';
 import { Image } from 'expo-image';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, Modal, Pressable, View } from 'react-native';
+import { ActivityIndicator, Modal, Platform, Pressable, View } from 'react-native';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -12,6 +14,9 @@ import Animated, {
 
 import { ThemedText } from '@/components/themedText';
 import { ThemedView } from '@/components/themedView';
+import { Colors } from '@/constants/theme';
+import { Spacing } from '@/constants/spacing';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 
 import { styles } from './styles';
@@ -27,6 +32,7 @@ const MAX_ALT_FALLBACK_LINES = 5;
 const MIN_VIEWER_SCALE = 1;
 const MAX_VIEWER_SCALE = 4;
 const DOUBLE_TAP_VIEWER_SCALE = 2;
+const ANDROID_NAVIGATION_BAR_FALLBACK_INSET = 56;
 
 export function ArticleImageBlock({
   alt,
@@ -34,6 +40,9 @@ export function ArticleImageBlock({
   src,
 }: ArticleImageBlockProps) {
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
+  const colorScheme = useColorScheme() ?? 'light';
+  const isDarkTheme = colorScheme === 'dark';
   const [hasLoadError, setHasLoadError] = useState(false);
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerLoadError, setViewerLoadError] = useState(false);
@@ -62,6 +71,16 @@ export function ArticleImageBlock({
 
     return normalizedCaption ?? normalizedAlt ?? null;
   }, [alt, caption]);
+  const viewerBottomInset =
+    Platform.OS === 'android'
+      ? Math.max(insets.bottom, ANDROID_NAVIGATION_BAR_FALLBACK_INSET)
+      : insets.bottom;
+  const viewerBackgroundColor = Colors[colorScheme].background;
+  const viewerForegroundColor = isDarkTheme ? '#ffffff' : '#11181C';
+  const viewerCloseButtonColor = isDarkTheme
+    ? 'rgba(0, 0, 0, 0.48)'
+    : 'rgba(255, 255, 255, 0.82)';
+  const appBackgroundColor = Colors[colorScheme].background;
   const resetViewerTransform = useCallback(() => {
     viewerScale.value = MIN_VIEWER_SCALE;
     savedViewerScale.value = MIN_VIEWER_SCALE;
@@ -177,6 +196,20 @@ export function ArticleImageBlock({
     resetViewerTransform();
   }, [resetViewerTransform, src]);
 
+  useEffect(() => {
+    if (Platform.OS !== 'android' || !viewerOpen) {
+      return;
+    }
+
+    void NavigationBar.setBackgroundColorAsync(viewerBackgroundColor);
+    void NavigationBar.setButtonStyleAsync(isDarkTheme ? 'light' : 'dark');
+
+    return () => {
+      void NavigationBar.setBackgroundColorAsync(appBackgroundColor);
+      void NavigationBar.setButtonStyleAsync(isDarkTheme ? 'light' : 'dark');
+    };
+  }, [appBackgroundColor, isDarkTheme, viewerBackgroundColor, viewerOpen]);
+
   const handleOpenViewer = useCallback(() => {
     setViewerLoadError(false);
     setViewerLoaded(false);
@@ -238,27 +271,33 @@ export function ArticleImageBlock({
       ) : null}
       <Modal
         animationType="fade"
+        navigationBarTranslucent={Platform.OS === 'android'}
         onRequestClose={handleCloseViewer}
         presentationStyle="overFullScreen"
+        statusBarTranslucent={Platform.OS === 'android'}
         transparent
         visible={viewerOpen}>
-        <GestureHandlerRootView style={styles.viewerRoot}>
-          <View style={styles.viewer}>
+        <GestureHandlerRootView
+          style={[styles.viewerRoot, { backgroundColor: viewerBackgroundColor }]}>
+          <View style={[styles.viewer, { backgroundColor: viewerBackgroundColor }]}>
             <Pressable
               hitSlop={12}
               onPress={handleCloseViewer}
-              style={styles.viewerCloseButton}>
-              <Ionicons color="#ffffff" name="close" size={28} />
+              style={[
+                styles.viewerCloseButton,
+                { backgroundColor: viewerCloseButtonColor },
+              ]}>
+              <Ionicons color={viewerForegroundColor} name="close" size={28} />
             </Pressable>
             {!viewerLoaded && !viewerLoadError ? (
               <View style={styles.viewerLoading}>
-                <ActivityIndicator color="#ffffff" size="large" />
+                <ActivityIndicator color={viewerForegroundColor} size="large" />
               </View>
             ) : null}
             {viewerLoadError ? (
               <ThemedText
-                darkColor="#ffffff"
-                lightColor="#ffffff"
+                darkColor={viewerForegroundColor}
+                lightColor={viewerForegroundColor}
                 style={styles.viewerFallbackTitle}
                 type="bodyStrong">
                 {t('article.imageUnavailable')}
@@ -278,10 +317,13 @@ export function ArticleImageBlock({
             )}
             {caption ? (
               <ThemedText
-                darkColor="#ffffff"
-                lightColor="#ffffff"
+                darkColor={viewerForegroundColor}
+                lightColor={viewerForegroundColor}
                 numberOfLines={3}
-                style={styles.viewerCaption}
+                style={[
+                  styles.viewerCaption,
+                  { bottom: Spacing.xLg + viewerBottomInset },
+                ]}
                 type="body">
                 {caption}
               </ThemedText>
