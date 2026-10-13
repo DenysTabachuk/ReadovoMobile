@@ -17,6 +17,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { styles } from './styles';
 
 type ActivityCalendarProps = {
+  isCtaLoading?: boolean;
   onPressCta?: () => void;
   onRequestFreezeDay?: (day: StreakCalendarDay) => void;
   serverNow: string;
@@ -137,6 +138,7 @@ function getCtaTextKey(streak: StreakState): string {
 }
 
 export function ActivityCalendar({
+  isCtaLoading = false,
   userId,
   serverNow,
   streak,
@@ -211,7 +213,10 @@ export function ActivityCalendar({
     setVisibleMonth((month) => month + 1);
   };
 
-  const isCtaInteractive = Boolean(onPressCta);
+  const canRestore =
+    streak.todayStatus === 'broken' &&
+    Boolean(streak.brokenStreakInfo?.canRestore);
+  const isCtaInteractive = canRestore && Boolean(onPressCta) && !isCtaLoading;
 
   return (
     <View style={[styles.card, isDark ? styles.cardDark : styles.cardLight]}>
@@ -336,22 +341,29 @@ export function ActivityCalendar({
       </View>
 
       <Pressable
+        accessibilityRole={canRestore ? 'button' : undefined}
         disabled={!isCtaInteractive}
         onPress={onPressCta}
-        style={[
+        style={({ pressed }) => [
           styles.ctaRow,
-          isDark ? styles.ctaRowDark : styles.ctaRowLight,
-          !isCtaInteractive ? styles.ctaRowDisabled : null,
+          canRestore
+            ? (isDark ? styles.ctaRowRestoreDark : styles.ctaRowRestoreLight)
+            : (isDark ? styles.ctaRowDark : styles.ctaRowLight),
+          !isCtaInteractive && canRestore ? styles.ctaRowDisabled : null,
+          pressed ? styles.ctaRowPressed : null,
         ]}>
         <Ionicons
-          color={isDark ? '#cbc7df' : '#5b5f76'}
-          name={isCtaInteractive ? 'arrow-forward-circle-outline' : 'information-circle-outline'}
-          size={16}
+          color={canRestore ? '#ffffff' : (isDark ? '#cbc7df' : '#5b5f76')}
+          name={canRestore ? 'refresh' : 'information-circle-outline'}
+          size={18}
         />
         <ThemedText
           type="bodyStrong"
-          style={[styles.ctaRowText, isDark ? styles.subtitleDark : styles.subtitleLight]}>
-          {t(getCtaTextKey(streak))}
+          style={[
+            styles.ctaRowText,
+            canRestore ? styles.ctaRowRestoreText : (isDark ? styles.subtitleDark : styles.subtitleLight),
+          ]}>
+          {isCtaLoading ? t('streak.restore.restoring') : t(getCtaTextKey(streak))}
         </ThemedText>
       </Pressable>
     </View>

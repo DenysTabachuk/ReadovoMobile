@@ -10,7 +10,7 @@ import { useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 
 import { isMockApiEnabled } from '@/api/auth/constants';
@@ -28,6 +28,7 @@ import { StreakAchievementCard } from '@/features/streak/components/streakAchiev
 import { StreakFreezeCard } from '@/features/streak/components/streakFreezeCard';
 import { StreakFreezeConfirmModal } from '@/features/streak/components/streakFreezeConfirmModal';
 import { StreakFreezePurchaseModal } from '@/features/streak/components/streakFreezePurchaseModal';
+import { StreakRestoreConfirmModal } from '@/features/streak/components/streakRestoreConfirmModal';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useAuth } from '@/providers/authProvider';
 import { useStreak } from '@/features/streak';
@@ -59,6 +60,7 @@ const fallbackStreak = {
 
 export default function ProfileScreen() {
   const { t } = useTranslation();
+  const queryClient = useQueryClient();
   const { showBanner } = useBanner();
   const router = useRouter();
   const { currentUser } = useAuth();
@@ -85,6 +87,7 @@ export default function ProfileScreen() {
   } = useStreak(currentUser?.id ?? undefined);
   const [freezeDate, setFreezeDate] = useState<string | null>(null);
   const [isPurchaseFreezeModalOpen, setIsPurchaseFreezeModalOpen] = useState(false);
+  const [isRestoreModalOpen, setIsRestoreModalOpen] = useState(false);
 
   const progress = achievementsQuery.data?.progress ?? defaultStats;
   const achievements = achievementsQuery.data?.achievements ?? [];
@@ -236,9 +239,10 @@ export default function ProfileScreen() {
           {!isStreakLoading && !isStreakError ? (
             <>
               <ActivityCalendar
+                isCtaLoading={restoreMutation.isPending}
                 onPressCta={() => {
                   if (streak.todayStatus === 'broken' && streak.brokenStreakInfo?.canRestore) {
-                    void restoreMutation.mutateAsync();
+                    setIsRestoreModalOpen(true);
                   }
                 }}
                 onRequestFreezeDay={(day) => {
@@ -247,6 +251,44 @@ export default function ProfileScreen() {
                 serverNow={streak.serverNow}
                 streak={streak}
                 userId={currentUser?.id ?? undefined}
+              />
+              <StreakRestoreConfirmModal
+                coinBalance={streak.coinBalance}
+                isRestoring={restoreMutation.isPending}
+                onClose={() => {
+                  setIsRestoreModalOpen(false);
+                }}
+                onConfirm={() => {
+                  void restoreMutation.mutateAsync()
+                    .then(() => {
+                      setIsRestoreModalOpen(false);
+                      if (currentUser?.id) {
+                        void queryClient.invalidateQueries({
+                          queryKey: ['streak-calendar-month', currentUser.id],
+                        });
+                      }
+                      showBanner({
+                        title: t('streak.restore.success'),
+                        variant: 'success',
+                      });
+                    })
+                    .catch((error) => {
+                      const messageKey =
+                        error instanceof Error
+                          ? error.message
+                          : 'streak.errors.restoreFailed';
+
+                      showBanner({
+                        title: t(messageKey, {
+                          defaultValue: t('streak.errors.restoreFailed'),
+                        }),
+                        variant: 'error',
+                      });
+                    });
+                }}
+                open={isRestoreModalOpen}
+                previousStreak={streak.brokenStreakInfo?.previousStreak ?? 0}
+                restorePrice={streak.brokenStreakInfo?.restorePrice ?? 100}
               />
               <StreakFreezeCard
                 coinBalance={streak.coinBalance}
