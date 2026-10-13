@@ -1,6 +1,18 @@
 import { BadGatewayException } from '@nestjs/common';
 
 import { PrismaService } from '../prisma/prisma.service';
+import { ArticleFormulaRenderer } from './discovery/article-formula-renderer';
+import { WikipediaArticlesService } from './discovery/wikipedia-articles.service';
+import { GroqTextClient } from './infrastructure/groq-text.client';
+import { ArticleLibraryService } from './library/article-library.service';
+import { ArticleQuizService } from './quiz/article-quiz.service';
+import { ArticleQuizResponseParser } from './quiz/article-quiz-response-parser';
+import { ArticleVocabularyQuizResponseParser } from './quiz/article-vocabulary-quiz-response-parser';
+import { ArticleAdaptationService } from './transformation/article-adaptation.service';
+import { ArticleAdaptationResponseParser } from './transformation/article-adaptation-response-parser';
+import { ArticleContentProcessor } from './transformation/article-content.processor';
+import { ArticlePromptFactory } from './transformation/article-prompt.factory';
+import { ArticleSimplificationCache } from './transformation/article-simplification-cache';
 import { ArticlesService } from './articles.service';
 
 const createChatCompletionMock = jest.fn();
@@ -31,6 +43,7 @@ jest.mock('groq-sdk', () => ({
 
 describe('ArticlesService', () => {
   let service: ArticlesService;
+  let formulaRenderer: ArticleFormulaRenderer;
   let fetchMock: jest.Mock;
   let queryMock: jest.Mock;
 
@@ -42,7 +55,7 @@ describe('ArticlesService', () => {
     createChatCompletionMock.mockReset();
     process.env.GROQ_API_KEY = 'test-key';
 
-    service = new ArticlesService({
+    const prisma = {
       articleSimplification: {
         findMany: jest.fn().mockResolvedValue([]),
         findUnique: queryMock,
@@ -51,7 +64,31 @@ describe('ArticlesService', () => {
       user: { findUnique: jest.fn() },
       userRecentArticle: {},
       userSavedArticle: {},
-    } as unknown as PrismaService);
+    } as unknown as PrismaService;
+    formulaRenderer = new ArticleFormulaRenderer();
+    const contentProcessor = new ArticleContentProcessor();
+    const quizResponseParser = new ArticleQuizResponseParser();
+    const groqTextClient = new GroqTextClient();
+    const promptFactory = new ArticlePromptFactory(contentProcessor);
+    const adaptationService = new ArticleAdaptationService(
+      new ArticleAdaptationResponseParser(quizResponseParser),
+      contentProcessor,
+      groqTextClient,
+      promptFactory,
+      quizResponseParser,
+      new ArticleSimplificationCache(prisma, contentProcessor),
+    );
+    service = new ArticlesService(
+      adaptationService,
+      new ArticleLibraryService(prisma),
+      new ArticleQuizService(
+        groqTextClient,
+        promptFactory,
+        quizResponseParser,
+        new ArticleVocabularyQuizResponseParser(quizResponseParser),
+      ),
+      new WikipediaArticlesService(formulaRenderer),
+    );
   });
 
   afterEach(() => {
@@ -216,34 +253,32 @@ describe('ArticlesService', () => {
   });
 
   it('renders display formulas into SVG blocks for article detail', async () => {
-    jest
-      .spyOn(service as never, 'renderFormulaBlocks' as never)
-      .mockResolvedValue([
-        {
-          children: [
-            { text: 'Before', type: 'word' },
-            { text: '.', type: 'text' },
-          ],
-          type: 'paragraph',
-        },
-        {
-          altText: 'x^2 + y^2 = z^2',
-          display: true,
-          heightEx: 2.464,
-          latex: '{\\displaystyle x^{2}+y^{2}=z^{2}}',
-          mathml: '<math alttext="{\\displaystyle x^{2}+y^{2}=z^{2}}"></math>',
-          svg: '<svg viewBox="0 0 10 10"></svg>',
-          type: 'formula',
-          widthEx: 12.318,
-        },
-        {
-          children: [
-            { text: 'After', type: 'word' },
-            { text: '.', type: 'text' },
-          ],
-          type: 'paragraph',
-        },
-      ]);
+    jest.spyOn(formulaRenderer, 'render').mockResolvedValue([
+      {
+        children: [
+          { text: 'Before', type: 'word' },
+          { text: '.', type: 'text' },
+        ],
+        type: 'paragraph',
+      },
+      {
+        altText: 'x^2 + y^2 = z^2',
+        display: true,
+        heightEx: 2.464,
+        latex: '{\\displaystyle x^{2}+y^{2}=z^{2}}',
+        mathml: '<math alttext="{\\displaystyle x^{2}+y^{2}=z^{2}}"></math>',
+        svg: '<svg viewBox="0 0 10 10"></svg>',
+        type: 'formula',
+        widthEx: 12.318,
+      },
+      {
+        children: [
+          { text: 'After', type: 'word' },
+          { text: '.', type: 'text' },
+        ],
+        type: 'paragraph',
+      },
+    ]);
 
     fetchMock
       .mockResolvedValueOnce({

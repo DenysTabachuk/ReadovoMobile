@@ -22,7 +22,7 @@ import {
   SimplifyArticleDto,
   UserArticleIdParamsDto,
   WikipediaArticleDto,
-} from './dto';
+} from './contracts/dto';
 import { ArticlesService } from './articles.service';
 import {
   type ArticleSimplificationTargetLength,
@@ -34,7 +34,7 @@ import {
   type SimplifyArticleResponse,
   type WikipediaArticle,
   type WikipediaArticleDetail,
-} from './types';
+} from './contracts/types';
 
 const DEFAULT_TARGET_LENGTH: ArticleSimplificationTargetLength = 'short';
 @Controller()

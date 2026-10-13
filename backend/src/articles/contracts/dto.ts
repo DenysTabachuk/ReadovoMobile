@@ -23,8 +23,8 @@ import {
   Trim,
   TrimToLowerCase,
   TrimToUpperCase,
-} from '../common/validation/transforms';
-import { UserIdParamsDto } from '../common/validation/request.dto';
+} from '../../common/validation/transforms';
+import { UserIdParamsDto } from '../../common/validation/request.dto';
 import {
   type ArticleBlock,
   type ArticleReadyLevelFilter,

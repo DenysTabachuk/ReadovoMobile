@@ -5,7 +5,10 @@ import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 
 import { UpdateProgressDto } from '../../achievements/dto';
-import { ArticleDetailQueryDto, ArticleListQueryDto } from '../../articles/dto';
+import {
+  ArticleDetailQueryDto,
+  ArticleListQueryDto,
+} from '../../articles/contracts/dto';
 import { RegisterUserDto } from '../../auth/dto/register-user.dto';
 import {
   CreateDictionaryWordDto,

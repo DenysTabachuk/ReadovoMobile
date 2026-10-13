@@ -5,7 +5,7 @@ import {
   type FormulaBlock,
   type InlineNode,
   type TableCell,
-} from './types';
+} from '../contracts/types';
 
 type HtmlChildNode = DefaultTreeAdapterMap['childNode'];
 type HtmlElement = DefaultTreeAdapterMap['element'];
