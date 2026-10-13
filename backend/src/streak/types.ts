@@ -51,24 +51,6 @@ export type StreakState = {
   todayStatus: StreakTodayStatus;
 };
 
-export type CompleteStreakActivityDto = {
-  activityType: StreakActivityType;
-  occurredAtClient?: string;
-  timezone?: string;
-};
-
-export type RestoreStreakDto = {
-  price: number;
-};
-
-export type ApplyStreakFreezeDto = {
-  date: string;
-};
-
-export type PurchaseStreakFreezeDto = {
-  price: number;
-};
-
 export type CompleteStreakActivityResponse = {
   pendingSync?: boolean;
   streak: StreakState;

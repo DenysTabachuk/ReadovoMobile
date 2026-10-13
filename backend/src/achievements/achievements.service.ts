@@ -3,10 +3,10 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { type UserAchievement } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { achievementDefinitions } from './definitions';
+import { type UpdateProgressDto } from './dto';
 import {
   type AchievementStatus,
   type AchievementsProfileResponse,
-  type UpdateProgressDto,
   type UserProgress,
 } from './types';
 

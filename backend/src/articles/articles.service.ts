@@ -610,7 +610,10 @@ export class ArticlesService {
     return [...recommendedArticles, ...fallbackArticles].slice(0, params.limit);
   }
 
-  async getArticleDetail(pageId: number): Promise<WikipediaArticleDetail> {
+  async getArticleDetail(
+    pageId: number,
+    languageCode = WIKIPEDIA_LANGUAGE_CODE,
+  ): Promise<WikipediaArticleDetail> {
     const params = new URLSearchParams({
       action: 'query',
       format: 'json',
@@ -622,7 +625,7 @@ export class ArticlesService {
       prop: 'pageimages|info',
       redirects: '1',
     });
-    const data = await this.fetchWikipediaResponse(params);
+    const data = await this.fetchWikipediaResponse(params, languageCode);
     const page = this.getPagesFromResponse(data).find(
       (currentPage) => currentPage.pageid === pageId,
     );
@@ -631,7 +634,7 @@ export class ArticlesService {
       throw new BadGatewayException('Wikipedia article is unavailable.');
     }
 
-    const html = await this.fetchWikipediaHtml(page.title);
+    const html = await this.fetchWikipediaHtml(page.title, languageCode);
     const blocks = await this.renderFormulaBlocks(parseHtmlToBlocks(html));
     const content = extractPlainTextFromBlocks(blocks);
 
@@ -1736,12 +1739,18 @@ export class ArticlesService {
     return [...items].sort(() => Math.random() - 0.5);
   }
 
-  private createWikipediaRequestUrl(params: URLSearchParams): string {
-    return `https://${WIKIPEDIA_LANGUAGE_CODE}.wikipedia.org/w/api.php?${params.toString()}`;
+  private createWikipediaRequestUrl(
+    params: URLSearchParams,
+    languageCode = WIKIPEDIA_LANGUAGE_CODE,
+  ): string {
+    return `https://${languageCode}.wikipedia.org/w/api.php?${params.toString()}`;
   }
 
-  private createWikipediaHtmlRequestUrl(pageTitle: string): string {
-    return `https://${WIKIPEDIA_LANGUAGE_CODE}.wikipedia.org/w/rest.php/v1/page/${encodeURIComponent(
+  private createWikipediaHtmlRequestUrl(
+    pageTitle: string,
+    languageCode = WIKIPEDIA_LANGUAGE_CODE,
+  ): string {
+    return `https://${languageCode}.wikipedia.org/w/rest.php/v1/page/${encodeURIComponent(
       pageTitle.replaceAll(' ', '_'),
     )}/html`;
   }
@@ -1763,10 +1772,14 @@ export class ArticlesService {
 
   private async fetchWikipediaResponse(
     params: URLSearchParams,
+    languageCode = WIKIPEDIA_LANGUAGE_CODE,
   ): Promise<WikipediaApiResponse> {
-    const response = await fetch(this.createWikipediaRequestUrl(params), {
-      headers: this.createWikipediaHeaders(),
-    });
+    const response = await fetch(
+      this.createWikipediaRequestUrl(params, languageCode),
+      {
+        headers: this.createWikipediaHeaders(),
+      },
+    );
 
     if (!response.ok) {
       throw new BadGatewayException('Failed to fetch Wikipedia content.');
@@ -1775,9 +1788,12 @@ export class ArticlesService {
     return response.json() as Promise<WikipediaApiResponse>;
   }
 
-  private async fetchWikipediaHtml(pageTitle: string): Promise<string> {
+  private async fetchWikipediaHtml(
+    pageTitle: string,
+    languageCode = WIKIPEDIA_LANGUAGE_CODE,
+  ): Promise<string> {
     const response = await fetch(
-      this.createWikipediaHtmlRequestUrl(pageTitle),
+      this.createWikipediaHtmlRequestUrl(pageTitle, languageCode),
       {
         headers: {
           ...this.createWikipediaHeaders(),

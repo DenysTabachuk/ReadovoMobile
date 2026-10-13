@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   Injectable,
   Logger,
   OnModuleDestroy,
@@ -18,12 +17,14 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dateOnlyToDate } from '../common/database/date-only';
 import { PrismaService } from '../prisma/prisma.service';
 import type {
-  LearningReminderDispatchResult,
-  LearningReminderPreferences,
   RegisterPushTokenDto,
   SendTestPushDto,
-  SendTestPushResult,
   UpsertLearningReminderPreferencesDto,
+} from './dto';
+import type {
+  LearningReminderDispatchResult,
+  LearningReminderPreferences,
+  SendTestPushResult,
 } from './types';
 
 type EligibleUserRow = {
@@ -91,10 +92,6 @@ export class NotificationsService implements OnModuleInit, OnModuleDestroy {
     const reminderTime =
       payload.learningReminderTime ?? DEFAULT_LEARNING_REMINDER_TIME;
 
-    if (!/^\d{2}:\d{2}$/.test(reminderTime)) {
-      throw new BadRequestException('Invalid reminder time format.');
-    }
-
     await this.prisma.userNotificationPreference.upsert({
       create: {
         learningReminderTime: reminderTime,
@@ -119,26 +116,9 @@ export class NotificationsService implements OnModuleInit, OnModuleDestroy {
     this.logger.log(
       `registerPushToken start userId=${userId} deviceId=${payload.deviceId} platform=${payload.platform}`,
     );
-    if (!payload.deviceId || !payload.pushToken) {
-      throw new BadRequestException('deviceId and pushToken are required.');
-    }
-
-    if (payload.provider !== 'fcm') {
-      throw new BadRequestException('Invalid push token provider.');
-    }
-
-    if (payload.platform !== 'android') {
-      throw new BadRequestException(
-        'FCM push tokens are currently supported only for Android.',
-      );
-    }
-
-    if (payload.pushToken.trim().length < 32) {
-      throw new BadRequestException('Invalid FCM push token.');
-    }
 
     const now = new Date();
-    const pushToken = payload.pushToken.trim();
+    const pushToken = payload.pushToken;
     await this.prisma.userPushToken.updateMany({
       data: { isActive: false, pushToken: null, updatedAt: now },
       where: { pushToken, userId: { not: userId } },

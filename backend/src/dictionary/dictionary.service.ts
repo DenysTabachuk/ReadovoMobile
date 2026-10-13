@@ -11,16 +11,18 @@ import Groq from 'groq-sdk';
 
 import { DictionaryRepository } from './dictionary.repository';
 import {
-  type CreateDictionaryWordRequest,
+  type CreateDictionaryWordDto,
+  type QuizOptionsDto,
+  type SimilarWordsDto,
+  type SubmitDictionaryTestAnswerDto,
+  type UpdateDictionaryWordProgressDto,
+} from './dto';
+import {
   type DictionaryTest,
   type DictionaryTestAnswerResult,
   type DictionaryTestQuestionFormat,
   type DictionaryTestQuestion,
   type DictionaryWord,
-  type QuizOptionsRequest,
-  type SimilarWordsRequest,
-  type SubmitDictionaryTestAnswerRequest,
-  type UpdateDictionaryWordProgressRequest,
 } from './types';
 import { DictionaryEmbeddingService } from './dictionary-embedding.service';
 
@@ -54,42 +56,15 @@ export class DictionaryService {
 
   async createWord(
     userId: string,
-    request: CreateDictionaryWordRequest,
+    request: CreateDictionaryWordDto,
   ): Promise<DictionaryWord> {
-    const word = request.word?.trim();
-    const translation = request.translation?.trim();
-    const context = request.context?.trim();
-
-    if (!word) {
-      throw new BadRequestException('Word is required.');
-    }
+    const { context, translation, word } = request;
 
     const wordCount = countWords(word);
 
-    if (wordCount < 1 || wordCount > MAX_DICTIONARY_FRAGMENT_WORDS) {
+    if (wordCount > MAX_DICTIONARY_FRAGMENT_WORDS) {
       throw new BadRequestException(
-        `Word or phrase must contain from 1 to ${MAX_DICTIONARY_FRAGMENT_WORDS} words.`,
-      );
-    }
-
-    if (!translation) {
-      throw new BadRequestException('Translation is required.');
-    }
-
-    if (!context) {
-      throw new BadRequestException('Context is required.');
-    }
-
-    const existingWords = await this.dictionaryRepository.findAll(userId);
-    const normalizedWord = this.normalizeWord(word);
-    const duplicateWord = existingWords.find(
-      (existingWord) =>
-        this.normalizeWord(existingWord.word) === normalizedWord,
-    );
-
-    if (duplicateWord) {
-      throw new BadRequestException(
-        'Word or phrase already exists in dictionary.',
+        `Word or phrase must contain at most ${MAX_DICTIONARY_FRAGMENT_WORDS} words.`,
       );
     }
 
@@ -119,14 +94,8 @@ export class DictionaryService {
   }
 
   async deleteWord(userId: string, wordId: string): Promise<DictionaryWord> {
-    const normalizedWordId = wordId?.trim();
-
-    if (!normalizedWordId) {
-      throw new BadRequestException('Word id is required.');
-    }
-
     const deletedWord = await this.dictionaryRepository.deleteById(
-      normalizedWordId,
+      wordId,
       userId,
     );
 
@@ -141,7 +110,7 @@ export class DictionaryService {
     return this.dictionaryEmbeddingService.generateEmbedding(text);
   }
 
-  async getSimilarWords(request: SimilarWordsRequest): Promise<string[]> {
+  async getSimilarWords(request: SimilarWordsDto): Promise<string[]> {
     const wordList = this.resolveWordList(request.wordList);
 
     return this.dictionaryEmbeddingService.getSimilarWords(
@@ -150,7 +119,7 @@ export class DictionaryService {
     );
   }
 
-  async generateQuizOptions(request: QuizOptionsRequest): Promise<string[]> {
+  async generateQuizOptions(request: QuizOptionsDto): Promise<string[]> {
     const wordList = this.resolveWordList(request.wordList);
 
     return this.dictionaryEmbeddingService.generateQuizOptions(
@@ -193,18 +162,9 @@ export class DictionaryService {
 
   async submitTestAnswer(
     userId: string,
-    request: SubmitDictionaryTestAnswerRequest,
+    request: SubmitDictionaryTestAnswerDto,
   ): Promise<DictionaryTestAnswerResult> {
-    const wordId = request.wordId?.trim();
-    const selectedOptionId = request.selectedOptionId?.trim();
-
-    if (!wordId) {
-      throw new BadRequestException('Word id is required.');
-    }
-
-    if (!selectedOptionId) {
-      throw new BadRequestException('Selected option id is required.');
-    }
+    const { selectedOptionId, wordId } = request;
 
     const word = await this.dictionaryRepository.findById(wordId, userId);
 
@@ -241,7 +201,7 @@ export class DictionaryService {
   async updateWordProgress(
     userId: string,
     wordId: string,
-    request: UpdateDictionaryWordProgressRequest,
+    request: UpdateDictionaryWordProgressDto,
   ): Promise<DictionaryWord> {
     const progress = request.progress;
 
@@ -554,10 +514,6 @@ Rules:
           ? 'learned'
           : 'in_progress',
     };
-  }
-
-  private normalizeWord(word: string): string {
-    return word.trim().replace(/\s+/g, ' ').toLowerCase();
   }
 
   private normalizeDictionaryQuestionFormat(

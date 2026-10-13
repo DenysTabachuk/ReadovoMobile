@@ -1,4 +1,1 @@
-export type VerifyPasswordResetCodeDto = {
-  code?: string;
-  email?: string;
-};
+export { VerifyEmailDto as VerifyPasswordResetCodeDto } from './verify-email.dto';

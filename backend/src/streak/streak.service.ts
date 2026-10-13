@@ -11,6 +11,7 @@ import {
 } from '../common/database/date-only';
 import { Prisma } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { type CompleteStreakActivityDto } from './dto';
 import {
   mapStreakHistory,
   mapStreakProfile,
@@ -19,7 +20,6 @@ import {
 import {
   type BrokenStreakInfo,
   type CalendarDayStatus,
-  type CompleteStreakActivityDto,
   type CompleteStreakActivityResponse,
   type StreakAchievement,
   type StreakAchievementMilestone,
@@ -183,10 +183,6 @@ export class StreakService {
     userId: string,
     payload: CompleteStreakActivityDto,
   ): Promise<CompleteStreakActivityResponse> {
-    if (!payload.activityType) {
-      throw new BadRequestException('Activity type is required.');
-    }
-
     const profile = await this.ensureProfile(userId, payload.timezone);
     const serverNow = new Date();
     const localToday = this.getLocalDateKey(serverNow, profile.timezone);

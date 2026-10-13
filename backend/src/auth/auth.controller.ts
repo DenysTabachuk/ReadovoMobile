@@ -1,15 +1,15 @@
 import { Body, Controller, Logger, Post } from '@nestjs/common';
 
 import { AuthService } from './auth.service';
-import { type GoogleLoginDto } from './dto/google-login.dto';
-import { type LoginUserDto } from './dto/login-user.dto';
-import { type RefreshSessionDto } from './dto/refresh-session.dto';
-import { type RegisterUserDto } from './dto/register-user.dto';
-import { type RequestPasswordResetDto } from './dto/request-password-reset.dto';
-import { type ResetPasswordDto } from './dto/reset-password.dto';
-import { type ResendVerificationCodeDto } from './dto/resend-verification-code.dto';
-import { type VerifyPasswordResetCodeDto } from './dto/verify-password-reset-code.dto';
-import { type VerifyEmailDto } from './dto/verify-email.dto';
+import { GoogleLoginDto } from './dto/google-login.dto';
+import { LoginUserDto } from './dto/login-user.dto';
+import { RefreshSessionDto } from './dto/refresh-session.dto';
+import { RegisterUserDto } from './dto/register-user.dto';
+import { RequestPasswordResetDto } from './dto/request-password-reset.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
+import { ResendVerificationCodeDto } from './dto/resend-verification-code.dto';
+import { VerifyPasswordResetCodeDto } from './dto/verify-password-reset-code.dto';
+import { VerifyEmailDto } from './dto/verify-email.dto';
 import {
   type LoginUserResponse,
   type RegisterUserResponse,

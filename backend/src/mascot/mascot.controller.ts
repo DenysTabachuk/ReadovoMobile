@@ -8,8 +8,13 @@ import {
 } from '@nestjs/common';
 
 import { UserAuthGuard } from '../auth/user-auth.guard';
+import {
+  UserAndItemIdParamsDto,
+  UserIdParamsDto,
+} from '../common/validation/request.dto';
+import { ClearMascotSlotParamsDto } from './dto';
 import { MascotService } from './mascot.service';
-import { type MascotAccessorySlot, type MascotProfileResponse } from './types';
+import { type MascotProfileResponse } from './types';
 
 @Controller('mascot')
 @UseGuards(UserAuthGuard)
@@ -18,31 +23,28 @@ export class MascotController {
 
   @Get('profile/:userId')
   async getProfile(
-    @Param('userId') userId: string,
+    @Param() { userId }: UserIdParamsDto,
   ): Promise<MascotProfileResponse> {
     return this.mascotService.getProfile(userId);
   }
 
   @Post('profile/:userId/items/:itemId/buy')
   async buyItem(
-    @Param('userId') userId: string,
-    @Param('itemId') itemId: string,
+    @Param() { itemId, userId }: UserAndItemIdParamsDto,
   ): Promise<MascotProfileResponse> {
     return this.mascotService.buyItem(userId, itemId);
   }
 
   @Post('profile/:userId/items/:itemId/equip')
   async equipItem(
-    @Param('userId') userId: string,
-    @Param('itemId') itemId: string,
+    @Param() { itemId, userId }: UserAndItemIdParamsDto,
   ): Promise<MascotProfileResponse> {
     return this.mascotService.equipItem(userId, itemId);
   }
 
   @Delete('profile/:userId/slots/:slot')
   async clearSlot(
-    @Param('userId') userId: string,
-    @Param('slot') slot: MascotAccessorySlot,
+    @Param() { slot, userId }: ClearMascotSlotParamsDto,
   ): Promise<MascotProfileResponse> {
     return this.mascotService.clearSlot(userId, slot);
   }
