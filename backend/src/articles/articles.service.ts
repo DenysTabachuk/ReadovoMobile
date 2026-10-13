@@ -51,8 +51,12 @@ const DEFAULT_SIMPLIFICATION_LEVEL: ArticleSimplificationLevel = 'A2';
 const DEFAULT_TARGET_LENGTH: ArticleSimplificationTargetLength = 'short';
 const DEFAULT_ARTICLE_TRANSFORMATION_TYPE: ArticleTextTransformationType =
   'summary';
-const GROQ_MODEL = 'llama-3.3-70b-versatile';
+const DEFAULT_GROQ_MODEL = 'openai/gpt-oss-120b';
 const GROQ_MODEL_MAX_OUTPUT_TOKENS = 32768;
+
+function getGroqModel(): string {
+  return process.env.GROQ_MODEL?.trim() || DEFAULT_GROQ_MODEL;
+}
 const GROQ_REQUEST_TIMEOUT_MS = 180000;
 // Keep chunks well below the model context window. Source blocks are also sent as JSON,
 // so using the full context window as a character limit makes summaries collapse into tiny overviews.
@@ -1004,7 +1008,7 @@ export class ArticlesService {
 
     try {
       this.logger.log(
-        `Sending article ${transformationType} request to Groq: model=${GROQ_MODEL}, title="${title}", level=${level}`,
+        `Sending article ${transformationType} request to Groq: model=${getGroqModel()}, title="${title}", level=${level}`,
       );
 
       // Groq runs only on the backend so the API key never reaches the app.
@@ -1085,7 +1089,7 @@ export class ArticlesService {
       const errorStack = error instanceof Error ? error.stack : undefined;
 
       this.logger.error(
-        `Groq request failed: title="${title}", model=${GROQ_MODEL}, reason="${errorMessage}"`,
+        `Groq request failed: title="${title}", model=${getGroqModel()}, reason="${errorMessage}"`,
         errorStack,
       );
 
@@ -1149,7 +1153,7 @@ export class ArticlesService {
       const errorStack = error instanceof Error ? error.stack : undefined;
 
       this.logger.error(
-        `Groq quiz request failed: title="${title}", model=${GROQ_MODEL}, reason="${errorMessage}"`,
+        `Groq quiz request failed: title="${title}", model=${getGroqModel()}, reason="${errorMessage}"`,
         errorStack,
       );
 
@@ -1226,7 +1230,7 @@ export class ArticlesService {
       const errorStack = error instanceof Error ? error.stack : undefined;
 
       this.logger.error(
-        `Groq vocabulary quiz request failed: title="${title}", model=${GROQ_MODEL}, reason="${errorMessage}"`,
+        `Groq vocabulary quiz request failed: title="${title}", model=${getGroqModel()}, reason="${errorMessage}"`,
         errorStack,
       );
 
@@ -1366,7 +1370,7 @@ export class ArticlesService {
             role: 'user',
           },
         ],
-        model: GROQ_MODEL,
+        model: getGroqModel(),
         temperature: 0.3,
       }),
       GROQ_REQUEST_TIMEOUT_MS,

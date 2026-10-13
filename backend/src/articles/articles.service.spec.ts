@@ -407,7 +407,7 @@ describe('ArticlesService', () => {
     expect(createChatCompletionMock).toHaveBeenCalledWith(
       expect.objectContaining({
         max_completion_tokens: 32768,
-        model: 'llama-3.3-70b-versatile',
+        model: 'openai/gpt-oss-120b',
       }),
     );
     expect(queryMock).toHaveBeenCalledTimes(2);

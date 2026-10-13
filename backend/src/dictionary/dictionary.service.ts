@@ -27,7 +27,11 @@ import { DictionaryEmbeddingService } from './dictionary-embedding.service';
 const DEFAULT_DICTIONARY_TEST_LIMIT = 10;
 const DICTIONARY_TEST_OPTION_COUNT = 4;
 const DICTIONARY_TEST_DISTRACTOR_COUNT = DICTIONARY_TEST_OPTION_COUNT - 1;
-const GROQ_MODEL = 'llama-3.3-70b-versatile';
+const DEFAULT_GROQ_MODEL = 'openai/gpt-oss-120b';
+
+function getGroqModel(): string {
+  return process.env.GROQ_MODEL?.trim() || DEFAULT_GROQ_MODEL;
+}
 const GROQ_REQUEST_TIMEOUT_MS = 180000;
 const MAX_DICTIONARY_TEST_COMPLETION_TOKENS = 6000;
 export const REQUIRED_CORRECT_ANSWERS_TO_LEARN = 5;
@@ -327,7 +331,7 @@ export class DictionaryService {
       const errorStack = error instanceof Error ? error.stack : undefined;
 
       this.logger.error(
-        `Groq dictionary test request failed: model=${GROQ_MODEL}, reason="${errorMessage}"`,
+        `Groq dictionary test request failed: model=${getGroqModel()}, reason="${errorMessage}"`,
         errorStack,
       );
 
@@ -426,7 +430,7 @@ Rules:
           { content: params.systemMessage, role: 'system' },
           { content: params.prompt, role: 'user' },
         ],
-        model: GROQ_MODEL,
+        model: getGroqModel(),
         response_format: { type: 'json_object' },
         temperature: 0.4,
         max_completion_tokens: params.maxCompletionTokens,
