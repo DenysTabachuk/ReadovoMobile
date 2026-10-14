@@ -50,32 +50,13 @@ Rules:
 - Use simple, natural English for level ${params.level}.
 - If a difficult term is important, keep it and explain it with easier surrounding language.
 - Preserve useful headings, lists, tables, and images when they help comprehension.
-- Return ONLY valid JSON with this schema:
-  {
-    "adaptedBlocks": ArticleBlock[]
-  }
+- ${this.getTransformationOutputRule('forbidden')}
 - You may keep images and tables only when they help understand this adapted chunk.
 - If you keep an image, copy its "src" exactly from the source block.
 - If you keep a table, simplify wording but do not invent values.
-- Do not generate questions for this chunk.
+- Do not generate questions for this chunk; set "questions" to null.
 
-Allowed ArticleBlock union:
-- heading: { "type":"heading", "level":1|2|3, "text": string }
-- paragraph: { "type":"paragraph", "children": InlineNode[] }
-- list: { "type":"list", "ordered": boolean, "items": InlineNode[][] }
-- table: { "type":"table", "rows": TableCell[][] }
-- image: { "type":"image", "src": string, "alt"?: string, "caption"?: string }
-InlineNode:
-- { "type":"text", "text": string, "bold"?: boolean, "italic"?: boolean }
-- { "type":"word", "text": string, "bold"?: boolean, "italic"?: boolean }
-TableCell:
-- { "text": string, "header"?: boolean }
-
-Source blocks:
-${this.contentProcessor.formatArticleBlocksForPrompt(params.chunk.blocks)}
-
-Source text:
-${params.chunk.text}`;
+${this.formatSource(params.chunk.blocks, params.chunk.text)}`;
     }
 
     const summaryLengthRule = this.getSummaryLengthRule(
@@ -100,33 +81,14 @@ Rules:
 - This is not a tiny note or a 5-sentence recap.
 - Rewrite this chunk into a substantial, readable summary section with multiple complete sentences.
 - ${summaryLengthRule}
-- Return ONLY valid JSON with this schema:
-  {
-    "adaptedBlocks": ArticleBlock[]
-  }
+- ${this.getTransformationOutputRule('forbidden')}
 - You may keep images and tables only when they help understand this simplified chunk.
 - If you keep an image, copy its "src" exactly from the source block.
 - If you keep a table, keep only useful rows/cells from the source table and simplify labels if needed.
 - Do not invent image URLs, table facts, or source values.
-- Do not generate questions for this chunk.
+- Do not generate questions for this chunk; set "questions" to null.
 
-Allowed ArticleBlock union:
-- heading: { "type":"heading", "level":1|2|3, "text": string }
-- paragraph: { "type":"paragraph", "children": InlineNode[] }
-- list: { "type":"list", "ordered": boolean, "items": InlineNode[][] }
-- table: { "type":"table", "rows": TableCell[][] }
-- image: { "type":"image", "src": string, "alt"?: string, "caption"?: string }
-InlineNode:
-- { "type":"text", "text": string, "bold"?: boolean, "italic"?: boolean }
-- { "type":"word", "text": string, "bold"?: boolean, "italic"?: boolean }
-TableCell:
-- { "text": string, "header"?: boolean }
-
-Source blocks:
-${this.contentProcessor.formatArticleBlocksForPrompt(params.chunk.blocks)}
-
-Source text:
-${params.chunk.text}`;
+${this.formatSource(params.chunk.blocks, params.chunk.text)}`;
   }
 
   createSimplificationPrompt(params: {
@@ -156,36 +118,18 @@ Rules:
 - For B2: keep nuance and detail, but improve readability.
 - If a difficult word is important, keep it and explain it with easier surrounding language.
 - Keep the text coherent and readable, not a list of notes.
-- Return a valid JSON object only, without markdown fences or extra text.
-- JSON schema:
-  {
-    "adaptedBlocks": ArticleBlock[]
-  }
-- "adaptedBlocks" must follow this exact union:
-  - heading: { "type":"heading", "level":1|2|3, "text": string }
-  - paragraph: { "type":"paragraph", "children": InlineNode[] }
-  - list: { "type":"list", "ordered": boolean, "items": InlineNode[][] }
-  - table: { "type":"table", "rows": TableCell[][] }
-  - image: { "type":"image", "src": string, "alt"?: string, "caption"?: string }
-- InlineNode must be one of:
-  - { "type":"text", "text": string, "bold"?: boolean, "italic"?: boolean }
-  - { "type":"word", "text": string, "bold"?: boolean, "italic"?: boolean }
-- TableCell must be { "text": string, "header"?: boolean }.
+- ${this.getTransformationOutputRule('forbidden')}
 - Do not use "formula" blocks in adapted output.
 - Keep headings, images, and tables when they help comprehension.
 - If source blocks are provided, use them to decide which source tables and images are useful.
 - If you keep an image, copy its "src" exactly from the source image block.
 - If you keep a table, simplify labels if needed but do not invent values.
-- Do not generate questions.
+- Do not generate questions; set "questions" to null.
 
 Title:
 ${params.title}
 
-Source blocks:
-${this.contentProcessor.formatArticleBlocksForPrompt(params.sourceBlocks)}
-
-Source text:
-${params.text}`;
+${this.formatSource(params.sourceBlocks, params.text)}`;
     }
 
     const questionRule = this.getQuestionCountRule('medium');
@@ -211,21 +155,7 @@ Rules:
 - This is not a micro-summary and not a 5-sentence overview.
 - Keep enough detail so the reader can understand the topic, but remove repetition, side details, and nonessential examples.
 - ${summaryLengthRule}
-- Return a valid JSON object only, without markdown fences or extra text.
-- JSON schema:
-  {
-    "adaptedBlocks": ArticleBlock[]
-  }
-- "adaptedBlocks" must follow this exact union:
-  - heading: { "type":"heading", "level":1|2|3, "text": string }
-  - paragraph: { "type":"paragraph", "children": InlineNode[] }
-  - list: { "type":"list", "ordered": boolean, "items": InlineNode[][] }
-  - table: { "type":"table", "rows": TableCell[][] }
-  - image: { "type":"image", "src": string, "alt"?: string, "caption"?: string }
-- InlineNode must be one of:
-  - { "type":"text", "text": string, "bold"?: boolean, "italic"?: boolean }
-  - { "type":"word", "text": string, "bold"?: boolean, "italic"?: boolean }
-- TableCell must be { "text": string, "header"?: boolean }.
+- ${this.getTransformationOutputRule('required')}
 - Do not use "formula" blocks in adapted output.
 - Keep headings/tables/images where they help comprehension.
 - If source blocks are provided, use them to decide which source tables and images are useful.
@@ -241,26 +171,12 @@ Rules:
 - Questions must match learner level ${params.level}.
 - Keep wording simple for A1/A2, moderate for B1, richer but clear for B2, and nuanced but natural for C1.
 - Every question must be answerable only from adapted text.
-- Extend JSON schema with:
-  "questions": [
-    {
-      "id": string,
-      "type": "single_choice" | "multiple_choice" | "true_false",
-      "prompt": string,
-      "options": [{ "id": string, "text": string }],
-      "correctOptionIds": string[],
-      "explanation"?: string
-    }
-  ]
+- Set "explanation" to null when no explanation is needed.
 
 Title:
 ${params.title}
 
-Source blocks:
-${this.contentProcessor.formatArticleBlocksForPrompt(params.sourceBlocks)}
-
-Original text:
-${params.text}`;
+${this.formatSource(params.sourceBlocks, params.text)}`;
   }
 
   createQuizPrompt(params: {
@@ -287,19 +203,8 @@ Rules:
 - Do not invent facts.
 - For A1/A2 use simpler vocabulary and shorter prompts.
 - For B1 moderate complexity; for B2 richer but clear wording; for C1 allow more nuance while staying clear.
-- Return ONLY valid JSON:
-{
-  "questions": [
-    {
-      "id": string,
-      "type": "single_choice" | "multiple_choice" | "true_false",
-      "prompt": string,
-      "options": [{ "id": string, "text": string }],
-      "correctOptionIds": string[],
-      "explanation"?: string
-    }
-  ]
-}
+- Follow the attached strict output schema exactly.
+- Set "explanation" to null when no explanation is needed.
 
 Title:
 ${params.title}
@@ -348,25 +253,8 @@ ${learnerLevelRule}
 - Keep prompts concise.
 - Keep option texts short where possible.
 - "sourceExcerpt" should be a short excerpt from the source text that contains the term, ideally no more than 12 words.
-- Return ONLY valid JSON:
-{
-  "resolvedLevel": "A1" | "A2" | "B1" | "B2" | "C1",
-  "questions": [
-    {
-      "id": string,
-      "type": "single_choice",
-      "format": "translation" | "reverse_translation" | "cloze",
-      "term": string,
-      "termKind": "word" | "phrase",
-      "translation": string,
-      "prompt": string,
-      "sourceExcerpt": string,
-      "options": [{ "id": string, "text": string }],
-      "correctOptionIds": string[],
-      "explanation"?: string
-    }
-  ]
-}
+- Follow the attached strict output schema exactly.
+- Set "sourceExcerpt" or "explanation" to null when no legitimate value exists.
 
 Title:
 ${params.title}
@@ -388,6 +276,33 @@ ${params.text}`;
     const percentLabel = Math.round(maxPercent * 100);
 
     return `Keep the summary shorter than the source. Hard maximum: no more than ${maxSummaryWords} words (${percentLabel}% of this source text, based on the full article size).`;
+  }
+
+  private getTransformationOutputRule(
+    questionPolicy: 'forbidden' | 'required',
+  ): string {
+    const questionRule =
+      questionPolicy === 'required'
+        ? 'Return comprehension questions in "questions".'
+        : 'Set "questions" to null.';
+
+    return [
+      'Follow the attached strict output schema exactly.',
+      'Use only heading, paragraph, list, table, and image blocks; never return formula blocks.',
+      'Set nullable formatting, image, and question fields to null when they do not apply.',
+      questionRule,
+    ].join(' ');
+  }
+
+  private formatSource(
+    blocks: ArticleBlock[] | undefined,
+    text: string,
+  ): string {
+    if (blocks?.length) {
+      return `Source blocks:\n${this.contentProcessor.formatArticleBlocksForPrompt(blocks)}`;
+    }
+
+    return `Source text:\n${text}`;
   }
 
   private getSummaryMaxPercent(wordCount: number): number {

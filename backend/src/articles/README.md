@@ -16,7 +16,7 @@ ArticlesService (stable facade)
         +-- library/         saved/recent articles and Prisma queries
         +-- transformation/  summaries, adaptations, prompts, cache
         +-- quiz/            reading and vocabulary quizzes
-        +-- infrastructure/  external AI client
+        +-- infrastructure/  structured AI transport, retry, telemetry
 ```
 
 Controllers should call `ArticlesService`. They should not depend directly on
@@ -45,18 +45,24 @@ adaptation lookups. Prisma access for these use cases stays here.
 ### `transformation/`
 
 `ArticleAdaptationService` orchestrates summaries and adaptations. The other
-files own prompts, chunking, response normalization, and persistence of cached
+files own prompts, chunking, semantic validation, and persistence of cached
 results. AI transport does not belong in this folder.
 
 ### `quiz/`
 
-`ArticleQuizService` orchestrates reading and vocabulary quizzes. Parsers reject
-invalid model output and vocabulary policy contains the domain filtering rules.
+`ArticleQuizService` orchestrates reading and vocabulary quizzes. Focused
+validators enforce domain rules that JSON Schema cannot express, such as
+source-term membership and valid answer references.
 
 ### `infrastructure/`
 
 External transport adapters live here. `GroqTextClient` owns Groq SDK setup,
-timeouts, and model selection; business services only request text completion.
+timeouts, strict JSON Schema requests, runtime Zod validation, and model
+selection. `AiStructuredOutputRunner` performs at most one semantic retry with
+bounded validation feedback. `AiTelemetry` emits low-cardinality OpenTelemetry
+spans and metrics without recording article text or model output. A deployment
+must register its OpenTelemetry SDK/exporter; without one, the standard API is
+intentionally a no-op.
 
 ## Main scenarios
 
@@ -74,8 +80,9 @@ controller -> facade -> WikipediaArticlesService
 controller -> facade -> ArticleAdaptationService
                      -> cache lookup
                      -> prompt/chunk creation
-                     -> GroqTextClient
-                     -> response parser
+                     -> AiStructuredOutputRunner
+                     -> GroqTextClient (strict JSON Schema)
+                     -> runtime schema + domain validation
                      -> cache store -> response
 ```
 
@@ -84,9 +91,20 @@ controller -> facade -> ArticleAdaptationService
 ```text
 controller -> facade -> ArticleQuizService
                      -> prompt factory
-                     -> GroqTextClient
-                     -> reading/vocabulary parser -> response
+                     -> AiStructuredOutputRunner
+                     -> strict schema + semantic validator -> response
 ```
+
+## AI response policy
+
+- Groq must return the versioned schema named in `contracts/ai-output.schemas.ts`.
+- Zod validates the parsed response again at the application boundary.
+- Shape/JSON failures fail closed; malformed or truncated JSON is never repaired.
+- Semantic failures receive one corrective retry, then return a gateway error.
+- Provider-level transient retries are delegated to the Groq SDK and remain
+  separate from the single semantic retry.
+- Prompts, article content, and raw model responses are never telemetry
+  attributes.
 
 ## Change guidelines
 

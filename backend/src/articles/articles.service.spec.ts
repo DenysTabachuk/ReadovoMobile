@@ -3,16 +3,21 @@ import { BadGatewayException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ArticleFormulaRenderer } from './discovery/article-formula-renderer';
 import { WikipediaArticlesService } from './discovery/wikipedia-articles.service';
+import { AiRateLimitCoordinator } from './infrastructure/ai-rate-limit.coordinator';
+import { AiStructuredOutputRunner } from './infrastructure/ai-structured-output.runner';
+import { AiTelemetry } from './infrastructure/ai.telemetry';
+import { AiTokenCounter } from './infrastructure/ai-token-counter';
 import { GroqTextClient } from './infrastructure/groq-text.client';
 import { ArticleLibraryService } from './library/article-library.service';
 import { ArticleQuizService } from './quiz/article-quiz.service';
-import { ArticleQuizResponseParser } from './quiz/article-quiz-response-parser';
-import { ArticleVocabularyQuizResponseParser } from './quiz/article-vocabulary-quiz-response-parser';
+import { ArticleQuizValidator } from './quiz/article-quiz.validator';
+import { ArticleVocabularyQuizValidator } from './quiz/article-vocabulary-quiz.validator';
 import { ArticleAdaptationService } from './transformation/article-adaptation.service';
-import { ArticleAdaptationResponseParser } from './transformation/article-adaptation-response-parser';
 import { ArticleContentProcessor } from './transformation/article-content.processor';
 import { ArticlePromptFactory } from './transformation/article-prompt.factory';
 import { ArticleSimplificationCache } from './transformation/article-simplification-cache';
+import { ArticleTransformationPlanner } from './transformation/article-transformation.planner';
+import { ArticleTransformationValidator } from './transformation/article-transformation.validator';
 import { ArticlesService } from './articles.service';
 
 const createChatCompletionMock = jest.fn();
@@ -21,13 +26,107 @@ type GroqChatCompletionRequest = {
   messages: Array<{ content?: string }>;
 };
 
-function getFirstGroqPrompt(): string {
+function getGroqPrompt(callIndex = 0): string {
   const calls = createChatCompletionMock.mock.calls as Array<
     [GroqChatCompletionRequest]
   >;
-  const request = calls[0]?.[0];
+  const request = calls[callIndex]?.[0];
 
   return String(request?.messages[1]?.content ?? '');
+}
+
+function createStrictReadingQuestion() {
+  return {
+    correctOptionIds: ['true'],
+    id: 'summary-q-1',
+    options: [
+      { id: 'true', text: 'True' },
+      { id: 'false', text: 'False' },
+    ],
+    prompt: 'The Solar System includes the Sun.',
+    type: 'true_false' as const,
+  };
+}
+
+function serializeStrictAiOutput(output: Record<string, unknown>): string {
+  const questions = Array.isArray(output.questions)
+    ? output.questions.map((question) => {
+        const value = question as Record<string, unknown>;
+        return {
+          ...value,
+          explanation: value.explanation ?? null,
+          ...('term' in value
+            ? { sourceExcerpt: value.sourceExcerpt ?? null }
+            : {}),
+        };
+      })
+    : null;
+  const adaptedBlocks = Array.isArray(output.adaptedBlocks)
+    ? output.adaptedBlocks.map((block) => serializeStrictBlock(block))
+    : undefined;
+
+  return JSON.stringify({
+    ...output,
+    ...(adaptedBlocks ? { adaptedBlocks } : {}),
+    questions,
+  });
+}
+
+function serializeStrictBlock(block: unknown): unknown {
+  if (!block || typeof block !== 'object') return block;
+
+  const value = block as Record<string, unknown>;
+  if (value.type === 'paragraph') {
+    return {
+      ...value,
+      children: Array.isArray(value.children)
+        ? value.children.map(serializeStrictInlineNode)
+        : value.children,
+    };
+  }
+  if (value.type === 'list') {
+    return {
+      ...value,
+      items: Array.isArray(value.items)
+        ? value.items.map((item: unknown) =>
+            Array.isArray(item) ? item.map(serializeStrictInlineNode) : item,
+          )
+        : value.items,
+    };
+  }
+  if (value.type === 'table') {
+    return {
+      ...value,
+      rows: Array.isArray(value.rows)
+        ? value.rows.map((row: unknown) =>
+            Array.isArray(row)
+              ? row.map((cell: unknown) => {
+                  const cellValue = cell as Record<string, unknown>;
+                  return { ...cellValue, header: cellValue.header ?? null };
+                })
+              : row,
+          )
+        : value.rows,
+    };
+  }
+  if (value.type === 'image') {
+    return {
+      ...value,
+      alt: value.alt ?? null,
+      caption: value.caption ?? null,
+    };
+  }
+
+  return value;
+}
+
+function serializeStrictInlineNode(node: unknown): unknown {
+  const value = node as Record<string, unknown>;
+  return {
+    ...value,
+    bold: value.bold ?? false,
+    italic: value.italic ?? false,
+  };
 }
 
 jest.mock('groq-sdk', () => ({
@@ -35,7 +134,18 @@ jest.mock('groq-sdk', () => ({
   default: jest.fn().mockImplementation(() => ({
     chat: {
       completions: {
-        create: createChatCompletionMock,
+        create: (...args: unknown[]) => ({
+          withResponse: async () => ({
+            data: await createChatCompletionMock(...args),
+            response: new Response(null, {
+              headers: {
+                'x-ratelimit-limit-tokens': '8000',
+                'x-ratelimit-remaining-tokens': '7000',
+                'x-ratelimit-reset-tokens': '1s',
+              },
+            }),
+          }),
+        }),
       },
     },
   })),
@@ -46,6 +156,7 @@ describe('ArticlesService', () => {
   let formulaRenderer: ArticleFormulaRenderer;
   let fetchMock: jest.Mock;
   let queryMock: jest.Mock;
+  let tokenCounter: AiTokenCounter;
 
   beforeEach(() => {
     fetchMock = jest.fn();
@@ -67,31 +178,55 @@ describe('ArticlesService', () => {
     } as unknown as PrismaService;
     formulaRenderer = new ArticleFormulaRenderer();
     const contentProcessor = new ArticleContentProcessor();
-    const quizResponseParser = new ArticleQuizResponseParser();
-    const groqTextClient = new GroqTextClient();
-    const promptFactory = new ArticlePromptFactory(contentProcessor);
-    const adaptationService = new ArticleAdaptationService(
-      new ArticleAdaptationResponseParser(quizResponseParser),
-      contentProcessor,
+    const quizValidator = new ArticleQuizValidator();
+    const vocabularyValidator = new ArticleVocabularyQuizValidator(
+      quizValidator,
+    );
+    const aiTelemetry = new AiTelemetry();
+    tokenCounter = new AiTokenCounter();
+    const rateLimits = new AiRateLimitCoordinator();
+    const groqTextClient = new GroqTextClient(
+      aiTelemetry,
+      rateLimits,
+      tokenCounter,
+    );
+    const outputRunner = new AiStructuredOutputRunner(
       groqTextClient,
+      aiTelemetry,
+    );
+    const promptFactory = new ArticlePromptFactory(contentProcessor);
+    const transformationValidator = new ArticleTransformationValidator(
+      quizValidator,
+    );
+    const adaptationService = new ArticleAdaptationService(
+      contentProcessor,
+      outputRunner,
       promptFactory,
-      quizResponseParser,
+      quizValidator,
       new ArticleSimplificationCache(prisma, contentProcessor),
+      new ArticleTransformationPlanner(
+        contentProcessor,
+        promptFactory,
+        rateLimits,
+        tokenCounter,
+      ),
+      transformationValidator,
     );
     service = new ArticlesService(
       adaptationService,
       new ArticleLibraryService(prisma),
       new ArticleQuizService(
-        groqTextClient,
+        outputRunner,
         promptFactory,
-        quizResponseParser,
-        new ArticleVocabularyQuizResponseParser(quizResponseParser),
+        quizValidator,
+        vocabularyValidator,
       ),
       new WikipediaArticlesService(formulaRenderer),
     );
   });
 
   afterEach(() => {
+    tokenCounter.onModuleDestroy();
     delete process.env.GROQ_API_KEY;
   });
 
@@ -422,7 +557,7 @@ describe('ArticlesService', () => {
       choices: [
         {
           message: {
-            content: JSON.stringify({
+            content: serializeStrictAiOutput({
               adaptedBlocks: [
                 {
                   children: [
@@ -434,6 +569,7 @@ describe('ArticlesService', () => {
                   type: 'paragraph',
                 },
               ],
+              questions: [createStrictReadingQuestion()],
             }),
           },
         },
@@ -449,7 +585,7 @@ describe('ArticlesService', () => {
 
     expect(createChatCompletionMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        max_completion_tokens: 32768,
+        max_completion_tokens: 2500,
         model: 'openai/gpt-oss-120b',
       }),
     );
@@ -469,6 +605,18 @@ describe('ArticlesService', () => {
       adaptedLength: 41,
       level: 'A2',
       originalLength: 17,
+      questions: [
+        {
+          correctOptionIds: ['true'],
+          id: 'summary-q-1',
+          options: [
+            { id: 'true', text: 'True' },
+            { id: 'false', text: 'False' },
+          ],
+          prompt: 'The Solar System includes the Sun.',
+          type: 'true_false',
+        },
+      ],
       title: 'Solar System',
       transformationType: 'summary',
     });
@@ -480,7 +628,7 @@ describe('ArticlesService', () => {
       choices: [
         {
           message: {
-            content: JSON.stringify({
+            content: serializeStrictAiOutput({
               adaptedBlocks: [
                 {
                   children: [
@@ -492,6 +640,7 @@ describe('ArticlesService', () => {
                   type: 'paragraph',
                 },
               ],
+              questions: [createStrictReadingQuestion()],
             }),
           },
         },
@@ -504,7 +653,7 @@ describe('ArticlesService', () => {
       text: 'Long article text',
       title: 'Solar System',
     });
-    const prompt = getFirstGroqPrompt();
+    const prompt = getGroqPrompt();
 
     expect(prompt).toContain('Summarize and shorten the article');
     expect(prompt).toContain('Hard maximum');
@@ -517,7 +666,7 @@ describe('ArticlesService', () => {
       choices: [
         {
           message: {
-            content: JSON.stringify({
+            content: serializeStrictAiOutput({
               adaptedBlocks: [
                 {
                   level: 1,
@@ -569,8 +718,8 @@ describe('ArticlesService', () => {
     ]);
   });
 
-  it('falls back to plain text paragraphs when adaptation response is not valid JSON', async () => {
-    queryMock.mockResolvedValueOnce(null).mockResolvedValueOnce(null);
+  it('fails closed when Groq violates the strict transformation contract', async () => {
+    queryMock.mockResolvedValueOnce(null);
     createChatCompletionMock.mockResolvedValue({
       choices: [
         {
@@ -582,154 +731,28 @@ describe('ArticlesService', () => {
       ],
     });
 
-    const response = await service.simplifyArticle({
-      level: 'A2',
-      text: 'Long article text',
-      title: 'Architecture',
-      transformationType: 'adaptation',
-    });
-
-    expect(response.adaptedBlocks).toEqual([
-      {
-        children: [
-          {
-            text: 'Architecture is the art and practice of designing buildings.',
-            type: 'text',
-          },
-        ],
-        type: 'paragraph',
-      },
-      {
-        children: [
-          {
-            text: 'It also includes planning spaces for people to use.',
-            type: 'text',
-          },
-        ],
-        type: 'paragraph',
-      },
-    ]);
-    expect(response.transformationType).toBe('adaptation');
+    await expect(
+      service.simplifyArticle({
+        level: 'A2',
+        text: 'Long article text',
+        title: 'Architecture',
+        transformationType: 'adaptation',
+      }),
+    ).rejects.toBeInstanceOf(BadGatewayException);
+    expect(createChatCompletionMock).toHaveBeenCalledTimes(1);
   });
 
-  it('falls back when adaptedBlocks is an array of strings', async () => {
-    queryMock.mockResolvedValueOnce(null).mockResolvedValueOnce(null);
+  it('retries one semantic transformation violation and then fails closed', async () => {
+    queryMock.mockResolvedValueOnce(null);
     createChatCompletionMock.mockResolvedValue({
       choices: [
         {
           message: {
-            content: JSON.stringify({
-              adaptedBlocks: [
-                'Architecture is about designing buildings.',
-                'It also plans how people use space.',
-              ],
-            }),
-          },
-        },
-      ],
-    });
-
-    const response = await service.simplifyArticle({
-      level: 'A2',
-      text: 'Long article text',
-      title: 'Architecture',
-      transformationType: 'adaptation',
-    });
-
-    expect(response.adaptedBlocks).toEqual([
-      {
-        children: [
-          {
-            text: 'Architecture is about designing buildings.',
-            type: 'text',
-          },
-        ],
-        type: 'paragraph',
-      },
-      {
-        children: [
-          {
-            text: 'It also plans how people use space.',
-            type: 'text',
-          },
-        ],
-        type: 'paragraph',
-      },
-    ]);
-  });
-
-  it('falls back when adaptation text is nested in a loose JSON field', async () => {
-    queryMock.mockResolvedValueOnce(null).mockResolvedValueOnce(null);
-    createChatCompletionMock.mockResolvedValue({
-      choices: [
-        {
-          message: {
-            content: JSON.stringify({
-              result: {
-                paragraphs: [
-                  'Architecture is the design of buildings.',
-                  'It also shapes the spaces around them.',
-                ],
-              },
-            }),
-          },
-        },
-      ],
-    });
-
-    const response = await service.simplifyArticle({
-      level: 'A2',
-      text: 'Long article text',
-      title: 'Architecture',
-      transformationType: 'adaptation',
-    });
-
-    expect(response.adaptedBlocks).toEqual([
-      {
-        children: [
-          {
-            text: 'Architecture is the design of buildings.',
-            type: 'text',
-          },
-        ],
-        type: 'paragraph',
-      },
-      {
-        children: [
-          {
-            text: 'It also shapes the spaces around them.',
-            type: 'text',
-          },
-        ],
-        type: 'paragraph',
-      },
-    ]);
-  });
-
-  it('normalizes table rows returned as row objects', async () => {
-    queryMock.mockResolvedValueOnce(null).mockResolvedValueOnce(null);
-    createChatCompletionMock.mockResolvedValue({
-      choices: [
-        {
-          message: {
-            content: JSON.stringify({
+            content: serializeStrictAiOutput({
               adaptedBlocks: [
                 {
-                  rows: [
-                    {
-                      cells: [
-                        { header: true, text: 'Company' },
-                        { header: true, text: 'Industry' },
-                      ],
-                    },
-                    {
-                      cells: [
-                        { text: 'Electronic Arts' },
-                        { text: 'Video games' },
-                      ],
-                    },
-                  ],
-                  type: 'table',
+                  src: 'https://example.com/invented-image.jpg',
+                  type: 'image',
                 },
               ],
             }),
@@ -738,25 +761,17 @@ describe('ArticlesService', () => {
       ],
     });
 
-    const response = await service.simplifyArticle({
-      level: 'A2',
-      targetPercent: 25,
-      text: 'Electronic Arts is a video game company.',
-      title: 'Electronic Arts',
-    });
+    await expect(
+      service.simplifyArticle({
+        level: 'A2',
+        text: 'Long article text',
+        title: 'Architecture',
+        transformationType: 'adaptation',
+      }),
+    ).rejects.toBeInstanceOf(BadGatewayException);
 
-    expect(response.adaptedBlocks).toEqual([
-      {
-        rows: [
-          [
-            { header: true, text: 'Company' },
-            { header: true, text: 'Industry' },
-          ],
-          [{ text: 'Electronic Arts' }, { text: 'Video games' }],
-        ],
-        type: 'table',
-      },
-    ]);
+    expect(createChatCompletionMock).toHaveBeenCalledTimes(2);
+    expect(getGroqPrompt(1)).toContain('image src must exactly match');
   });
 
   it('prepares only the requested percent variant for persisted article adaptations', async () => {
@@ -770,7 +785,7 @@ describe('ArticlesService', () => {
           choices: [
             {
               message: {
-                content: JSON.stringify({
+                content: serializeStrictAiOutput({
                   adaptedBlocks: [
                     {
                       children: [
@@ -782,6 +797,7 @@ describe('ArticlesService', () => {
                       type: 'paragraph',
                     },
                   ],
+                  questions: [createStrictReadingQuestion()],
                 }),
               },
             },
@@ -818,7 +834,7 @@ describe('ArticlesService', () => {
         choices: [
           {
             message: {
-              content: JSON.stringify({
+              content: serializeStrictAiOutput({
                 adaptedBlocks: [
                   {
                     children: [
@@ -842,7 +858,7 @@ describe('ArticlesService', () => {
         choices: [
           {
             message: {
-              content: JSON.stringify({
+              content: serializeStrictAiOutput({
                 adaptedBlocks: [
                   {
                     children: [
@@ -870,7 +886,7 @@ describe('ArticlesService', () => {
         choices: [
           {
             message: {
-              content: JSON.stringify({
+              content: serializeStrictAiOutput({
                 questions: [
                   {
                     correctOptionIds: ['a'],
@@ -942,7 +958,7 @@ describe('ArticlesService', () => {
       choices: [
         {
           message: {
-            content: JSON.stringify({
+            content: serializeStrictAiOutput({
               questions: [
                 {
                   correctOptionIds: ['a'],
@@ -1012,7 +1028,7 @@ describe('ArticlesService', () => {
       text: 'Scientists study volcanoes. Lava flows down the mountain during an eruption.',
       title: 'Volcanoes',
     });
-    const prompt = getFirstGroqPrompt();
+    const prompt = getGroqPrompt();
 
     expect(prompt).toContain(
       'Question 1 must use "translation", question 2 "reverse_translation", question 3 "cloze"',
@@ -1038,73 +1054,105 @@ describe('ArticlesService', () => {
     expect(response.questions[0]?.prompt).toContain('eruption');
   });
 
-  it('filters out vocabulary quiz questions with invalid target terms', async () => {
-    createChatCompletionMock.mockResolvedValue({
-      choices: [
-        {
-          message: {
-            content: JSON.stringify({
-              questions: [
-                {
-                  correctOptionIds: ['a'],
-                  format: 'translation',
-                  id: 'vq-1',
-                  options: [
-                    { id: 'a', text: 'таємничий' },
-                    { id: 'b', text: 'прозорий' },
-                    { id: 'c', text: 'швидкий' },
-                    { id: 'd', text: 'гарячий' },
-                  ],
-                  prompt:
-                    'Choose the best Ukrainian translation of "mysterious".',
-                  sourceExcerpt: 'The forest canopy protects many insects.',
-                  term: 'mysterious',
-                  termKind: 'word',
-                  translation: 'таємничий',
-                  type: 'single_choice',
-                },
-                {
-                  correctOptionIds: ['a'],
-                  format: 'translation',
-                  id: 'vq-2',
-                  options: [
-                    { id: 'a', text: 'це' },
-                    { id: 'b', text: 'вони' },
-                    { id: 'c', text: 'вона' },
-                    { id: 'd', text: 'він' },
-                  ],
-                  prompt: 'Choose the best Ukrainian translation of "the".',
-                  sourceExcerpt: 'The forest canopy protects many insects.',
-                  term: 'the',
-                  termKind: 'word',
-                  translation: 'це',
-                  type: 'single_choice',
-                },
-                {
-                  correctOptionIds: ['b'],
-                  format: 'translation',
-                  id: 'vq-3',
-                  options: [
-                    { id: 'a', text: 'лісова стежка' },
-                    { id: 'b', text: 'лісовий полог' },
-                    { id: 'c', text: 'гірський схил' },
-                    { id: 'd', text: 'нічний вітер' },
-                  ],
-                  prompt:
-                    'Choose the best Ukrainian translation of "forest canopy" as used in the text.',
-                  sourceExcerpt: 'The forest canopy protects many insects.',
-                  term: 'forest canopy',
-                  termKind: 'phrase',
-                  translation: 'полог',
-                  type: 'single_choice',
-                },
-              ],
-              resolvedLevel: 'A2',
-            }),
+  it('retries invalid vocabulary targets and accepts a corrected response', async () => {
+    createChatCompletionMock
+      .mockResolvedValueOnce({
+        choices: [
+          {
+            message: {
+              content: serializeStrictAiOutput({
+                questions: [
+                  {
+                    correctOptionIds: ['a'],
+                    format: 'translation',
+                    id: 'vq-1',
+                    options: [
+                      { id: 'a', text: 'таємничий' },
+                      { id: 'b', text: 'прозорий' },
+                      { id: 'c', text: 'швидкий' },
+                      { id: 'd', text: 'гарячий' },
+                    ],
+                    prompt:
+                      'Choose the best Ukrainian translation of "mysterious".',
+                    sourceExcerpt: 'The forest canopy protects many insects.',
+                    term: 'mysterious',
+                    termKind: 'word',
+                    translation: 'таємничий',
+                    type: 'single_choice',
+                  },
+                  {
+                    correctOptionIds: ['a'],
+                    format: 'translation',
+                    id: 'vq-2',
+                    options: [
+                      { id: 'a', text: 'це' },
+                      { id: 'b', text: 'вони' },
+                      { id: 'c', text: 'вона' },
+                      { id: 'd', text: 'він' },
+                    ],
+                    prompt: 'Choose the best Ukrainian translation of "the".',
+                    sourceExcerpt: 'The forest canopy protects many insects.',
+                    term: 'the',
+                    termKind: 'word',
+                    translation: 'це',
+                    type: 'single_choice',
+                  },
+                  {
+                    correctOptionIds: ['b'],
+                    format: 'translation',
+                    id: 'vq-3',
+                    options: [
+                      { id: 'a', text: 'лісова стежка' },
+                      { id: 'b', text: 'лісовий полог' },
+                      { id: 'c', text: 'гірський схил' },
+                      { id: 'd', text: 'нічний вітер' },
+                    ],
+                    prompt:
+                      'Choose the best Ukrainian translation of "forest canopy" as used in the text.',
+                    sourceExcerpt: 'The forest canopy protects many insects.',
+                    term: 'forest canopy',
+                    termKind: 'phrase',
+                    translation: 'полог',
+                    type: 'single_choice',
+                  },
+                ],
+                resolvedLevel: 'A2',
+              }),
+            },
           },
-        },
-      ],
-    });
+        ],
+      })
+      .mockResolvedValueOnce({
+        choices: [
+          {
+            message: {
+              content: serializeStrictAiOutput({
+                questions: [
+                  {
+                    correctOptionIds: ['b'],
+                    format: 'translation',
+                    id: 'vq-3',
+                    options: [
+                      { id: 'a', text: 'лісова стежка' },
+                      { id: 'b', text: 'лісовий полог' },
+                      { id: 'c', text: 'гірський схил' },
+                      { id: 'd', text: 'нічний вітер' },
+                    ],
+                    prompt:
+                      'Choose the best Ukrainian translation of "forest canopy" as used in the text.',
+                    sourceExcerpt: 'The forest canopy protects many insects.',
+                    term: 'forest canopy',
+                    termKind: 'phrase',
+                    translation: 'лісовий полог',
+                    type: 'single_choice',
+                  },
+                ],
+                resolvedLevel: 'A2',
+              }),
+            },
+          },
+        ],
+      });
 
     const response = await service.generateArticleVocabularyQuiz({
       text: 'The forest canopy protects many insects.',
@@ -1123,6 +1171,8 @@ describe('ArticlesService', () => {
       type: 'single_choice',
     });
     expect(response.questions[0]?.options).toHaveLength(4);
+    expect(createChatCompletionMock).toHaveBeenCalledTimes(2);
+    expect(getGroqPrompt(1)).toContain('missing from the source text');
   });
 
   it('preserves requested C1 level for vocabulary quiz generation', async () => {
@@ -1130,7 +1180,7 @@ describe('ArticlesService', () => {
       choices: [
         {
           message: {
-            content: JSON.stringify({
+            content: serializeStrictAiOutput({
               questions: [
                 {
                   correctOptionIds: ['c'],
@@ -1164,14 +1214,14 @@ describe('ArticlesService', () => {
       text: 'The policy language created ambiguity for both investors and regulators.',
       title: 'Policy Language',
     });
-    const prompt = getFirstGroqPrompt();
+    const prompt = getGroqPrompt();
 
     expect(prompt).toContain('Learner level is fixed at C1.');
     expect(prompt).toContain('Set "resolvedLevel" to "C1"');
     expect(response.resolvedLevel).toBe('C1');
   });
 
-  it('recovers complete vocabulary questions from truncated AI JSON', async () => {
+  it('rejects truncated vocabulary JSON instead of repairing it', async () => {
     createChatCompletionMock.mockResolvedValue({
       choices: [
         {
@@ -1278,27 +1328,13 @@ describe('ArticlesService', () => {
       ],
     });
 
-    const response = await service.generateArticleVocabularyQuiz({
-      level: 'A2',
-      text: "Alan Turing was an English mathematician. The machine could follow an algorithm. He helped develop theoretical computer science. Turing wrote about artificial intelligence. He worked at Britain's codebreaking centre.",
-      title: 'Alan Turing',
-    });
-
-    expect(response.resolvedLevel).toBe('A2');
-    expect(response.questions).toHaveLength(5);
-    expect(response.questions.map((question) => question.term)).toEqual([
-      'mathematician',
-      'algorithm',
-      'computer science',
-      'artificial intelligence',
-      'codebreaking',
-    ]);
-    expect(response.questions.map((question) => question.format)).toEqual([
-      'translation',
-      'reverse_translation',
-      'cloze',
-      'translation',
-      'reverse_translation',
-    ]);
+    await expect(
+      service.generateArticleVocabularyQuiz({
+        level: 'A2',
+        text: "Alan Turing was an English mathematician. The machine could follow an algorithm. He helped develop theoretical computer science. Turing wrote about artificial intelligence. He worked at Britain's codebreaking centre.",
+        title: 'Alan Turing',
+      }),
+    ).rejects.toBeInstanceOf(BadGatewayException);
+    expect(createChatCompletionMock).toHaveBeenCalledTimes(1);
   });
 });
