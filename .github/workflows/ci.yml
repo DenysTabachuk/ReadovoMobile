@@ -18,6 +18,10 @@ jobs:
     name: Backend quality gate
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # Prisma reads DATABASE_URL while loading its config during `npm ci`.
+    # Client generation only validates this URL; it does not connect to a database.
+    env:
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/readovo_ci
     defaults:
       run:
         working-directory: backend
@@ -34,22 +38,23 @@ jobs:
           cache-dependency-path: backend/package-lock.json
 
       - name: Install dependencies
+        id: install
         run: npm ci
 
       - name: TypeScript
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: npm run typecheck
 
       - name: ESLint
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: npm run lint
 
       - name: Prettier
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: npm run format:check
 
       - name: Unit tests
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: npm test -- --runInBand
 
   frontend:
@@ -72,20 +77,21 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
+        id: install
         run: npm ci
 
       - name: TypeScript
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: npm run typecheck
 
       - name: ESLint
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: npm run lint
 
       - name: Prettier
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: npm run format:check
 
       - name: Unit tests
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: npm test -- --runInBand
