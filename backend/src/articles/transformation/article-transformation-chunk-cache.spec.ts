@@ -29,8 +29,11 @@ describe('ArticleTransformationChunkCache', () => {
 
   it('creates stable versioned keys from all output-affecting input', () => {
     const params = {
+      chunkIndex: 1,
+      chunkTotal: 2,
       level: 'A2' as const,
       source: 'Source chunk.',
+      sourceWordCount: 4_000,
       title: 'Fashion',
       transformationType: 'summary' as const,
     };
@@ -38,6 +41,12 @@ describe('ArticleTransformationChunkCache', () => {
     expect(cache.createKey(params)).toBe(cache.createKey(params));
     expect(cache.createKey(params)).not.toBe(
       cache.createKey({ ...params, level: 'B1' }),
+    );
+    expect(cache.createKey(params)).not.toBe(
+      cache.createKey({ ...params, sourceWordCount: 2_000 }),
+    );
+    expect(cache.createKey(params)).not.toBe(
+      cache.createKey({ ...params, chunkIndex: 2 }),
     );
   });
 
@@ -67,13 +76,12 @@ describe('ArticleTransformationChunkCache', () => {
     storeMock.mockResolvedValue({});
 
     await cache.store({ adaptedBlocks, cacheKey: 'chunk-key' });
+    const expiresAt = expect.any(Date) as unknown as Date;
 
-    expect(storeMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        create: expect.objectContaining({ cacheKey: 'chunk-key' }),
-        update: expect.objectContaining({ adaptedBlocks }),
-        where: { cacheKey: 'chunk-key' },
-      }),
-    );
+    expect(storeMock).toHaveBeenCalledWith({
+      create: { adaptedBlocks, cacheKey: 'chunk-key', expiresAt },
+      update: { adaptedBlocks, expiresAt },
+      where: { cacheKey: 'chunk-key' },
+    });
   });
 });

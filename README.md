@@ -80,6 +80,7 @@ DATABASE_URL=postgres://readovo:readovo_password@localhost:5432/readovo
 PORT=3000
 GOOGLE_TRANSLATE_API_KEY=
 GROQ_API_KEY=
+GROQ_TPM_LIMIT=8000
 SMTP_HOST=
 SMTP_PORT=587
 SMTP_SECURE=false
@@ -101,6 +102,9 @@ codes. If SMTP is empty in local development, the backend logs the verification
 code.
 
 `GROQ_API_KEY` is used for AI-generated article and dictionary quiz content.
+`GROQ_TPM_LIMIT` must match the token-per-minute limit shown by Groq for the
+configured model and service tier. The backend defaults to the free-tier-safe
+value of `8000` and reserves a safety margin when planning requests.
 `GOOGLE_TRANSLATE_API_KEY` is used for translations.
 
 Firebase credentials are used for push notifications. For local development,

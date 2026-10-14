@@ -16,11 +16,13 @@ import { ArticleAdaptationService } from './transformation/article-adaptation.se
 import { ArticleContentProcessor } from './transformation/article-content.processor';
 import { ArticlePromptFactory } from './transformation/article-prompt.factory';
 import { ArticleSimplificationCache } from './transformation/article-simplification-cache';
+import { ArticleTransformationChunkCache } from './transformation/article-transformation-chunk-cache';
 import { ArticleTransformationPlanner } from './transformation/article-transformation.planner';
 import { ArticleTransformationValidator } from './transformation/article-transformation.validator';
 import { ArticlesService } from './articles.service';
 
-const createChatCompletionMock = jest.fn();
+const createChatCompletionMock =
+  jest.fn<(...args: unknown[]) => Promise<unknown>>();
 
 type GroqChatCompletionRequest = {
   messages: Array<{ content?: string }>;
@@ -136,7 +138,7 @@ jest.mock('groq-sdk', () => ({
       completions: {
         create: (...args: unknown[]) => ({
           withResponse: async () => ({
-            data: await createChatCompletionMock(...args),
+            data: (await createChatCompletionMock(...args)) as unknown,
             response: new Response(null, {
               headers: {
                 'x-ratelimit-limit-tokens': '8000',
@@ -172,6 +174,11 @@ describe('ArticlesService', () => {
         findUnique: queryMock,
         upsert: queryMock,
       },
+      articleTransformationChunk: {
+        delete: jest.fn(),
+        findUnique: jest.fn().mockResolvedValue(null),
+        upsert: jest.fn().mockResolvedValue({}),
+      },
       user: { findUnique: jest.fn() },
       userRecentArticle: {},
       userSavedArticle: {},
@@ -204,6 +211,7 @@ describe('ArticlesService', () => {
       promptFactory,
       quizValidator,
       new ArticleSimplificationCache(prisma, contentProcessor),
+      new ArticleTransformationChunkCache(prisma),
       new ArticleTransformationPlanner(
         contentProcessor,
         promptFactory,

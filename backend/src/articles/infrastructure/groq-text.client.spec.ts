@@ -5,7 +5,8 @@ import { AiTelemetry } from './ai.telemetry';
 import { AiTokenCounter } from './ai-token-counter';
 import { GroqTextClient } from './groq-text.client';
 
-const createChatCompletionMock = jest.fn();
+const createChatCompletionMock =
+  jest.fn<(...args: unknown[]) => Promise<unknown>>();
 
 type GroqStructuredRequest = {
   response_format: {
@@ -24,7 +25,7 @@ jest.mock('groq-sdk', () => ({
       completions: {
         create: (...args: unknown[]) => ({
           withResponse: async () => ({
-            data: await createChatCompletionMock(...args),
+            data: (await createChatCompletionMock(...args)) as unknown,
             response: new Response(null, {
               headers: {
                 'x-ratelimit-limit-tokens': '8000',

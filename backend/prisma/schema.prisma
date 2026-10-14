@@ -137,6 +137,17 @@ model ArticleSimplification {
   @@map("article_simplifications")
 }
 
+model ArticleTransformationChunk {
+  cacheKey      String   @id @map("cache_key")
+  adaptedBlocks Json     @map("adapted_blocks")
+  expiresAt     DateTime @map("expires_at") @db.Timestamptz(6)
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([expiresAt], map: "article_transformation_chunks_expires_at_idx")
+  @@map("article_transformation_chunks")
+}
+
 model UserSavedArticle {
   userId       String   @map("user_id") @db.Uuid
   articleId    Int      @map("article_id")

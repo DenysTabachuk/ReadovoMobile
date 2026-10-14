@@ -15,6 +15,7 @@ import { ArticleQuizValidator } from '../quiz/article-quiz.validator';
 import { ArticleContentProcessor } from './article-content.processor';
 import { ArticlePromptFactory } from './article-prompt.factory';
 import { ArticleSimplificationCache } from './article-simplification-cache';
+import { ArticleTransformationChunkCache } from './article-transformation-chunk-cache';
 import { ArticleTransformationPlanner } from './article-transformation.planner';
 import {
   ArticleTransformationValidator,
@@ -72,6 +73,7 @@ export class ArticleAdaptationService {
     private readonly promptFactory: ArticlePromptFactory,
     private readonly quizValidator: ArticleQuizValidator,
     private readonly simplificationCache: ArticleSimplificationCache,
+    private readonly chunkCache: ArticleTransformationChunkCache,
     private readonly transformationPlanner: ArticleTransformationPlanner,
     private readonly transformationValidator: ArticleTransformationValidator,
   ) {}
@@ -257,6 +259,25 @@ export class ArticleAdaptationService {
     );
 
     for (const chunk of chunks) {
+      const chunkCacheKey = this.chunkCache.createKey({
+        chunkIndex: chunk.index,
+        chunkTotal: chunk.total,
+        level: params.level,
+        source: JSON.stringify({ blocks: chunk.blocks, text: chunk.text }),
+        sourceWordCount,
+        title: params.title,
+        transformationType: params.transformationType,
+      });
+      const cachedBlocks = await this.chunkCache.get(chunkCacheKey);
+
+      if (cachedBlocks) {
+        this.logger.log(
+          `Chunked ${params.transformationType} cache hit: title="${params.title}", chunk=${chunk.index}/${chunk.total}`,
+        );
+        adaptedChunkResponses.push({ adaptedBlocks: cachedBlocks });
+        continue;
+      }
+
       const prompt = this.promptFactory.createChunkSimplificationPrompt({
         chunk,
         level: params.level,
@@ -280,6 +301,10 @@ export class ArticleAdaptationService {
       });
 
       if (parsedResponse.adaptedBlocks.length > 0) {
+        await this.chunkCache.store({
+          adaptedBlocks: parsedResponse.adaptedBlocks,
+          cacheKey: chunkCacheKey,
+        });
         const chunkAdaptedLength =
           this.contentProcessor.extractPlainTextFromArticleBlocks(
             parsedResponse.adaptedBlocks,

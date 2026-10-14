@@ -16,6 +16,7 @@ import { ArticleAdaptationService } from './transformation/article-adaptation.se
 import { ArticleContentProcessor } from './transformation/article-content.processor';
 import { ArticlePromptFactory } from './transformation/article-prompt.factory';
 import { ArticleSimplificationCache } from './transformation/article-simplification-cache';
+import { ArticleTransformationChunkCache } from './transformation/article-transformation-chunk-cache';
 import { ArticleTransformationValidator } from './transformation/article-transformation.validator';
 import { ArticleTransformationPlanner } from './transformation/article-transformation.planner';
 import { ArticlesController } from './articles.controller';
@@ -33,6 +34,7 @@ import { ArticlesService } from './articles.service';
     ArticleQuizService,
     ArticleQuizValidator,
     ArticleSimplificationCache,
+    ArticleTransformationChunkCache,
     ArticleTransformationPlanner,
     ArticleTransformationValidator,
     ArticleVocabularyQuizValidator,
