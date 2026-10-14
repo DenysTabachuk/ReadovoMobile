@@ -13,14 +13,18 @@ import {
 } from '@nestjs/common';
 
 import { UserAuthGuard } from '../auth/user-auth.guard';
+import { UserIdParamsDto } from '../common/validation/request.dto';
+import {
+  DeviceIdQueryDto,
+  RegisterPushTokenDto,
+  SendTestPushDto,
+  UpsertLearningReminderPreferencesDto,
+} from './dto';
 import { NotificationsService } from './notifications.service';
 import type {
   LearningReminderDispatchResult,
   LearningReminderPreferences,
-  RegisterPushTokenDto,
-  SendTestPushDto,
   SendTestPushResult,
-  UpsertLearningReminderPreferencesDto,
 } from './types';
 
 @Controller('notifications')
@@ -32,14 +36,14 @@ export class NotificationsController {
 
   @Get('preferences/:userId')
   async getLearningReminderPreferences(
-    @Param('userId') userId: string,
+    @Param() { userId }: UserIdParamsDto,
   ): Promise<LearningReminderPreferences> {
     return this.notificationsService.getLearningReminderPreferences(userId);
   }
 
   @Put('preferences/:userId')
   async upsertLearningReminderPreferences(
-    @Param('userId') userId: string,
+    @Param() { userId }: UserIdParamsDto,
     @Body() payload: UpsertLearningReminderPreferencesDto,
   ): Promise<LearningReminderPreferences> {
     try {
@@ -58,7 +62,7 @@ export class NotificationsController {
 
   @Post('push-token/:userId')
   async registerPushToken(
-    @Param('userId') userId: string,
+    @Param() { userId }: UserIdParamsDto,
     @Body() payload: RegisterPushTokenDto,
   ): Promise<{ ok: true }> {
     this.logger.log(
@@ -86,8 +90,8 @@ export class NotificationsController {
 
   @Delete('push-token/:userId')
   async deactivatePushToken(
-    @Param('userId') userId: string,
-    @Query('deviceId') deviceId: string,
+    @Param() { userId }: UserIdParamsDto,
+    @Query() { deviceId }: DeviceIdQueryDto,
   ): Promise<{ ok: true }> {
     await this.notificationsService.deactivatePushToken(userId, deviceId);
     return { ok: true };
@@ -95,7 +99,7 @@ export class NotificationsController {
 
   @Post('test-push/:userId')
   async sendTestPush(
-    @Param('userId') userId: string,
+    @Param() { userId }: UserIdParamsDto,
     @Body() payload: SendTestPushDto,
   ): Promise<SendTestPushResult> {
     this.logger.log(`sendTestPush request userId=${userId}`);
@@ -119,7 +123,7 @@ export class NotificationsController {
 
   @Delete('learning-reminders/dispatch/today/:userId')
   async clearTodayLearningReminderDispatchForDevelopment(
-    @Param('userId') userId: string,
+    @Param() { userId }: UserIdParamsDto,
   ): Promise<{ deletedCount: number }> {
     if (process.env.NODE_ENV === 'production') {
       throw new ForbiddenException(

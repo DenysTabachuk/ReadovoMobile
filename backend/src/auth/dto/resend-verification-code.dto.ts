@@ -1,3 +1,1 @@
-export type ResendVerificationCodeDto = {
-  email?: string;
-};
+export { RequestPasswordResetDto as ResendVerificationCodeDto } from './request-password-reset.dto';

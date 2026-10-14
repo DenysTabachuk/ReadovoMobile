@@ -8,6 +8,7 @@
     "android:render": "npm --prefix frontend run android:render",
     "mock:api": "json-server --watch mock-api/db.json --host 0.0.0.0 --port 3101 --routes mock-api/routes.json --middlewares mock-api/server.js",
     "db:down": "docker compose down",
+    "db:migrate": "npm --prefix backend run prisma:migrate",
     "db:up": "docker compose up -d postgres"
   },
   "devDependencies": {

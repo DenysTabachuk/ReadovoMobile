@@ -13,26 +13,6 @@ export type DictionaryWord = {
   word: string;
 };
 
-export type CreateDictionaryWordRequest = {
-  context?: string;
-  translation?: string;
-  word?: string;
-};
-
-export type GenerateEmbeddingRequest = {
-  text?: string;
-};
-
-export type SimilarWordsRequest = {
-  word?: string;
-  wordList?: string[];
-};
-
-export type QuizOptionsRequest = {
-  correctWord?: string;
-  wordList?: string[];
-};
-
 export type DictionaryTestQuestionOption = {
   id: string;
   text: string;
@@ -40,9 +20,7 @@ export type DictionaryTestQuestionOption = {
 };
 
 export type DictionaryTestQuestionFormat =
-  | 'translation'
-  | 'reverse_translation'
-  | 'cloze';
+  'translation' | 'reverse_translation' | 'cloze';
 
 export type DictionaryTestQuestion = {
   format: DictionaryTestQuestionFormat;
@@ -54,15 +32,6 @@ export type DictionaryTestQuestion = {
 
 export type DictionaryTest = {
   questions: DictionaryTestQuestion[];
-};
-
-export type SubmitDictionaryTestAnswerRequest = {
-  selectedOptionId?: string;
-  wordId?: string;
-};
-
-export type UpdateDictionaryWordProgressRequest = {
-  progress?: DictionaryWordProgress;
 };
 
 export type DictionaryTestAnswerResult = {

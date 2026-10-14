@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -11,278 +10,65 @@ import {
 } from '@nestjs/common';
 
 import { UserAuthGuard } from '../auth/user-auth.guard';
+import { UserIdParamsDto } from '../common/validation/request.dto';
+import {
+  ArticleAdaptationsQueryDto,
+  ArticleDetailQueryDto,
+  ArticleIdParamsDto,
+  ArticleListQueryDto,
+  GenerateArticleQuizDto,
+  GenerateArticleVocabularyQuizDto,
+  RandomArticlesQueryDto,
+  SimplifyArticleDto,
+  UserArticleIdParamsDto,
+  WikipediaArticleDto,
+} from './contracts/dto';
 import { ArticlesService } from './articles.service';
 import {
-  type ArticleTextTransformationType,
-  type ArticleReadyLevelFilter,
-  type ArticleReadyTransformationFilter,
-  type ArticleSimplificationLevel,
   type ArticleSimplificationTargetLength,
   type ArticleAdaptationsByArticleId,
-  type GenerateArticleVocabularyQuizRequest,
   type GenerateArticleVocabularyQuizResponse,
   type UserRecentArticle,
   type UserSavedArticle,
-  type GenerateArticleQuizRequest,
   type ArticleQuizQuestion,
-  type SimplifyArticleRequest,
   type SimplifyArticleResponse,
   type WikipediaArticle,
-  type WikipediaArticleCategory,
-  type WikipediaArticlePreviewLength,
-  type WikipediaArticleSortOption,
   type WikipediaArticleDetail,
-} from './types';
+} from './contracts/types';
 
 const DEFAULT_TARGET_LENGTH: ArticleSimplificationTargetLength = 'short';
-const SIMPLIFICATION_LEVELS: ArticleSimplificationLevel[] = [
-  'A1',
-  'A2',
-  'B1',
-  'B2',
-  'C1',
-];
-const ARTICLE_CATEGORIES: WikipediaArticleCategory[] = [
-  'all',
-  'biography',
-  'food',
-  'geography',
-  'history',
-  'space',
-  'sports',
-  'science',
-  'technology',
-  'nature',
-  'culture',
-];
-const TARGET_LENGTHS: ArticleSimplificationTargetLength[] = [
-  'short',
-  'medium',
-  'long',
-];
-const ARTICLE_TRANSFORMATION_TYPES: ArticleTextTransformationType[] = [
-  'adaptation',
-  'summary',
-];
-const PREVIEW_LENGTHS: WikipediaArticlePreviewLength[] = [
-  'all',
-  'short',
-  'medium',
-  'long',
-];
-const ARTICLE_SORT_OPTIONS: WikipediaArticleSortOption[] = [
-  'default',
-  'length_desc',
-  'length_asc',
-];
-const READY_LEVEL_FILTERS: ArticleReadyLevelFilter[] = [
-  'all',
-  'A1',
-  'A2',
-  'B1',
-  'B2',
-];
-const READY_TRANSFORMATION_FILTERS: ArticleReadyTransformationFilter[] = [
-  'all',
-  'adaptation',
-  'summary',
-  'both',
-];
-
 @Controller()
 export class ArticlesController {
   constructor(private readonly articlesService: ArticlesService) {}
 
   @Get('articles/random')
   async getRandomArticles(
-    @Query('limit') limit?: string,
+    @Query() { limit }: RandomArticlesQueryDto,
   ): Promise<WikipediaArticle[]> {
-    if (limit === undefined) {
-      return this.articlesService.getRandomArticles();
-    }
-
-    const parsedLimit = Number(limit);
-
-    if (!Number.isFinite(parsedLimit)) {
-      throw new BadRequestException('Article limit must be a number.');
-    }
-
-    return this.articlesService.getRandomArticles(parsedLimit);
+    return this.articlesService.getRandomArticles(limit);
   }
 
   @Get('articles')
   async getArticles(
-    @Query('category') category?: string,
-    @Query('excludeIds') excludeIds?: string,
-    @Query('limit') limit?: string,
-    @Query('previewLength') previewLength?: string,
-    @Query('preferImagesFirst') preferImagesFirst?: string,
-    @Query('readyLevel') readyLevel?: string,
-    @Query('readyTransformationType') readyTransformationType?: string,
-    @Query('recommended') recommended?: string,
-    @Query('search') search?: string,
-    @Query('sortBy') sortBy?: string,
+    @Query() query: ArticleListQueryDto,
   ): Promise<WikipediaArticle[]> {
-    const parsedLimit = limit === undefined ? undefined : Number(limit);
-    const normalizedCategory = category?.trim().toLowerCase() as
-      | WikipediaArticleCategory
-      | undefined;
-    const normalizedPreviewLength = previewLength?.trim().toLowerCase() as
-      | WikipediaArticlePreviewLength
-      | undefined;
-    const normalizedPreferImagesFirst = preferImagesFirst?.trim().toLowerCase();
-    const normalizedReadyLevel = readyLevel?.trim().toUpperCase() as
-      | ArticleReadyLevelFilter
-      | undefined;
-    const normalizedReadyTransformationType = readyTransformationType
-      ?.trim()
-      .toLowerCase() as ArticleReadyTransformationFilter | undefined;
-    const normalizedRecommended = recommended?.trim().toLowerCase();
-    const normalizedSortBy = sortBy?.trim().toLowerCase() as
-      | WikipediaArticleSortOption
-      | undefined;
-    const parsedExcludeIds = this.parseExcludeIds(excludeIds);
-
-    if (limit !== undefined && !Number.isFinite(parsedLimit)) {
-      throw new BadRequestException('Article limit must be a number.');
-    }
-
-    if (
-      normalizedCategory !== undefined &&
-      !ARTICLE_CATEGORIES.includes(normalizedCategory)
-    ) {
-      throw new BadRequestException('Article category is invalid.');
-    }
-
-    if (
-      normalizedPreviewLength !== undefined &&
-      !PREVIEW_LENGTHS.includes(normalizedPreviewLength)
-    ) {
-      throw new BadRequestException('Preview length is invalid.');
-    }
-
-    if (
-      normalizedPreferImagesFirst !== undefined &&
-      normalizedPreferImagesFirst !== 'true' &&
-      normalizedPreferImagesFirst !== 'false'
-    ) {
-      throw new BadRequestException('Prefer images flag is invalid.');
-    }
-
-    if (
-      normalizedReadyLevel !== undefined &&
-      !READY_LEVEL_FILTERS.includes(normalizedReadyLevel)
-    ) {
-      throw new BadRequestException('Ready level filter is invalid.');
-    }
-
-    if (
-      normalizedReadyTransformationType !== undefined &&
-      !READY_TRANSFORMATION_FILTERS.includes(normalizedReadyTransformationType)
-    ) {
-      throw new BadRequestException('Ready transformation filter is invalid.');
-    }
-
-    if (
-      normalizedRecommended !== undefined &&
-      normalizedRecommended !== 'true' &&
-      normalizedRecommended !== 'false'
-    ) {
-      throw new BadRequestException('Recommended flag is invalid.');
-    }
-
-    if (
-      normalizedSortBy !== undefined &&
-      !ARTICLE_SORT_OPTIONS.includes(normalizedSortBy)
-    ) {
-      throw new BadRequestException('Article sort option is invalid.');
-    }
-
-    return this.articlesService.getArticles({
-      category: normalizedCategory,
-      excludeIds: parsedExcludeIds,
-      limit: parsedLimit,
-      previewLength: normalizedPreviewLength,
-      preferImagesFirst: normalizedPreferImagesFirst === 'true',
-      readyLevel: normalizedReadyLevel,
-      readyTransformationType: normalizedReadyTransformationType,
-      recommended:
-        normalizedRecommended === undefined
-          ? undefined
-          : normalizedRecommended === 'true',
-      search,
-      sortBy: normalizedSortBy,
-    });
-  }
-
-  private parseExcludeIds(excludeIds?: string): number[] | undefined {
-    if (!excludeIds?.trim()) {
-      return undefined;
-    }
-
-    const parsedIds = excludeIds
-      .split(',')
-      .map((id) => Number(id.trim()))
-      .filter((id) => Number.isInteger(id) && id > 0);
-
-    if (parsedIds.length === 0) {
-      throw new BadRequestException('Excluded article ids are invalid.');
-    }
-
-    return Array.from(new Set(parsedIds));
+    return this.articlesService.getArticles(query);
   }
 
   @Get('api/articles/adaptations')
   async getArticleAdaptations(
-    @Query('articleIds') articleIds?: string,
-    @Query('transformationType')
-    transformationType?: string,
+    @Query() query: ArticleAdaptationsQueryDto,
   ): Promise<ArticleAdaptationsByArticleId> {
-    const parsedArticleIds = this.parseArticleIds(articleIds);
-    const normalizedTransformationType = transformationType
-      ?.trim()
-      .toLowerCase();
-
-    if (
-      normalizedTransformationType &&
-      normalizedTransformationType !== 'all' &&
-      !ARTICLE_TRANSFORMATION_TYPES.includes(
-        normalizedTransformationType as ArticleTextTransformationType,
-      )
-    ) {
-      throw new BadRequestException('Article transformation type is invalid.');
-    }
-
     return this.articlesService.getAvailableAdaptationsByArticleIds(
-      parsedArticleIds,
-      normalizedTransformationType as
-        | ArticleTextTransformationType
-        | 'all'
-        | undefined,
+      query.articleIds,
+      query.transformationType,
     );
-  }
-
-  private parseArticleIds(articleIds?: string): number[] {
-    if (!articleIds?.trim()) {
-      throw new BadRequestException('Article ids are required.');
-    }
-
-    const parsedIds = articleIds
-      .split(',')
-      .map((id) => Number(id.trim()))
-      .filter((id) => Number.isInteger(id) && id > 0);
-
-    if (parsedIds.length === 0) {
-      throw new BadRequestException('Article ids are invalid.');
-    }
-
-    return Array.from(new Set(parsedIds));
   }
 
   @Get('api/users/:userId/articles/saved')
   @UseGuards(UserAuthGuard)
   async getSavedArticles(
-    @Param('userId') userId: string,
+    @Param() { userId }: UserIdParamsDto,
   ): Promise<UserSavedArticle[]> {
     return this.articlesService.getSavedArticles(userId);
   }
@@ -290,32 +76,24 @@ export class ArticlesController {
   @Post('api/users/:userId/articles/saved')
   @UseGuards(UserAuthGuard)
   async saveArticle(
-    @Param('userId') userId: string,
-    @Body() body: WikipediaArticle,
+    @Param() { userId }: UserIdParamsDto,
+    @Body() body: WikipediaArticleDto,
   ): Promise<UserSavedArticle[]> {
-    this.validateArticlePayload(body);
-
     return this.articlesService.saveArticleForUser(userId, body);
   }
 
   @Delete('api/users/:userId/articles/saved/:articleId')
   @UseGuards(UserAuthGuard)
   async removeSavedArticle(
-    @Param('userId') userId: string,
-    @Param('articleId') articleId: string,
+    @Param() { articleId, userId }: UserArticleIdParamsDto,
   ): Promise<UserSavedArticle[]> {
-    const parsedArticleId = this.parseArticleId(articleId);
-
-    return this.articlesService.removeSavedArticleForUser(
-      userId,
-      parsedArticleId,
-    );
+    return this.articlesService.removeSavedArticleForUser(userId, articleId);
   }
 
   @Get('api/users/:userId/articles/recent')
   @UseGuards(UserAuthGuard)
   async getRecentArticles(
-    @Param('userId') userId: string,
+    @Param() { userId }: UserIdParamsDto,
   ): Promise<UserRecentArticle[]> {
     return this.articlesService.getRecentArticles(userId);
   }
@@ -323,123 +101,34 @@ export class ArticlesController {
   @Post('api/users/:userId/articles/recent')
   @UseGuards(UserAuthGuard)
   async recordRecentArticle(
-    @Param('userId') userId: string,
-    @Body() body: WikipediaArticle,
+    @Param() { userId }: UserIdParamsDto,
+    @Body() body: WikipediaArticleDto,
   ): Promise<UserRecentArticle[]> {
-    this.validateArticlePayload(body);
-
     return this.articlesService.recordRecentArticleForUser(userId, body);
   }
 
   @Get('articles/:id')
   async getArticleDetail(
-    @Param('id') id: string,
+    @Param() { id }: ArticleIdParamsDto,
+    @Query() query: ArticleDetailQueryDto,
   ): Promise<WikipediaArticleDetail> {
-    const pageId = Number(id);
-
-    if (!Number.isInteger(pageId) || pageId <= 0) {
-      throw new BadRequestException('Article id must be a positive integer.');
-    }
-
-    return this.articlesService.getArticleDetail(pageId);
-  }
-
-  private parseArticleId(articleId: string): number {
-    const parsedArticleId = Number(articleId);
-
-    if (!Number.isInteger(parsedArticleId) || parsedArticleId <= 0) {
-      throw new BadRequestException('Article id must be a positive integer.');
-    }
-
-    return parsedArticleId;
-  }
-
-  private validateArticlePayload(article: WikipediaArticle): void {
-    if (
-      !article ||
-      typeof article !== 'object' ||
-      !Number.isInteger(article.id) ||
-      article.id <= 0 ||
-      typeof article.title !== 'string' ||
-      !article.title.trim() ||
-      typeof article.extract !== 'string' ||
-      typeof article.url !== 'string' ||
-      !article.url.trim()
-    ) {
-      throw new BadRequestException('Article payload is invalid.');
-    }
+    return this.articlesService.getArticleDetail(id, query.languageCode);
   }
 
   @Post('api/articles/simplify')
   async simplifyArticle(
-    @Body() body: SimplifyArticleRequest,
+    @Body() body: SimplifyArticleDto,
   ): Promise<SimplifyArticleResponse> {
-    const text = body.text?.trim();
-    const title = body.title?.trim();
-    const articleId = Number(body.articleId);
-    const level = body.level?.trim().toUpperCase() as
-      | ArticleSimplificationLevel
-      | undefined;
-    const transformationType = body.transformationType?.trim().toLowerCase() as
-      | ArticleTextTransformationType
-      | undefined;
-
-    if (!text) {
-      throw new BadRequestException('Article text is required.');
-    }
-
-    if (level && !SIMPLIFICATION_LEVELS.includes(level)) {
-      throw new BadRequestException('Article level is invalid.');
-    }
-
-    if (
-      transformationType &&
-      !ARTICLE_TRANSFORMATION_TYPES.includes(transformationType)
-    ) {
-      throw new BadRequestException('Article transformation type is invalid.');
-    }
-
-    return this.articlesService.simplifyArticle({
-      articleId:
-        Number.isInteger(articleId) && articleId > 0 ? articleId : undefined,
-      blocks: Array.isArray(body.blocks) ? body.blocks : undefined,
-      level,
-      text,
-      title,
-      transformationType,
-    });
+    return this.articlesService.simplifyArticle(body);
   }
 
   @Post('api/articles/quiz')
   async generateArticleQuiz(
-    @Body() body: GenerateArticleQuizRequest,
+    @Body() body: GenerateArticleQuizDto,
   ): Promise<{ questions: ArticleQuizQuestion[] }> {
-    const text = body.text?.trim();
-    const title = body.title?.trim();
-    const level = body.level?.trim().toUpperCase() as
-      | ArticleSimplificationLevel
-      | undefined;
-    const targetLength = body.targetLength?.trim().toLowerCase() as
-      | ArticleSimplificationTargetLength
-      | undefined;
-
-    if (!text) {
-      throw new BadRequestException('Article text is required.');
-    }
-
-    if (level && !SIMPLIFICATION_LEVELS.includes(level)) {
-      throw new BadRequestException('Article level is invalid.');
-    }
-
-    if (targetLength && !TARGET_LENGTHS.includes(targetLength)) {
-      throw new BadRequestException('Target length is invalid.');
-    }
-
     const questions = await this.articlesService.generateArticleQuiz({
-      level,
-      targetLength: targetLength ?? DEFAULT_TARGET_LENGTH,
-      text,
-      title,
+      ...body,
+      targetLength: body.targetLength ?? DEFAULT_TARGET_LENGTH,
     });
 
     return { questions };
@@ -447,26 +136,8 @@ export class ArticlesController {
 
   @Post('api/articles/vocabulary-quiz')
   async generateArticleVocabularyQuiz(
-    @Body() body: GenerateArticleVocabularyQuizRequest,
+    @Body() body: GenerateArticleVocabularyQuizDto,
   ): Promise<GenerateArticleVocabularyQuizResponse> {
-    const text = body.text?.trim();
-    const title = body.title?.trim();
-    const level = body.level?.trim().toUpperCase() as
-      | ArticleSimplificationLevel
-      | undefined;
-
-    if (!text) {
-      throw new BadRequestException('Article text is required.');
-    }
-
-    if (level && !SIMPLIFICATION_LEVELS.includes(level)) {
-      throw new BadRequestException('Article level is invalid.');
-    }
-
-    return this.articlesService.generateArticleVocabularyQuiz({
-      level,
-      text,
-      title,
-    });
+    return this.articlesService.generateArticleVocabularyQuiz(body);
   }
 }

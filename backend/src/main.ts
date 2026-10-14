@@ -7,6 +7,7 @@ import { NestFactory } from '@nestjs/core';
 import { json, urlencoded } from 'express';
 
 import { AppModule } from './app.module';
+import { configureRequestValidation } from './common/validation/configure-request-validation';
 
 const bootstrapLogger = new Logger('Bootstrap');
 const REQUEST_BODY_LIMIT = '2mb';
@@ -18,6 +19,7 @@ async function bootstrap() {
   });
 
   app.enableCors();
+  configureRequestValidation(app);
   app.use(json({ limit: REQUEST_BODY_LIMIT }));
   app.use(urlencoded({ extended: true, limit: REQUEST_BODY_LIMIT }));
 

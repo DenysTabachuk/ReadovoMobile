@@ -1,10 +1,5 @@
 export type StreakTodayStatus =
-  | 'completed'
-  | 'pending'
-  | 'missed'
-  | 'frozen'
-  | 'restored'
-  | 'broken';
+  'completed' | 'pending' | 'missed' | 'frozen' | 'restored' | 'broken';
 
 export type StreakDayStatus = 'completed' | 'missed' | 'frozen' | 'restored';
 export type CalendarDayStatus =
@@ -18,8 +13,7 @@ export type CalendarDayStatus =
   | 'neutral';
 
 export type StreakActivityType =
-  | 'lexical_test_completed'
-  | 'article_quiz_completed';
+  'lexical_test_completed' | 'article_quiz_completed';
 
 export type StreakHistoryDay = {
   date: string;
@@ -57,47 +51,29 @@ export type StreakState = {
   todayStatus: StreakTodayStatus;
 };
 
-export type CompleteStreakActivityDto = {
-  activityType: StreakActivityType;
-  occurredAtClient?: string;
-  timezone?: string;
-};
-
-export type RestoreStreakDto = {
-  price: number;
-};
-
-export type ApplyStreakFreezeDto = {
-  date: string;
-};
-
-export type PurchaseStreakFreezeDto = {
-  price: number;
-};
-
 export type CompleteStreakActivityResponse = {
   pendingSync?: boolean;
   streak: StreakState;
 };
 
-export type StreakProfileRow = {
-  broken_streak_info: BrokenStreakInfo | null;
-  current_streak: number;
-  freeze_tokens: number;
-  last_activity_date: string | null;
-  longest_streak: number;
+export type StreakProfileRecord = {
+  brokenStreakInfo: BrokenStreakInfo | null;
+  currentStreak: number;
+  freezeTokens: number;
+  lastActivityDate: string | null;
+  longestStreak: number;
   timezone: string;
 };
 
-export type StreakHistoryRow = {
-  activity_date: string;
+export type StreakHistoryRecord = {
+  activityDate: string;
   status: StreakDayStatus;
 };
 
-export type StreakClaimedAchievementRow = {
-  claimed_at: Date;
-  milestone: StreakAchievementMilestone;
-  reward_coins: number;
+export type StreakClaimedAchievementRecord = {
+  claimedAt: Date;
+  milestone: number;
+  rewardCoins: number;
 };
 
 export type StreakCalendarDay = {

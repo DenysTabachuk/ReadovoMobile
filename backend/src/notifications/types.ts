@@ -3,23 +3,6 @@ export type LearningReminderPreferences = {
   learningRemindersEnabled: boolean;
 };
 
-export type UpsertLearningReminderPreferencesDto = {
-  learningReminderTime?: string;
-  learningRemindersEnabled: boolean;
-};
-
-export type RegisterPushTokenDto = {
-  deviceId: string;
-  pushToken: string;
-  platform: 'android' | 'ios';
-  provider: 'fcm';
-};
-
-export type SendTestPushDto = {
-  body?: string;
-  title?: string;
-};
-
 export type SendTestPushResult = {
   failedCount: number;
   failureReasons: string[];
