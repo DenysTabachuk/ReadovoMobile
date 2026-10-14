@@ -1,6 +1,6 @@
-// Husky runs `npm run check:staged` before every commit. lint-staged first
-// protects unstaged edits in partially staged files, then applies these rules
-// only to files selected with `git add`.
+// Husky runs `npm run check:staged` before every commit. The --hide-all option
+// temporarily hides unstaged and untracked files, so these checks see only the
+// files selected with `git add`.
 export default {
   // Backend source files use the default Jest configuration rooted at src.
   "backend/src/**/*.ts": [
@@ -29,7 +29,7 @@ export default {
   // JSON files need formatting, but ESLint and Jest do not process them.
   "frontend/**/*.json": ["npm --prefix frontend run format:staged --"],
 
-  // Run the full TypeScript check whenever at least one file is staged.
+  // Run the full TypeScript check against the staged project snapshot.
   // The function stops lint-staged from adding file paths to this command.
   "*": () => "npm run typecheck",
 };
