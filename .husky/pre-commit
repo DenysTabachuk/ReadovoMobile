@@ -1,0 +1,2 @@
+# Keep commits fast: check and test only files currently staged with `git add`.
+npm run check:staged

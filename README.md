@@ -28,8 +28,7 @@ cd ../frontend
 npm install
 ```
 
-The root package contains helper scripts. Install it as well if you want to use
-the root-level commands:
+The root package contains helper scripts and the Git hooks. Install it as well:
 
 ```bash
 cd ..
@@ -322,6 +321,30 @@ GitHub Actions runs the same TypeScript, ESLint, Prettier, and unit-test checks
 for both packages on every pull request and on pushes to `main`. To prevent
 merging broken changes, enable branch protection for `main` in GitHub and make
 `Backend quality gate` and `Frontend quality gate` required status checks.
+
+## Git Hooks
+
+Running `npm install` at the repository root installs the Husky hooks.
+Husky connects commands to Git events, while lint-staged decides which staged
+files and package-specific commands the pre-commit hook should use. Those rules
+are documented directly in `lint-staged.config.mjs`.
+
+Before each commit, lint-staged automatically formats and lints staged backend
+and frontend source files, then runs only the Jest tests related to those files.
+Partially staged files are handled safely. Run the same checks manually with:
+
+```bash
+npm run check:staged
+```
+
+Before each push, Husky runs the complete local CI suite:
+
+```bash
+npm run check:push
+```
+
+This includes TypeScript, ESLint, Prettier, and all unit tests for both
+packages.
 
 ## Common Issues
 

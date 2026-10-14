@@ -1,0 +1,2 @@
+# Before sharing changes, run the same complete checks used by CI.
+npm run check:push

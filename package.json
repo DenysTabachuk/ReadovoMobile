@@ -1,5 +1,8 @@
 {
   "scripts": {
+    "prepare": "husky",
+    "check:staged": "lint-staged",
+    "check:push": "npm run ci",
     "ci": "npm run ci:backend && npm run ci:frontend",
     "ci:backend": "npm --prefix backend run ci",
     "ci:frontend": "npm --prefix frontend run ci",
@@ -15,7 +18,9 @@
     "db:up": "docker compose up -d postgres"
   },
   "devDependencies": {
-    "json-server": "^0.17.4"
+    "husky": "^9.1.7",
+    "json-server": "^0.17.4",
+    "lint-staged": "^17.6.0"
   },
   "dependencies": {
     "i18next": "^26.0.6",
