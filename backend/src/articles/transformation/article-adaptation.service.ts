@@ -12,6 +12,7 @@ import {
 } from '../contracts/ai-output.schemas';
 import { AiStructuredOutputRunner } from '../infrastructure/ai-structured-output.runner';
 import { ArticleQuizValidator } from '../quiz/article-quiz.validator';
+import { ArticleQuizPromptPlanner } from '../quiz/article-quiz-prompt.planner';
 import { ArticleContentProcessor } from './article-content.processor';
 import { ArticlePromptFactory } from './article-prompt.factory';
 import { ArticleSimplificationCache } from './article-simplification-cache';
@@ -71,6 +72,7 @@ export class ArticleAdaptationService {
     private readonly contentProcessor: ArticleContentProcessor,
     private readonly outputRunner: AiStructuredOutputRunner,
     private readonly promptFactory: ArticlePromptFactory,
+    private readonly quizPromptPlanner: ArticleQuizPromptPlanner,
     private readonly quizValidator: ArticleQuizValidator,
     private readonly simplificationCache: ArticleSimplificationCache,
     private readonly chunkCache: ArticleTransformationChunkCache,
@@ -330,16 +332,29 @@ export class ArticleAdaptationService {
       return { adaptedBlocks };
     }
 
-    const quizPrompt = this.promptFactory.createQuizPrompt({
-      level: params.level,
+    const quizPromptPlan = this.quizPromptPlanner.createTokenSafePrompt({
+      createPrompt: ({ sourceCoverage, text }) =>
+        this.promptFactory.createQuizPrompt({
+          level: params.level,
+          sourceCoverage,
+          text,
+          title: params.title,
+        }),
+      maxCompletionTokens: MAX_READING_QUIZ_COMPLETION_TOKENS,
+      schema: ReadingQuizOutputSchema,
+      systemMessage: READING_QUIZ_SYSTEM_MESSAGE,
       text: adaptedText,
-      title: params.title,
     });
+    if (quizPromptPlan.sourceCoverage === 'representative_excerpts') {
+      this.logger.log(
+        `Using token-safe representative excerpts for reading quiz: title="${params.title}", sourceLength=${adaptedText.length}, selectedLength=${quizPromptPlan.sourceText.length}`,
+      );
+    }
     const questions = await this.outputRunner.generate({
       apiKey: params.apiKey,
       maxCompletionTokens: MAX_READING_QUIZ_COMPLETION_TOKENS,
       operation: 'reading_quiz',
-      prompt: quizPrompt,
+      prompt: quizPromptPlan.prompt,
       schema: ReadingQuizOutputSchema,
       schemaName: AI_SCHEMA_NAMES.readingQuiz,
       systemMessage: READING_QUIZ_SYSTEM_MESSAGE,

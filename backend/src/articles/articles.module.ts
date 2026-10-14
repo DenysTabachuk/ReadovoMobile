@@ -10,6 +10,7 @@ import { AiTokenCounter } from './infrastructure/ai-token-counter';
 import { GroqTextClient } from './infrastructure/groq-text.client';
 import { ArticleLibraryService } from './library/article-library.service';
 import { ArticleQuizService } from './quiz/article-quiz.service';
+import { ArticleQuizPromptPlanner } from './quiz/article-quiz-prompt.planner';
 import { ArticleQuizValidator } from './quiz/article-quiz.validator';
 import { ArticleVocabularyQuizValidator } from './quiz/article-vocabulary-quiz.validator';
 import { ArticleAdaptationService } from './transformation/article-adaptation.service';
@@ -31,6 +32,7 @@ import { ArticlesService } from './articles.service';
     ArticleFormulaRenderer,
     ArticleLibraryService,
     ArticlePromptFactory,
+    ArticleQuizPromptPlanner,
     ArticleQuizService,
     ArticleQuizValidator,
     ArticleSimplificationCache,

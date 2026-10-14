@@ -10,6 +10,7 @@ import { AiTokenCounter } from './infrastructure/ai-token-counter';
 import { GroqTextClient } from './infrastructure/groq-text.client';
 import { ArticleLibraryService } from './library/article-library.service';
 import { ArticleQuizService } from './quiz/article-quiz.service';
+import { ArticleQuizPromptPlanner } from './quiz/article-quiz-prompt.planner';
 import { ArticleQuizValidator } from './quiz/article-quiz.validator';
 import { ArticleVocabularyQuizValidator } from './quiz/article-vocabulary-quiz.validator';
 import { ArticleAdaptationService } from './transformation/article-adaptation.service';
@@ -202,6 +203,11 @@ describe('ArticlesService', () => {
       aiTelemetry,
     );
     const promptFactory = new ArticlePromptFactory(contentProcessor);
+    const quizPromptPlanner = new ArticleQuizPromptPlanner(
+      contentProcessor,
+      rateLimits,
+      tokenCounter,
+    );
     const transformationValidator = new ArticleTransformationValidator(
       quizValidator,
     );
@@ -209,6 +215,7 @@ describe('ArticlesService', () => {
       contentProcessor,
       outputRunner,
       promptFactory,
+      quizPromptPlanner,
       quizValidator,
       new ArticleSimplificationCache(prisma, contentProcessor),
       new ArticleTransformationChunkCache(prisma),
@@ -226,6 +233,7 @@ describe('ArticlesService', () => {
       new ArticleQuizService(
         outputRunner,
         promptFactory,
+        quizPromptPlanner,
         quizValidator,
         vocabularyValidator,
       ),
@@ -959,6 +967,37 @@ describe('ArticlesService', () => {
       ]),
     );
     expect(response.questions).toHaveLength(1);
+  });
+
+  it('generates a reading quiz from token-safe excerpts of a large article', async () => {
+    const paragraphs = Array.from({ length: 80 }, (_, index) =>
+      `Section ${index + 1}. ${'Computers process information and follow instructions. '.repeat(18)}`.trim(),
+    );
+    createChatCompletionMock.mockResolvedValue({
+      choices: [
+        {
+          message: {
+            content: serializeStrictAiOutput({
+              questions: [createStrictReadingQuestion()],
+            }),
+          },
+        },
+      ],
+    });
+
+    const questions = await service.generateArticleQuiz({
+      level: 'A2',
+      targetLength: 'short',
+      text: paragraphs.join('\n\n'),
+      title: 'Computer',
+    });
+    const prompt = getGroqPrompt();
+
+    expect(questions).toHaveLength(1);
+    expect(createChatCompletionMock).toHaveBeenCalledTimes(1);
+    expect(prompt).toContain('Representative excerpts:');
+    expect(prompt).toContain('Section 1.');
+    expect(prompt).toContain('Section 80.');
   });
 
   it('generates a structured vocabulary quiz from article text', async () => {

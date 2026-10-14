@@ -6,6 +6,7 @@ import {
 } from './article-content.processor';
 import {
   type ArticleBlock,
+  type ArticleQuizSourceCoverage,
   type ArticleSimplificationLevel,
   type ArticleSimplificationTargetLength,
   type ArticleTextTransformationType,
@@ -181,6 +182,7 @@ ${this.formatSource(params.sourceBlocks, params.text)}`;
 
   createQuizPrompt(params: {
     level: ArticleSimplificationLevel;
+    sourceCoverage?: ArticleQuizSourceCoverage;
     targetLength?: ArticleSimplificationTargetLength;
     text: string;
     title: string;
@@ -188,6 +190,10 @@ ${this.formatSource(params.sourceBlocks, params.text)}`;
     const questionRule = this.getQuestionCountRule(
       params.targetLength ?? DEFAULT_TARGET_LENGTH,
     );
+    const coverageRule =
+      params.sourceCoverage === 'representative_excerpts'
+        ? '- The source contains representative excerpts from a longer article. Cover different excerpts where possible, and use only facts explicitly present in them.'
+        : '- The source contains the complete article text.';
 
     return `Generate a reading-comprehension quiz for the article below.
 
@@ -201,6 +207,7 @@ Rules:
   - "true_false": exactly 2 options ("True", "False"), exactly 1 correct option.
 - Questions must be answerable from the article text only.
 - Do not invent facts.
+${coverageRule}
 - For A1/A2 use simpler vocabulary and shorter prompts.
 - For B1 moderate complexity; for B2 richer but clear wording; for C1 allow more nuance while staying clear.
 - Follow the attached strict output schema exactly.
@@ -209,12 +216,13 @@ Rules:
 Title:
 ${params.title}
 
-Text:
+${params.sourceCoverage === 'representative_excerpts' ? 'Representative excerpts' : 'Text'}:
 ${params.text}`;
   }
 
   createVocabularyQuizPrompt(params: {
     level?: ArticleSimplificationLevel;
+    sourceCoverage?: ArticleQuizSourceCoverage;
     targetQuestionCount: number;
     text: string;
     title: string;
@@ -222,6 +230,10 @@ ${params.text}`;
     const learnerLevelRule = params.level
       ? `- Learner level is fixed at ${params.level}. Set "resolvedLevel" to "${params.level}".`
       : '- If learner level is not provided, estimate it and set "resolvedLevel" to one of "A1", "A2", "B1", "B2", "C1".';
+    const coverageRule =
+      params.sourceCoverage === 'representative_excerpts'
+        ? '- The source contains representative excerpts from a longer article. Select terms across different excerpts where possible.'
+        : '- The source contains the complete article text.';
 
     return `Generate a vocabulary quiz from the article below.
 
@@ -230,6 +242,7 @@ Rules:
 - Select target terms only from the source text. Each target term must appear verbatim in the text.
 - Prefer meaningful topic words and short useful phrases or phrasal expressions.
 - Do not select articles, pronouns, prepositions, auxiliary verbs, isolated numbers, obvious function words, or proper names unless a name is essential to understanding the topic.
+${coverageRule}
 - Allowed target terms: one word or one short phrase of up to 5 words.
 ${learnerLevelRule}
 - Respect learner level when choosing target terms. For lower levels, prefer simpler but still meaningful vocabulary from the text.
@@ -259,7 +272,7 @@ ${learnerLevelRule}
 Title:
 ${params.title}
 
-Text:
+${params.sourceCoverage === 'representative_excerpts' ? 'Representative excerpts' : 'Text'}:
 ${params.text}`;
   }
 

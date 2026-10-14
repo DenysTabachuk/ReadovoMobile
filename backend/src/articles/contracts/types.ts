@@ -119,6 +119,7 @@ export type ArticleSimplificationLevel = 'A1' | 'A2' | 'B1' | 'B2' | 'C1';
 
 export type ArticleSimplificationTargetLength = 'short' | 'medium' | 'long';
 export type ArticleTextTransformationType = 'adaptation' | 'summary';
+export type ArticleQuizSourceCoverage = 'complete' | 'representative_excerpts';
 
 export type ArticleAdaptationSummary = {
   level: ArticleSimplificationLevel;

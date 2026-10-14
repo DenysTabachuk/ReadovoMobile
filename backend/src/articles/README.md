@@ -79,17 +79,21 @@ controller -> facade -> WikipediaArticlesService
 ```text
 controller -> facade -> ArticleAdaptationService
                      -> cache lookup
-                     -> prompt/chunk creation
+                     -> exact token budget and token-safe chunk creation
+                     -> per-chunk persistent cache lookup
                      -> AiStructuredOutputRunner
                      -> GroqTextClient (strict JSON Schema)
                      -> runtime schema + domain validation
-                     -> cache store -> response
+                     -> chunk cache store and merge
+                     -> complete-result cache store -> response
 ```
 
 ### Generate a quiz
 
 ```text
 controller -> facade -> ArticleQuizService
+                     -> full-request token budget
+                     -> representative section selection for oversized sources
                      -> prompt factory
                      -> AiStructuredOutputRunner
                      -> strict schema + semantic validator -> response
@@ -103,6 +107,15 @@ controller -> facade -> ArticleQuizService
 - Semantic failures receive one corrective retry, then return a gateway error.
 - Provider-level transient retries are delegated to the Groq SDK and remain
   separate from the single semantic retry.
+- Source content is included only once in every transformation prompt
+  (structured blocks when available, otherwise plain text).
+- Requests are planned from their complete token cost, including the JSON
+  Schema and maximum completion, with a safety margin below the configured TPM.
+- Validated transformation chunks are persisted for 30 days, allowing a failed
+  or restarted operation to resume without regenerating completed chunks.
+- Quiz prompts use the complete source when it fits. Oversized sources use
+  complete, evenly distributed sections from across the article and label them
+  as representative excerpts; arbitrary character truncation is not used.
 - Prompts, article content, and raw model responses are never telemetry
   attributes.
 
