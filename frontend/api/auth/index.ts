@@ -188,13 +188,16 @@ export async function requestPasswordReset(
 export async function verifyPasswordResetCode(
   request: VerifyPasswordResetCodeRequest,
 ): Promise<VerifyPasswordResetCodeResponse> {
-  const response = await fetch(`${API_BASE_URL}/auth/verify-password-reset-code`, {
-    body: JSON.stringify(request),
-    headers: {
-      'Content-Type': 'application/json',
+  const response = await fetch(
+    `${API_BASE_URL}/auth/verify-password-reset-code`,
+    {
+      body: JSON.stringify(request),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      method: 'POST',
     },
-    method: 'POST',
-  });
+  );
 
   if (response.status === 400) {
     throw new Error('auth.errors.invalidOrExpiredVerificationCode');

@@ -1,5 +1,6 @@
-import { PreferenceStorageBackend, PREFERENCE_STORAGE_KEYS } from "../constants";
-import { ThemePreference } from "../../types";
+import { PREFERENCE_STORAGE_KEYS } from '../constants';
+import { type PreferenceStorageBackend } from '../types';
+import { type ThemePreference } from '../../types';
 
 export function saveThemePreference(
   storage: PreferenceStorageBackend,

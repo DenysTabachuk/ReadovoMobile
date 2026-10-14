@@ -35,12 +35,23 @@ export function StreakFreezePurchaseModal({
       modalProps={{ presentationStyle: 'overFullScreen' }}
       onClose={onClose}
       open={open}
-      title={t('streak.freeze.purchaseTitle')}>
+      title={t('streak.freeze.purchaseTitle')}
+    >
       <View style={styles.content}>
-        <View style={[styles.iconCircle, isDark ? styles.iconCircleDark : styles.iconCircleLight]}>
+        <View
+          style={[
+            styles.iconCircle,
+            isDark ? styles.iconCircleDark : styles.iconCircleLight,
+          ]}
+        >
           <Ionicons color="#2d6bc9" name="snow" size={24} />
         </View>
-        <ThemedText style={[styles.description, isDark ? styles.descriptionDark : styles.descriptionLight]}>
+        <ThemedText
+          style={[
+            styles.description,
+            isDark ? styles.descriptionDark : styles.descriptionLight,
+          ]}
+        >
           {t('streak.freeze.purchaseDescription')}
         </ThemedText>
         <View style={styles.priceRow}>
@@ -49,9 +60,7 @@ export function StreakFreezePurchaseModal({
             source={require('../../../../assets/images/money.png')}
             style={styles.moneyIcon}
           />
-          <ThemedText type="bodyStrong">
-            {STREAK_FREEZE_TOKEN_PRICE}
-          </ThemedText>
+          <ThemedText type="bodyStrong">{STREAK_FREEZE_TOKEN_PRICE}</ThemedText>
         </View>
 
         <View style={styles.actionsRow}>
@@ -62,8 +71,14 @@ export function StreakFreezePurchaseModal({
               styles.secondaryButton,
               isDark ? styles.secondaryButtonDark : styles.secondaryButtonLight,
               pressed ? styles.buttonPressed : null,
-            ]}>
-            <ThemedText type="bodyStrong" style={isDark ? styles.secondaryTextDark : styles.secondaryTextLight}>
+            ]}
+          >
+            <ThemedText
+              type="bodyStrong"
+              style={
+                isDark ? styles.secondaryTextDark : styles.secondaryTextLight
+              }
+            >
               {t('streak.freeze.cancel')}
             </ThemedText>
           </Pressable>
@@ -75,9 +90,12 @@ export function StreakFreezePurchaseModal({
               styles.primaryButton,
               !canConfirm ? styles.primaryButtonDisabled : null,
               pressed ? styles.buttonPressed : null,
-            ]}>
+            ]}
+          >
             <ThemedText type="bodyStrong" style={styles.primaryText}>
-              {isBuying ? t('streak.freeze.buying') : t('streak.freeze.purchaseConfirm')}
+              {isBuying
+                ? t('streak.freeze.buying')
+                : t('streak.freeze.purchaseConfirm')}
             </ThemedText>
           </Pressable>
         </View>

@@ -15,7 +15,7 @@ import { styles } from './styles';
 const minPasswordLength = 8;
 
 function getParamValue(param: string | string[] | undefined): string {
-  return Array.isArray(param) ? param[0] ?? '' : param ?? '';
+  return Array.isArray(param) ? (param[0] ?? '') : (param ?? '');
 }
 
 export default function ResetPasswordScreen() {
@@ -79,7 +79,9 @@ export default function ResetPasswordScreen() {
       });
     } catch (error) {
       const messageKey =
-        error instanceof Error ? error.message : 'auth.errors.resetPasswordFailed';
+        error instanceof Error
+          ? error.message
+          : 'auth.errors.resetPasswordFailed';
 
       showBanner({
         title: t(messageKey, {

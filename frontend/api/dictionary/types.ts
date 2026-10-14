@@ -26,9 +26,7 @@ export type DictionaryTestQuestionOption = {
 };
 
 export type DictionaryTestQuestionFormat =
-  | 'translation'
-  | 'reverse_translation'
-  | 'cloze';
+  'translation' | 'reverse_translation' | 'cloze';
 
 export type DictionaryTestQuestion = {
   format: DictionaryTestQuestionFormat;

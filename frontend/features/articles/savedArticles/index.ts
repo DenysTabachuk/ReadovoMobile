@@ -1,6 +1,9 @@
 import { authenticatedFetch } from '@/api/auth/authenticatedFetch';
 import { API_BASE_URL } from '@/api/auth/constants';
-import { type WikipediaArticle, type WikipediaArticleDetail } from '@/api/wikipedia';
+import {
+  type WikipediaArticle,
+  type WikipediaArticleDetail,
+} from '@/api/wikipedia';
 
 export const SAVED_ARTICLES_QUERY_KEY = ['savedArticles'] as const;
 
@@ -31,7 +34,9 @@ export function isArticleSaved(
   return Boolean(savedArticles?.some((article) => article.id === articleId));
 }
 
-export async function readSavedArticles(userId: string): Promise<SavedArticle[]> {
+export async function readSavedArticles(
+  userId: string,
+): Promise<SavedArticle[]> {
   const response = await authenticatedFetch(
     `${API_BASE_URL}/api/users/${userId}/articles/saved`,
   );
@@ -92,7 +97,9 @@ export function createSavedArticlesWithArticle(
       ...article,
       savedAt: new Date().toISOString(),
     },
-    ...(savedArticles ?? []).filter((savedArticle) => savedArticle.id !== article.id),
+    ...(savedArticles ?? []).filter(
+      (savedArticle) => savedArticle.id !== article.id,
+    ),
   ];
 }
 

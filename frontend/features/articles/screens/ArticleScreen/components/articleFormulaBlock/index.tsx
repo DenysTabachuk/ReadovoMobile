@@ -74,13 +74,15 @@ export function ArticleFormulaBlock({
           backgroundColor: surfaceColor,
           borderColor,
         },
-      ]}>
+      ]}
+    >
       {imageSource ? (
         <ScrollView
           horizontal
           bounces={false}
           contentContainerStyle={styles.scrollContent}
-          showsHorizontalScrollIndicator={false}>
+          showsHorizontalScrollIndicator={false}
+        >
           <Image
             accessibilityLabel={altText}
             contentFit="contain"

@@ -20,7 +20,10 @@ type SyncLearningReminderInput = {
 };
 
 function generateDeviceId(): string {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+  if (
+    typeof crypto !== 'undefined' &&
+    typeof crypto.randomUUID === 'function'
+  ) {
     return crypto.randomUUID();
   }
 
@@ -49,7 +52,9 @@ async function requestPushPermission(): Promise<boolean> {
   }
 
   if (!existing.canAskAgain) {
-    console.warn('[LearningReminders] push permission denied and cannot ask again');
+    console.warn(
+      '[LearningReminders] push permission denied and cannot ask again',
+    );
     return false;
   }
 
@@ -64,7 +69,9 @@ async function ensureAndroidNotificationChannel(): Promise<void> {
     return;
   }
 
-  console.log('[LearningReminders] creating Android notification channel default');
+  console.log(
+    '[LearningReminders] creating Android notification channel default',
+  );
   await Notifications.setNotificationChannelAsync('default', {
     importance: Notifications.AndroidImportance.DEFAULT,
     name: 'default',
@@ -76,9 +83,13 @@ async function ensureAndroidNotificationChannel(): Promise<void> {
 export async function registerCurrentDevicePushToken(
   userId: string,
 ): Promise<boolean> {
-  console.log(`[LearningReminders] registerCurrentDevicePushToken start userId=${userId}`);
+  console.log(
+    `[LearningReminders] registerCurrentDevicePushToken start userId=${userId}`,
+  );
   const hasPermission = await requestPushPermission();
-  console.log(`[LearningReminders] push permission granted=${String(hasPermission)}`);
+  console.log(
+    `[LearningReminders] push permission granted=${String(hasPermission)}`,
+  );
   if (!hasPermission) {
     return false;
   }
@@ -114,7 +125,9 @@ export async function registerCurrentDevicePushToken(
   return true;
 }
 
-export async function syncLearningReminder(input: SyncLearningReminderInput): Promise<void> {
+export async function syncLearningReminder(
+  input: SyncLearningReminderInput,
+): Promise<void> {
   const { isAuthenticated, isReminderEnabled, reminderTime, userId } = input;
 
   if (!isAuthenticated || !userId) {

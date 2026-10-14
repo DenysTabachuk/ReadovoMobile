@@ -1,6 +1,9 @@
 import { authenticatedFetch } from '@/api/auth/authenticatedFetch';
 import { API_BASE_URL } from '@/api/auth/constants';
-import { type WikipediaArticle, type WikipediaArticleDetail } from '@/api/wikipedia';
+import {
+  type WikipediaArticle,
+  type WikipediaArticleDetail,
+} from '@/api/wikipedia';
 
 export const RECENT_ARTICLES_QUERY_KEY = ['recentArticles'] as const;
 
@@ -31,7 +34,9 @@ export function isArticleRecentlyOpened(
   return Boolean(recentArticles?.some((article) => article.id === articleId));
 }
 
-export async function readRecentArticles(userId: string): Promise<RecentArticle[]> {
+export async function readRecentArticles(
+  userId: string,
+): Promise<RecentArticle[]> {
   const response = await authenticatedFetch(
     `${API_BASE_URL}/api/users/${userId}/articles/recent`,
   );

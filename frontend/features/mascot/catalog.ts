@@ -1,9 +1,6 @@
 import { type MascotAccessorySlot, type MascotCatalogItem } from './types';
 
-export const mascotAccessorySlots: MascotAccessorySlot[] = [
-  'head',
-  'eyes',
-];
+export const mascotAccessorySlots: MascotAccessorySlot[] = ['head', 'eyes'];
 
 export const mascotCatalog: MascotCatalogItem[] = [
   {
@@ -24,7 +21,7 @@ export const mascotCatalog: MascotCatalogItem[] = [
     labelKey: 'mascot.items.bandanna',
     placement: {
       scale: 0.7,
-      translateYRatio: -0.10,
+      translateYRatio: -0.1,
       translateXRatio: 0.04,
       zIndex: 2,
     },
@@ -63,6 +60,8 @@ export function getMascotCatalogItem(
   return mascotCatalog.find((item) => item.id === itemId);
 }
 
-export function getMascotItemsBySlot(slot: MascotAccessorySlot): MascotCatalogItem[] {
+export function getMascotItemsBySlot(
+  slot: MascotAccessorySlot,
+): MascotCatalogItem[] {
   return mascotCatalog.filter((item) => item.slot === slot);
 }

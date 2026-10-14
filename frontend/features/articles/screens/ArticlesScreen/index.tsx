@@ -84,7 +84,8 @@ export default function ArticlesScreen() {
   const [readyAdaptationEnabled, setReadyAdaptationEnabled] = useState(false);
   const [readySummaryEnabled, setReadySummaryEnabled] = useState(false);
   const [recommendedArticles, setRecommendedArticles] = useState(true);
-  const [personalFilter, setPersonalFilter] = useState<ArticlePersonalFilter>(null);
+  const [personalFilter, setPersonalFilter] =
+    useState<ArticlePersonalFilter>(null);
   const [isFiltersCollapsed, setIsFiltersCollapsed] = useState(true);
   const [isManualRefresh, setIsManualRefresh] = useState(false);
   const [scrollOffsetY, setScrollOffsetY] = useState(0);
@@ -241,7 +242,9 @@ export default function ArticlesScreen() {
           userId,
         ]) ?? [];
       const nextSavedArticles = saved
-        ? previousSavedArticles.filter((savedArticle) => savedArticle.id !== article.id)
+        ? previousSavedArticles.filter(
+            (savedArticle) => savedArticle.id !== article.id,
+          )
         : createSavedArticlesWithArticle(previousSavedArticles, article);
 
       queryClient.setQueryData(
@@ -322,7 +325,10 @@ export default function ArticlesScreen() {
     !isFetching &&
     !data;
   const isUpdatingResults =
-    personalFilter === null && isFetching && !isFetchingNextPage && !shouldShowInitialLoader;
+    personalFilter === null &&
+    isFetching &&
+    !isFetchingNextPage &&
+    !shouldShowInitialLoader;
   const shouldShowLoadMore =
     personalFilter === null && articles.length > 0 && hasNextPage;
   const hasActiveContentFilters =
@@ -347,10 +353,13 @@ export default function ArticlesScreen() {
     setPersonalFilter(null);
   }, []);
 
-  const handleChangeCategoryFilter = useCallback((value: ArticleCategoryFilter) => {
-    setPersonalFilter(null);
-    setCategoryFilter(value);
-  }, []);
+  const handleChangeCategoryFilter = useCallback(
+    (value: ArticleCategoryFilter) => {
+      setPersonalFilter(null);
+      setCategoryFilter(value);
+    },
+    [],
+  );
 
   const handleChangeSortByFilter = useCallback((value: ArticleSortFilter) => {
     setPersonalFilter(null);
@@ -415,18 +424,21 @@ export default function ArticlesScreen() {
     }));
   }, []);
 
-  const handleChangePersonalFilter = useCallback((value: ArticlePersonalFilter) => {
-    setSearchValue('');
-    setDebouncedSearchValue('');
-    setCategoryFilter('all');
-    setSortByFilter('default');
-    setPreferImagesFirst(false);
-    setReadyLevelFilter('all');
-    setReadyAdaptationEnabled(false);
-    setReadySummaryEnabled(false);
-    setRecommendedArticles(true);
-    setPersonalFilter(value);
-  }, []);
+  const handleChangePersonalFilter = useCallback(
+    (value: ArticlePersonalFilter) => {
+      setSearchValue('');
+      setDebouncedSearchValue('');
+      setCategoryFilter('all');
+      setSortByFilter('default');
+      setPreferImagesFirst(false);
+      setReadyLevelFilter('all');
+      setReadyAdaptationEnabled(false);
+      setReadySummaryEnabled(false);
+      setRecommendedArticles(true);
+      setPersonalFilter(value);
+    },
+    [],
+  );
 
   const toggleFiltersCollapsed = useCallback(() => {
     setIsFiltersCollapsed((current) => !current);
@@ -497,7 +509,10 @@ export default function ArticlesScreen() {
     return (
       <ScreenContainer>
         <View style={styles.centerState}>
-          <ActivityIndicator color={Colors[colorScheme ?? 'light'].tint} size="large" />
+          <ActivityIndicator
+            color={Colors[colorScheme ?? 'light'].tint}
+            size="large"
+          />
           <ThemedText type="body">{t('articles.loading')}</ThemedText>
         </View>
       </ScreenContainer>
@@ -520,7 +535,9 @@ export default function ArticlesScreen() {
           <View style={styles.header}>
             <View style={styles.headerTopRow}>
               <View style={styles.headerTitleGroup}>
-                <ThemedText type="screenTitle">{t('articles.title')}</ThemedText>
+                <ThemedText type="screenTitle">
+                  {t('articles.title')}
+                </ThemedText>
                 <ThemedText type="description" style={styles.description}>
                   {t('articles.description')}
                 </ThemedText>
@@ -589,8 +606,8 @@ export default function ArticlesScreen() {
                       : hasActiveContentFilters
                         ? t('articles.emptyFilteredDescription')
                         : debouncedSearchValue.length > 0
-                        ? t('articles.emptySearchDescription')
-                        : t('articles.emptyFilterDescription')}
+                          ? t('articles.emptySearchDescription')
+                          : t('articles.emptyFilterDescription')}
                 </ThemedText>
               </>
             )}
@@ -602,7 +619,8 @@ export default function ArticlesScreen() {
               <Button
                 disabled={isFetchingNextPage}
                 onPress={handleLoadMore}
-                style={styles.loadMoreButton}>
+                style={styles.loadMoreButton}
+              >
                 {isFetchingNextPage
                   ? t('articles.loadingMore')
                   : t('articles.loadMore')}

@@ -31,8 +31,10 @@ export function Button({
   variant = 'primary',
   ...props
 }: ButtonProps) {
-  const variantButtonStyle = variant === 'primary' ? styles.primary : styles.secondary;
-  const variantTextStyle = variant === 'primary' ? styles.primaryText : styles.secondaryText;
+  const variantButtonStyle =
+    variant === 'primary' ? styles.primary : styles.secondary;
+  const variantTextStyle =
+    variant === 'primary' ? styles.primaryText : styles.secondaryText;
 
   return (
     <Pressable
@@ -44,7 +46,8 @@ export function Button({
         disabled ? styles.disabled : null,
         style,
       ]}
-      {...props}>
+      {...props}
+    >
       <View style={styles.content}>
         {leftAccessory ? (
           <View style={styles.leftAccessory}>{leftAccessory}</View>

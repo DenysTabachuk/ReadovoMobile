@@ -35,10 +35,7 @@ import { ArticleImageBlock } from '../articleImageBlock';
 import { ArticleTableBlock } from '../articleTableBlock';
 import { TouchableWord } from '../touchableWord';
 import { styles } from './styles';
-import {
-  splitTextToTouchableParts,
-  type TouchableTextPart,
-} from './textParts';
+import { splitTextToTouchableParts, type TouchableTextPart } from './textParts';
 
 type InteractiveArticleTextProps = {
   blocks?: ArticleBlock[];
@@ -130,7 +127,8 @@ type TouchableTextSentenceGroup = {
   sentenceKey?: string;
 };
 
-const LIST_ITEM_PATTERN = /^([*#-]+|[\u2022\u25cf\u25aa\u25e6]+|[A-Za-z0-9]+[.)])\s*(.*)$/;
+const LIST_ITEM_PATTERN =
+  /^([*#-]+|[\u2022\u25cf\u25aa\u25e6]+|[A-Za-z0-9]+[.)])\s*(.*)$/;
 const SECTION_HEADING_PATTERN = /^(={2,})\s*(.*?)\s*\1$/;
 
 // Keep a larger plain-text window mounted so fast scrolls do not reveal batched cells.
@@ -158,10 +156,15 @@ export function InteractiveArticleText({
   const [activeInteractiveBlockKey, setActiveInteractiveBlockKey] = useState<
     string | undefined
   >();
-  const [collapsedHeadings, setCollapsedHeadings] = useState<Record<string, boolean>>({});
+  const [collapsedHeadings, setCollapsedHeadings] = useState<
+    Record<string, boolean>
+  >({});
   const onVisibleBlockIndexChangeRef = useRef(onVisibleBlockIndexChange);
   const onVisibleBlockRangeChangeRef = useRef(onVisibleBlockRangeChange);
-  const chevronColor = useThemeColor({ dark: '#9ba1a6', light: '#687076' }, 'icon');
+  const chevronColor = useThemeColor(
+    { dark: '#9ba1a6', light: '#687076' },
+    'icon',
+  );
   const resolvedBlocks = useMemo(() => {
     if (blocks && blocks.length > 0) {
       return blocks;
@@ -280,9 +283,13 @@ export function InteractiveArticleText({
     }) => {
       const sortedVisibleItems = viewableItems
         .filter((viewableItem) => viewableItem.index !== null)
-        .sort((leftItem, rightItem) => (leftItem.index ?? 0) - (rightItem.index ?? 0));
+        .sort(
+          (leftItem, rightItem) =>
+            (leftItem.index ?? 0) - (rightItem.index ?? 0),
+        );
       const firstVisibleItem = sortedVisibleItems[0]?.item;
-      const lastVisibleItem = sortedVisibleItems[sortedVisibleItems.length - 1]?.item;
+      const lastVisibleItem =
+        sortedVisibleItems[sortedVisibleItems.length - 1]?.item;
 
       if (typeof firstVisibleItem?.sourceIndex === 'number') {
         onVisibleBlockIndexChangeRef.current?.(firstVisibleItem.sourceIndex);
@@ -352,7 +359,10 @@ const ArticleBlockRow = memo(function ArticleBlockRow({
 
   if (block.type === 'heading') {
     return (
-      <Pressable onPress={handleToggleHeading} style={styles.collapsibleHeading}>
+      <Pressable
+        onPress={handleToggleHeading}
+        style={styles.collapsibleHeading}
+      >
         <ThemedText
           style={[
             styles.heading,
@@ -360,7 +370,8 @@ const ArticleBlockRow = memo(function ArticleBlockRow({
             block.level === 2 ? styles.headingLevel2 : null,
             block.level === 3 ? styles.headingLevel3 : null,
           ]}
-          type={getHeadingTypographyType(block.level)}>
+          type={getHeadingTypographyType(block.level)}
+        >
           {block.text}
         </ThemedText>
         <Ionicons
@@ -376,12 +387,12 @@ const ArticleBlockRow = memo(function ArticleBlockRow({
   if (block.type === 'paragraph') {
     if (!isInteractiveBlock) {
       return (
-          <PlainInlineText
-            nodes={block.children}
-            onPress={handleActivateInteractiveBlock}
-            prefix={blockKey}
-            speakingTokenKey={speakingTokenKey}
-            style={styles.paragraph}
+        <PlainInlineText
+          nodes={block.children}
+          onPress={handleActivateInteractiveBlock}
+          prefix={blockKey}
+          speakingTokenKey={speakingTokenKey}
+          style={styles.paragraph}
         />
       );
     }
@@ -408,8 +419,10 @@ const ArticleBlockRow = memo(function ArticleBlockRow({
 
   if (block.type === 'list') {
     return (
-      <View style={[styles.list, isInteractiveBlock ? styles.wordPickBlock : null]}>
-        {block.items.map((item, itemIndex) => (
+      <View
+        style={[styles.list, isInteractiveBlock ? styles.wordPickBlock : null]}
+      >
+        {block.items.map((item, itemIndex) =>
           isInteractiveBlock ? (
             <TouchableListItem
               item={normalizeInlineNodesForWordSelection(item)}
@@ -431,8 +444,8 @@ const ArticleBlockRow = memo(function ArticleBlockRow({
               prefix={`${blockKey}-item-${itemIndex}`}
               speakingTokenKey={speakingTokenKey}
             />
-          )
-        ))}
+          ),
+        )}
         {isInteractiveBlock ? (
           <Ionicons
             color="rgba(111, 63, 240, 0.5)"
@@ -448,7 +461,11 @@ const ArticleBlockRow = memo(function ArticleBlockRow({
   if (block.type === 'table') {
     return (
       <ArticleTableBlock
-        renderCellContent={({ cell, prefix, selectedTokenKey: currentSelectedTokenKey }) =>
+        renderCellContent={({
+          cell,
+          prefix,
+          selectedTokenKey: currentSelectedTokenKey,
+        }) =>
           renderTableCellText({
             cell,
             onWordPress,
@@ -478,7 +495,13 @@ const ArticleBlockRow = memo(function ArticleBlockRow({
     return null;
   }
 
-  return <ArticleImageBlock alt={block.alt} caption={block.caption} src={block.src} />;
+  return (
+    <ArticleImageBlock
+      alt={block.alt}
+      caption={block.caption}
+      src={block.src}
+    />
+  );
 }, areArticleBlockRowPropsEqual);
 
 function areArticleBlockRowPropsEqual(
@@ -490,7 +513,8 @@ function areArticleBlockRowPropsEqual(
     previousProps.blockKey !== nextProps.blockKey ||
     previousProps.chevronColor !== nextProps.chevronColor ||
     previousProps.collapsed !== nextProps.collapsed ||
-    previousProps.onActivateInteractiveBlock !== nextProps.onActivateInteractiveBlock ||
+    previousProps.onActivateInteractiveBlock !==
+      nextProps.onActivateInteractiveBlock ||
     previousProps.onToggleHeading !== nextProps.onToggleHeading ||
     previousProps.onWordPress !== nextProps.onWordPress
   ) {
@@ -499,7 +523,8 @@ function areArticleBlockRowPropsEqual(
 
   const wasInteractiveBlock =
     previousProps.activeInteractiveBlockKey === previousProps.blockKey;
-  const isInteractiveBlock = nextProps.activeInteractiveBlockKey === nextProps.blockKey;
+  const isInteractiveBlock =
+    nextProps.activeInteractiveBlockKey === nextProps.blockKey;
 
   if (wasInteractiveBlock !== isInteractiveBlock) {
     return false;
@@ -559,7 +584,11 @@ const PlainInlineText = memo(function PlainInlineText({
 
       if (group.sentenceKey === speakingSentenceKey) {
         return (
-          <ThemedText key={group.key} style={styles.speakingSentence} type="paragraph">
+          <ThemedText
+            key={group.key}
+            style={styles.speakingSentence}
+            type="paragraph"
+          >
             {renderedParts}
           </ThemedText>
         );
@@ -589,7 +618,8 @@ const PlainInlineText = memo(function PlainInlineText({
           segment?.bold ? styles.inlineBold : null,
           segment?.italic ? styles.inlineItalic : null,
         ]}
-        type="paragraph">
+        type="paragraph"
+      >
         {segment?.text ?? ''}
       </ThemedText>
     );
@@ -605,7 +635,8 @@ const PlainInlineText = memo(function PlainInlineText({
             segment.bold ? styles.inlineBold : null,
             segment.italic ? styles.inlineItalic : null,
           ]}
-          type="paragraph">
+          type="paragraph"
+        >
           {segment.text}
         </ThemedText>
       ))}
@@ -652,13 +683,16 @@ function renderPlainTouchablePart(part: TouchableTextPart) {
         part.bold ? styles.inlineBold : null,
         part.italic ? styles.inlineItalic : null,
       ]}
-      type="paragraph">
+      type="paragraph"
+    >
       {part.text}
     </ThemedText>
   );
 }
 
-function createPlainSentenceGroups(parts: TouchableTextPart[]): PlainSentenceGroup[] {
+function createPlainSentenceGroups(
+  parts: TouchableTextPart[],
+): PlainSentenceGroup[] {
   const groups: PlainSentenceGroup[] = [];
 
   parts.forEach((part) => {
@@ -754,7 +788,11 @@ function renderTouchablePartsFromParts(params: {
 
     if (group.sentenceKey && group.sentenceKey === speakingSentenceKey) {
       return (
-        <ThemedText key={group.key} style={styles.speakingSentence} type="paragraph">
+        <ThemedText
+          key={group.key}
+          style={styles.speakingSentence}
+          type="paragraph"
+        >
           {renderedParts}
         </ThemedText>
       );
@@ -780,7 +818,8 @@ function renderTouchablePart(params: {
           part.bold ? styles.inlineBold : null,
           part.italic ? styles.inlineItalic : null,
         ]}
-        type="paragraph">
+        type="paragraph"
+      >
         {part.text}
       </ThemedText>
     );
@@ -813,7 +852,8 @@ function getSpeakingSentenceKey(
   }
 
   return parts.find(
-    (part) => part.type === 'word' && part.key === speakingTokenKey,
+    (part): part is Extract<TouchableTextPart, { type: 'word' }> =>
+      part.type === 'word' && part.key === speakingTokenKey,
   )?.sentenceKey;
 }
 
@@ -966,9 +1006,9 @@ function isSelectedTokensChangeIrrelevant(params: {
   prefix: string;
   previousSelectedTokenKeys?: string[];
 }): boolean {
-  const previousSelectionKeysInPrefix = (params.previousSelectedTokenKeys ?? []).filter(
-    (tokenKey) => isTokenKeyInsidePrefix(tokenKey, params.prefix),
-  );
+  const previousSelectionKeysInPrefix = (
+    params.previousSelectedTokenKeys ?? []
+  ).filter((tokenKey) => isTokenKeyInsidePrefix(tokenKey, params.prefix));
   const nextSelectionKeysInPrefix = (params.nextSelectedTokenKeys ?? []).filter(
     (tokenKey) => isTokenKeyInsidePrefix(tokenKey, params.prefix),
   );
@@ -980,7 +1020,9 @@ function isSelectedTokensChangeIrrelevant(params: {
     return true;
   }
 
-  if (previousSelectionKeysInPrefix.length !== nextSelectionKeysInPrefix.length) {
+  if (
+    previousSelectionKeysInPrefix.length !== nextSelectionKeysInPrefix.length
+  ) {
     return false;
   }
 
@@ -1069,9 +1111,7 @@ function parsePlainTextToBlocks(text: string): ArticleBlock[] {
       flushParagraph();
       flushList();
       const headingLevel = Math.min((headingMatch[1]?.length ?? 2) - 1, 3) as
-        | 1
-        | 2
-        | 3;
+        1 | 2 | 3;
       const headingText = headingMatch[2]?.trim() ?? line;
 
       if (headingText) {
@@ -1142,7 +1182,9 @@ function createInlineNodesFromPlainText(text: string): InlineNode[] {
   return nodes;
 }
 
-function normalizeBlocksForWordSelection(blocks: ArticleBlock[]): ArticleBlock[] {
+function normalizeBlocksForWordSelection(
+  blocks: ArticleBlock[],
+): ArticleBlock[] {
   return blocks.map((block) => {
     if (block.type === 'paragraph') {
       return {
@@ -1154,7 +1196,9 @@ function normalizeBlocksForWordSelection(blocks: ArticleBlock[]): ArticleBlock[]
     if (block.type === 'list') {
       return {
         ...block,
-        items: block.items.map((item) => normalizeInlineNodesForWordSelection(item)),
+        items: block.items.map((item) =>
+          normalizeInlineNodesForWordSelection(item),
+        ),
       };
     }
 
@@ -1162,7 +1206,9 @@ function normalizeBlocksForWordSelection(blocks: ArticleBlock[]): ArticleBlock[]
   });
 }
 
-function normalizeInlineNodesForWordSelection(nodes: InlineNode[]): InlineNode[] {
+function normalizeInlineNodesForWordSelection(
+  nodes: InlineNode[],
+): InlineNode[] {
   const normalized: InlineNode[] = [];
 
   nodes.forEach((node) => {
@@ -1177,11 +1223,15 @@ function normalizeInlineNodesForWordSelection(nodes: InlineNode[]): InlineNode[]
   return normalized;
 }
 
-function splitTextNodeToInlineNodes(node: Extract<InlineNode, { type: 'text' }>): InlineNode[] {
+function splitTextNodeToInlineNodes(
+  node: Extract<InlineNode, { type: 'text' }>,
+): InlineNode[] {
   const result: InlineNode[] = [];
   let cursor = 0;
 
-  for (const match of node.text.matchAll(/[A-Za-z]+(?:['\u2019-][A-Za-z]+)*/g)) {
+  for (const match of node.text.matchAll(
+    /[A-Za-z]+(?:['\u2019-][A-Za-z]+)*/g,
+  )) {
     const matchedWord = match[0];
     const start = match.index ?? 0;
 

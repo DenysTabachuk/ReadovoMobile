@@ -18,7 +18,12 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "lint": "expo lint",
-    "test": "jest"
+    "lint:fix": "expo lint --fix",
+    "typecheck": "tsc --noEmit --incremental false",
+    "format": "prettier --write \"{app,api,components,constants,devtools,features,hooks,localization,providers,utils}/**/*.{js,json,ts,tsx}\" \"scripts/**/*.js\" \"*.js\" \"app.json\" \"tsconfig.json\"",
+    "format:check": "prettier --check \"{app,api,components,constants,devtools,features,hooks,localization,providers,utils}/**/*.{js,json,ts,tsx}\" \"scripts/**/*.js\" \"*.js\" \"app.json\" \"tsconfig.json\"",
+    "test": "jest",
+    "ci": "npm run typecheck && npm run lint && npm run format:check && npm test -- --runInBand"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
@@ -65,6 +70,7 @@
     "eslint": "^9.25.0",
     "eslint-config-expo": "~10.0.0",
     "jest": "^30.3.0",
+    "prettier": "^3.9.10",
     "reactotron-react-native": "^5.1.18",
     "ts-jest": "^29.4.9",
     "typescript": "~5.9.2"

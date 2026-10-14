@@ -86,22 +86,26 @@ export default function ProfileScreen() {
     streakQuery,
   } = useStreak(currentUser?.id ?? undefined);
   const [freezeDate, setFreezeDate] = useState<string | null>(null);
-  const [isPurchaseFreezeModalOpen, setIsPurchaseFreezeModalOpen] = useState(false);
+  const [isPurchaseFreezeModalOpen, setIsPurchaseFreezeModalOpen] =
+    useState(false);
   const [isRestoreModalOpen, setIsRestoreModalOpen] = useState(false);
 
   const progress = achievementsQuery.data?.progress ?? defaultStats;
   const achievements = achievementsQuery.data?.achievements ?? [];
-  const isAchievementsLoading = achievementsQuery.isLoading && !achievementsQuery.data;
+  const isAchievementsLoading =
+    achievementsQuery.isLoading && !achievementsQuery.data;
   const shouldShowAchievements = achievements.length > 0;
-  const unlockedAchievementsCount = (achievementsQuery.data?.achievements ?? []).filter(
-    (achievement) => achievement.isUnlocked,
-  ).length;
-  const fallbackName = currentUser?.email?.split('@')[0] ?? t('profile.defaultName');
+  const unlockedAchievementsCount = (
+    achievementsQuery.data?.achievements ?? []
+  ).filter((achievement) => achievement.isUnlocked).length;
+  const fallbackName =
+    currentUser?.email?.split('@')[0] ?? t('profile.defaultName');
   const displayName = currentUser?.displayName ?? fallbackName;
   const streak = streakQuery.data ?? fallbackStreak;
-  const unlockedStreakAchievementsCount = streak.claimedStreakAchievements.filter(
-    (achievement) => achievement.isUnlocked,
-  ).length;
+  const unlockedStreakAchievementsCount =
+    streak.claimedStreakAchievements.filter(
+      (achievement) => achievement.isUnlocked,
+    ).length;
   const isStreakLoading = streakQuery.isLoading && !streakQuery.data;
   const isStreakError = streakQuery.isError && !streakQuery.data;
   const isInitialProfileLoading =
@@ -109,8 +113,7 @@ export default function ProfileScreen() {
     ((achievementsQuery.isLoading && !achievementsQuery.data) ||
       (mascotQuery.isLoading && !mascotQuery.data) ||
       isStreakLoading);
-  const shouldShowMockStreakAchievementAction =
-    __DEV__ && isMockApiEnabled();
+  const shouldShowMockStreakAchievementAction = __DEV__ && isMockApiEnabled();
 
   if (isInitialProfileLoading) {
     return <FullScreenLoader />;
@@ -118,7 +121,10 @@ export default function ProfileScreen() {
 
   return (
     <ScreenContainer style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.header}>
           <ThemedText type="screenTitle">{t('profile.title')}</ThemedText>
         </View>
@@ -133,7 +139,8 @@ export default function ProfileScreen() {
             style={({ pressed }) => [
               styles.avatarButton,
               pressed ? styles.avatarButtonPressed : null,
-            ]}>
+            ]}
+          >
             <Mascot
               equippedItems={mascotQuery.data?.equippedItems}
               style={styles.avatar}
@@ -141,7 +148,9 @@ export default function ProfileScreen() {
           </Pressable>
           <View style={styles.profileMeta}>
             <ThemedText type="sectionTitle">{displayName}</ThemedText>
-            <ThemedText style={styles.profileSubtitle}>{t('profile.subtitle')}</ThemedText>
+            <ThemedText style={styles.profileSubtitle}>
+              {t('profile.subtitle')}
+            </ThemedText>
             <ThemedText style={styles.mascotHint}>
               {t('profile.customizeMascotHint')}
             </ThemedText>
@@ -165,26 +174,54 @@ export default function ProfileScreen() {
             styles.statsCard,
             isDarkTheme ? styles.statsCardDark : null,
             shouldUseTwoRows && styles.statsCardTwoRows,
-          ]}>
-          <View style={[styles.statItem, shouldUseTwoRows && styles.statItemTwoRows]}>
+          ]}
+        >
+          <View
+            style={[
+              styles.statItem,
+              shouldUseTwoRows && styles.statItemTwoRows,
+            ]}
+          >
             <View style={styles.statValueRow}>
-              <ThemedText style={styles.statValue}>{progress.wordsLearned}</ThemedText>
+              <ThemedText style={styles.statValue}>
+                {progress.wordsLearned}
+              </ThemedText>
               <Ionicons color="#7d4ef6" name="library-outline" size={18} />
             </View>
             <View style={styles.statMetaRow}>
-              <ThemedText style={styles.statLabel}>{t('profile.stats.words')}</ThemedText>
+              <ThemedText style={styles.statLabel}>
+                {t('profile.stats.words')}
+              </ThemedText>
             </View>
           </View>
-          <View style={[styles.statItem, shouldUseTwoRows && styles.statItemTwoRows]}>
+          <View
+            style={[
+              styles.statItem,
+              shouldUseTwoRows && styles.statItemTwoRows,
+            ]}
+          >
             <View style={styles.statValueRow}>
-              <ThemedText style={styles.statValue}>{progress.testsCompleted}</ThemedText>
-              <Ionicons color="#2c9d49" name="checkmark-circle-outline" size={18} />
+              <ThemedText style={styles.statValue}>
+                {progress.testsCompleted}
+              </ThemedText>
+              <Ionicons
+                color="#2c9d49"
+                name="checkmark-circle-outline"
+                size={18}
+              />
             </View>
             <View style={styles.statMetaRow}>
-              <ThemedText style={styles.statLabel}>{t('profile.stats.tests')}</ThemedText>
+              <ThemedText style={styles.statLabel}>
+                {t('profile.stats.tests')}
+              </ThemedText>
             </View>
           </View>
-          <View style={[styles.statItem, shouldUseTwoRows && styles.statItemTwoRows]}>
+          <View
+            style={[
+              styles.statItem,
+              shouldUseTwoRows && styles.statItemTwoRows,
+            ]}
+          >
             <View style={styles.statValueRow}>
               <ThemedText style={styles.statValue}>
                 {unlockedAchievementsCount + unlockedStreakAchievementsCount}
@@ -192,31 +229,64 @@ export default function ProfileScreen() {
               <Ionicons color="#2f80ed" name="trophy-outline" size={18} />
             </View>
             <View style={styles.statMetaRow}>
-              <ThemedText style={styles.statLabel}>{t('profile.stats.achievements')}</ThemedText>
+              <ThemedText style={styles.statLabel}>
+                {t('profile.stats.achievements')}
+              </ThemedText>
             </View>
           </View>
-          <View style={[styles.statItem, shouldUseTwoRows && styles.statItemTwoRows]}>
+          <View
+            style={[
+              styles.statItem,
+              shouldUseTwoRows && styles.statItemTwoRows,
+            ]}
+          >
             <View style={styles.statValueRow}>
-              <ThemedText style={styles.statValue}>{streak?.currentStreak ?? defaultStats.streakDays}</ThemedText>
+              <ThemedText style={styles.statValue}>
+                {streak?.currentStreak ?? defaultStats.streakDays}
+              </ThemedText>
               <Ionicons color="#f2994a" name="flame" size={18} />
             </View>
             <View style={styles.statMetaRow}>
-              <ThemedText style={styles.statLabel}>{t('profile.stats.streak')}</ThemedText>
+              <ThemedText style={styles.statLabel}>
+                {t('profile.stats.streak')}
+              </ThemedText>
             </View>
           </View>
         </View>
         <View style={styles.streakBlock}>
           {isStreakLoading ? (
-            <View style={[styles.streakNoticeCard, isDarkTheme ? styles.streakNoticeCardDark : null]}>
-              <ThemedText style={[styles.streakNoticeText, isDarkTheme ? styles.streakNoticeTextDark : null]}>
+            <View
+              style={[
+                styles.streakNoticeCard,
+                isDarkTheme ? styles.streakNoticeCardDark : null,
+              ]}
+            >
+              <ThemedText
+                style={[
+                  styles.streakNoticeText,
+                  isDarkTheme ? styles.streakNoticeTextDark : null,
+                ]}
+              >
                 {t('profile.loading')}
               </ThemedText>
             </View>
           ) : null}
           {isStreakError ? (
-            <View style={[styles.streakNoticeCard, isDarkTheme ? styles.streakNoticeCardDark : null]}>
-              <ThemedText style={[styles.streakNoticeText, isDarkTheme ? styles.streakNoticeTextDark : null]}>
-                {t('profile.errors.loadFailed', { defaultValue: 'Не вдалося завантажити streak.' })}
+            <View
+              style={[
+                styles.streakNoticeCard,
+                isDarkTheme ? styles.streakNoticeCardDark : null,
+              ]}
+            >
+              <ThemedText
+                style={[
+                  styles.streakNoticeText,
+                  isDarkTheme ? styles.streakNoticeTextDark : null,
+                ]}
+              >
+                {t('profile.errors.loadFailed', {
+                  defaultValue: 'Не вдалося завантажити streak.',
+                })}
               </ThemedText>
               <Pressable
                 accessibilityRole="button"
@@ -227,10 +297,15 @@ export default function ProfileScreen() {
                   styles.streakRetryButton,
                   isDarkTheme ? styles.streakRetryButtonDark : null,
                   pressed ? styles.avatarButtonPressed : null,
-                ]}>
+                ]}
+              >
                 <ThemedText
                   type="bodyStrong"
-                  style={[styles.streakRetryButtonText, isDarkTheme ? styles.streakRetryButtonTextDark : null]}>
+                  style={[
+                    styles.streakRetryButtonText,
+                    isDarkTheme ? styles.streakRetryButtonTextDark : null,
+                  ]}
+                >
                   {t('article.retry')}
                 </ThemedText>
               </Pressable>
@@ -241,7 +316,10 @@ export default function ProfileScreen() {
               <ActivityCalendar
                 isCtaLoading={restoreMutation.isPending}
                 onPressCta={() => {
-                  if (streak.todayStatus === 'broken' && streak.brokenStreakInfo?.canRestore) {
+                  if (
+                    streak.todayStatus === 'broken' &&
+                    streak.brokenStreakInfo?.canRestore
+                  ) {
                     setIsRestoreModalOpen(true);
                   }
                 }}
@@ -259,7 +337,8 @@ export default function ProfileScreen() {
                   setIsRestoreModalOpen(false);
                 }}
                 onConfirm={() => {
-                  void restoreMutation.mutateAsync()
+                  void restoreMutation
+                    .mutateAsync()
                     .then(() => {
                       setIsRestoreModalOpen(false);
                       if (currentUser?.id) {
@@ -310,13 +389,16 @@ export default function ProfileScreen() {
                     return;
                   }
 
-                  void applyFreezeMutation.mutateAsync(freezeDate)
+                  void applyFreezeMutation
+                    .mutateAsync(freezeDate)
                     .then(() => {
                       setFreezeDate(null);
                     })
                     .catch((error) => {
                       const messageKey =
-                        error instanceof Error ? error.message : 'streak.errors.freezeFailed';
+                        error instanceof Error
+                          ? error.message
+                          : 'streak.errors.freezeFailed';
 
                       showBanner({
                         title: t(messageKey, {
@@ -335,7 +417,8 @@ export default function ProfileScreen() {
                   setIsPurchaseFreezeModalOpen(false);
                 }}
                 onConfirm={() => {
-                  void purchaseFreezeTokenMutation.mutateAsync()
+                  void purchaseFreezeTokenMutation
+                    .mutateAsync()
                     .then(() => {
                       setIsPurchaseFreezeModalOpen(false);
                     })
@@ -373,13 +456,15 @@ export default function ProfileScreen() {
                     styles.streakRetryButton,
                     isDarkTheme ? styles.streakRetryButtonDark : null,
                     pressed ? styles.avatarButtonPressed : null,
-                  ]}>
+                  ]}
+                >
                   <ThemedText
                     type="bodyStrong"
                     style={[
                       styles.streakRetryButtonText,
                       isDarkTheme ? styles.streakRetryButtonTextDark : null,
-                    ]}>
+                    ]}
+                  >
                     Програти streak-achievement
                   </ThemedText>
                 </Pressable>
@@ -389,7 +474,8 @@ export default function ProfileScreen() {
           <ScrollView
             contentContainerStyle={styles.streakAchievementsRow}
             horizontal
-            showsHorizontalScrollIndicator={false}>
+            showsHorizontalScrollIndicator={false}
+          >
             {streak.claimedStreakAchievements.map((achievement) => (
               <StreakAchievementCard
                 achievement={achievement}
@@ -402,85 +488,110 @@ export default function ProfileScreen() {
 
         <View style={styles.achievementsBlock}>
           {isAchievementsLoading ? (
-            <ThemedText style={[styles.achievementsNoticeText, isDarkTheme ? styles.achievementsNoticeTextDark : null]}>
+            <ThemedText
+              style={[
+                styles.achievementsNoticeText,
+                isDarkTheme ? styles.achievementsNoticeTextDark : null,
+              ]}
+            >
               {t('profile.loading')}
             </ThemedText>
           ) : null}
           {shouldShowAchievements ? (
-            <ThemedText type="sectionTitle">{t('profile.achievementsTitle')}</ThemedText>
+            <ThemedText type="sectionTitle">
+              {t('profile.achievementsTitle')}
+            </ThemedText>
           ) : null}
-          {shouldShowAchievements ? achievements.map((achievement) => {
-            const isUnlocked = achievement.isUnlocked;
-            const progressValue = achievement.progressValue;
-            const progressRatio = Math.min(progressValue / achievement.targetValue, 1);
-            const progressPercentage: DimensionValue =
-              `${Math.round(progressRatio * 100)}%`;
+          {shouldShowAchievements
+            ? achievements.map((achievement) => {
+                const isUnlocked = achievement.isUnlocked;
+                const progressValue = achievement.progressValue;
+                const progressRatio = Math.min(
+                  progressValue / achievement.targetValue,
+                  1,
+                );
+                const progressPercentage: DimensionValue = `${Math.round(progressRatio * 100)}%`;
 
-            return (
-              <View
-                key={achievement.id}
-                style={[
-                  styles.achievementCard,
-                  isUnlocked ? styles.unlockedAchievementCard : styles.lockedAchievementCard,
-                ]}>
-                {isUnlocked ? (
-                  <LinearGradient
-                    colors={
-                      isDarkTheme
-                        ? ['#211339', '#3a2461', '#5b36ad']
-                        : ['#f3edff', '#e4d7ff', '#c9b2ff']
-                    }
-                    end={{ x: 1, y: 1 }}
-                    pointerEvents="none"
-                    start={{ x: 0, y: 0 }}
-                    style={styles.unlockedAchievementGradient}
-                  />
-                ) : null}
-                <Image
-                  contentFit="contain"
-                  source={getAchievementBadge(achievement.badgeKey)}
-                  style={[styles.achievementBadge, !isUnlocked && styles.lockedAchievementBadge]}
-                />
-                <View style={styles.achievementMeta}>
-                  <ThemedText type="bodyStrong">
-                    {t(achievement.titleKey)}
-                  </ThemedText>
-                  <ThemedText style={styles.achievementDescription}>
-                    {t(achievement.descriptionKey)}
-                  </ThemedText>
-                  <ThemedText style={isUnlocked ? styles.unlockedText : styles.lockedText}>
-                    {isUnlocked ? t('profile.unlocked') : t('profile.locked')}
-                  </ThemedText>
-                  <View style={styles.achievementProgressBlock}>
-                    <View style={styles.achievementProgressTrack}>
-                      <View
-                        style={[
-                          styles.achievementProgressFill,
-                          isUnlocked
-                            ? styles.unlockedAchievementProgressFill
-                            : styles.lockedAchievementProgressFill,
-                          { width: progressPercentage },
-                        ]}
+                return (
+                  <View
+                    key={achievement.id}
+                    style={[
+                      styles.achievementCard,
+                      isUnlocked
+                        ? styles.unlockedAchievementCard
+                        : styles.lockedAchievementCard,
+                    ]}
+                  >
+                    {isUnlocked ? (
+                      <LinearGradient
+                        colors={
+                          isDarkTheme
+                            ? ['#211339', '#3a2461', '#5b36ad']
+                            : ['#f3edff', '#e4d7ff', '#c9b2ff']
+                        }
+                        end={{ x: 1, y: 1 }}
+                        pointerEvents="none"
+                        start={{ x: 0, y: 0 }}
+                        style={styles.unlockedAchievementGradient}
                       />
-                    </View>
-                    <ThemedText style={styles.achievementProgressText}>
-                      {`${Math.min(progressValue, achievement.targetValue)}/${achievement.targetValue}`}
-                    </ThemedText>
-                  </View>
-                  <View style={styles.rewardRow}>
+                    ) : null}
                     <Image
                       contentFit="contain"
-                      source={require('../../../../assets/images/money.png')}
-                      style={styles.moneyIcon}
+                      source={getAchievementBadge(achievement.badgeKey)}
+                      style={[
+                        styles.achievementBadge,
+                        !isUnlocked && styles.lockedAchievementBadge,
+                      ]}
                     />
-                    <ThemedText style={styles.rewardText}>
-                      {t('profile.reward', { count: achievement.coinsReward })}
-                    </ThemedText>
+                    <View style={styles.achievementMeta}>
+                      <ThemedText type="bodyStrong">
+                        {t(achievement.titleKey)}
+                      </ThemedText>
+                      <ThemedText style={styles.achievementDescription}>
+                        {t(achievement.descriptionKey)}
+                      </ThemedText>
+                      <ThemedText
+                        style={
+                          isUnlocked ? styles.unlockedText : styles.lockedText
+                        }
+                      >
+                        {isUnlocked
+                          ? t('profile.unlocked')
+                          : t('profile.locked')}
+                      </ThemedText>
+                      <View style={styles.achievementProgressBlock}>
+                        <View style={styles.achievementProgressTrack}>
+                          <View
+                            style={[
+                              styles.achievementProgressFill,
+                              isUnlocked
+                                ? styles.unlockedAchievementProgressFill
+                                : styles.lockedAchievementProgressFill,
+                              { width: progressPercentage },
+                            ]}
+                          />
+                        </View>
+                        <ThemedText style={styles.achievementProgressText}>
+                          {`${Math.min(progressValue, achievement.targetValue)}/${achievement.targetValue}`}
+                        </ThemedText>
+                      </View>
+                      <View style={styles.rewardRow}>
+                        <Image
+                          contentFit="contain"
+                          source={require('../../../../assets/images/money.png')}
+                          style={styles.moneyIcon}
+                        />
+                        <ThemedText style={styles.rewardText}>
+                          {t('profile.reward', {
+                            count: achievement.coinsReward,
+                          })}
+                        </ThemedText>
+                      </View>
+                    </View>
                   </View>
-                </View>
-              </View>
-            );
-          }) : null}
+                );
+              })
+            : null}
         </View>
       </ScrollView>
     </ScreenContainer>

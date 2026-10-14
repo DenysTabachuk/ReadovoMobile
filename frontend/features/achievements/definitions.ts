@@ -7,7 +7,9 @@ const achievementBadges: Record<string, ImageSourcePropType> = {
 };
 
 export function getAchievementBadge(badgeKey: string): ImageSourcePropType {
-  return achievementBadges[badgeKey] ?? achievementBadges['first-test-completed'];
+  return (
+    achievementBadges[badgeKey] ?? achievementBadges['first-test-completed']
+  );
 }
 
 export function getNewlyUnlockedAchievements(
@@ -20,9 +22,8 @@ export function getNewlyUnlockedAchievements(
       .map((achievement) => achievement.id),
   );
 
-  return nextAchievements
-    .filter(
-      (achievement) =>
-        achievement.isUnlocked && !previouslyUnlockedIds.has(achievement.id),
-    );
+  return nextAchievements.filter(
+    (achievement) =>
+      achievement.isUnlocked && !previouslyUnlockedIds.has(achievement.id),
+  );
 }

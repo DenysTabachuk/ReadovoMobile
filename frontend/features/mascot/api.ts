@@ -8,7 +8,9 @@ type ErrorResponseBody = {
 };
 
 export async function getMascotProfile(userId: string): Promise<MascotProfile> {
-  const response = await authenticatedFetch(`${API_BASE_URL}/mascot/profile/${userId}`);
+  const response = await authenticatedFetch(
+    `${API_BASE_URL}/mascot/profile/${userId}`,
+  );
 
   if (!response.ok) {
     throw new Error('mascot.errors.loadFailed');
@@ -27,7 +29,9 @@ export async function buyMascotItem(
   );
 
   if (!response.ok) {
-    throw new Error(await resolveMascotErrorMessage(response, 'mascot.errors.buyFailed'));
+    throw new Error(
+      await resolveMascotErrorMessage(response, 'mascot.errors.buyFailed'),
+    );
   }
 
   return response.json() as Promise<MascotProfile>;
@@ -43,7 +47,9 @@ export async function equipMascotItem(
   );
 
   if (!response.ok) {
-    throw new Error(await resolveMascotErrorMessage(response, 'mascot.errors.equipFailed'));
+    throw new Error(
+      await resolveMascotErrorMessage(response, 'mascot.errors.equipFailed'),
+    );
   }
 
   return response.json() as Promise<MascotProfile>;
@@ -53,12 +59,17 @@ export async function clearMascotSlot(
   userId: string,
   slot: MascotAccessorySlot,
 ): Promise<MascotProfile> {
-  const response = await authenticatedFetch(`${API_BASE_URL}/mascot/profile/${userId}/slots/${slot}`, {
-    method: 'DELETE',
-  });
+  const response = await authenticatedFetch(
+    `${API_BASE_URL}/mascot/profile/${userId}/slots/${slot}`,
+    {
+      method: 'DELETE',
+    },
+  );
 
   if (!response.ok) {
-    throw new Error(await resolveMascotErrorMessage(response, 'mascot.errors.clearFailed'));
+    throw new Error(
+      await resolveMascotErrorMessage(response, 'mascot.errors.clearFailed'),
+    );
   }
 
   return response.json() as Promise<MascotProfile>;
@@ -70,7 +81,9 @@ async function resolveMascotErrorMessage(
 ): Promise<string> {
   try {
     const body = (await response.json()) as ErrorResponseBody;
-    const rawMessage = Array.isArray(body.message) ? body.message[0] : body.message;
+    const rawMessage = Array.isArray(body.message)
+      ? body.message[0]
+      : body.message;
 
     if (rawMessage === 'Not enough coins.') {
       return 'mascot.errors.notEnoughCoins';

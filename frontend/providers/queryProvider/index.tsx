@@ -17,12 +17,10 @@ export function QueryProvider({ children }: QueryProviderProps) {
             staleTime: 1000 * 60,
           },
         },
-      })
+      }),
   );
 
   return (
-    <QueryClientProvider client={queryClient}>
-      {children}
-    </QueryClientProvider>
+    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   );
 }

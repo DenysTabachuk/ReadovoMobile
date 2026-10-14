@@ -1,4 +1,11 @@
-import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { Animated, View } from 'react-native';
@@ -38,45 +45,48 @@ export function BannerProvider({ children }: BannerProviderProps) {
     }
   }, []);
 
-  const hideBannerById = useCallback((bannerId?: number) => {
-    if (
-      bannerId !== undefined &&
-      activeBannerIdRef.current !== null &&
-      activeBannerIdRef.current !== bannerId
-    ) {
-      return;
-    }
-
-    if (isHidingRef.current || activeBannerIdRef.current === null) {
-      return;
-    }
-
-    const hidingBannerId = activeBannerIdRef.current;
-    isHidingRef.current = true;
-    clearHideTimer();
-    opacity.stopAnimation();
-    translateY.stopAnimation();
-
-    Animated.parallel([
-      Animated.timing(opacity, {
-        duration: ANIMATION_DURATION_MS,
-        toValue: 0,
-        useNativeDriver: true,
-      }),
-      Animated.timing(translateY, {
-        duration: ANIMATION_DURATION_MS,
-        toValue: HIDDEN_OFFSET,
-        useNativeDriver: true,
-      }),
-    ]).start(({ finished }) => {
-      if (finished && activeBannerIdRef.current === hidingBannerId) {
-        activeBannerIdRef.current = null;
+  const hideBannerById = useCallback(
+    (bannerId?: number) => {
+      if (
+        bannerId !== undefined &&
+        activeBannerIdRef.current !== null &&
+        activeBannerIdRef.current !== bannerId
+      ) {
+        return;
       }
-      isHidingRef.current = false;
-      setBanner(null);
-      setQueueSignal((currentSignal) => currentSignal + 1);
-    });
-  }, [clearHideTimer, opacity, translateY]);
+
+      if (isHidingRef.current || activeBannerIdRef.current === null) {
+        return;
+      }
+
+      const hidingBannerId = activeBannerIdRef.current;
+      isHidingRef.current = true;
+      clearHideTimer();
+      opacity.stopAnimation();
+      translateY.stopAnimation();
+
+      Animated.parallel([
+        Animated.timing(opacity, {
+          duration: ANIMATION_DURATION_MS,
+          toValue: 0,
+          useNativeDriver: true,
+        }),
+        Animated.timing(translateY, {
+          duration: ANIMATION_DURATION_MS,
+          toValue: HIDDEN_OFFSET,
+          useNativeDriver: true,
+        }),
+      ]).start(({ finished }) => {
+        if (finished && activeBannerIdRef.current === hidingBannerId) {
+          activeBannerIdRef.current = null;
+        }
+        isHidingRef.current = false;
+        setBanner(null);
+        setQueueSignal((currentSignal) => currentSignal + 1);
+      });
+    },
+    [clearHideTimer, opacity, translateY],
+  );
 
   const hideBanner = useCallback(() => {
     hideBannerById();
@@ -124,7 +134,14 @@ export function BannerProvider({ children }: BannerProviderProps) {
         hideBannerById(bannerId);
       }, nextBanner.durationMs);
     }
-  }, [banner, clearHideTimer, hideBannerById, opacity, queueSignal, translateY]);
+  }, [
+    banner,
+    clearHideTimer,
+    hideBannerById,
+    opacity,
+    queueSignal,
+    translateY,
+  ]);
 
   const showBanner = useCallback(
     ({ durationMs = DEFAULT_DURATION_MS, ...options }: ShowBannerOptions) => {
@@ -134,7 +151,7 @@ export function BannerProvider({ children }: BannerProviderProps) {
       });
       setQueueSignal((currentSignal) => currentSignal + 1);
     },
-    []
+    [],
   );
 
   useEffect(
@@ -152,7 +169,7 @@ export function BannerProvider({ children }: BannerProviderProps) {
       hideBanner,
       showBanner,
     }),
-    [hideBanner, showBanner]
+    [hideBanner, showBanner],
   );
 
   return (
@@ -163,7 +180,8 @@ export function BannerProvider({ children }: BannerProviderProps) {
           hideBanner={hideBanner}
           opacity={opacity}
           translateY={translateY}
-          variant={banner.variant}>
+          variant={banner.variant}
+        >
           <BannerContent banner={banner} />
         </Banner>
       ) : null}
@@ -188,8 +206,13 @@ function BannerContent({ banner }: { banner: ShowBannerOptions }) {
               colorScheme === 'dark'
                 ? styles.achievementIconCircleDark
                 : styles.achievementIconCircleLight,
-            ]}>
-            <Ionicons color={achievementIconColor} name={banner.achievement.icon} size={28} />
+            ]}
+          >
+            <Ionicons
+              color={achievementIconColor}
+              name={banner.achievement.icon}
+              size={28}
+            />
           </View>
         ) : null}
         {banner.achievement.badge ? (
@@ -241,20 +264,34 @@ function BannerContent({ banner }: { banner: ShowBannerOptions }) {
         />
       ) : null}
       {shouldShowStreakIcon ? (
-        <Ionicons color={streakIconColor} name="flame" size={26} style={styles.streakIcon} />
+        <Ionicons
+          color={streakIconColor}
+          name="flame"
+          size={26}
+          style={styles.streakIcon}
+        />
       ) : null}
       <View style={styles.textContent}>
         <ThemedText
           type="bodyStrong"
-          style={[styles.title, shouldShowStreakIcon && !isDarkTheme ? styles.streakTextLight : null]}>
+          style={[
+            styles.title,
+            shouldShowStreakIcon && !isDarkTheme
+              ? styles.streakTextLight
+              : null,
+          ]}
+        >
           {banner.title}
         </ThemedText>
         {banner.description ? (
           <ThemedText
             style={[
               styles.description,
-              shouldShowStreakIcon && !isDarkTheme ? styles.streakTextLight : null,
-            ]}>
+              shouldShowStreakIcon && !isDarkTheme
+                ? styles.streakTextLight
+                : null,
+            ]}
+          >
             {banner.description}
           </ThemedText>
         ) : null}

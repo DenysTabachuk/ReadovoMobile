@@ -26,7 +26,9 @@ type SpeechSection = {
   words: ArticleSpeechWord[];
 };
 
-export function createArticleSpeechChunks(blocks?: ArticleBlock[]): ArticleSpeechChunk[] {
+export function createArticleSpeechChunks(
+  blocks?: ArticleBlock[],
+): ArticleSpeechChunk[] {
   const sections = createSpeechSections(blocks);
   const chunks: ArticleSpeechChunk[] = [];
   let currentChunkText = '';
@@ -38,7 +40,8 @@ export function createArticleSpeechChunks(blocks?: ArticleBlock[]): ArticleSpeec
     }
 
     const separator = currentChunkText ? CHUNK_SEPARATOR : '';
-    const nextLength = currentChunkText.length + separator.length + section.text.length;
+    const nextLength =
+      currentChunkText.length + separator.length + section.text.length;
 
     if (currentChunkText && nextLength > SAFE_CHUNK_LENGTH) {
       chunks.push({
@@ -49,7 +52,9 @@ export function createArticleSpeechChunks(blocks?: ArticleBlock[]): ArticleSpeec
       currentChunkWords = [];
     }
 
-    const charOffset = currentChunkText ? currentChunkText.length + CHUNK_SEPARATOR.length : 0;
+    const charOffset = currentChunkText
+      ? currentChunkText.length + CHUNK_SEPARATOR.length
+      : 0;
     currentChunkText = currentChunkText
       ? `${currentChunkText}${CHUNK_SEPARATOR}${section.text}`
       : section.text;
@@ -93,11 +98,7 @@ function createSpeechSections(blocks?: ArticleBlock[]): SpeechSection[] {
 
     if (block.type === 'list') {
       block.items.forEach((item, itemIndex) => {
-        appendSpeechSection(
-          sections,
-          item,
-          `${blockKey}-item-${itemIndex}`,
-        );
+        appendSpeechSection(sections, item, `${blockKey}-item-${itemIndex}`);
       });
     }
   });
@@ -120,7 +121,11 @@ function appendSpeechSection(
 
   sections.push({
     text: trimmedText,
-    words: createSpeechWords(normalizedNodes, prefix, text.indexOf(trimmedText)),
+    words: createSpeechWords(
+      normalizedNodes,
+      prefix,
+      text.indexOf(trimmedText),
+    ),
   });
 }
 
@@ -170,7 +175,9 @@ function normalizeInlineNodesForSpeech(nodes: InlineNode[]): InlineNode[] {
   return normalized;
 }
 
-function splitTextNodeToInlineNodes(node: Extract<InlineNode, { type: 'text' }>): InlineNode[] {
+function splitTextNodeToInlineNodes(
+  node: Extract<InlineNode, { type: 'text' }>,
+): InlineNode[] {
   const result: InlineNode[] = [];
   let cursor = 0;
 

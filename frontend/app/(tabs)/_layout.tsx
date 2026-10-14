@@ -34,7 +34,9 @@ export default function TabLayout() {
         tabBarStyle: {
           backgroundColor: Colors[colorScheme].background,
           borderTopColor:
-            colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(17, 24, 28, 0.08)',
+            colorScheme === 'dark'
+              ? 'rgba(255, 255, 255, 0.08)'
+              : 'rgba(17, 24, 28, 0.08)',
           borderTopWidth: 1,
           elevation: 0,
           height: 60,
@@ -46,7 +48,8 @@ export default function TabLayout() {
           fontWeight: '600',
         },
         tabBarButton: HapticTab,
-      }}>
+      }}
+    >
       <Tabs.Screen
         name="index"
         options={{
@@ -70,7 +73,11 @@ export default function TabLayout() {
         options={{
           title: t('tabs.profile'),
           tabBarIcon: ({ color }) => (
-            <IconSymbol size={24} name="person.crop.circle.fill" color={color} />
+            <IconSymbol
+              size={24}
+              name="person.crop.circle.fill"
+              color={color}
+            />
           ),
         }}
       />

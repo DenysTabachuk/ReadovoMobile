@@ -3,8 +3,18 @@ import * as NavigationBar from 'expo-navigation-bar';
 import { Image } from 'expo-image';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, Modal, Platform, Pressable, View } from 'react-native';
-import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
+import {
+  ActivityIndicator,
+  Modal,
+  Platform,
+  Pressable,
+  View,
+} from 'react-native';
+import {
+  Gesture,
+  GestureDetector,
+  GestureHandlerRootView,
+} from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   useAnimatedStyle,
@@ -65,7 +75,11 @@ export function ArticleImageBlock({
     const normalizedCaption = caption?.trim();
     const normalizedAlt = alt?.trim();
 
-    if (normalizedCaption && normalizedAlt && normalizedCaption !== normalizedAlt) {
+    if (
+      normalizedCaption &&
+      normalizedAlt &&
+      normalizedCaption !== normalizedAlt
+    ) {
       return `${normalizedCaption}\n${normalizedAlt}`;
     }
 
@@ -134,8 +148,10 @@ export function ArticleImageBlock({
             return;
           }
 
-          viewerTranslateX.value = savedViewerTranslateX.value + event.translationX;
-          viewerTranslateY.value = savedViewerTranslateY.value + event.translationY;
+          viewerTranslateX.value =
+            savedViewerTranslateX.value + event.translationX;
+          viewerTranslateY.value =
+            savedViewerTranslateY.value + event.translationY;
         })
         .onEnd(() => {
           savedViewerTranslateX.value = viewerTranslateX.value;
@@ -230,7 +246,8 @@ export function ArticleImageBlock({
         <ThemedView
           darkColor={fallbackBackgroundColor}
           lightColor={fallbackBackgroundColor}
-          style={[styles.fallback, { borderColor }]}>
+          style={[styles.fallback, { borderColor }]}
+        >
           <ThemedText style={styles.fallbackTitle} type="bodyStrong">
             {t('article.imageUnavailable')}
           </ThemedText>
@@ -239,7 +256,8 @@ export function ArticleImageBlock({
               ellipsizeMode="tail"
               numberOfLines={MAX_ALT_FALLBACK_LINES}
               style={styles.fallbackText}
-              type="body">
+              type="body"
+            >
               {fallbackText}
             </ThemedText>
           ) : null}
@@ -265,7 +283,8 @@ export function ArticleImageBlock({
           ellipsizeMode="tail"
           numberOfLines={MAX_CAPTION_LINES}
           style={styles.caption}
-          type="body">
+          type="body"
+        >
           {caption}
         </ThemedText>
       ) : null}
@@ -276,17 +295,25 @@ export function ArticleImageBlock({
         presentationStyle="overFullScreen"
         statusBarTranslucent={Platform.OS === 'android'}
         transparent
-        visible={viewerOpen}>
+        visible={viewerOpen}
+      >
         <GestureHandlerRootView
-          style={[styles.viewerRoot, { backgroundColor: viewerBackgroundColor }]}>
-          <View style={[styles.viewer, { backgroundColor: viewerBackgroundColor }]}>
+          style={[
+            styles.viewerRoot,
+            { backgroundColor: viewerBackgroundColor },
+          ]}
+        >
+          <View
+            style={[styles.viewer, { backgroundColor: viewerBackgroundColor }]}
+          >
             <Pressable
               hitSlop={12}
               onPress={handleCloseViewer}
               style={[
                 styles.viewerCloseButton,
                 { backgroundColor: viewerCloseButtonColor },
-              ]}>
+              ]}
+            >
               <Ionicons color={viewerForegroundColor} name="close" size={28} />
             </Pressable>
             {!viewerLoaded && !viewerLoadError ? (
@@ -299,12 +326,15 @@ export function ArticleImageBlock({
                 darkColor={viewerForegroundColor}
                 lightColor={viewerForegroundColor}
                 style={styles.viewerFallbackTitle}
-                type="bodyStrong">
+                type="bodyStrong"
+              >
                 {t('article.imageUnavailable')}
               </ThemedText>
             ) : (
               <GestureDetector gesture={viewerGesture}>
-                <Animated.View style={[styles.viewerImageWrapper, viewerImageStyle]}>
+                <Animated.View
+                  style={[styles.viewerImageWrapper, viewerImageStyle]}
+                >
                   <Image
                     contentFit="contain"
                     onError={() => setViewerLoadError(true)}
@@ -324,7 +354,8 @@ export function ArticleImageBlock({
                   styles.viewerCaption,
                   { bottom: Spacing.xLg + viewerBottomInset },
                 ]}
-                type="body">
+                type="body"
+              >
                 {caption}
               </ThemedText>
             ) : null}

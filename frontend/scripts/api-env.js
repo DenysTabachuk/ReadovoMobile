@@ -3,10 +3,12 @@ const { networkInterfaces } = require('node:os');
 const path = require('node:path');
 
 const API_PORT = '3000';
-const VIRTUAL_INTERFACE_PATTERN = /docker|hyper-v|loopback|virtual|vmware|vbox|wsl/i;
+const VIRTUAL_INTERFACE_PATTERN =
+  /docker|hyper-v|loopback|virtual|vmware|vbox|wsl/i;
 const ENV_FILE_VALUES = readEnvFile(path.join(__dirname, '..', '.env'));
 const RENDER_API_URL =
-  process.env.READOVO_RENDER_API_URL ?? ENV_FILE_VALUES.EXPO_PUBLIC_RENDER_API_URL;
+  process.env.READOVO_RENDER_API_URL ??
+  ENV_FILE_VALUES.EXPO_PUBLIC_RENDER_API_URL;
 
 function getLocalIpv4Address() {
   if (process.env.READOVO_DEV_HOST) {
@@ -28,7 +30,11 @@ function getLocalIpv4Address() {
     }
   }
 
-  return addresses.find((address) => address.startsWith('192.168.')) ?? addresses[0] ?? 'localhost';
+  return (
+    addresses.find((address) => address.startsWith('192.168.')) ??
+    addresses[0] ??
+    'localhost'
+  );
 }
 
 function parseApiArgs(argv) {
@@ -50,7 +56,9 @@ function parseApiArgs(argv) {
       const value = arg.slice('--api='.length).trim();
 
       if (value !== 'local' && value !== 'render') {
-        throw new Error(`Unsupported API mode "${value}". Use "local" or "render".`);
+        throw new Error(
+          `Unsupported API mode "${value}". Use "local" or "render".`,
+        );
       }
 
       apiMode = value;
@@ -70,7 +78,9 @@ function getApiUrl(apiMode, host) {
 
   if (apiMode === 'render') {
     if (!RENDER_API_URL) {
-      throw new Error('EXPO_PUBLIC_RENDER_API_URL is required for the render API mode.');
+      throw new Error(
+        'EXPO_PUBLIC_RENDER_API_URL is required for the render API mode.',
+      );
     }
 
     return RENDER_API_URL;
@@ -88,8 +98,10 @@ function createApiEnv(apiMode) {
     env: {
       ...process.env,
       EXPO_PUBLIC_API_URL: apiUrl,
-      EXPO_PUBLIC_REACTOTRON_HOST: process.env.EXPO_PUBLIC_REACTOTRON_HOST ?? host,
-      REACT_NATIVE_PACKAGER_HOSTNAME: process.env.REACT_NATIVE_PACKAGER_HOSTNAME ?? host,
+      EXPO_PUBLIC_REACTOTRON_HOST:
+        process.env.EXPO_PUBLIC_REACTOTRON_HOST ?? host,
+      REACT_NATIVE_PACKAGER_HOSTNAME:
+        process.env.REACT_NATIVE_PACKAGER_HOSTNAME ?? host,
     },
     host,
   };

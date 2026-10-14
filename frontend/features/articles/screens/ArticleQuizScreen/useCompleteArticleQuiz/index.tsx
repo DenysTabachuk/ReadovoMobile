@@ -64,9 +64,14 @@ export function useCompleteArticleQuiz({
         testsCompleted: profile.progress.testsCompleted + 1,
       });
       const previousStreak =
-        queryClient.getQueryData<StreakState>(['streak-profile', currentUserId]) ??
-        (await getStreakProfile(currentUserId).catch(() => null));
-      const streak = await trackLearningActivity(currentUserId, 'article_quiz_completed');
+        queryClient.getQueryData<StreakState>([
+          'streak-profile',
+          currentUserId,
+        ]) ?? (await getStreakProfile(currentUserId).catch(() => null));
+      const streak = await trackLearningActivity(
+        currentUserId,
+        'article_quiz_completed',
+      );
 
       return {
         newlyUnlockedAchievements: getNewlyUnlockedAchievements(
@@ -91,7 +96,10 @@ export function useCompleteArticleQuiz({
       });
 
       if (response?.streak) {
-        queryClient.setQueryData(['streak-profile', currentUserId], response.streak);
+        queryClient.setQueryData(
+          ['streak-profile', currentUserId],
+          response.streak,
+        );
       }
 
       if (response?.rewardCoins !== undefined) {
@@ -102,7 +110,10 @@ export function useCompleteArticleQuiz({
         });
       }
 
-      if (response?.shouldShowStreakBanner || (isMockApiEnabled() && response?.streak)) {
+      if (
+        response?.shouldShowStreakBanner ||
+        (isMockApiEnabled() && response?.streak)
+      ) {
         showBanner({
           description: t('streak.banner.description', {
             count: response.streak.currentStreak,
@@ -135,7 +146,9 @@ export function useCompleteArticleQuiz({
             badge: getAchievementBadge('first-test-completed'),
             coinsReward: 20,
           },
-          description: t('profile.achievements.first_test_completed.description'),
+          description: t(
+            'profile.achievements.first_test_completed.description',
+          ),
           durationMs: 4200,
           title: t('profile.achievements.first_test_completed.title'),
           variant: 'achievement',

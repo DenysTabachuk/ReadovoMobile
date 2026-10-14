@@ -122,16 +122,28 @@ export function ArticlesToolbar({
   const filtersProgress = useSharedValue(0);
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
-  const borderColor = useThemeColor({ light: '#d0d7de', dark: '#2d3336' }, 'text');
-  const cardColor = useThemeColor({ light: '#f5f7fa', dark: '#202425' }, 'background');
+  const borderColor = useThemeColor(
+    { light: '#d0d7de', dark: '#2d3336' },
+    'text',
+  );
+  const cardColor = useThemeColor(
+    { light: '#f5f7fa', dark: '#202425' },
+    'background',
+  );
   const sectionCardColor = useThemeColor(
     { light: '#edf1f5', dark: '#171c1d' },
     'background',
   );
   const tintColor = useThemeColor({}, 'tint');
   const textColor = useThemeColor({}, 'text');
-  const placeholderColor = useThemeColor({ light: '#7c7c7c', dark: '#a8a8a8' }, 'icon');
-  const mutedTextColor = useThemeColor({ light: '#687076', dark: '#9ba1a6' }, 'icon');
+  const placeholderColor = useThemeColor(
+    { light: '#7c7c7c', dark: '#a8a8a8' },
+    'icon',
+  );
+  const mutedTextColor = useThemeColor(
+    { light: '#687076', dark: '#9ba1a6' },
+    'icon',
+  );
   const darkFilterIconColor = '#a5b4fc';
   const clearIconColor = isDarkMode ? darkFilterIconColor : tintColor;
   const savedAccentColor = isDarkMode ? '#c4a7ff' : tintColor;
@@ -290,7 +302,8 @@ export function ArticlesToolbar({
           {
             borderColor,
           },
-        ]}>
+        ]}
+      >
         <TextInput
           autoCapitalize="none"
           autoCorrect={false}
@@ -315,7 +328,8 @@ export function ArticlesToolbar({
             style={({ pressed }) => [
               styles.searchClearButton,
               { opacity: pressed ? 0.64 : 1 },
-            ]}>
+            ]}
+          >
             <Ionicons color={placeholderColor} name="close-circle" size={22} />
           </Pressable>
         ) : null}
@@ -329,400 +343,507 @@ export function ArticlesToolbar({
             backgroundColor: sectionCardColor,
             borderColor,
           },
-        ]}>
+        ]}
+      >
         <Animated.View
           pointerEvents={isFiltersCollapsed ? 'none' : 'auto'}
           style={[
             styles.filtersContentAnimated,
             filtersContentHeight > 0 ? animatedContentStyle : null,
-          ]}>
+          ]}
+        >
           <View
             onLayout={(event) => {
               const nextHeight = Math.ceil(event.nativeEvent.layout.height);
               if (nextHeight > 0 && nextHeight !== filtersContentHeight) {
                 setFiltersContentHeight(nextHeight);
               }
-            }}>
+            }}
+          >
             <>
-      <View
-        style={[
-          styles.sectionCard,
-          {
-            backgroundColor: sectionCardColor,
-            borderColor,
-          },
-        ]}>
-        <View style={styles.recommendedRow}>
-        <View
-          style={[
-            styles.recommendedToggle,
-            {
-              backgroundColor: cardColor,
-              borderColor,
-            },
-          ]}>
-          <View style={styles.recommendedToggleLabel}>
-            <Ionicons
-              color={isDarkMode ? '#c4a7ff' : tintColor}
-              name="sparkles-outline"
-              size={20}
-            />
-            <ThemedText type="bodyStrong">
-              {t('articles.recommendedLabel')}
-            </ThemedText>
-          </View>
-          <Switch
-            onValueChange={onChangeRecommendedArticles}
-            thumbColor={recommendedArticles ? tintColor : '#f4f3f4'}
-            trackColor={{ false: '#767577', true: selectedCategoryBackground }}
-            value={recommendedArticles}
-          />
-        </View>
-        <Pressable
-          accessibilityLabel={t('articles.recommendedInfo.openAction')}
-          onPress={openRecommendedInfo}
-          style={[
-            styles.infoButton,
-            {
-              backgroundColor: cardColor,
-              borderColor,
-            },
-          ]}>
-          <Ionicons
-            color={isDarkMode ? '#c4a7ff' : tintColor}
-            name="information-circle-outline"
-            size={22}
-          />
-        </Pressable>
-      </View>
-      </View>
-      <ModalSheet
-        contentStyle={styles.recommendedInfoContent}
-        onClose={closeRecommendedInfo}
-        open={isRecommendedInfoOpen}
-        title={t('articles.recommendedInfo.title')}>
-        <ThemedText type="body" style={styles.recommendedInfoText}>
-          {t('articles.recommendedInfo.description')}
-        </ThemedText>
-        <Button onPress={closeRecommendedInfo} style={styles.recommendedInfoButton}>
-          {t('articles.recommendedInfo.thanks')}
-        </Button>
-      </ModalSheet>
-
-      <View
-        style={[
-          styles.sectionCard,
-          {
-            backgroundColor: sectionCardColor,
-            borderColor,
-          },
-        ]}>
-        <View style={styles.sectionHeader}>
-          <ThemedText
-            type="body"
-            style={[styles.sectionHeaderText, { color: mutedTextColor }]}>
-            {t('articles.filtersSections.personal')}
-          </ThemedText>
-        </View>
-
-      <View style={styles.categorySection}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.categoryList}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t('articles.recent.openAction')}
-            accessibilityState={{ selected: personalFilter === 'recent' }}
-            onPress={() =>
-              onChangePersonalFilter(personalFilter === 'recent' ? null : 'recent')
-            }
-            style={({ pressed }) => [
-              styles.categoryChip,
-              {
-                backgroundColor:
-                  personalFilter === 'recent' ? selectedCategoryBackground : cardColor,
-                borderColor:
-                  personalFilter === 'recent' ? selectedCategoryColor : borderColor,
-                opacity: pressed ? 0.75 : 1,
-              },
-            ]}>
-            <Ionicons
-              color={personalFilter === 'recent' ? selectedCategoryColor : mutedTextColor}
-              name={personalFilter === 'recent' ? 'eye' : 'eye-outline'}
-              size={18}
-            />
-            <ThemedText
-              numberOfLines={1}
-              type="bodyStrong"
-              style={[
-                styles.categoryChipLabel,
-                {
-                  color:
-                    personalFilter === 'recent' ? selectedCategoryColor : mutedTextColor,
-                },
-              ]}>
-              {t('articles.recent.label')}
-            </ThemedText>
-            <ThemedText
-              type="bodyStrong"
-              style={[
-                styles.savedCount,
-                {
-                  color:
-                    personalFilter === 'recent' ? selectedCategoryColor : mutedTextColor,
-                },
-              ]}>
-              {recentArticlesCount}
-            </ThemedText>
-          </Pressable>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t('articles.saved.openAction')}
-            accessibilityState={{ selected: personalFilter === 'saved' }}
-            onPress={() =>
-              onChangePersonalFilter(personalFilter === 'saved' ? null : 'saved')
-            }
-            style={({ pressed }) => [
-              styles.categoryChip,
-              {
-                backgroundColor:
-                  personalFilter === 'saved' ? selectedCategoryBackground : cardColor,
-                borderColor: personalFilter === 'saved' ? savedAccentColor : borderColor,
-                opacity: pressed ? 0.75 : 1,
-              },
-            ]}>
-            <Ionicons
-              color={
-                personalFilter === 'saved'
-                  ? savedAccentColor
-                  : isDarkMode
-                    ? '#a78bfa'
-                    : mutedTextColor
-              }
-              name={personalFilter === 'saved' ? 'bookmark' : 'bookmark-outline'}
-              size={18}
-            />
-            <ThemedText
-              numberOfLines={1}
-              type="bodyStrong"
-              style={[
-                styles.categoryChipLabel,
-                { color: personalFilter === 'saved' ? savedAccentColor : mutedTextColor },
-              ]}>
-              {t('articles.saved.label')}
-            </ThemedText>
-            <ThemedText
-              type="bodyStrong"
-              style={[
-                styles.savedCount,
-                { color: personalFilter === 'saved' ? savedAccentColor : mutedTextColor },
-              ]}>
-              {savedArticlesCount}
-            </ThemedText>
-          </Pressable>
-        </ScrollView>
-      </View>
-      </View>
-
-      <View
-        style={[
-          styles.sectionCard,
-          {
-            backgroundColor: sectionCardColor,
-            borderColor,
-          },
-        ]}>
-        <View style={styles.sectionHeader}>
-          <ThemedText
-            type="body"
-            style={[styles.sectionHeaderText, { color: mutedTextColor }]}>
-            {t('articles.filtersSections.main')}
-          </ThemedText>
-        </View>
-
-      <View style={styles.categorySection}>
-        <ThemedText type="bodyStrong">
-          {t('articles.categoryLabel')}
-        </ThemedText>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.categoryList}>
-          {categoryOptions.map((option) => {
-            const isSelected = personalFilter === null && option.value === categoryFilter;
-            const categoryColor = isSelected
-              ? selectedCategoryColor
-              : isDarkMode
-                ? option.darkIconColor
-                : mutedTextColor;
-            const categoryLabelColor = isSelected ? selectedCategoryColor : mutedTextColor;
-
-            return (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityState={{ selected: isSelected }}
-                key={option.value}
-                onPress={() => onChangeCategoryFilter(option.value)}
-                style={({ pressed }) => [
-                  styles.categoryChip,
+              <View
+                style={[
+                  styles.sectionCard,
                   {
-                    backgroundColor: isSelected
-                      ? selectedCategoryBackground
-                      : cardColor,
-                    borderColor: isSelected ? selectedCategoryColor : borderColor,
-                    opacity: pressed ? 0.75 : 1,
+                    backgroundColor: sectionCardColor,
+                    borderColor,
                   },
-                ]}>
-                <Ionicons color={categoryColor} name={option.icon} size={18} />
-                <ThemedText
-                  numberOfLines={1}
-                  type="bodyStrong"
-                  style={[styles.categoryChipLabel, { color: categoryLabelColor }]}>
-                  {option.label}
+                ]}
+              >
+                <View style={styles.recommendedRow}>
+                  <View
+                    style={[
+                      styles.recommendedToggle,
+                      {
+                        backgroundColor: cardColor,
+                        borderColor,
+                      },
+                    ]}
+                  >
+                    <View style={styles.recommendedToggleLabel}>
+                      <Ionicons
+                        color={isDarkMode ? '#c4a7ff' : tintColor}
+                        name="sparkles-outline"
+                        size={20}
+                      />
+                      <ThemedText type="bodyStrong">
+                        {t('articles.recommendedLabel')}
+                      </ThemedText>
+                    </View>
+                    <Switch
+                      onValueChange={onChangeRecommendedArticles}
+                      thumbColor={recommendedArticles ? tintColor : '#f4f3f4'}
+                      trackColor={{
+                        false: '#767577',
+                        true: selectedCategoryBackground,
+                      }}
+                      value={recommendedArticles}
+                    />
+                  </View>
+                  <Pressable
+                    accessibilityLabel={t(
+                      'articles.recommendedInfo.openAction',
+                    )}
+                    onPress={openRecommendedInfo}
+                    style={[
+                      styles.infoButton,
+                      {
+                        backgroundColor: cardColor,
+                        borderColor,
+                      },
+                    ]}
+                  >
+                    <Ionicons
+                      color={isDarkMode ? '#c4a7ff' : tintColor}
+                      name="information-circle-outline"
+                      size={22}
+                    />
+                  </Pressable>
+                </View>
+              </View>
+              <ModalSheet
+                contentStyle={styles.recommendedInfoContent}
+                onClose={closeRecommendedInfo}
+                open={isRecommendedInfoOpen}
+                title={t('articles.recommendedInfo.title')}
+              >
+                <ThemedText type="body" style={styles.recommendedInfoText}>
+                  {t('articles.recommendedInfo.description')}
                 </ThemedText>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
-      </View>
+                <Button
+                  onPress={closeRecommendedInfo}
+                  style={styles.recommendedInfoButton}
+                >
+                  {t('articles.recommendedInfo.thanks')}
+                </Button>
+              </ModalSheet>
 
-      <View style={styles.filtersRow}>
-        <View style={styles.pickerField}>
-          <OptionPickerField
-            label={t('articles.sortLabel')}
-            onSelect={onChangeSortByFilter}
-            options={sortOptions}
-            selectedValue={sortByFilter}
-            title={t('articles.sortTitle')}
-          />
-        </View>
-      </View>
-      </View>
+              <View
+                style={[
+                  styles.sectionCard,
+                  {
+                    backgroundColor: sectionCardColor,
+                    borderColor,
+                  },
+                ]}
+              >
+                <View style={styles.sectionHeader}>
+                  <ThemedText
+                    type="body"
+                    style={[
+                      styles.sectionHeaderText,
+                      { color: mutedTextColor },
+                    ]}
+                  >
+                    {t('articles.filtersSections.personal')}
+                  </ThemedText>
+                </View>
 
-      <View
-        style={[
-          styles.sectionCard,
-          {
-            backgroundColor: sectionCardColor,
-            borderColor,
-          },
-        ]}>
-        <View style={styles.sectionHeader}>
-          <ThemedText
-            type="body"
-            style={[styles.sectionHeaderText, { color: mutedTextColor }]}>
-            {t('articles.filtersSections.quick')}
-          </ThemedText>
-        </View>
+                <View style={styles.categorySection}>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.categoryList}
+                  >
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={t('articles.recent.openAction')}
+                      accessibilityState={{
+                        selected: personalFilter === 'recent',
+                      }}
+                      onPress={() =>
+                        onChangePersonalFilter(
+                          personalFilter === 'recent' ? null : 'recent',
+                        )
+                      }
+                      style={({ pressed }) => [
+                        styles.categoryChip,
+                        {
+                          backgroundColor:
+                            personalFilter === 'recent'
+                              ? selectedCategoryBackground
+                              : cardColor,
+                          borderColor:
+                            personalFilter === 'recent'
+                              ? selectedCategoryColor
+                              : borderColor,
+                          opacity: pressed ? 0.75 : 1,
+                        },
+                      ]}
+                    >
+                      <Ionicons
+                        color={
+                          personalFilter === 'recent'
+                            ? selectedCategoryColor
+                            : mutedTextColor
+                        }
+                        name={
+                          personalFilter === 'recent' ? 'eye' : 'eye-outline'
+                        }
+                        size={18}
+                      />
+                      <ThemedText
+                        numberOfLines={1}
+                        type="bodyStrong"
+                        style={[
+                          styles.categoryChipLabel,
+                          {
+                            color:
+                              personalFilter === 'recent'
+                                ? selectedCategoryColor
+                                : mutedTextColor,
+                          },
+                        ]}
+                      >
+                        {t('articles.recent.label')}
+                      </ThemedText>
+                      <ThemedText
+                        type="bodyStrong"
+                        style={[
+                          styles.savedCount,
+                          {
+                            color:
+                              personalFilter === 'recent'
+                                ? selectedCategoryColor
+                                : mutedTextColor,
+                          },
+                        ]}
+                      >
+                        {recentArticlesCount}
+                      </ThemedText>
+                    </Pressable>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={t('articles.saved.openAction')}
+                      accessibilityState={{
+                        selected: personalFilter === 'saved',
+                      }}
+                      onPress={() =>
+                        onChangePersonalFilter(
+                          personalFilter === 'saved' ? null : 'saved',
+                        )
+                      }
+                      style={({ pressed }) => [
+                        styles.categoryChip,
+                        {
+                          backgroundColor:
+                            personalFilter === 'saved'
+                              ? selectedCategoryBackground
+                              : cardColor,
+                          borderColor:
+                            personalFilter === 'saved'
+                              ? savedAccentColor
+                              : borderColor,
+                          opacity: pressed ? 0.75 : 1,
+                        },
+                      ]}
+                    >
+                      <Ionicons
+                        color={
+                          personalFilter === 'saved'
+                            ? savedAccentColor
+                            : isDarkMode
+                              ? '#a78bfa'
+                              : mutedTextColor
+                        }
+                        name={
+                          personalFilter === 'saved'
+                            ? 'bookmark'
+                            : 'bookmark-outline'
+                        }
+                        size={18}
+                      />
+                      <ThemedText
+                        numberOfLines={1}
+                        type="bodyStrong"
+                        style={[
+                          styles.categoryChipLabel,
+                          {
+                            color:
+                              personalFilter === 'saved'
+                                ? savedAccentColor
+                                : mutedTextColor,
+                          },
+                        ]}
+                      >
+                        {t('articles.saved.label')}
+                      </ThemedText>
+                      <ThemedText
+                        type="bodyStrong"
+                        style={[
+                          styles.savedCount,
+                          {
+                            color:
+                              personalFilter === 'saved'
+                                ? savedAccentColor
+                                : mutedTextColor,
+                          },
+                        ]}
+                      >
+                        {savedArticlesCount}
+                      </ThemedText>
+                    </Pressable>
+                  </ScrollView>
+                </View>
+              </View>
 
-      <View style={styles.recommendedRow}>
-        <View
-          style={[
-            styles.recommendedToggle,
-            {
-              backgroundColor: cardColor,
-              borderColor,
-            },
-          ]}>
-          <View style={styles.recommendedToggleLabel}>
-            <Ionicons
-              color={isDarkMode ? darkFilterIconColor : tintColor}
-              name="image-outline"
-              size={20}
-            />
-            <ThemedText type="bodyStrong">
-              {t('articles.preferImagesFirstLabel')}
-            </ThemedText>
-          </View>
-          <Switch
-            onValueChange={onChangePreferImagesFirst}
-            thumbColor={preferImagesFirst ? tintColor : '#f4f3f4'}
-            trackColor={{ false: '#767577', true: selectedCategoryBackground }}
-            value={preferImagesFirst}
-          />
-        </View>
-      </View>
+              <View
+                style={[
+                  styles.sectionCard,
+                  {
+                    backgroundColor: sectionCardColor,
+                    borderColor,
+                  },
+                ]}
+              >
+                <View style={styles.sectionHeader}>
+                  <ThemedText
+                    type="body"
+                    style={[
+                      styles.sectionHeaderText,
+                      { color: mutedTextColor },
+                    ]}
+                  >
+                    {t('articles.filtersSections.main')}
+                  </ThemedText>
+                </View>
 
-      <View style={styles.filtersRow}>
-        <View style={styles.pickerField}>
-          <OptionPickerField
-            label={t('articles.readyLevelLabel')}
-            onSelect={onChangeReadyLevelFilter}
-            options={readyLevelOptions}
-            selectedValue={readyLevelFilter}
-            title={t('articles.readyLevelTitle')}
-          />
-        </View>
-      </View>
+                <View style={styles.categorySection}>
+                  <ThemedText type="bodyStrong">
+                    {t('articles.categoryLabel')}
+                  </ThemedText>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.categoryList}
+                  >
+                    {categoryOptions.map((option) => {
+                      const isSelected =
+                        personalFilter === null &&
+                        option.value === categoryFilter;
+                      const categoryColor = isSelected
+                        ? selectedCategoryColor
+                        : isDarkMode
+                          ? option.darkIconColor
+                          : mutedTextColor;
+                      const categoryLabelColor = isSelected
+                        ? selectedCategoryColor
+                        : mutedTextColor;
 
-      <View style={styles.recommendedRow}>
-        <View
-          style={[
-            styles.recommendedToggle,
-            {
-              backgroundColor: cardColor,
-              borderColor,
-            },
-          ]}>
-          <View style={styles.recommendedToggleLabel}>
-            <Ionicons
-              color={isDarkMode ? darkFilterIconColor : tintColor}
-              name="create-outline"
-              size={20}
-            />
-            <ThemedText type="bodyStrong">
-              {t('articles.filters.readyTransformation.adaptation')}
-            </ThemedText>
-          </View>
-          <Switch
-            onValueChange={onChangeReadyAdaptationEnabled}
-            thumbColor={readyAdaptationEnabled ? tintColor : '#f4f3f4'}
-            trackColor={{ false: '#767577', true: selectedCategoryBackground }}
-            value={readyAdaptationEnabled}
-          />
-        </View>
-      </View>
+                      return (
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityState={{ selected: isSelected }}
+                          key={option.value}
+                          onPress={() => onChangeCategoryFilter(option.value)}
+                          style={({ pressed }) => [
+                            styles.categoryChip,
+                            {
+                              backgroundColor: isSelected
+                                ? selectedCategoryBackground
+                                : cardColor,
+                              borderColor: isSelected
+                                ? selectedCategoryColor
+                                : borderColor,
+                              opacity: pressed ? 0.75 : 1,
+                            },
+                          ]}
+                        >
+                          <Ionicons
+                            color={categoryColor}
+                            name={option.icon}
+                            size={18}
+                          />
+                          <ThemedText
+                            numberOfLines={1}
+                            type="bodyStrong"
+                            style={[
+                              styles.categoryChipLabel,
+                              { color: categoryLabelColor },
+                            ]}
+                          >
+                            {option.label}
+                          </ThemedText>
+                        </Pressable>
+                      );
+                    })}
+                  </ScrollView>
+                </View>
 
-      <View style={styles.recommendedRow}>
-        <View
-          style={[
-            styles.recommendedToggle,
-            {
-              backgroundColor: cardColor,
-              borderColor,
-            },
-          ]}>
-          <View style={styles.recommendedToggleLabel}>
-            <Ionicons
-              color={isDarkMode ? darkFilterIconColor : tintColor}
-              name="document-text-outline"
-              size={20}
-            />
-            <ThemedText type="bodyStrong">
-              {t('articles.filters.readyTransformation.summary')}
-            </ThemedText>
-          </View>
-          <Switch
-            onValueChange={onChangeReadySummaryEnabled}
-            thumbColor={readySummaryEnabled ? tintColor : '#f4f3f4'}
-            trackColor={{ false: '#767577', true: selectedCategoryBackground }}
-            value={readySummaryEnabled}
-          />
-        </View>
-      </View>
-      </View>
+                <View style={styles.filtersRow}>
+                  <View style={styles.pickerField}>
+                    <OptionPickerField
+                      label={t('articles.sortLabel')}
+                      onSelect={onChangeSortByFilter}
+                      options={sortOptions}
+                      selectedValue={sortByFilter}
+                      title={t('articles.sortTitle')}
+                    />
+                  </View>
+                </View>
+              </View>
+
+              <View
+                style={[
+                  styles.sectionCard,
+                  {
+                    backgroundColor: sectionCardColor,
+                    borderColor,
+                  },
+                ]}
+              >
+                <View style={styles.sectionHeader}>
+                  <ThemedText
+                    type="body"
+                    style={[
+                      styles.sectionHeaderText,
+                      { color: mutedTextColor },
+                    ]}
+                  >
+                    {t('articles.filtersSections.quick')}
+                  </ThemedText>
+                </View>
+
+                <View style={styles.recommendedRow}>
+                  <View
+                    style={[
+                      styles.recommendedToggle,
+                      {
+                        backgroundColor: cardColor,
+                        borderColor,
+                      },
+                    ]}
+                  >
+                    <View style={styles.recommendedToggleLabel}>
+                      <Ionicons
+                        color={isDarkMode ? darkFilterIconColor : tintColor}
+                        name="image-outline"
+                        size={20}
+                      />
+                      <ThemedText type="bodyStrong">
+                        {t('articles.preferImagesFirstLabel')}
+                      </ThemedText>
+                    </View>
+                    <Switch
+                      onValueChange={onChangePreferImagesFirst}
+                      thumbColor={preferImagesFirst ? tintColor : '#f4f3f4'}
+                      trackColor={{
+                        false: '#767577',
+                        true: selectedCategoryBackground,
+                      }}
+                      value={preferImagesFirst}
+                    />
+                  </View>
+                </View>
+
+                <View style={styles.filtersRow}>
+                  <View style={styles.pickerField}>
+                    <OptionPickerField
+                      label={t('articles.readyLevelLabel')}
+                      onSelect={onChangeReadyLevelFilter}
+                      options={readyLevelOptions}
+                      selectedValue={readyLevelFilter}
+                      title={t('articles.readyLevelTitle')}
+                    />
+                  </View>
+                </View>
+
+                <View style={styles.recommendedRow}>
+                  <View
+                    style={[
+                      styles.recommendedToggle,
+                      {
+                        backgroundColor: cardColor,
+                        borderColor,
+                      },
+                    ]}
+                  >
+                    <View style={styles.recommendedToggleLabel}>
+                      <Ionicons
+                        color={isDarkMode ? darkFilterIconColor : tintColor}
+                        name="create-outline"
+                        size={20}
+                      />
+                      <ThemedText type="bodyStrong">
+                        {t('articles.filters.readyTransformation.adaptation')}
+                      </ThemedText>
+                    </View>
+                    <Switch
+                      onValueChange={onChangeReadyAdaptationEnabled}
+                      thumbColor={
+                        readyAdaptationEnabled ? tintColor : '#f4f3f4'
+                      }
+                      trackColor={{
+                        false: '#767577',
+                        true: selectedCategoryBackground,
+                      }}
+                      value={readyAdaptationEnabled}
+                    />
+                  </View>
+                </View>
+
+                <View style={styles.recommendedRow}>
+                  <View
+                    style={[
+                      styles.recommendedToggle,
+                      {
+                        backgroundColor: cardColor,
+                        borderColor,
+                      },
+                    ]}
+                  >
+                    <View style={styles.recommendedToggleLabel}>
+                      <Ionicons
+                        color={isDarkMode ? darkFilterIconColor : tintColor}
+                        name="document-text-outline"
+                        size={20}
+                      />
+                      <ThemedText type="bodyStrong">
+                        {t('articles.filters.readyTransformation.summary')}
+                      </ThemedText>
+                    </View>
+                    <Switch
+                      onValueChange={onChangeReadySummaryEnabled}
+                      thumbColor={readySummaryEnabled ? tintColor : '#f4f3f4'}
+                      trackColor={{
+                        false: '#767577',
+                        true: selectedCategoryBackground,
+                      }}
+                      value={readySummaryEnabled}
+                    />
+                  </View>
+                </View>
+              </View>
             </>
           </View>
         </Animated.View>
         <Animated.View style={[styles.sheetHeader, animatedHeaderStyle]}>
           <Pressable
             style={styles.sheetHeaderButton}
-            onPress={onToggleFiltersCollapsed}>
+            onPress={onToggleFiltersCollapsed}
+          >
             <View style={styles.sheetTitleRow}>
-              <ThemedText
-                type="bodyStrong"
-                style={{ color: textColor }}>
+              <ThemedText type="bodyStrong" style={{ color: textColor }}>
                 {isFiltersCollapsed
                   ? t('articles.showFilters')
                   : t('articles.hideFilters')}
@@ -766,9 +887,14 @@ export function ArticlesToolbar({
                 borderColor,
                 opacity: pressed ? 0.72 : 1,
               },
-            ]}>
+            ]}
+          >
             <View style={styles.clearButtonContent}>
-              <Ionicons color={clearIconColor} name="close-circle-outline" size={16} />
+              <Ionicons
+                color={clearIconColor}
+                name="close-circle-outline"
+                size={16}
+              />
               <ThemedText type="bodyStrong" style={{ color: mutedTextColor }}>
                 {t('articles.clearFilters')}
               </ThemedText>
@@ -779,8 +905,3 @@ export function ArticlesToolbar({
     </View>
   );
 }
-
-
-
-
-

@@ -31,7 +31,9 @@ export default function SettingsScreen() {
     setThemePreference,
   } = usePreferences();
   const isDarkTheme = colorScheme === 'dark';
-  const [pendingReminderEnabled, setPendingReminderEnabled] = useState<boolean | null>(null);
+  const [pendingReminderEnabled, setPendingReminderEnabled] = useState<
+    boolean | null
+  >(null);
   const [versionTapCount, setVersionTapCount] = useState(0);
   const appVersion = Constants.expoConfig?.version ?? 'dev';
 
@@ -98,7 +100,8 @@ export default function SettingsScreen() {
       <ScrollView
         bounces={false}
         contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}>
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.header}>
           <ThemedText type="screenTitle">{t('settings.title')}</ThemedText>
           <ThemedText type="description" style={styles.description}>
@@ -107,7 +110,9 @@ export default function SettingsScreen() {
         </View>
 
         <View style={styles.section}>
-          <ThemedText type="sectionTitle">{t('settings.theme.title')}</ThemedText>
+          <ThemedText type="sectionTitle">
+            {t('settings.theme.title')}
+          </ThemedText>
           <View style={styles.themeRow}>
             <Pressable
               accessibilityRole="switch"
@@ -116,12 +121,14 @@ export default function SettingsScreen() {
               style={[
                 styles.themeToggle,
                 isDarkTheme ? styles.themeToggleDark : styles.themeToggleLight,
-              ]}>
+              ]}
+            >
               <View
                 style={[
                   styles.themeThumb,
                   isDarkTheme ? styles.themeThumbDark : styles.themeThumbLight,
-                ]}>
+                ]}
+              >
                 <IconSymbol
                   color={isDarkTheme ? '#ffffff' : '#ffcf33'}
                   name={isDarkTheme ? 'moon.fill' : 'sun.max.fill'}
@@ -133,13 +140,19 @@ export default function SettingsScreen() {
         </View>
 
         <View style={styles.section}>
-          <ThemedText type="sectionTitle">{t('settings.language.title')}</ThemedText>
+          <ThemedText type="sectionTitle">
+            {t('settings.language.title')}
+          </ThemedText>
           <LanguageSelector />
         </View>
 
         <View style={styles.section}>
-          <ThemedText type="sectionTitle">{t('settings.learningReminders.sectionTitle')}</ThemedText>
-          <ThemedText type="description">{t('settings.learningReminders.description')}</ThemedText>
+          <ThemedText type="sectionTitle">
+            {t('settings.learningReminders.sectionTitle')}
+          </ThemedText>
+          <ThemedText type="description">
+            {t('settings.learningReminders.description')}
+          </ThemedText>
           <View style={styles.learningReminderRow}>
             <CheckboxRow
               checked={learningReminderEnabled}
@@ -165,12 +178,14 @@ export default function SettingsScreen() {
               <Button
                 onPress={handleCloseLearningReminderModal}
                 style={styles.modalButton}
-                variant="secondary">
+                variant="secondary"
+              >
                 {t('settings.learningReminders.confirmModal.cancel')}
               </Button>
               <Button
                 onPress={() => void handleConfirmLearningReminderChange()}
-                style={styles.modalButton}>
+                style={styles.modalButton}
+              >
                 {pendingReminderEnabled
                   ? t('settings.learningReminders.confirmModal.enableConfirm')
                   : t('settings.learningReminders.confirmModal.disableConfirm')}
@@ -183,18 +198,23 @@ export default function SettingsScreen() {
             pendingReminderEnabled
               ? t('settings.learningReminders.confirmModal.enableTitle')
               : t('settings.learningReminders.confirmModal.disableTitle')
-          }>
+          }
+        >
           <View style={styles.modalContent}>
             <ThemedText type="description">
               {pendingReminderEnabled
                 ? t('settings.learningReminders.confirmModal.enableDescription')
-                : t('settings.learningReminders.confirmModal.disableDescription')}
+                : t(
+                    'settings.learningReminders.confirmModal.disableDescription',
+                  )}
             </ThemedText>
           </View>
         </ModalSheet>
 
         <View style={styles.section}>
-          <ThemedText type="sectionTitle">{t('settings.account.title')}</ThemedText>
+          <ThemedText type="sectionTitle">
+            {t('settings.account.title')}
+          </ThemedText>
           <Pressable style={styles.logoutButton} onPress={handleLogout}>
             <Ionicons color="#d64545" name="log-out-outline" size={20} />
             <ThemedText type="bodyStrong" style={styles.logoutText}>
@@ -206,7 +226,8 @@ export default function SettingsScreen() {
         <Pressable
           accessibilityRole="button"
           onPress={handleVersionPress}
-          style={styles.versionButton}>
+          style={styles.versionButton}
+        >
           <ThemedText type="description" style={styles.versionText}>
             {t('settings.version', { version: appVersion })}
           </ThemedText>

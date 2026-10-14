@@ -20,7 +20,7 @@ export function useArticleSpeech(blocks?: ArticleBlock[]) {
   const chunks = useMemo(() => createArticleSpeechChunks(blocks), [blocks]);
   const [activeTokenKey, setActiveTokenKey] = useState<string | undefined>();
   const [status, setStatus] = useState<ArticleSpeechStatus>('idle');
-  const activeTokenKeyRef = useRef<string | undefined>();
+  const activeTokenKeyRef = useRef<string | undefined>(undefined);
   const chunkIndexRef = useRef(0);
   const lastActiveTokenUpdateAtRef = useRef(0);
   const wordIndexRef = useRef(0);
@@ -32,7 +32,8 @@ export function useArticleSpeech(blocks?: ArticleBlock[]) {
     [chunks],
   );
   const currentGlobalWordIndex = useMemo(
-    () => getGlobalWordIndex(chunks, chunkIndexRef.current, wordIndexRef.current),
+    () =>
+      getGlobalWordIndex(chunks, chunkIndexRef.current, wordIndexRef.current),
     [chunks, activeTokenKey],
   );
   const progress = totalWords > 0 ? currentGlobalWordIndex / totalWords : 0;
@@ -47,27 +48,31 @@ export function useArticleSpeech(blocks?: ArticleBlock[]) {
     setStatus('idle');
   }, []);
 
-  const publishActiveTokenKey = useCallback((tokenKey: string, force = false) => {
-    if (activeTokenKeyRef.current === tokenKey) {
-      return;
-    }
+  const publishActiveTokenKey = useCallback(
+    (tokenKey: string, force = false) => {
+      if (activeTokenKeyRef.current === tokenKey) {
+        return;
+      }
 
-    const now = Date.now();
-    const isNextTokenInDifferentBlock =
-      getBlockIndexFromTokenKey(activeTokenKeyRef.current) !==
-      getBlockIndexFromTokenKey(tokenKey);
+      const now = Date.now();
+      const isNextTokenInDifferentBlock =
+        getBlockIndexFromTokenKey(activeTokenKeyRef.current) !==
+        getBlockIndexFromTokenKey(tokenKey);
 
-    activeTokenKeyRef.current = tokenKey;
+      activeTokenKeyRef.current = tokenKey;
 
-    if (
-      force ||
-      isNextTokenInDifferentBlock ||
-      now - lastActiveTokenUpdateAtRef.current >= ACTIVE_TOKEN_UPDATE_INTERVAL_MS
-    ) {
-      lastActiveTokenUpdateAtRef.current = now;
-      setActiveTokenKey(tokenKey);
-    }
-  }, []);
+      if (
+        force ||
+        isNextTokenInDifferentBlock ||
+        now - lastActiveTokenUpdateAtRef.current >=
+          ACTIVE_TOKEN_UPDATE_INTERVAL_MS
+      ) {
+        lastActiveTokenUpdateAtRef.current = now;
+        setActiveTokenKey(tokenKey);
+      }
+    },
+    [],
+  );
 
   const speakFrom = useCallback(
     (chunkIndex: number, wordIndex: number) => {
@@ -94,7 +99,10 @@ export function useArticleSpeech(blocks?: ArticleBlock[]) {
             return;
           }
 
-          const nextWordIndex = findWordIndexAtChar(playableChunk.words, charIndex);
+          const nextWordIndex = findWordIndexAtChar(
+            playableChunk.words,
+            charIndex,
+          );
           const nextWord = playableChunk.words[nextWordIndex];
 
           if (!nextWord) {
@@ -136,7 +144,10 @@ export function useArticleSpeech(blocks?: ArticleBlock[]) {
             return;
           }
 
-          if (stopReasonRef.current === 'reset' || stopReasonRef.current === 'stop') {
+          if (
+            stopReasonRef.current === 'reset' ||
+            stopReasonRef.current === 'stop'
+          ) {
             stopReasonRef.current = null;
             resetSpeechState();
           }
@@ -269,7 +280,10 @@ function createPlayableChunk(
   };
 }
 
-function findWordIndexAtChar(words: ArticleSpeechWord[], charIndex: number): number {
+function findWordIndexAtChar(
+  words: ArticleSpeechWord[],
+  charIndex: number,
+): number {
   const exactIndex = words.findIndex(
     (word) => word.charStart <= charIndex && charIndex < word.charEnd,
   );
@@ -299,7 +313,9 @@ function getGlobalWordIndex(
   return previousWords + wordIndex;
 }
 
-function getBlockIndexFromTokenKey(tokenKey: string | undefined): number | null {
+function getBlockIndexFromTokenKey(
+  tokenKey: string | undefined,
+): number | null {
   const match = tokenKey?.match(/^block-(\d+)(?:-|$)/);
   const blockIndex = match?.[1] ? Number(match[1]) : NaN;
 

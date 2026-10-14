@@ -292,12 +292,19 @@ Passwords are not stored as plain text. The backend stores `passwordHash` and
 
 ## Useful Checks
 
+Run all CI checks from the repository root:
+
+```bash
+npm run ci
+```
+
 Backend:
 
 ```bash
 cd backend
-npm run build
+npm run typecheck
 npm run lint
+npm run format:check
 npm test -- --runInBand
 ```
 
@@ -305,9 +312,16 @@ Frontend:
 
 ```bash
 cd frontend
-npx tsc --noEmit
+npm run typecheck
 npm run lint
+npm run format:check
+npm test -- --runInBand
 ```
+
+GitHub Actions runs the same TypeScript, ESLint, Prettier, and unit-test checks
+for both packages on every pull request and on pushes to `main`. To prevent
+merging broken changes, enable branch protection for `main` in GitHub and make
+`Backend quality gate` and `Frontend quality gate` required status checks.
 
 ## Common Issues
 

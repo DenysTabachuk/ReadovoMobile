@@ -34,7 +34,10 @@ export function FormTextInput({
   ...props
 }: FormTextInputProps) {
   const [isFocused, setIsFocused] = useState(false);
-  const placeholderColor = useThemeColor({ light: '#7c7c7c', dark: '#a8a8a8' }, 'icon');
+  const placeholderColor = useThemeColor(
+    { light: '#7c7c7c', dark: '#a8a8a8' },
+    'icon',
+  );
   const tintColor = useThemeColor({}, 'tint');
   const textColor = useThemeColor({}, 'text');
 
@@ -68,9 +71,7 @@ export function FormTextInput({
         />
 
         {rightAccessory ? (
-          <View style={styles.rightAccessory}>
-            {rightAccessory}
-          </View>
+          <View style={styles.rightAccessory}>{rightAccessory}</View>
         ) : null}
       </View>
 

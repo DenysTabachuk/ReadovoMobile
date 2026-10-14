@@ -48,12 +48,18 @@ export function TimePickerField({
 }: TimePickerFieldProps) {
   const [isPickerVisible, setPickerVisible] = useState(false);
   const pickerDate = useMemo(() => createDateFromTime(value), [value]);
-  const borderColor = useThemeColor({ dark: '#3a4348', light: '#d0d7de' }, 'icon');
+  const borderColor = useThemeColor(
+    { dark: '#3a4348', light: '#d0d7de' },
+    'icon',
+  );
   const buttonBackgroundColor = useThemeColor(
     { dark: '#202425', light: '#f5f7fa' },
     'background',
   );
-  const iconColor = useThemeColor({ dark: '#9ba1a6', light: '#687076' }, 'icon');
+  const iconColor = useThemeColor(
+    { dark: '#9ba1a6', light: '#687076' },
+    'icon',
+  );
 
   const handlePress = () => {
     setPickerVisible(true);
@@ -77,7 +83,11 @@ export function TimePickerField({
       <Pressable
         accessibilityRole="button"
         onPress={handlePress}
-        style={[styles.pickerButton, { backgroundColor: buttonBackgroundColor, borderColor }]}>
+        style={[
+          styles.pickerButton,
+          { backgroundColor: buttonBackgroundColor, borderColor },
+        ]}
+      >
         <View style={styles.pickerButtonContent}>
           <Ionicons color={iconColor} name="time-outline" size={20} />
           <ThemedText style={styles.pickerLabel} type="body">

@@ -75,8 +75,7 @@ export const styles = StyleSheet.create({
   statusLight: {
     color: '#e26a00',
   },
-  streakValue: {
-  },
+  streakValue: {},
   subtitle: {
     fontSize: 14,
     marginTop: 2,

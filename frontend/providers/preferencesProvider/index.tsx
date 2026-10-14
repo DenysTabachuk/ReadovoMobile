@@ -10,14 +10,22 @@ import {
 } from 'react';
 import { useColorScheme as useSystemColorScheme } from 'react-native';
 import i18n from '@/localization';
-import type { LanguagePreference, LearningReminderTime, ThemePreference } from './types';
+import type {
+  LanguagePreference,
+  LearningReminderTime,
+  ThemePreference,
+} from './types';
 import { saveThemePreference } from './preferenceStorage/saveThemePreference';
 import { readStoredPreferences } from './preferenceStorage/readStoredPreferences';
 import { saveCompletedOnboarding } from './preferenceStorage/saveCompletedOnboarding';
 import { saveLanguagePreference } from './preferenceStorage/saveLanguagePreference';
 import { saveLearningReminderEnabled } from './preferenceStorage/saveLearningReminderEnabled';
 import { saveLearningReminderTime } from './preferenceStorage/saveLearningReminderTime';
-export type { LanguagePreference, LearningReminderTime, ThemePreference } from './types';
+export type {
+  LanguagePreference,
+  LearningReminderTime,
+  ThemePreference,
+} from './types';
 
 export const DEFAULT_LEARNING_REMINDER_TIME: LearningReminderTime = '19:00';
 
@@ -36,7 +44,9 @@ type PreferencesContextValue = {
   }) => void;
   setLearningReminderEnabled: (enabled: boolean) => Promise<void>;
   setLearningReminderTime: (time: LearningReminderTime) => Promise<void>;
-  setLanguagePreference: (languagePreference: LanguagePreference) => Promise<void>;
+  setLanguagePreference: (
+    languagePreference: LanguagePreference,
+  ) => Promise<void>;
   setThemePreference: (themePreference: ThemePreference) => Promise<void>;
 };
 
@@ -81,7 +91,8 @@ export function PreferencesProvider({ children }: PreferencesProviderProps) {
           languagePreference: storedPreferences.languagePreference ?? 'en',
           learningReminderEnabled: storedPreferences.learningReminderEnabled,
           learningReminderTime:
-            storedPreferences.learningReminderTime ?? DEFAULT_LEARNING_REMINDER_TIME,
+            storedPreferences.learningReminderTime ??
+            DEFAULT_LEARNING_REMINDER_TIME,
           themePreference: storedPreferences.themePreference ?? 'system',
         });
       } catch (error) {
@@ -114,13 +125,16 @@ export function PreferencesProvider({ children }: PreferencesProviderProps) {
     [],
   );
 
-  const setThemePreference = useCallback(async (themePreference: ThemePreference) => {
-    await saveThemePreference(AsyncStorage, themePreference);
-    setPreferences((previous) => ({
-      ...previous,
-      themePreference,
-    }));
-  }, []);
+  const setThemePreference = useCallback(
+    async (themePreference: ThemePreference) => {
+      await saveThemePreference(AsyncStorage, themePreference);
+      setPreferences((previous) => ({
+        ...previous,
+        themePreference,
+      }));
+    },
+    [],
+  );
 
   const setLearningReminderEnabled = useCallback(async (enabled: boolean) => {
     await saveLearningReminderEnabled(AsyncStorage, enabled);
@@ -130,13 +144,16 @@ export function PreferencesProvider({ children }: PreferencesProviderProps) {
     }));
   }, []);
 
-  const setLearningReminderTime = useCallback(async (time: LearningReminderTime) => {
-    await saveLearningReminderTime(AsyncStorage, time);
-    setPreferences((previous) => ({
-      ...previous,
-      learningReminderTime: time,
-    }));
-  }, []);
+  const setLearningReminderTime = useCallback(
+    async (time: LearningReminderTime) => {
+      await saveLearningReminderTime(AsyncStorage, time);
+      setPreferences((previous) => ({
+        ...previous,
+        learningReminderTime: time,
+      }));
+    },
+    [],
+  );
 
   const hydrateLearningReminderPreferences = useCallback(
     (input: {

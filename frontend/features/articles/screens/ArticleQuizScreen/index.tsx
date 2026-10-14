@@ -3,13 +3,21 @@ import {
   type NavigationAction,
 } from '@react-navigation/native';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Stack, useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
+import {
+  Stack,
+  useLocalSearchParams,
+  useNavigation,
+  useRouter,
+} from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/button';
-import { ArticleQuizRunner, type QuizSessionResult } from '@/components/articleQuizRunner';
+import {
+  ArticleQuizRunner,
+  type QuizSessionResult,
+} from '@/components/articleQuizRunner';
 import { ModalSheet } from '@/components/modalSheet';
 import { ScreenContainer } from '@/components/screenContainer';
 import { TestResult } from '@/components/testResult';
@@ -159,7 +167,8 @@ export default function ArticleQuizScreen() {
           disabled={isSaved || isSaving}
           onPress={() => saveVocabularyMutation.mutate(question)}
           style={styles.quizFooterButton}
-          variant="secondary">
+          variant="secondary"
+        >
           {isSaved
             ? t('dictionary.saved')
             : isSaving
@@ -225,7 +234,10 @@ export default function ArticleQuizScreen() {
           }}
         />
         <View style={styles.centerState}>
-          <ActivityIndicator color={Colors[colorScheme ?? 'light'].tint} size="large" />
+          <ActivityIndicator
+            color={Colors[colorScheme ?? 'light'].tint}
+            size="large"
+          />
           <ThemedText type="body">{t('article.loading')}</ThemedText>
         </View>
       </ScreenContainer>
@@ -319,12 +331,14 @@ export default function ArticleQuizScreen() {
                 setIsExitQuizConfirmOpen(false);
               }}
               style={styles.confirmModalButton}
-              variant="secondary">
+              variant="secondary"
+            >
               {t('dictionary.test.exitCancel')}
             </Button>
             <Button
               onPress={handleConfirmExitQuiz}
-              style={styles.confirmModalButton}>
+              style={styles.confirmModalButton}
+            >
               {t('dictionary.test.exitConfirm')}
             </Button>
           </View>
@@ -334,7 +348,8 @@ export default function ArticleQuizScreen() {
           setIsExitQuizConfirmOpen(false);
         }}
         open={isExitQuizConfirmOpen}
-        title={t('dictionary.test.exitTitle')}>
+        title={t('dictionary.test.exitTitle')}
+      >
         <ThemedText type="body">
           {t('dictionary.test.exitDescription')}
         </ThemedText>

@@ -65,17 +65,31 @@ function getStatusStyle(status: CalendarDayStatus) {
   return styles.dayNeutral;
 }
 
-function getStatusIcon(status: CalendarDayStatus, isDark: boolean): ReactElement | null {
+function getStatusIcon(
+  status: CalendarDayStatus,
+  isDark: boolean,
+): ReactElement | null {
   if (status === 'completed' || status === 'today_completed') {
-    return <Ionicons color="#ffffff" name="checkmark" size={12} style={styles.dayIcon} />;
+    return (
+      <Ionicons
+        color="#ffffff"
+        name="checkmark"
+        size={12}
+        style={styles.dayIcon}
+      />
+    );
   }
 
   if (status === 'missed') {
-    return <Ionicons color="#ffffff" name="close" size={12} style={styles.dayIcon} />;
+    return (
+      <Ionicons color="#ffffff" name="close" size={12} style={styles.dayIcon} />
+    );
   }
 
   if (status === 'frozen') {
-    return <Ionicons color="#ffffff" name="snow" size={11} style={styles.dayIcon} />;
+    return (
+      <Ionicons color="#ffffff" name="snow" size={11} style={styles.dayIcon} />
+    );
   }
 
   if (status === 'restored') {
@@ -151,11 +165,14 @@ export function ActivityCalendar({
 
   const initialDate = new Date(serverNow);
   const [visibleYear, setVisibleYear] = useState(initialDate.getUTCFullYear());
-  const [visibleMonth, setVisibleMonth] = useState(initialDate.getUTCMonth() + 1);
+  const [visibleMonth, setVisibleMonth] = useState(
+    initialDate.getUTCMonth() + 1,
+  );
 
   const calendarQuery = useQuery({
     enabled: Boolean(userId),
-    queryFn: () => getStreakCalendarMonth(userId ?? '', visibleYear, visibleMonth),
+    queryFn: () =>
+      getStreakCalendarMonth(userId ?? '', visibleYear, visibleMonth),
     queryKey: ['streak-calendar-month', userId, visibleYear, visibleMonth],
   });
 
@@ -163,7 +180,8 @@ export function ActivityCalendar({
   const serverDate = new Date(calendarQuery.data?.serverNow ?? serverNow);
   const canGoForward =
     visibleYear < serverDate.getUTCFullYear() ||
-    (visibleYear === serverDate.getUTCFullYear() && visibleMonth < serverDate.getUTCMonth() + 1);
+    (visibleYear === serverDate.getUTCFullYear() &&
+      visibleMonth < serverDate.getUTCMonth() + 1);
 
   const gridCells = useMemo(() => {
     const monthDays = calendarQuery.data?.days ?? [];
@@ -183,10 +201,7 @@ export function ActivityCalendar({
       0,
     );
 
-    return [
-      ...cells,
-      ...Array.from({ length: trailingCellCount }, () => null),
-    ];
+    return [...cells, ...Array.from({ length: trailingCellCount }, () => null)];
   }, [calendarQuery.data?.days]);
 
   const goPrevMonth = () => {
@@ -222,18 +237,34 @@ export function ActivityCalendar({
     <View style={[styles.card, isDark ? styles.cardDark : styles.cardLight]}>
       <View style={styles.headerRow}>
         <Pressable onPress={goPrevMonth} style={styles.navButton}>
-          <Ionicons color={isDark ? '#cbc7df' : '#5b5f76'} name="chevron-back" size={16} />
+          <Ionicons
+            color={isDark ? '#cbc7df' : '#5b5f76'}
+            name="chevron-back"
+            size={16}
+          />
         </Pressable>
         <ThemedText
           type="bodyStrong"
-          style={[styles.monthLabel, isDark ? styles.titleDark : styles.titleLight]}>
+          style={[
+            styles.monthLabel,
+            isDark ? styles.titleDark : styles.titleLight,
+          ]}
+        >
           {monthLabel}
         </ThemedText>
         <Pressable
           disabled={!canGoForward}
           onPress={goNextMonth}
-          style={[styles.navButton, !canGoForward ? styles.navButtonDisabled : null]}>
-          <Ionicons color={isDark ? '#cbc7df' : '#5b5f76'} name="chevron-forward" size={16} />
+          style={[
+            styles.navButton,
+            !canGoForward ? styles.navButtonDisabled : null,
+          ]}
+        >
+          <Ionicons
+            color={isDark ? '#cbc7df' : '#5b5f76'}
+            name="chevron-forward"
+            size={16}
+          />
         </Pressable>
       </View>
 
@@ -241,7 +272,11 @@ export function ActivityCalendar({
         {weekDayTranslationKeys.map((key) => (
           <ThemedText
             key={key}
-            style={[styles.weekHeaderText, isDark ? styles.subtitleDark : styles.subtitleLight]}>
+            style={[
+              styles.weekHeaderText,
+              isDark ? styles.subtitleDark : styles.subtitleLight,
+            ]}
+          >
             {t(key)}
           </ThemedText>
         ))}
@@ -255,17 +290,21 @@ export function ActivityCalendar({
 
           const icon = getStatusIcon(cell.status, isDark);
           const canRequestFreeze =
-            cell.status === 'missed' &&
-            Boolean(onRequestFreezeDay);
+            cell.status === 'missed' && Boolean(onRequestFreezeDay);
           const dayContent = (
             <>
               <ThemedText
                 style={[
                   styles.dayText,
                   cell.status === 'future'
-                    ? (isDark ? styles.futureDayTextDark : styles.futureDayTextLight)
-                    : (isDark ? styles.dayTextDark : styles.dayTextLight),
-                ]}>
+                    ? isDark
+                      ? styles.futureDayTextDark
+                      : styles.futureDayTextLight
+                    : isDark
+                      ? styles.dayTextDark
+                      : styles.dayTextLight,
+                ]}
+              >
                 {cell.dayOfMonth}
               </ThemedText>
               {icon}
@@ -284,7 +323,8 @@ export function ActivityCalendar({
                   isDark ? styles.dayCellDark : styles.dayCellLight,
                   styles.dayPressable,
                   pressed ? styles.dayPressed : null,
-                ]}>
+                ]}
+              >
                 {dayContent}
               </Pressable>
             );
@@ -297,7 +337,8 @@ export function ActivityCalendar({
                 styles.dayCell,
                 getStatusStyle(cell.status),
                 isDark ? styles.dayCellDark : styles.dayCellLight,
-              ]}>
+              ]}
+            >
               {dayContent}
             </View>
           );
@@ -306,32 +347,61 @@ export function ActivityCalendar({
 
       <View style={styles.summaryTopRow}>
         <View style={styles.summaryValueRow}>
-          <Ionicons color={isDark ? '#f2994a' : '#d97706'} name="flame" size={18} />
+          <Ionicons
+            color={isDark ? '#f2994a' : '#d97706'}
+            name="flame"
+            size={18}
+          />
           <ThemedText
             type="sectionTitle"
-            style={[styles.summaryValue, isDark ? styles.titleDark : styles.titleLight]}>
+            style={[
+              styles.summaryValue,
+              isDark ? styles.titleDark : styles.titleLight,
+            ]}
+          >
             {streak.currentStreak}
           </ThemedText>
-          <ThemedText style={[styles.summarySuffix, isDark ? styles.subtitleDark : styles.subtitleLight]}>
+          <ThemedText
+            style={[
+              styles.summarySuffix,
+              isDark ? styles.subtitleDark : styles.subtitleLight,
+            ]}
+          >
             {t('streak.summary.daysInRow')}
           </ThemedText>
         </View>
-        <ThemedText style={[styles.summaryStatus, isDark ? styles.statusDark : styles.statusLight]}>
+        <ThemedText
+          style={[
+            styles.summaryStatus,
+            isDark ? styles.statusDark : styles.statusLight,
+          ]}
+        >
           {t(getStatusTextKey(streak.todayStatus))}
         </ThemedText>
       </View>
 
       <View style={styles.progressRow}>
-        <ThemedText style={[styles.progressCounter, isDark ? styles.subtitleDark : styles.subtitleLight]}>
+        <ThemedText
+          style={[
+            styles.progressCounter,
+            isDark ? styles.subtitleDark : styles.subtitleLight,
+          ]}
+        >
           {streak.currentStreak}/{streak.nextMilestone}
         </ThemedText>
-        <View style={[styles.progressTrack, isDark ? styles.progressTrackDark : styles.progressTrackLight]}>
+        <View
+          style={[
+            styles.progressTrack,
+            isDark ? styles.progressTrackDark : styles.progressTrackLight,
+          ]}
+        >
           <View
             style={[
               styles.progressFill,
               {
                 width: `${Math.round(
-                  Math.min(streak.currentStreak / streak.nextMilestone, 1) * 100,
+                  Math.min(streak.currentStreak / streak.nextMilestone, 1) *
+                    100,
                 )}%`,
               },
             ]}
@@ -347,13 +417,18 @@ export function ActivityCalendar({
         style={({ pressed }) => [
           styles.ctaRow,
           canRestore
-            ? (isDark ? styles.ctaRowRestoreDark : styles.ctaRowRestoreLight)
-            : (isDark ? styles.ctaRowDark : styles.ctaRowLight),
+            ? isDark
+              ? styles.ctaRowRestoreDark
+              : styles.ctaRowRestoreLight
+            : isDark
+              ? styles.ctaRowDark
+              : styles.ctaRowLight,
           !isCtaInteractive && canRestore ? styles.ctaRowDisabled : null,
           pressed ? styles.ctaRowPressed : null,
-        ]}>
+        ]}
+      >
         <Ionicons
-          color={canRestore ? '#ffffff' : (isDark ? '#cbc7df' : '#5b5f76')}
+          color={canRestore ? '#ffffff' : isDark ? '#cbc7df' : '#5b5f76'}
           name={canRestore ? 'refresh' : 'information-circle-outline'}
           size={18}
         />
@@ -361,9 +436,16 @@ export function ActivityCalendar({
           type="bodyStrong"
           style={[
             styles.ctaRowText,
-            canRestore ? styles.ctaRowRestoreText : (isDark ? styles.subtitleDark : styles.subtitleLight),
-          ]}>
-          {isCtaLoading ? t('streak.restore.restoring') : t(getCtaTextKey(streak))}
+            canRestore
+              ? styles.ctaRowRestoreText
+              : isDark
+                ? styles.subtitleDark
+                : styles.subtitleLight,
+          ]}
+        >
+          {isCtaLoading
+            ? t('streak.restore.restoring')
+            : t(getCtaTextKey(streak))}
         </ThemedText>
       </Pressable>
     </View>

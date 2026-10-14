@@ -60,23 +60,35 @@ export function splitTextToTouchableParts(
 
     if (node.type === 'word') {
       const sentenceIndex = sentenceRanges.findIndex(
-        (range) => range.start <= start && start < range.end && end <= range.end,
+        (range) =>
+          range.start <= start && start < range.end && end <= range.end,
       );
-      const sentence = sentenceIndex >= 0 ? sentenceRanges[sentenceIndex] : undefined;
+      const sentence =
+        sentenceIndex >= 0 ? sentenceRanges[sentenceIndex] : undefined;
       const nextSentenceWordIndex =
-        sentenceIndex >= 0 ? (sentenceWordIndexes.get(sentenceIndex) ?? 0) : undefined;
+        sentenceIndex >= 0
+          ? (sentenceWordIndexes.get(sentenceIndex) ?? 0)
+          : undefined;
 
       if (sentenceIndex >= 0) {
-        sentenceWordIndexes.set(sentenceIndex, (nextSentenceWordIndex ?? 0) + 1);
+        sentenceWordIndexes.set(
+          sentenceIndex,
+          (nextSentenceWordIndex ?? 0) + 1,
+        );
       }
 
       parts.push({
         bold: node.bold,
-        contextSentence: sentence?.text ?? getWordContext(text, start, end),
+        contextSentence:
+          sentence && isUsefulContext(sentence.text, normalizeWord(node.text))
+            ? sentence.text
+            : getWordContext(text, start, end),
         italic: node.italic,
         key: `${prefix}-word-${index}-${start}`,
         sentenceKey:
-          sentenceIndex >= 0 ? `${prefix}-sentence-${sentenceIndex}` : undefined,
+          sentenceIndex >= 0
+            ? `${prefix}-sentence-${sentenceIndex}`
+            : undefined,
         sentenceWordIndex: nextSentenceWordIndex,
         text: node.text,
         type: 'word',
@@ -98,7 +110,11 @@ export function splitTextToTouchableParts(
   return parts;
 }
 
-export function getWordContext(text: string, start: number, end: number): string {
+export function getWordContext(
+  text: string,
+  start: number,
+  end: number,
+): string {
   const sentence = getContextSentence(text, start, end);
   const word = text.slice(start, end).trim();
 
@@ -109,7 +125,11 @@ export function getWordContext(text: string, start: number, end: number): string
   return createContextWindow(text, start, end);
 }
 
-export function getContextSentence(text: string, start: number, end: number): string {
+export function getContextSentence(
+  text: string,
+  start: number,
+  end: number,
+): string {
   const sentence = getSentenceRanges(text).find(
     (range) => range.start <= start && start < range.end && end <= range.end,
   );
@@ -118,7 +138,10 @@ export function getContextSentence(text: string, start: number, end: number): st
 }
 
 function isUsefulContext(context: string, word: string): boolean {
-  if (!context || context.length < Math.max(MIN_USEFUL_CONTEXT_LENGTH, word.length)) {
+  if (
+    !context ||
+    context.length < Math.max(MIN_USEFUL_CONTEXT_LENGTH, word.length)
+  ) {
     return false;
   }
 
@@ -262,7 +285,10 @@ function appendSentenceRange(params: {
   });
 }
 
-function getSentenceBoundaryEnd(text: string, terminalIndex: number): number | null {
+function getSentenceBoundaryEnd(
+  text: string,
+  terminalIndex: number,
+): number | null {
   let boundaryEnd = terminalIndex + 1;
 
   while (boundaryEnd < text.length && isSentenceTerminal(text[boundaryEnd])) {
@@ -281,7 +307,11 @@ function getSentenceBoundaryEnd(text: string, terminalIndex: number): number | n
 function isAbbreviationBoundary(sentencePrefix: string): boolean {
   const normalizedPrefix = sentencePrefix.trim().toLowerCase();
 
-  if (SENTENCE_ABBREVIATIONS.some((abbreviation) => normalizedPrefix.endsWith(abbreviation))) {
+  if (
+    SENTENCE_ABBREVIATIONS.some((abbreviation) =>
+      normalizedPrefix.endsWith(abbreviation),
+    )
+  ) {
     return true;
   }
 

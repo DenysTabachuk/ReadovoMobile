@@ -77,19 +77,19 @@ export function PronunciationButton({ word }: PronunciationButtonProps) {
       style={({ pressed }) => [
         styles.button,
         pressed ? styles.buttonPressed : null,
-      ]}>
+      ]}
+    >
       <View style={styles.content}>
-        <IconSymbol
-          color={labelColor}
-          name="speaker.wave.2.fill"
-          size={18}
-        />
+        <IconSymbol color={labelColor} name="speaker.wave.2.fill" size={18} />
         <ThemedText
           darkColor={labelColor}
           lightColor={labelColor}
           style={styles.label}
-          type="bodyStrong">
-          {isSpeaking ? t('translation.pronouncing') : t('translation.pronounce')}
+          type="bodyStrong"
+        >
+          {isSpeaking
+            ? t('translation.pronouncing')
+            : t('translation.pronounce')}
         </ThemedText>
       </View>
     </Pressable>

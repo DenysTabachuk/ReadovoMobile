@@ -50,7 +50,8 @@ export function LanguageSelector({ style }: LanguageSelectorProps) {
               styles.languageButton,
               { borderColor },
               isSelected ? styles.languageButtonSelected : null,
-            ]}>
+            ]}
+          >
             <ThemedText type="emoji">{language.flag}</ThemedText>
             <ThemedText
               numberOfLines={1}
@@ -58,7 +59,8 @@ export function LanguageSelector({ style }: LanguageSelectorProps) {
               style={[
                 styles.languageLabel,
                 isSelected ? styles.selectedLanguageText : null,
-              ]}>
+              ]}
+            >
               {language.label}
             </ThemedText>
           </Pressable>

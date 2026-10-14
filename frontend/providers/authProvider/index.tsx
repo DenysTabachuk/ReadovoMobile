@@ -60,7 +60,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
   useEffect(() => {
     async function hydrateAuthState() {
       try {
-        const [storedRememberMe, storedAccessToken, storedRefreshToken, storedUserProfile] = await Promise.all([
+        const [
+          storedRememberMe,
+          storedAccessToken,
+          storedRefreshToken,
+          storedUserProfile,
+        ] = await Promise.all([
           AsyncStorage.getItem(AUTH_STORAGE_KEYS.rememberMe),
           AsyncStorage.getItem(AUTH_STORAGE_KEYS.accessToken),
           AsyncStorage.getItem(AUTH_STORAGE_KEYS.refreshToken),
@@ -68,7 +73,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
         ]);
 
         const rememberMe = storedRememberMe === 'true';
-        const hasValidStoredToken = Boolean(storedAccessToken) && !isJwtExpired(storedAccessToken);
+        const hasValidStoredToken =
+          Boolean(storedAccessToken) && !isJwtExpired(storedAccessToken);
         const refreshedSession =
           rememberMe && !hasValidStoredToken && storedRefreshToken
             ? await refreshAuthSession()
@@ -101,7 +107,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const setRememberMePreference = useCallback(async (rememberMe: boolean) => {
     setRememberMePreferenceState(rememberMe);
-    await AsyncStorage.setItem(AUTH_STORAGE_KEYS.rememberMe, String(rememberMe));
+    await AsyncStorage.setItem(
+      AUTH_STORAGE_KEYS.rememberMe,
+      String(rememberMe),
+    );
   }, []);
 
   const signIn = useCallback(
@@ -134,7 +143,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   );
 
   const signOut = useCallback(async () => {
-    const  googleSignOutPromise= import('@/auth/googleAuth')
+    const googleSignOutPromise = import('@/auth/googleAuth')
       .then(({ signOutFromGoogle }) => signOutFromGoogle())
       .catch((error) => {
         console.warn('Failed to clear Google sign-in session', error);

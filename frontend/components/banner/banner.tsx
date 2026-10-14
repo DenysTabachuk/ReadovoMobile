@@ -39,11 +39,13 @@ export function Banner({
           top: insets.top + Spacing.sm,
           transform: [{ translateY }],
         },
-      ]}>
+      ]}
+    >
       <Pressable
         accessibilityRole="alert"
         onPress={hideBanner}
-        style={[styles.banner, variantStyle]}>
+        style={[styles.banner, variantStyle]}
+      >
         {variant === 'achievement' ? (
           <LinearGradient
             colors={
@@ -63,7 +65,10 @@ export function Banner({
   );
 }
 
-function resolveVariantStyle(variant: ShowBannerOptions['variant'], isDarkTheme: boolean) {
+function resolveVariantStyle(
+  variant: ShowBannerOptions['variant'],
+  isDarkTheme: boolean,
+) {
   if (variant === 'success') {
     return styles.success;
   }

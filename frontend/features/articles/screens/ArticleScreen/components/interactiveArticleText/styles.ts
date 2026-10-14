@@ -140,7 +140,9 @@ export function getThemeStyles(themeName: ThemeName) {
     },
     tableHeaderCell: {
       backgroundColor:
-        themeName === 'dark' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(17, 24, 28, 0.06)',
+        themeName === 'dark'
+          ? 'rgba(255, 255, 255, 0.12)'
+          : 'rgba(17, 24, 28, 0.06)',
     },
     tableRow: {
       borderBottomColor: palette.icon,
