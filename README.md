@@ -5,7 +5,7 @@ database for local development.
 
 ## Prerequisites
 
-- Node.js and npm
+- Node.js 22.22.1 or newer, with npm
 - Docker Desktop
 - Expo Go for limited UI development, or Android Studio for a native Android build
 - JDK 17 and Android SDK 36 for native Android builds
