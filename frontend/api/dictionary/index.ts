@@ -26,8 +26,12 @@ export type {
   UpdateDictionaryWordProgressRequest,
 } from './types';
 
-export async function fetchDictionaryWords(userId: string): Promise<DictionaryWord[]> {
-  const response = await authenticatedFetch(`${API_BASE_URL}/api/dictionary/users/${userId}/words`);
+export async function fetchDictionaryWords(
+  userId: string,
+): Promise<DictionaryWord[]> {
+  const response = await authenticatedFetch(
+    `${API_BASE_URL}/api/dictionary/users/${userId}/words`,
+  );
 
   if (!response.ok) {
     throw new Error('dictionary.error');
@@ -40,13 +44,16 @@ export async function createDictionaryWord(
   userId: string,
   request: CreateDictionaryWordRequest,
 ): Promise<DictionaryWord> {
-  const response = await authenticatedFetch(`${API_BASE_URL}/api/dictionary/users/${userId}/words`, {
-    body: JSON.stringify(request),
-    headers: {
-      'Content-Type': 'application/json',
+  const response = await authenticatedFetch(
+    `${API_BASE_URL}/api/dictionary/users/${userId}/words`,
+    {
+      body: JSON.stringify(request),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      method: 'POST',
     },
-    method: 'POST',
-  });
+  );
 
   if (!response.ok) {
     throw new Error(await resolveCreateDictionaryWordError(response));
@@ -92,8 +99,12 @@ export async function deleteDictionaryWord(
   return response.json() as Promise<DictionaryWord>;
 }
 
-export async function fetchDictionaryTest(userId: string): Promise<DictionaryTest> {
-  const response = await authenticatedFetch(`${API_BASE_URL}/api/dictionary/users/${userId}/test?limit=10`);
+export async function fetchDictionaryTest(
+  userId: string,
+): Promise<DictionaryTest> {
+  const response = await authenticatedFetch(
+    `${API_BASE_URL}/api/dictionary/users/${userId}/test?limit=10`,
+  );
 
   if (!response.ok) {
     throw new Error('dictionary.test.error');
@@ -106,13 +117,16 @@ export async function submitDictionaryTestAnswer(
   userId: string,
   request: SubmitDictionaryTestAnswerRequest,
 ): Promise<DictionaryTestAnswerResult> {
-  const response = await authenticatedFetch(`${API_BASE_URL}/api/dictionary/users/${userId}/test/answer`, {
-    body: JSON.stringify(request),
-    headers: {
-      'Content-Type': 'application/json',
+  const response = await authenticatedFetch(
+    `${API_BASE_URL}/api/dictionary/users/${userId}/test/answer`,
+    {
+      body: JSON.stringify(request),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      method: 'POST',
     },
-    method: 'POST',
-  });
+  );
 
   if (!response.ok) {
     throw new Error('dictionary.test.answerError');
@@ -126,13 +140,16 @@ export async function updateDictionaryWordProgress(
   wordId: string,
   request: UpdateDictionaryWordProgressRequest,
 ): Promise<DictionaryWord> {
-  const response = await authenticatedFetch(`${API_BASE_URL}/api/dictionary/users/${userId}/words/${wordId}/progress`, {
-    body: JSON.stringify(request),
-    headers: {
-      'Content-Type': 'application/json',
+  const response = await authenticatedFetch(
+    `${API_BASE_URL}/api/dictionary/users/${userId}/words/${wordId}/progress`,
+    {
+      body: JSON.stringify(request),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      method: 'PATCH',
     },
-    method: 'PATCH',
-  });
+  );
 
   if (!response.ok) {
     throw new Error('dictionary.progressUpdateError');

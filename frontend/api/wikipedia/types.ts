@@ -21,21 +21,12 @@ export type FetchWikipediaArticlesParams = {
   sortBy?: WikipediaArticleSortOption;
 };
 
-export type WikipediaArticlePreviewLength =
-  | 'all'
-  | 'short'
-  | 'medium'
-  | 'long';
+export type WikipediaArticlePreviewLength = 'all' | 'short' | 'medium' | 'long';
 export type WikipediaArticleSortOption =
-  | 'default'
-  | 'length_desc'
-  | 'length_asc';
+  'default' | 'length_desc' | 'length_asc';
 export type ArticleReadyLevelFilter = 'all' | 'A1' | 'A2' | 'B1' | 'B2';
 export type ArticleReadyTransformationFilter =
-  | 'all'
-  | 'adaptation'
-  | 'summary'
-  | 'both';
+  'all' | 'adaptation' | 'summary' | 'both';
 
 export type WikipediaArticleCategory =
   | 'all'
@@ -133,9 +124,7 @@ export type ArticleAdaptationsByArticleId = Record<
 >;
 
 export type ArticleQuizQuestionType =
-  | 'single_choice'
-  | 'multiple_choice'
-  | 'true_false';
+  'single_choice' | 'multiple_choice' | 'true_false';
 
 export type ArticleQuizQuestionOption = {
   id: string;
@@ -152,11 +141,7 @@ export type ArticleQuizQuestion = {
 };
 
 export type ArticleVocabularyQuizQuestionFormat =
-  | 'translation'
-  | 'reverse_translation'
-  | 'definition'
-  | 'cloze'
-  | 'synonym';
+  'translation' | 'reverse_translation' | 'definition' | 'cloze' | 'synonym';
 
 export type ArticleVocabularyQuizQuestion = ArticleQuizQuestion & {
   format: ArticleVocabularyQuizQuestionFormat;
@@ -199,8 +184,7 @@ export type GenerateArticleVocabularyQuizResponse = {
 };
 
 export type ArticleQuizSessionResponse =
-  | GenerateArticleQuizResponse
-  | GenerateArticleVocabularyQuizResponse;
+  GenerateArticleQuizResponse | GenerateArticleVocabularyQuizResponse;
 
 export type SimplifyArticleResponse = {
   adaptedBlocks: ArticleBlock[];

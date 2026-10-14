@@ -1,8 +1,13 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ComponentProps,
+} from 'react';
 import {
   Animated,
   Pressable,
-  type ComponentProps,
   type StyleProp,
   View,
   type ViewStyle,
@@ -50,8 +55,13 @@ export function OptionPickerField<T extends string>({
 }: OptionPickerFieldProps<T>) {
   const [open, setOpen] = useState(false);
   const chevronProgress = useRef(new Animated.Value(0)).current;
-  const selectedOption = options.find((option) => option.value === selectedValue);
-  const borderColor = useThemeColor({ dark: '#3a4348', light: '#d0d7de' }, 'icon');
+  const selectedOption = options.find(
+    (option) => option.value === selectedValue,
+  );
+  const borderColor = useThemeColor(
+    { dark: '#3a4348', light: '#d0d7de' },
+    'icon',
+  );
   const buttonBackgroundColor = useThemeColor(
     { dark: '#202425', light: '#f5f7fa' },
     'background',
@@ -68,7 +78,10 @@ export function OptionPickerField<T extends string>({
     { dark: '#7ee0a0', light: '#1f8a4c' },
     'tint',
   );
-  const chevronColor = useThemeColor({ dark: '#9ba1a6', light: '#687076' }, 'icon');
+  const chevronColor = useThemeColor(
+    { dark: '#9ba1a6', light: '#687076' },
+    'icon',
+  );
 
   const handleOpen = useCallback(() => {
     setOpen(true);
@@ -108,14 +121,18 @@ export function OptionPickerField<T extends string>({
   return (
     <>
       <View style={[styles.field, containerStyle]}>
-        <ThemedText type="bodyStrong">
-          {label}
-        </ThemedText>
+        <ThemedText type="bodyStrong">{label}</ThemedText>
         <Pressable
           onPress={handleOpen}
-          style={[styles.pickerButton, { backgroundColor: buttonBackgroundColor, borderColor }]}>
+          style={[
+            styles.pickerButton,
+            { backgroundColor: buttonBackgroundColor, borderColor },
+          ]}
+        >
           <ThemedText style={styles.pickerLabel} type="body">
-            {selectedOption?.displayLabel ?? selectedOption?.label ?? selectedValue}
+            {selectedOption?.displayLabel ??
+              selectedOption?.label ??
+              selectedValue}
           </ThemedText>
           <Animated.View style={chevronAnimatedStyle}>
             <Ionicons color={chevronColor} name="chevron-down" size={18} />
@@ -127,15 +144,17 @@ export function OptionPickerField<T extends string>({
         <View style={styles.optionsList}>
           {options.map((option) => {
             const isSelected = option.value === selectedValue;
-            const badgeLabels = option.badgeLabels ?? (
-              option.badgeLabel ? [option.badgeLabel] : []
-            );
+            const badgeLabels =
+              option.badgeLabels ??
+              (option.badgeLabel ? [option.badgeLabel] : []);
 
             return (
               <Pressable
                 disabled={option.disabled}
                 key={option.value}
-                onPress={option.disabled ? undefined : () => handleSelect(option.value)}
+                onPress={
+                  option.disabled ? undefined : () => handleSelect(option.value)
+                }
                 style={[
                   styles.optionButton,
                   { borderColor },
@@ -146,7 +165,8 @@ export function OptionPickerField<T extends string>({
                         borderColor: selectedBorderColor,
                       }
                     : null,
-                ]}>
+                ]}
+              >
                 <View style={styles.optionContent}>
                   <View style={styles.optionMain}>
                     <ThemedText
@@ -154,13 +174,15 @@ export function OptionPickerField<T extends string>({
                         styles.optionLabel,
                         option.disabled ? styles.optionTextDisabled : null,
                       ]}
-                      type="bodyStrong">
+                      type="bodyStrong"
+                    >
                       {option.label}
                     </ThemedText>
                     {option.description ? (
                       <ThemedText
                         style={styles.optionDescription}
-                        type="description">
+                        type="description"
+                      >
                         {option.description}
                       </ThemedText>
                     ) : null}
@@ -175,7 +197,8 @@ export function OptionPickerField<T extends string>({
                                 backgroundColor: selectedBackgroundColor,
                                 borderColor: badgeColor,
                               },
-                            ]}>
+                            ]}
+                          >
                             <Ionicons
                               color={badgeColor}
                               name="checkmark-circle"
@@ -183,7 +206,11 @@ export function OptionPickerField<T extends string>({
                             />
                             <ThemedText
                               type="description"
-                              style={[styles.optionBadgeText, { color: badgeColor }]}>
+                              style={[
+                                styles.optionBadgeText,
+                                { color: badgeColor },
+                              ]}
+                            >
                               {badgeLabel}
                             </ThemedText>
                           </View>
@@ -203,7 +230,8 @@ export function OptionPickerField<T extends string>({
                               backgroundColor: selectedBackgroundColor,
                               borderColor: badgeColor,
                             },
-                          ]}>
+                          ]}
+                        >
                           <Ionicons
                             color={badgeColor}
                             name={statusIcon.name}

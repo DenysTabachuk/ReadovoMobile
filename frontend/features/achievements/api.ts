@@ -9,7 +9,9 @@ import {
 export async function getAchievementsProfile(
   userId: string,
 ): Promise<AchievementsProfileResponse> {
-  const response = await authenticatedFetch(`${API_BASE_URL}/achievements/profile/${userId}`);
+  const response = await authenticatedFetch(
+    `${API_BASE_URL}/achievements/profile/${userId}`,
+  );
 
   if (!response.ok) {
     throw new Error('profile.errors.loadFailed');
@@ -22,13 +24,16 @@ export async function updateAchievementsProgress(
   userId: string,
   payload: UpdateAchievementProgressDto,
 ): Promise<AchievementsProfileResponse> {
-  const response = await authenticatedFetch(`${API_BASE_URL}/achievements/profile/${userId}/progress`, {
-    body: JSON.stringify(payload),
-    headers: {
-      'Content-Type': 'application/json',
+  const response = await authenticatedFetch(
+    `${API_BASE_URL}/achievements/profile/${userId}/progress`,
+    {
+      body: JSON.stringify(payload),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      method: 'PATCH',
     },
-    method: 'PATCH',
-  });
+  );
 
   if (!response.ok) {
     throw new Error('profile.errors.loadFailed');

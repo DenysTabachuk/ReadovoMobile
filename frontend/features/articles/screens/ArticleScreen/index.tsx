@@ -97,7 +97,10 @@ const FLOATING_SPEECH_CONTROLS_ANIMATION_DURATION_MS = 220;
 const SCROLL_TO_TOP_THRESHOLD = 300;
 const TEXT_VIEW_MODES = ['original', 'adaptation', 'summary'] as const;
 type ArticleTextViewMode = (typeof TEXT_VIEW_MODES)[number];
-const TEXT_MODE_LABEL_KEYS: Record<ArticleTextViewMode, 'original' | 'adapted' | 'summary'> = {
+const TEXT_MODE_LABEL_KEYS: Record<
+  ArticleTextViewMode,
+  'original' | 'adapted' | 'summary'
+> = {
   adaptation: 'adapted',
   original: 'original',
   summary: 'summary',
@@ -138,8 +141,10 @@ export default function ArticleScreen() {
   >({});
   const [selectedTextViewMode, setSelectedTextViewMode] =
     useState<ArticleTextViewMode>('original');
-  const [latestGeneratedTransformationType, setLatestGeneratedTransformationType] =
-    useState<ArticleTextTransformationType | null>(null);
+  const [
+    latestGeneratedTransformationType,
+    setLatestGeneratedTransformationType,
+  ] = useState<ArticleTextTransformationType | null>(null);
   const [hasImageLoadError, setHasImageLoadError] = useState(false);
   const [selectedLevel, setSelectedLevel] = useState<SimplifyArticleLevel>(
     DEFAULT_SIMPLIFICATION_LEVEL,
@@ -147,7 +152,8 @@ export default function ArticleScreen() {
   const [isAdaptSettingsOpen, setIsAdaptSettingsOpen] = useState(false);
   const [isQuizModePickerOpen, setIsQuizModePickerOpen] = useState(false);
   const [isTranslationSheetOpen, setIsTranslationSheetOpen] = useState(false);
-  const [translationSheetOpenProgress, setTranslationSheetOpenProgress] = useState(0);
+  const [translationSheetOpenProgress, setTranslationSheetOpenProgress] =
+    useState(0);
   const [scrollToTopOffsetY, setScrollToTopOffsetY] = useState(0);
   const [isScrolledPastSpeechControls, setIsScrolledPastSpeechControls] =
     useState(false);
@@ -156,8 +162,10 @@ export default function ArticleScreen() {
     first: 0,
     last: 0,
   });
-  const [isFloatingSpeechControlsRendered, setIsFloatingSpeechControlsRendered] =
-    useState(false);
+  const [
+    isFloatingSpeechControlsRendered,
+    setIsFloatingSpeechControlsRendered,
+  ] = useState(false);
   const articleListRef = useRef<FlatList>(null);
   const scrollOffsetYRef = useRef(0);
   const speechControlsBottomYRef = useRef<number | null>(null);
@@ -266,7 +274,9 @@ export default function ArticleScreen() {
       void queryClient.invalidateQueries({
         queryKey: ['wikipedia', 'article-adaptations'],
       });
-      void queryClient.invalidateQueries({ queryKey: ['wikipedia', 'articles'] });
+      void queryClient.invalidateQueries({
+        queryKey: ['wikipedia', 'articles'],
+      });
     },
   });
   const dictionaryMutation = useMutation({
@@ -278,7 +288,12 @@ export default function ArticleScreen() {
       context: string;
       translation: string;
       word: string;
-    }) => createDictionaryWord(currentUser?.id ?? '', { context, translation, word }),
+    }) =>
+      createDictionaryWord(currentUser?.id ?? '', {
+        context,
+        translation,
+        word,
+      }),
     onError: (mutationError) => {
       const errorKey =
         mutationError instanceof Error
@@ -362,7 +377,9 @@ export default function ArticleScreen() {
           currentUser?.id,
         ]) ?? [];
       const nextSavedArticles = isCurrentArticleSaved
-        ? previousSavedArticles.filter((savedArticle) => savedArticle.id !== article.id)
+        ? previousSavedArticles.filter(
+            (savedArticle) => savedArticle.id !== article.id,
+          )
         : createSavedArticlesWithArticle(
             previousSavedArticles,
             createSavedArticleFromDetail(article),
@@ -451,27 +468,28 @@ export default function ArticleScreen() {
 
   const availableAdaptations = useMemo(() => {
     const persistedAdaptations =
-      articleId === null ? [] : articleAdaptationsById[String(articleId)] ?? [];
-    const currentAdaptations = Object.values(generatedArticles).map((generatedArticle) => ({
-      level: generatedArticle.level,
-      transformationType: generatedArticle.transformationType,
-    }));
+      articleId === null
+        ? []
+        : (articleAdaptationsById[String(articleId)] ?? []);
+    const currentAdaptations = Object.values(generatedArticles).map(
+      (generatedArticle) => ({
+        level: generatedArticle.level,
+        transformationType: generatedArticle.transformationType,
+      }),
+    );
     const uniqueAdaptations = new Map<string, ArticleAdaptationSummary>();
 
     [...persistedAdaptations, ...currentAdaptations].forEach((adaptation) => {
       uniqueAdaptations.set(
-        createAdaptationKey(
-          adaptation.level,
-          adaptation.transformationType,
-        ),
+        createAdaptationKey(adaptation.level, adaptation.transformationType),
         adaptation,
       );
     });
 
     return Array.from(uniqueAdaptations.values());
   }, [articleAdaptationsById, articleId, generatedArticles]);
-  const isSelectedAdaptationAvailable = availableAdaptations.some((adaptation) =>
-    isSameAdaptation(adaptation, selectedLevel, 'adaptation'),
+  const isSelectedAdaptationAvailable = availableAdaptations.some(
+    (adaptation) => isSameAdaptation(adaptation, selectedLevel, 'adaptation'),
   );
   const isSelectedSummaryAvailable = availableAdaptations.some((adaptation) =>
     isSameAdaptation(adaptation, selectedLevel, 'summary'),
@@ -530,11 +548,7 @@ export default function ArticleScreen() {
     }
 
     return options;
-  }, [
-    isSelectedAdaptationAvailable,
-    isSelectedSummaryAvailable,
-    t,
-  ]);
+  }, [isSelectedAdaptationAvailable, isSelectedSummaryAvailable, t]);
   const handleWordPress = useCallback((selection: SelectedTextToken) => {
     setSelectedTokens((currentSelection) => {
       const isTappedTokenAlreadySelected = currentSelection.some(
@@ -564,7 +578,10 @@ export default function ArticleScreen() {
     }, TRANSLATION_SHEET_OPEN_DELAY_MS);
     const intervalId = setInterval(() => {
       const elapsedMs = Date.now() - startedAt;
-      const nextProgress = Math.min(1, elapsedMs / TRANSLATION_SHEET_OPEN_DELAY_MS);
+      const nextProgress = Math.min(
+        1,
+        elapsedMs / TRANSLATION_SHEET_OPEN_DELAY_MS,
+      );
 
       setTranslationSheetOpenProgress(nextProgress);
     }, TRANSLATION_PROGRESS_UPDATE_INTERVAL_MS);
@@ -708,7 +725,8 @@ export default function ArticleScreen() {
             : t('article.savedArticles.saveAction')
         }
         onPress={handleToggleSavedArticle}
-        style={styles.headerIconButton}>
+        style={styles.headerIconButton}
+      >
         <IconSymbol
           color={isCurrentArticleSaved ? savedAccentColor : iconColor}
           name={isCurrentArticleSaved ? 'bookmark.fill' : 'bookmark'}
@@ -716,7 +734,13 @@ export default function ArticleScreen() {
         />
       </Pressable>
     ),
-    [handleToggleSavedArticle, iconColor, isCurrentArticleSaved, savedAccentColor, t],
+    [
+      handleToggleSavedArticle,
+      iconColor,
+      isCurrentArticleSaved,
+      savedAccentColor,
+      t,
+    ],
   );
   const selectedTokenKeys = useMemo(
     () => selectedTokens.map((token) => token.tokenKey),
@@ -814,7 +838,10 @@ export default function ArticleScreen() {
       return false;
     }
 
-    return !hasDuplicateArticleImage(article.thumbnailUrl, displayedBlocks ?? article.blocks);
+    return !hasDuplicateArticleImage(
+      article.thumbnailUrl,
+      displayedBlocks ?? article.blocks,
+    );
   }, [
     article?.blocks,
     article?.thumbnailUrl,
@@ -837,39 +864,44 @@ export default function ArticleScreen() {
     Boolean(articleSpeech.activeTokenKey) &&
     !isCurrentSpeechBlockVisible;
   const shouldShowArticleCta =
-    articleSpeech.status === 'idle' && !isAdaptSettingsOpen && !isQuizModePickerOpen;
+    articleSpeech.status === 'idle' &&
+    !isAdaptSettingsOpen &&
+    !isQuizModePickerOpen;
   const navigationButtonBottomOffset = shouldShowArticleCta ? 160 : Spacing.xLg;
-  const currentSpeechButtonBottomOffset =
-    navigationButtonBottomOffset + 64;
+  const currentSpeechButtonBottomOffset = navigationButtonBottomOffset + 64;
   const currentSpeechButtonDirection =
-    currentSpeechBlockIndex !== null && currentSpeechBlockIndex < firstVisibleBlockIndex
+    currentSpeechBlockIndex !== null &&
+    currentSpeechBlockIndex < firstVisibleBlockIndex
       ? 'up'
       : 'down';
   const currentSpeechButtonIconName =
     currentSpeechButtonDirection === 'up' ? 'arrow-up' : 'arrow-down';
 
-  const updateScrollThresholdState = useCallback((nextScrollOffsetY: number) => {
-    scrollOffsetYRef.current = nextScrollOffsetY;
+  const updateScrollThresholdState = useCallback(
+    (nextScrollOffsetY: number) => {
+      scrollOffsetYRef.current = nextScrollOffsetY;
 
-    const isScrollToTopVisible = nextScrollOffsetY > SCROLL_TO_TOP_THRESHOLD;
+      const isScrollToTopVisible = nextScrollOffsetY > SCROLL_TO_TOP_THRESHOLD;
 
-    if (isScrollToTopVisibleRef.current !== isScrollToTopVisible) {
-      isScrollToTopVisibleRef.current = isScrollToTopVisible;
-      setScrollToTopOffsetY(
-        isScrollToTopVisible ? SCROLL_TO_TOP_THRESHOLD + 1 : 0,
-      );
-    }
+      if (isScrollToTopVisibleRef.current !== isScrollToTopVisible) {
+        isScrollToTopVisibleRef.current = isScrollToTopVisible;
+        setScrollToTopOffsetY(
+          isScrollToTopVisible ? SCROLL_TO_TOP_THRESHOLD + 1 : 0,
+        );
+      }
 
-    const speechControlsBottomY = speechControlsBottomYRef.current;
-    const isPastSpeechControls =
-      speechControlsBottomY !== null &&
-      nextScrollOffsetY > speechControlsBottomY + Spacing.sm;
+      const speechControlsBottomY = speechControlsBottomYRef.current;
+      const isPastSpeechControls =
+        speechControlsBottomY !== null &&
+        nextScrollOffsetY > speechControlsBottomY + Spacing.sm;
 
-    if (isScrolledPastSpeechControlsRef.current !== isPastSpeechControls) {
-      isScrolledPastSpeechControlsRef.current = isPastSpeechControls;
-      setIsScrolledPastSpeechControls(isPastSpeechControls);
-    }
-  }, []);
+      if (isScrolledPastSpeechControlsRef.current !== isPastSpeechControls) {
+        isScrolledPastSpeechControlsRef.current = isPastSpeechControls;
+        setIsScrolledPastSpeechControls(isPastSpeechControls);
+      }
+    },
+    [],
+  );
 
   const handleArticleScroll = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -878,12 +910,15 @@ export default function ArticleScreen() {
     [updateScrollThresholdState],
   );
 
-  const handleSpeechControlsLayout = useCallback((event: LayoutChangeEvent) => {
-    const { height, y } = event.nativeEvent.layout;
+  const handleSpeechControlsLayout = useCallback(
+    (event: LayoutChangeEvent) => {
+      const { height, y } = event.nativeEvent.layout;
 
-    speechControlsBottomYRef.current = y + height;
-    updateScrollThresholdState(scrollOffsetYRef.current);
-  }, [updateScrollThresholdState]);
+      speechControlsBottomYRef.current = y + height;
+      updateScrollThresholdState(scrollOffsetYRef.current);
+    },
+    [updateScrollThresholdState],
+  );
 
   const handleVisibleBlockIndexChange = useCallback((sourceIndex: number) => {
     if (firstVisibleBlockIndexRef.current === sourceIndex) {
@@ -984,12 +1019,14 @@ export default function ArticleScreen() {
 
     const recentArticle = createRecentArticleFromDetail(article);
 
-    void recordRecentArticle(currentUser.id, recentArticle).then((recentArticles) => {
-      queryClient.setQueryData(
-        [...RECENT_ARTICLES_QUERY_KEY, currentUser.id],
-        recentArticles,
-      );
-    });
+    void recordRecentArticle(currentUser.id, recentArticle).then(
+      (recentArticles) => {
+        queryClient.setQueryData(
+          [...RECENT_ARTICLES_QUERY_KEY, currentUser.id],
+          recentArticles,
+        );
+      },
+    );
   }, [article, currentUser?.id, queryClient]);
 
   if (articleId === null) {
@@ -1013,7 +1050,10 @@ export default function ArticleScreen() {
       <ScreenContainer>
         <Stack.Screen options={{ title: t('article.titleFallback') }} />
         <View style={styles.centerState}>
-          <ActivityIndicator color={Colors[colorScheme ?? 'light'].tint} size="large" />
+          <ActivityIndicator
+            color={Colors[colorScheme ?? 'light'].tint}
+            size="large"
+          />
           <ThemedText type="body">{t('article.loading')}</ThemedText>
         </View>
       </ScreenContainer>
@@ -1047,7 +1087,10 @@ export default function ArticleScreen() {
           }}
         />
         <View style={styles.centerState}>
-          <ActivityIndicator color={Colors[colorScheme ?? 'light'].tint} size="large" />
+          <ActivityIndicator
+            color={Colors[colorScheme ?? 'light'].tint}
+            size="large"
+          />
           <ThemedText type="body">
             {currentPendingTransformationType === 'adaptation'
               ? t('article.adapting')
@@ -1120,9 +1163,14 @@ export default function ArticleScreen() {
                     backgroundColor: metricsBackgroundColor,
                     borderColor: metricsBorderColor,
                   },
-                ]}>
+                ]}
+              >
                 <View style={styles.simplificationMetricsHeader}>
-                  <Ionicons color={tintColor} name="analytics-outline" size={18} />
+                  <Ionicons
+                    color={tintColor}
+                    name="analytics-outline"
+                    size={18}
+                  />
                   <ThemedText type="bodyStrong">
                     {t('article.simplificationMetrics.title', {
                       defaultValue: 'What changed',
@@ -1145,25 +1193,36 @@ export default function ArticleScreen() {
                     originalValue={simplificationMetrics.original.sentenceCount}
                   />
                   <MetricComparison
-                    adaptedValue={simplificationMetrics.adapted.averageSentenceWords}
+                    adaptedValue={
+                      simplificationMetrics.adapted.averageSentenceWords
+                    }
                     label={t('article.simplificationMetrics.averageSentence', {
                       defaultValue: 'Avg. sentence',
                     })}
-                    originalValue={simplificationMetrics.original.averageSentenceWords}
+                    originalValue={
+                      simplificationMetrics.original.averageSentenceWords
+                    }
                     suffix={t('article.simplificationMetrics.wordsSuffix', {
                       defaultValue: 'w',
                     })}
                   />
                   <MetricComparison
-                    adaptedValue={simplificationMetrics.adapted.averageWordLength}
+                    adaptedValue={
+                      simplificationMetrics.adapted.averageWordLength
+                    }
                     decimals={1}
                     label={t('article.simplificationMetrics.averageWord', {
                       defaultValue: 'Avg. word',
                     })}
-                    originalValue={simplificationMetrics.original.averageWordLength}
-                    suffix={t('article.simplificationMetrics.charactersSuffix', {
-                      defaultValue: 'ch',
-                    })}
+                    originalValue={
+                      simplificationMetrics.original.averageWordLength
+                    }
+                    suffix={t(
+                      'article.simplificationMetrics.charactersSuffix',
+                      {
+                        defaultValue: 'ch',
+                      },
+                    )}
                   />
                 </View>
               </View>
@@ -1200,7 +1259,8 @@ export default function ArticleScreen() {
               opacity: floatingSpeechControlsOpacity,
               transform: [{ translateY: floatingSpeechControlsTranslateY }],
             },
-          ]}>
+          ]}
+        >
           <ArticleSpeechControls
             disabled={!articleSpeech.canSpeak}
             onRestart={articleSpeech.restart}
@@ -1230,8 +1290,13 @@ export default function ArticleScreen() {
           style={[
             styles.scrollToCurrentSpeechButton,
             { bottom: currentSpeechButtonBottomOffset },
-          ]}>
-          <Ionicons color="#11181C" name={currentSpeechButtonIconName} size={24} />
+          ]}
+        >
+          <Ionicons
+            color="#11181C"
+            name={currentSpeechButtonIconName}
+            size={24}
+          />
         </Pressable>
       ) : null}
       <WordTranslationSheet
@@ -1258,11 +1323,14 @@ export default function ArticleScreen() {
         contentStyle={styles.adaptModalContent}
         onClose={handleCloseAdaptSettings}
         open={isAdaptSettingsOpen}
-        title={t('article.configureText')}>
+        title={t('article.configureText')}
+      >
         {generatedTextModeOptions.length > 1 ? (
           <View style={styles.textModeSection}>
             <ThemedText type="description" style={styles.textModeCaption}>
-              {t(`article.textMode.${TEXT_MODE_LABEL_KEYS[selectedTextViewMode]}`)}
+              {t(
+                `article.textMode.${TEXT_MODE_LABEL_KEYS[selectedTextViewMode]}`,
+              )}
             </ThemedText>
             <SegmentedToggle
               onChange={(value) => {
@@ -1299,7 +1367,8 @@ export default function ArticleScreen() {
             style={[
               styles.readyStatusList,
               { borderColor: adaptationReadyBorderColor },
-            ]}>
+            ]}
+          >
             {isSelectedAdaptationAvailable ? (
               <View style={styles.readyStatusItem}>
                 <Ionicons
@@ -1309,7 +1378,8 @@ export default function ArticleScreen() {
                 />
                 <ThemedText
                   type="description"
-                  style={{ color: adaptationReadyTextColor }}>
+                  style={{ color: adaptationReadyTextColor }}
+                >
                   {t('article.readyAdaptedShort')}
                 </ThemedText>
               </View>
@@ -1323,7 +1393,8 @@ export default function ArticleScreen() {
                 />
                 <ThemedText
                   type="description"
-                  style={{ color: adaptationReadyTextColor }}>
+                  style={{ color: adaptationReadyTextColor }}
+                >
                   {t('article.readySummaryShort')}
                 </ThemedText>
               </View>
@@ -1335,7 +1406,8 @@ export default function ArticleScreen() {
             <Button
               disabled={simplifyMutation.isPending}
               onPress={handleAdaptFromModal}
-              variant={isSelectedSummaryAvailable ? 'secondary' : 'primary'}>
+              variant={isSelectedSummaryAvailable ? 'secondary' : 'primary'}
+            >
               {simplifyMutation.isPending &&
               currentPendingTransformationType === 'adaptation'
                 ? t('article.adapting')
@@ -1346,7 +1418,8 @@ export default function ArticleScreen() {
             <Button
               disabled={simplifyMutation.isPending}
               onPress={handleSummarizeFromModal}
-              variant="secondary">
+              variant="secondary"
+            >
               {simplifyMutation.isPending &&
               currentPendingTransformationType === 'summary'
                 ? t('article.summarizing')
@@ -1359,10 +1432,14 @@ export default function ArticleScreen() {
         contentStyle={styles.adaptModalContent}
         onClose={handleCloseQuizModePicker}
         open={isQuizModePickerOpen}
-        title={t('article.quiz.modeTitle')}>
+        title={t('article.quiz.modeTitle')}
+      >
         {quizMutation.isPending ? (
           <View style={styles.quizModalLoading}>
-            <ActivityIndicator color={Colors[colorScheme ?? 'light'].tint} size="large" />
+            <ActivityIndicator
+              color={Colors[colorScheme ?? 'light'].tint}
+              size="large"
+            />
             <ThemedText type="body">{t('article.quiz.generating')}</ThemedText>
           </View>
         ) : (
@@ -1466,9 +1543,9 @@ function getTextComplexityMetrics(text: string): TextComplexityMetrics {
   const normalizedText = text.replace(/\s+/g, ' ').trim();
   const words = normalizedText.match(/[A-Za-z]+(?:['-][A-Za-z]+)?/g) ?? [];
   const sentences =
-    normalizedText.match(/[^.!?]+(?:[.!?]+(?=\s|$)|$)/g)?.filter((sentence) =>
-      sentence.trim(),
-    ) ?? [];
+    normalizedText
+      .match(/[^.!?]+(?:[.!?]+(?=\s|$)|$)/g)
+      ?.filter((sentence) => sentence.trim()) ?? [];
   const totalWordLength = words.reduce((total, word) => total + word.length, 0);
   const sentenceCount = Math.max(sentences.length, 1);
   const wordCount = words.length;
@@ -1546,7 +1623,9 @@ function getWikipediaImageIdentity(imageUrl: string): string | null {
   }
 }
 
-function createSimplificationRequestBlocks(blocks: ArticleBlock[]): ArticleBlock[] {
+function createSimplificationRequestBlocks(
+  blocks: ArticleBlock[],
+): ArticleBlock[] {
   return blocks.map((block) => {
     if (block.type !== 'formula') {
       return block;
@@ -1578,7 +1657,9 @@ function isSameAdaptation(
   );
 }
 
-function getBlockIndexFromTokenKey(tokenKey: string | undefined): number | null {
+function getBlockIndexFromTokenKey(
+  tokenKey: string | undefined,
+): number | null {
   const match = tokenKey?.match(/^block-(\d+)(?:-|$)/);
   const blockIndex = match?.[1] ? Number(match[1]) : NaN;
 
@@ -1597,12 +1678,17 @@ function buildSelectedFragment(
   }
 
   const sortedTokens = [...selectedTokens].sort((leftToken, rightToken) => {
-    return (leftToken.sentenceWordIndex ?? 0) - (rightToken.sentenceWordIndex ?? 0);
+    return (
+      (leftToken.sentenceWordIndex ?? 0) - (rightToken.sentenceWordIndex ?? 0)
+    );
   });
 
   const context = sortedTokens[0]?.context?.trim() ?? '';
   const words = sortedTokens.map((token) => token.word);
-  const text = sortedTokens.map((token) => token.text).join(' ').trim();
+  const text = sortedTokens
+    .map((token) => token.text)
+    .join(' ')
+    .trim();
 
   if (!text || !context) {
     return null;
@@ -1627,8 +1713,8 @@ function resolveNextTokenSelection(
   const firstSelectedToken = currentSelection[0];
   const sameSentence = Boolean(
     firstSelectedToken?.sentenceKey &&
-      nextToken.sentenceKey &&
-      firstSelectedToken.sentenceKey === nextToken.sentenceKey,
+    nextToken.sentenceKey &&
+    firstSelectedToken.sentenceKey === nextToken.sentenceKey,
   );
   const nextTokenAlreadySelected = currentSelection.some(
     (token) => token.tokenKey === nextToken.tokenKey,
@@ -1653,7 +1739,8 @@ function resolveNextTokenSelection(
 
   const minIndex = Math.min(...selectedIndexes);
   const maxIndex = Math.max(...selectedIndexes);
-  const isAdjacent = nextTokenIndex === minIndex - 1 || nextTokenIndex === maxIndex + 1;
+  const isAdjacent =
+    nextTokenIndex === minIndex - 1 || nextTokenIndex === maxIndex + 1;
 
   if (!isAdjacent) {
     return [nextToken];
@@ -1665,4 +1752,3 @@ function resolveNextTokenSelection(
 
   return [...currentSelection, nextToken];
 }
-

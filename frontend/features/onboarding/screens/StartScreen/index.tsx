@@ -26,7 +26,10 @@ export default function StartScreen() {
 
         <LanguageSelector style={styles.languageSelector} />
 
-        <Button style={styles.continueButton} onPress={() => router.push('/about')}>
+        <Button
+          style={styles.continueButton}
+          onPress={() => router.push('/about')}
+        >
           {t('start.continue')}
         </Button>
       </View>

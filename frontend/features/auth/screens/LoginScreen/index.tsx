@@ -19,7 +19,7 @@ import { styles } from './styles';
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function getParamValue(param: string | string[] | undefined): string {
-  return Array.isArray(param) ? param[0] ?? '' : param ?? '';
+  return Array.isArray(param) ? (param[0] ?? '') : (param ?? '');
 }
 
 export default function LoginScreen() {
@@ -34,8 +34,9 @@ export default function LoginScreen() {
   const [isSubmitted, setIsSubmitted] = useState(false);
 
   const normalizedEmail = email.trim().toLowerCase();
-  const emailError =
-    !emailPattern.test(normalizedEmail) ? t('auth.errors.invalidEmail') : '';
+  const emailError = !emailPattern.test(normalizedEmail)
+    ? t('auth.errors.invalidEmail')
+    : '';
   const passwordError =
     password.length === 0 ? t('auth.errors.passwordRequired') : '';
   const shouldShowEmailError = isSubmitted && emailError.length > 0;
@@ -215,13 +216,11 @@ export default function LoginScreen() {
           </Pressable>
         </View>
 
-
         <Pressable
           hitSlop={8}
           style={styles.createAccountButton}
           onPress={() => router.push('/register')}
         >
-
           <ThemedText type="sectionTitle" style={styles.createAccountText}>
             {t('auth.createAccount')}
           </ThemedText>

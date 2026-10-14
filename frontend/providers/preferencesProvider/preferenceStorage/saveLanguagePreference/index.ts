@@ -1,5 +1,6 @@
-import { PreferenceStorageBackend, PREFERENCE_STORAGE_KEYS } from "../constants";
-import { LanguagePreference } from "../../types";
+import { PREFERENCE_STORAGE_KEYS } from '../constants';
+import { type PreferenceStorageBackend } from '../types';
+import { type LanguagePreference } from '../../types';
 
 export function saveLanguagePreference(
   storage: PreferenceStorageBackend,

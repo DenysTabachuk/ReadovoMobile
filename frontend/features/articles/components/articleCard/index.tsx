@@ -50,7 +50,8 @@ export function ArticleCard({
         styles.articleCard,
         { borderColor },
         pressed ? styles.articleCardPressed : null,
-      ]}>
+      ]}
+    >
       <ArticleThumbnail
         borderColor={borderColor}
         iconColor={iconColor}
@@ -74,8 +75,12 @@ export function ArticleCard({
                 event.stopPropagation();
                 onToggleAdaptations(article.id);
               }}
-              style={styles.adaptationsToggle}>
-              <ThemedText type="bodyStrong" style={styles.adaptationsToggleText}>
+              style={styles.adaptationsToggle}
+            >
+              <ThemedText
+                type="bodyStrong"
+                style={styles.adaptationsToggleText}
+              >
                 {t('articles.textVersionsAvailable')}
               </ThemedText>
               <Ionicons color={tintColor} name="sparkles" size={15} />
@@ -87,66 +92,76 @@ export function ArticleCard({
             </Pressable>
             {expandedAdaptations ? (
               <View style={styles.adaptationsPanel}>
-                {formatAdaptations(article.availableAdaptations).map((adaptationGroup) => (
-                  <View key={adaptationGroup.level} style={styles.adaptationLevelRow}>
-                    <ThemedText
-                      type="description"
-                      style={[
-                        styles.adaptationLevelLabel,
-                        getAdaptationLevelLabelStyle(
-                          adaptationGroup.level,
-                          colorScheme,
-                        ),
-                      ]}>
-                      {adaptationGroup.level}
-                    </ThemedText>
-                    <View style={styles.adaptationBadges}>
-                      {adaptationGroup.transformationTypes.map((transformationType) => (
-                        <View
-                          key={`${adaptationGroup.level}-${transformationType}`}
-                          style={[
-                            styles.adaptationBadge,
-                            transformationType === 'adaptation'
-                              ? [
-                                  styles.transformationBadgeAdaptation,
-                                  colorScheme === 'dark'
-                                    ? styles.transformationBadgeAdaptationDark
-                                    : null,
-                                ]
-                              : [
-                                  styles.transformationBadgeSummary,
-                                  colorScheme === 'dark'
-                                    ? styles.transformationBadgeSummaryDark
-                                    : null,
-                                ],
-                          ]}>
-                          <ThemedText
-                            type="description"
-                            style={[
-                              styles.adaptationBadgeText,
-                              transformationType === 'adaptation'
-                                ? [
-                                    styles.transformationBadgeTextAdaptation,
-                                    colorScheme === 'dark'
-                                      ? styles.transformationBadgeTextAdaptationDark
-                                      : null,
-                                  ]
-                                : [
-                                    styles.transformationBadgeTextSummary,
-                                    colorScheme === 'dark'
-                                      ? styles.transformationBadgeTextSummaryDark
-                                      : null,
-                                  ],
-                            ]}>
-                            {transformationType === 'adaptation'
-                              ? t('article.textMode.adapted')
-                              : t('article.textMode.summary')}
-                          </ThemedText>
-                        </View>
-                      ))}
+                {formatAdaptations(article.availableAdaptations).map(
+                  (adaptationGroup) => (
+                    <View
+                      key={adaptationGroup.level}
+                      style={styles.adaptationLevelRow}
+                    >
+                      <ThemedText
+                        type="description"
+                        style={[
+                          styles.adaptationLevelLabel,
+                          getAdaptationLevelLabelStyle(
+                            adaptationGroup.level,
+                            colorScheme,
+                          ),
+                        ]}
+                      >
+                        {adaptationGroup.level}
+                      </ThemedText>
+                      <View style={styles.adaptationBadges}>
+                        {adaptationGroup.transformationTypes.map(
+                          (transformationType) => (
+                            <View
+                              key={`${adaptationGroup.level}-${transformationType}`}
+                              style={[
+                                styles.adaptationBadge,
+                                transformationType === 'adaptation'
+                                  ? [
+                                      styles.transformationBadgeAdaptation,
+                                      colorScheme === 'dark'
+                                        ? styles.transformationBadgeAdaptationDark
+                                        : null,
+                                    ]
+                                  : [
+                                      styles.transformationBadgeSummary,
+                                      colorScheme === 'dark'
+                                        ? styles.transformationBadgeSummaryDark
+                                        : null,
+                                    ],
+                              ]}
+                            >
+                              <ThemedText
+                                type="description"
+                                style={[
+                                  styles.adaptationBadgeText,
+                                  transformationType === 'adaptation'
+                                    ? [
+                                        styles.transformationBadgeTextAdaptation,
+                                        colorScheme === 'dark'
+                                          ? styles.transformationBadgeTextAdaptationDark
+                                          : null,
+                                      ]
+                                    : [
+                                        styles.transformationBadgeTextSummary,
+                                        colorScheme === 'dark'
+                                          ? styles.transformationBadgeTextSummaryDark
+                                          : null,
+                                      ],
+                                ]}
+                              >
+                                {transformationType === 'adaptation'
+                                  ? t('article.textMode.adapted')
+                                  : t('article.textMode.summary')}
+                              </ThemedText>
+                            </View>
+                          ),
+                        )}
+                      </View>
                     </View>
-                  </View>
-                ))}
+                  ),
+                )}
               </View>
             ) : null}
           </View>
@@ -164,7 +179,8 @@ export function ArticleCard({
             event.stopPropagation();
             onToggleSaved(article);
           }}
-          style={styles.cardBookmarkButton}>
+          style={styles.cardBookmarkButton}
+        >
           <IconSymbol
             color={isSaved ? savedAccentColor : iconColor}
             name={isSaved ? 'bookmark.fill' : 'bookmark'}
@@ -174,7 +190,8 @@ export function ArticleCard({
         {wasOpened ? (
           <View
             accessibilityLabel={t('articles.recent.openedIndicator')}
-            style={styles.openedIndicator}>
+            style={styles.openedIndicator}
+          >
             <Ionicons
               color={colorScheme === 'dark' ? '#9ba1a6' : '#687076'}
               name="eye-outline"
@@ -187,17 +204,14 @@ export function ArticleCard({
   );
 }
 
-function formatAdaptations(
-  adaptations: ArticleAdaptationSummary[],
-) {
+function formatAdaptations(adaptations: ArticleAdaptationSummary[]) {
   const groupedAdaptations = new Map<
     ArticleAdaptationSummary['level'],
     Set<ArticleAdaptationSummary['transformationType']>
   >();
 
   adaptations.forEach((adaptation) => {
-    const currentGroup =
-      groupedAdaptations.get(adaptation.level) ?? new Set();
+    const currentGroup = groupedAdaptations.get(adaptation.level) ?? new Set();
 
     currentGroup.add(adaptation.transformationType);
     groupedAdaptations.set(adaptation.level, currentGroup);

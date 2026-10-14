@@ -53,8 +53,12 @@ export default function DictionaryScreen() {
   const { currentUser } = useAuth();
   const colorScheme = useColorScheme();
   const borderColor = colorScheme === 'dark' ? '#2d3336' : '#d0d7de';
-  const [openProgressMenuWordId, setOpenProgressMenuWordId] = useState<string | null>(null);
-  const [deleteCandidate, setDeleteCandidate] = useState<DictionaryWord | null>(null);
+  const [openProgressMenuWordId, setOpenProgressMenuWordId] = useState<
+    string | null
+  >(null);
+  const [deleteCandidate, setDeleteCandidate] = useState<DictionaryWord | null>(
+    null,
+  );
   const [isProgressFilterOpen, setIsProgressFilterOpen] = useState(false);
   const [selectedWord, setSelectedWord] = useState<DictionaryWord | null>(null);
   const [activeFilter, setActiveFilter] = useState<DictionaryFilter>('all');
@@ -62,13 +66,7 @@ export default function DictionaryScreen() {
     useState<DictionaryProgressFilter>('all');
   const userId = currentUser?.id;
 
-  const {
-    data,
-    error,
-    isFetching,
-    isLoading,
-    refetch,
-  } = useQuery({
+  const { data, error, isFetching, isLoading, refetch } = useQuery({
     enabled: Boolean(userId),
     queryFn: () => fetchDictionaryWords(userId ?? ''),
     queryKey: ['dictionary', 'words', userId],
@@ -76,7 +74,10 @@ export default function DictionaryScreen() {
   const words = data ?? [];
   const filteredWords = useMemo(() => {
     return words.filter((word) => {
-      if (activeProgressFilter !== 'all' && word.progress !== activeProgressFilter) {
+      if (
+        activeProgressFilter !== 'all' &&
+        word.progress !== activeProgressFilter
+      ) {
         return false;
       }
 
@@ -135,7 +136,9 @@ export default function DictionaryScreen() {
     },
     onSuccess: () => {
       setOpenProgressMenuWordId(null);
-      void queryClient.invalidateQueries({ queryKey: ['dictionary', 'words', userId] });
+      void queryClient.invalidateQueries({
+        queryKey: ['dictionary', 'words', userId],
+      });
       if (currentUser?.id) {
         void queryClient.invalidateQueries({
           queryKey: ['achievements-profile', currentUser.id],
@@ -156,7 +159,9 @@ export default function DictionaryScreen() {
     onSuccess: () => {
       setDeleteCandidate(null);
       setSelectedWord(null);
-      void queryClient.invalidateQueries({ queryKey: ['dictionary', 'words', userId] });
+      void queryClient.invalidateQueries({
+        queryKey: ['dictionary', 'words', userId],
+      });
       showBanner({
         durationMs: 3200,
         title: t('dictionary.deleted'),
@@ -173,7 +178,10 @@ export default function DictionaryScreen() {
       );
       const progressPercentage: DimensionValue = `${Math.round(progressRatio * 100)}%`;
       const isProgressMenuOpen = openProgressMenuWordId === item.id;
-      const inProgressColors = getProgressBadgeColors('in_progress', colorScheme);
+      const inProgressColors = getProgressBadgeColors(
+        'in_progress',
+        colorScheme,
+      );
       const isDarkTheme = colorScheme === 'dark';
 
       const handleProgressPress = (event: GestureResponderEvent) => {
@@ -195,7 +203,8 @@ export default function DictionaryScreen() {
         <Pressable
           accessibilityRole="button"
           onPress={() => setSelectedWord(item)}
-          style={[styles.wordCard, { borderColor }]}>
+          style={[styles.wordCard, { borderColor }]}
+        >
           <View style={styles.cardHeader}>
             <View style={styles.wordTitleGroup}>
               <ThemedText type="sectionTitle" style={styles.wordText}>
@@ -212,10 +221,15 @@ export default function DictionaryScreen() {
                 style={[
                   styles.progressBadge,
                   { backgroundColor: progressColors.backgroundColor },
-                ]}>
+                ]}
+              >
                 <ThemedText
                   type="bodyStrong"
-                  style={[styles.progressText, { color: progressColors.textColor }]}>
+                  style={[
+                    styles.progressText,
+                    { color: progressColors.textColor },
+                  ]}
+                >
                   {getProgressLabel(item.progress, t)}
                 </ThemedText>
               </Pressable>
@@ -224,12 +238,14 @@ export default function DictionaryScreen() {
                   style={[
                     styles.progressMenu,
                     isDarkTheme && styles.progressMenuDark,
-                  ]}>
+                  ]}
+                >
                   <ThemedText
                     style={[
                       styles.progressMenuHint,
                       isDarkTheme && styles.progressMenuHintDark,
-                    ]}>
+                    ]}
+                  >
                     {t('dictionary.progressMenuHint')}
                   </ThemedText>
                   <Pressable
@@ -239,13 +255,15 @@ export default function DictionaryScreen() {
                       styles.progressBadge,
                       styles.progressMenuBadge,
                       { backgroundColor: inProgressColors.backgroundColor },
-                    ]}>
+                    ]}
+                  >
                     <ThemedText
                       type="bodyStrong"
                       style={[
                         styles.progressText,
                         { color: inProgressColors.textColor },
-                      ]}>
+                      ]}
+                    >
                       {t('dictionary.progress.in_progress')}
                     </ThemedText>
                   </Pressable>
@@ -279,13 +297,7 @@ export default function DictionaryScreen() {
         </Pressable>
       );
     },
-    [
-      borderColor,
-      colorScheme,
-      openProgressMenuWordId,
-      t,
-      wordProgressMutation,
-    ],
+    [borderColor, colorScheme, openProgressMenuWordId, t, wordProgressMutation],
   );
 
   const handleStartTest = useCallback(() => {
@@ -309,7 +321,10 @@ export default function DictionaryScreen() {
     return (
       <ScreenContainer>
         <View style={styles.centerState}>
-          <ActivityIndicator color={Colors[colorScheme ?? 'light'].tint} size="large" />
+          <ActivityIndicator
+            color={Colors[colorScheme ?? 'light'].tint}
+            size="large"
+          />
           <ThemedText type="body">{t('dictionary.loading')}</ThemedText>
         </View>
       </ScreenContainer>
@@ -388,9 +403,7 @@ export default function DictionaryScreen() {
         showsVerticalScrollIndicator={false}
       />
       {filteredWords.length > 0 ? (
-        <FloatingActionButton
-          bottomOffset={8}
-          onPress={handleStartTest}>
+        <FloatingActionButton bottomOffset={8} onPress={handleStartTest}>
           {t('dictionary.test.start')}
         </FloatingActionButton>
       ) : null}
@@ -399,27 +412,32 @@ export default function DictionaryScreen() {
         onClose={() => setSelectedWord(null)}
         open={selectedWord !== null}
         showHandle
-        title={selectedWord?.word ?? t('translation.titleFallback')}>
+        title={selectedWord?.word ?? t('translation.titleFallback')}
+      >
         <PronunciationButton word={selectedWord?.word} />
         {selectedWordTranslationError ? (
           <ThemedText type="body">{t('translation.error')}</ThemedText>
         ) : null}
         <TranslationCards
           baseTranslation={
-            selectedWordTranslation?.baseTranslation ?? selectedWord?.translation
+            selectedWordTranslation?.baseTranslation ??
+            selectedWord?.translation
           }
           context={selectedWord?.context}
           contextTranslation={selectedWordTranslation?.contextTranslation}
           contextualTranslation={selectedWordTranslation?.contextualTranslation}
           isContextLoading={isSelectedWordTranslationLoading}
           resetKey={selectedWord?.id}
-          translation={selectedWordTranslation?.translation ?? selectedWord?.translation}
+          translation={
+            selectedWordTranslation?.translation ?? selectedWord?.translation
+          }
         />
         <View style={styles.wordModalActions}>
           <Button
             disabled={deleteWordMutation.isPending}
             onPress={handleRequestDeleteWord}
-            variant="secondary">
+            variant="secondary"
+          >
             {deleteWordMutation.isPending
               ? t('dictionary.deleteLoading')
               : t('dictionary.deleteAction')}
@@ -433,13 +451,15 @@ export default function DictionaryScreen() {
               disabled={deleteWordMutation.isPending}
               onPress={() => setDeleteCandidate(null)}
               style={styles.confirmModalButton}
-              variant="secondary">
+              variant="secondary"
+            >
               {t('dictionary.deleteCancel')}
             </Button>
             <Button
               disabled={deleteWordMutation.isPending}
               onPress={handleConfirmDeleteWord}
-              style={styles.confirmModalButton}>
+              style={styles.confirmModalButton}
+            >
               {deleteWordMutation.isPending
                 ? t('dictionary.deleteLoading')
                 : t('dictionary.deleteConfirm')}
@@ -448,7 +468,8 @@ export default function DictionaryScreen() {
         }
         onClose={() => setDeleteCandidate(null)}
         open={deleteCandidate !== null}
-        title={t('dictionary.deleteTitle')}>
+        title={t('dictionary.deleteTitle')}
+      >
         <ThemedText type="body">
           {t('dictionary.deleteDescription', {
             word: deleteCandidate?.word ?? '',
@@ -482,8 +503,13 @@ function ProgressFilterDropdown({
   selectedValue,
   title,
 }: ProgressFilterDropdownProps) {
-  const selectedOption = options.find((option) => option.value === selectedValue);
-  const borderColor = useThemeColor({ dark: '#3a4348', light: '#d0d7de' }, 'icon');
+  const selectedOption = options.find(
+    (option) => option.value === selectedValue,
+  );
+  const borderColor = useThemeColor(
+    { dark: '#3a4348', light: '#d0d7de' },
+    'icon',
+  );
   const buttonBackgroundColor = useThemeColor(
     { dark: '#202425', light: '#f5f7fa' },
     'background',
@@ -500,7 +526,10 @@ function ProgressFilterDropdown({
     { dark: '#67c6e3', light: '#0a7ea4' },
     'tint',
   );
-  const chevronColor = useThemeColor({ dark: '#9ba1a6', light: '#687076' }, 'icon');
+  const chevronColor = useThemeColor(
+    { dark: '#9ba1a6', light: '#687076' },
+    'icon',
+  );
 
   const handleSelect = useCallback(
     (value: DictionaryProgressFilter) => {
@@ -519,7 +548,8 @@ function ProgressFilterDropdown({
           style={[
             styles.progressFilterButton,
             { backgroundColor: buttonBackgroundColor, borderColor },
-          ]}>
+          ]}
+        >
           {selectedValue === 'all' ? (
             <ThemedText style={styles.progressFilterAllText} type="bodyStrong">
               {selectedOption?.label ?? selectedValue}
@@ -553,9 +583,13 @@ function ProgressFilterDropdown({
                         borderColor: selectedBorderColor,
                       }
                     : null,
-                ]}>
+                ]}
+              >
                 {option.value === 'all' ? (
-                  <ThemedText style={styles.progressFilterAllText} type="bodyStrong">
+                  <ThemedText
+                    style={styles.progressFilterAllText}
+                    type="bodyStrong"
+                  >
                     {option.label}
                   </ThemedText>
                 ) : (
@@ -566,7 +600,11 @@ function ProgressFilterDropdown({
                   />
                 )}
                 {isSelected ? (
-                  <Ionicons color={selectedBorderColor} name="checkmark-circle" size={20} />
+                  <Ionicons
+                    color={selectedBorderColor}
+                    name="checkmark-circle"
+                    size={20}
+                  />
                 ) : null}
               </Pressable>
             );
@@ -596,10 +634,12 @@ function ProgressStatusBadge({
         styles.progressBadge,
         styles.progressFilterBadge,
         { backgroundColor: progressColors.backgroundColor },
-      ]}>
+      ]}
+    >
       <ThemedText
         type="bodyStrong"
-        style={[styles.progressText, { color: progressColors.textColor }]}>
+        style={[styles.progressText, { color: progressColors.textColor }]}
+      >
         {label}
       </ThemedText>
     </View>
@@ -640,8 +680,5 @@ function getProgressBadgeColors(
 }
 
 function countWords(value: string): number {
-  return value
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean).length;
+  return value.trim().split(/\s+/).filter(Boolean).length;
 }

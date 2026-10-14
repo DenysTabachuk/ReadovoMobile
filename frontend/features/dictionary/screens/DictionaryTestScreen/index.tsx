@@ -71,7 +71,8 @@ export default function DictionaryTestScreen() {
         text: option.text ?? option.translation,
       })),
       prompt:
-        question.prompt || `${t('dictionary.test.questionLabel')}: ${question.word}`,
+        question.prompt ||
+        `${t('dictionary.test.questionLabel')}: ${question.word}`,
       type: 'single_choice' as const,
     }));
   }, [t, test]);
@@ -87,7 +88,9 @@ export default function DictionaryTestScreen() {
     mutationFn: (request: { selectedOptionId: string; wordId: string }) =>
       submitDictionaryTestAnswer(userId ?? '', request),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['dictionary', 'words', userId] });
+      void queryClient.invalidateQueries({
+        queryKey: ['dictionary', 'words', userId],
+      });
     },
   });
 
@@ -110,7 +113,10 @@ export default function DictionaryTestScreen() {
       const previousStreak =
         queryClient.getQueryData<StreakState>(['streak-profile', userId]) ??
         (await getStreakProfile(userId).catch(() => null));
-      const streak = await trackLearningActivity(currentUser.id, 'lexical_test_completed');
+      const streak = await trackLearningActivity(
+        currentUser.id,
+        'lexical_test_completed',
+      );
 
       return {
         newlyUnlockedAchievements: getNewlyUnlockedAchievements(
@@ -147,7 +153,10 @@ export default function DictionaryTestScreen() {
         });
       }
 
-      if (response?.shouldShowStreakBanner || (isMockApiEnabled() && response?.streak)) {
+      if (
+        response?.shouldShowStreakBanner ||
+        (isMockApiEnabled() && response?.streak)
+      ) {
         showBanner({
           description: t('streak.banner.description', {
             count: response.streak.currentStreak,
@@ -180,7 +189,9 @@ export default function DictionaryTestScreen() {
             badge: getAchievementBadge('first-test-completed'),
             coinsReward: 20,
           },
-          description: t('profile.achievements.first_test_completed.description'),
+          description: t(
+            'profile.achievements.first_test_completed.description',
+          ),
           durationMs: 4200,
           title: t('profile.achievements.first_test_completed.title'),
           variant: 'achievement',
@@ -261,7 +272,10 @@ export default function DictionaryTestScreen() {
       <Stack.Screen options={{ title: t('dictionary.test.title') }} />
       {testMutation.isPending ? (
         <View style={styles.centerState}>
-          <ActivityIndicator color={Colors[colorScheme ?? 'light'].tint} size="large" />
+          <ActivityIndicator
+            color={Colors[colorScheme ?? 'light'].tint}
+            size="large"
+          />
           <ThemedText type="body">{t('dictionary.test.loading')}</ThemedText>
         </View>
       ) : testMutation.error ? (
@@ -300,12 +314,14 @@ export default function DictionaryTestScreen() {
                 setIsExitTestConfirmOpen(false);
               }}
               style={styles.confirmModalButton}
-              variant="secondary">
+              variant="secondary"
+            >
               {t('dictionary.test.exitCancel')}
             </Button>
             <Button
               onPress={handleConfirmExitTest}
-              style={styles.confirmModalButton}>
+              style={styles.confirmModalButton}
+            >
               {t('dictionary.test.exitConfirm')}
             </Button>
           </View>
@@ -315,7 +331,8 @@ export default function DictionaryTestScreen() {
           setIsExitTestConfirmOpen(false);
         }}
         open={isExitTestConfirmOpen}
-        title={t('dictionary.test.exitTitle')}>
+        title={t('dictionary.test.exitTitle')}
+      >
         <ThemedText type="body">
           {t('dictionary.test.exitDescription')}
         </ThemedText>

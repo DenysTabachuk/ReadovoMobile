@@ -52,7 +52,8 @@ export function WordTranslationSheet({
             onPress={onAddToDictionary}
             style={styles.actionButton}
             textStyle={styles.actionButtonText}
-            variant="secondary">
+            variant="secondary"
+          >
             {t('translation.addToDictionary')}
           </Button>
         </View>
@@ -61,7 +62,8 @@ export function WordTranslationSheet({
       onClose={onClose}
       open={open}
       showHandle
-      title={word ?? t('translation.titleFallback')}>
+      title={word ?? t('translation.titleFallback')}
+    >
       <PronunciationButton word={word} />
 
       {loading ? (

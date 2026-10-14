@@ -94,7 +94,9 @@ export async function fetchWikipediaArticles(
     searchParams.set('recommended', String(params.recommended));
   }
 
-  const response = await fetch(`${API_BASE_URL}/articles?${searchParams.toString()}`);
+  const response = await fetch(
+    `${API_BASE_URL}/articles?${searchParams.toString()}`,
+  );
 
   if (!response.ok) {
     throw new Error('articles.errorDescription');
@@ -104,7 +106,7 @@ export async function fetchWikipediaArticles(
 }
 
 export async function fetchRandomWikipediaArticles(
-  limit = DEFAULT_ARTICLE_LIMIT
+  limit = DEFAULT_ARTICLE_LIMIT,
 ): Promise<WikipediaArticle[]> {
   return fetchWikipediaArticles({ limit });
 }
@@ -155,7 +157,7 @@ export async function fetchArticleAdaptations(
 }
 
 export async function simplifyWikipediaArticle(
-  request: SimplifyArticleRequest
+  request: SimplifyArticleRequest,
 ): Promise<SimplifyArticleResponse> {
   const response = await fetch(`${API_BASE_URL}/api/articles/simplify`, {
     body: JSON.stringify(request),
@@ -190,19 +192,20 @@ export async function simplifyWikipediaArticle(
 }
 
 export async function generateArticleQuiz(
-  request: GenerateArticleQuizRequest
+  request: GenerateArticleQuizRequest,
 ): Promise<GenerateArticleQuizResponse> {
   return generateArticleQuizRequest('/api/articles/quiz', request);
 }
 
 export async function generateArticleVocabularyQuiz(
-  request: GenerateArticleVocabularyQuizRequest
+  request: GenerateArticleVocabularyQuizRequest,
 ): Promise<GenerateArticleVocabularyQuizResponse> {
   return generateArticleQuizRequest('/api/articles/vocabulary-quiz', request);
 }
 
 async function generateArticleQuizRequest<
-  TRequest extends GenerateArticleQuizRequest | GenerateArticleVocabularyQuizRequest,
+  TRequest extends
+    GenerateArticleQuizRequest | GenerateArticleVocabularyQuizRequest,
   TResponse extends ArticleQuizSessionResponse,
 >(path: string, request: TRequest): Promise<TResponse> {
   const controller = new AbortController();

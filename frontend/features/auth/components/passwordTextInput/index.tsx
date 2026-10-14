@@ -25,7 +25,8 @@ export function PasswordTextInput(props: PasswordTextInputProps) {
         <Pressable
           accessibilityLabel={t('auth.togglePasswordVisibility')}
           hitSlop={12}
-          onPress={() => setIsPasswordVisible((current) => !current)}>
+          onPress={() => setIsPasswordVisible((current) => !current)}
+        >
           <Ionicons
             color={inputIconColor}
             name={isPasswordVisible ? 'eye-off-outline' : 'eye-outline'}

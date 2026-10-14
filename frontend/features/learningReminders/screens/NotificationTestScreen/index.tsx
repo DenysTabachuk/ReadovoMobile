@@ -14,7 +14,10 @@ import {
 import { registerCurrentDevicePushToken } from '@/features/learningReminders/service';
 import { getStreakProfile } from '@/features/streak/api';
 import { useAuth } from '@/providers/authProvider';
-import { type LearningReminderTime, usePreferences } from '@/providers/preferencesProvider';
+import {
+  type LearningReminderTime,
+  usePreferences,
+} from '@/providers/preferencesProvider';
 
 import { styles } from './styles';
 
@@ -46,7 +49,8 @@ export default function NotificationTestScreen() {
           </ThemedText>
           <ThemedText type="description">
             {t('settings.notificationTest.unavailable', {
-              defaultValue: 'This screen is available only in development builds.',
+              defaultValue:
+                'This screen is available only in development builds.',
             })}
           </ThemedText>
         </View>
@@ -61,50 +65,70 @@ export default function NotificationTestScreen() {
         scenario,
       });
       const existingPermissions = await Notifications.getPermissionsAsync();
-      console.log('[NotificationTest] existing permissions', existingPermissions);
+      console.log(
+        '[NotificationTest] existing permissions',
+        existingPermissions,
+      );
       let hasPermission = existingPermissions.granted;
 
       if (!hasPermission && existingPermissions.canAskAgain) {
         console.log('[NotificationTest] requesting permissions');
-        const requestedPermissions = await Notifications.requestPermissionsAsync();
-        console.log('[NotificationTest] requested permissions', requestedPermissions);
+        const requestedPermissions =
+          await Notifications.requestPermissionsAsync();
+        console.log(
+          '[NotificationTest] requested permissions',
+          requestedPermissions,
+        );
         hasPermission = requestedPermissions.granted;
       }
 
       if (!hasPermission) {
-        console.warn('[NotificationTest] local notification skipped: permission denied');
+        console.warn(
+          '[NotificationTest] local notification skipped: permission denied',
+        );
         setStatus(
           t('settings.notificationTest.permissionDenied', {
-            defaultValue: 'Notifications permission is disabled on this device.',
+            defaultValue:
+              'Notifications permission is disabled on this device.',
           }),
         );
         return;
       }
 
       if (Platform.OS === 'android') {
-        console.log(`[NotificationTest] creating Android channel ${LOCAL_TEST_CHANNEL_ID}`);
+        console.log(
+          `[NotificationTest] creating Android channel ${LOCAL_TEST_CHANNEL_ID}`,
+        );
         await Notifications.setNotificationChannelAsync(LOCAL_TEST_CHANNEL_ID, {
           importance: Notifications.AndroidImportance.HIGH,
           name: 'Notification test',
           sound: 'default',
         });
-        console.log(`[NotificationTest] Android channel ${LOCAL_TEST_CHANNEL_ID} ready`);
+        console.log(
+          `[NotificationTest] Android channel ${LOCAL_TEST_CHANNEL_ID} ready`,
+        );
       }
 
       if (scenario === 'smart-check') {
         if (!currentUser?.id) {
-          console.warn('[NotificationTest] local notification smart-check skipped: no user id');
+          console.warn(
+            '[NotificationTest] local notification smart-check skipped: no user id',
+          );
           setStatus('No user id found. Please sign in again.');
           return;
         }
 
-        console.log(`[NotificationTest] loading streak profile userId=${currentUser.id}`);
+        console.log(
+          `[NotificationTest] loading streak profile userId=${currentUser.id}`,
+        );
         const streakProfile = await getStreakProfile(currentUser.id);
         console.log('[NotificationTest] streak profile loaded', {
           todayStatus: streakProfile.todayStatus,
         });
         if (streakProfile.todayStatus === 'completed') {
-          console.log('[NotificationTest] local notification smart-check skipped: completed today');
+          console.log(
+            '[NotificationTest] local notification smart-check skipped: completed today',
+          );
           setStatus(
             `Skipped: today's test is already completed (${streakProfile.todayStatus}).`,
           );
@@ -125,11 +149,11 @@ export default function NotificationTestScreen() {
       const notificationId = await Notifications.scheduleNotificationAsync({
         content: {
           body,
-          channelId: LOCAL_TEST_CHANNEL_ID,
           sound: 'default',
           title,
         },
         trigger: {
+          channelId: LOCAL_TEST_CHANNEL_ID,
           seconds,
           type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
         },
@@ -141,7 +165,10 @@ export default function NotificationTestScreen() {
       });
       setStatus(`Scheduled in ${seconds}s. You can now minimize the app.`);
     } catch (error) {
-      console.error('[NotificationTest] Failed to schedule local notification', error);
+      console.error(
+        '[NotificationTest] Failed to schedule local notification',
+        error,
+      );
       setStatus(
         t('settings.notificationTest.failed', {
           defaultValue: 'Failed to schedule test notification.',
@@ -157,11 +184,15 @@ export default function NotificationTestScreen() {
     }
 
     try {
-      console.log(`[NotificationTest] sending remote test push userId=${currentUser.id}`);
+      console.log(
+        `[NotificationTest] sending remote test push userId=${currentUser.id}`,
+      );
       const response = await sendRemoteTestPush(currentUser.id);
       console.log('[NotificationTest] remote test push response', response);
       if (response.tokenCount === 0) {
-        setStatus('No active FCM tokens found. Tap "Refresh/Register FCM token" first.');
+        setStatus(
+          'No active FCM tokens found. Tap "Refresh/Register FCM token" first.',
+        );
         return;
       }
 
@@ -181,7 +212,10 @@ export default function NotificationTestScreen() {
         `Backend FCM push sent to ${response.sentCount}/${response.tokenCount} token(s). Fully close the app and verify delivery.`,
       );
     } catch (error) {
-      console.error('[NotificationTest] Failed to send backend FCM push', error);
+      console.error(
+        '[NotificationTest] Failed to send backend FCM push',
+        error,
+      );
       setStatus('Failed to send backend FCM push.');
     }
   };
@@ -196,26 +230,36 @@ export default function NotificationTestScreen() {
     }
 
     try {
-      console.log(`[NotificationTest] Registering token for user ${currentUser.id}`);
+      console.log(
+        `[NotificationTest] Registering token for user ${currentUser.id}`,
+      );
       const registered = await registerCurrentDevicePushToken(currentUser.id);
-      console.log(`[NotificationTest] registerCurrentDevicePushToken result=${String(registered)}`);
+      console.log(
+        `[NotificationTest] registerCurrentDevicePushToken result=${String(registered)}`,
+      );
       if (!registered) {
-        setStatus('Push permission is disabled. Enable it in OS settings first.');
+        setStatus(
+          'Push permission is disabled. Enable it in OS settings first.',
+        );
         return;
       }
 
       setStatus('FCM token refreshed and registered for this device.');
     } catch (error) {
-      console.error('[NotificationTest] Failed to refresh/register FCM token', error);
+      console.error(
+        '[NotificationTest] Failed to refresh/register FCM token',
+        error,
+      );
       setStatus('Failed to refresh/register FCM token.');
     }
   };
 
   const handleSetReminderToNextMinute = async () => {
     const nextMinute = new Date(Date.now() + 60 * 1000);
-    const nextReminderTime = `${String(nextMinute.getHours()).padStart(2, '0')}:${String(
-      nextMinute.getMinutes(),
-    ).padStart(2, '0')}` as LearningReminderTime;
+    const nextReminderTime =
+      `${String(nextMinute.getHours()).padStart(2, '0')}:${String(
+        nextMinute.getMinutes(),
+      ).padStart(2, '0')}` as LearningReminderTime;
 
     console.log('[NotificationTest] setting reminder to next minute', {
       nextReminderTime,
@@ -231,12 +275,18 @@ export default function NotificationTestScreen() {
     try {
       console.log('[NotificationTest] running backend reminder dispatch');
       const result = await dispatchLearningRemindersNow();
-      console.log('[NotificationTest] backend reminder dispatch response', result);
+      console.log(
+        '[NotificationTest] backend reminder dispatch response',
+        result,
+      );
       setStatus(
         `Dispatch checked ${result.checkedCount} user(s), sent ${result.sentCount}. Skipped: outside time ${result.skippedOutsideWindowCount}, completed today ${result.skippedCompletedTodayCount}, already sent ${result.skippedAlreadySentCount}, no tokens ${result.skippedNoTokensCount}, send failed ${result.skippedSendFailedCount}.`,
       );
     } catch (error) {
-      console.error('[NotificationTest] Failed to run backend reminder dispatch', error);
+      console.error(
+        '[NotificationTest] Failed to run backend reminder dispatch',
+        error,
+      );
       setStatus('Failed to run backend reminder dispatch.');
     }
   };
@@ -248,12 +298,19 @@ export default function NotificationTestScreen() {
     }
 
     try {
-      console.log(`[NotificationTest] clearing today dispatch userId=${currentUser.id}`);
+      console.log(
+        `[NotificationTest] clearing today dispatch userId=${currentUser.id}`,
+      );
       const result = await clearTodayLearningReminderDispatch(currentUser.id);
       console.log('[NotificationTest] clear today dispatch response', result);
-      setStatus(`Cleared today's reminder dispatch rows: ${result.deletedCount}.`);
+      setStatus(
+        `Cleared today's reminder dispatch rows: ${result.deletedCount}.`,
+      );
     } catch (error) {
-      console.error("[NotificationTest] Failed to clear today's reminder dispatch", error);
+      console.error(
+        "[NotificationTest] Failed to clear today's reminder dispatch",
+        error,
+      );
       setStatus("Failed to clear today's reminder dispatch.");
     }
   };
@@ -263,7 +320,8 @@ export default function NotificationTestScreen() {
       <ScrollView
         bounces={false}
         contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}>
+        showsVerticalScrollIndicator={false}
+      >
         <ThemedText type="screenTitle">
           {t('settings.notificationTest.screenTitle', {
             defaultValue: 'Notification Test',
@@ -286,12 +344,14 @@ export default function NotificationTestScreen() {
           onSelect={(value) => setScenario(value as ScenarioOption)}
           options={[
             {
-              description: 'Checks streak first and schedules locally only when today is not completed.',
+              description:
+                'Checks streak first and schedules locally only when today is not completed.',
               label: 'Smart check',
               value: 'smart-check',
             },
             {
-              description: 'Always schedules a local notification for icon/tray testing.',
+              description:
+                'Always schedules a local notification for icon/tray testing.',
               label: 'Force send',
               value: 'force-send',
             },
@@ -319,57 +379,74 @@ export default function NotificationTestScreen() {
             })}
           </Button>
           <ThemedText type="description">
-            Schedules a notification on this device only. It does not use Firebase or the backend.
+            Schedules a notification on this device only. It does not use
+            Firebase or the backend.
           </ThemedText>
         </View>
 
         <View style={styles.actionGroup}>
-          <Button onPress={() => void handleSetReminderToNextMinute()} variant="secondary">
+          <Button
+            onPress={() => void handleSetReminderToNextMinute()}
+            variant="secondary"
+          >
             Set reminder to next minute
           </Button>
           <ThemedText type="description">
-            Enables learning reminders and changes the reminder time to the next minute for quick
-            dispatch testing.
+            Enables learning reminders and changes the reminder time to the next
+            minute for quick dispatch testing.
           </ThemedText>
         </View>
 
         <View style={styles.actionGroup}>
-          <Button onPress={() => void handleRefreshPushToken()} variant="secondary">
+          <Button
+            onPress={() => void handleRefreshPushToken()}
+            variant="secondary"
+          >
             Refresh/Register FCM token
           </Button>
           <ThemedText type="description">
-            Gets the Android Firebase Cloud Messaging token and saves it on the backend for this
-            user and device.
+            Gets the Android Firebase Cloud Messaging token and saves it on the
+            backend for this user and device.
           </ThemedText>
         </View>
 
         <View style={styles.actionGroup}>
-          <Button onPress={() => void handleSendRemoteTestPush()} variant="secondary">
+          <Button
+            onPress={() => void handleSendRemoteTestPush()}
+            variant="secondary"
+          >
             Send backend FCM push
           </Button>
           <ThemedText type="description">
-            Sends an immediate test push from the backend through Firebase to the registered FCM
-            token.
+            Sends an immediate test push from the backend through Firebase to
+            the registered FCM token.
           </ThemedText>
         </View>
 
         <View style={styles.actionGroup}>
-          <Button onPress={() => void handleDispatchLearningRemindersNow()} variant="secondary">
+          <Button
+            onPress={() => void handleDispatchLearningRemindersNow()}
+            variant="secondary"
+          >
             Run backend reminder dispatch
           </Button>
           <ThemedText type="description">
-            Runs the real reminder job now. It sends only when reminders are enabled, the selected
-            time is in the dispatch window, today is not completed, and an active FCM token exists.
+            Runs the real reminder job now. It sends only when reminders are
+            enabled, the selected time is in the dispatch window, today is not
+            completed, and an active FCM token exists.
           </ThemedText>
         </View>
 
         <View style={styles.actionGroup}>
-          <Button onPress={() => void handleClearTodayDispatch()} variant="secondary">
+          <Button
+            onPress={() => void handleClearTodayDispatch()}
+            variant="secondary"
+          >
             Clear today's reminder dispatch
           </Button>
           <ThemedText type="description">
-            Removes today's already-sent marker for this user so scheduled reminder delivery can be
-            tested again on the same day.
+            Removes today's already-sent marker for this user so scheduled
+            reminder delivery can be tested again on the same day.
           </ThemedText>
         </View>
 

@@ -58,7 +58,9 @@ async function loadPendingEvents(): Promise<PendingActivityEvent[]> {
   }
 }
 
-async function savePendingEvents(events: PendingActivityEvent[]): Promise<void> {
+async function savePendingEvents(
+  events: PendingActivityEvent[],
+): Promise<void> {
   await AsyncStorage.setItem(pendingEventsStorageKey, JSON.stringify(events));
 }
 
@@ -84,7 +86,9 @@ export async function syncPendingStreakEvents(userId: string): Promise<void> {
   await savePendingEvents(remainingEvents);
 }
 
-export async function queuePendingStreakEvent(activityType: StreakActivityType): Promise<void> {
+export async function queuePendingStreakEvent(
+  activityType: StreakActivityType,
+): Promise<void> {
   const pendingEvents = await loadPendingEvents();
 
   pendingEvents.push({
@@ -111,12 +115,16 @@ export async function trackLearningActivity(
   } catch {
     await queuePendingStreakEvent(activityType);
 
-    const fallback = await getStreakProfile(userId).catch(() => buildFallbackStreakState());
+    const fallback = await getStreakProfile(userId).catch(() =>
+      buildFallbackStreakState(),
+    );
     return fallback;
   }
 }
 
-export function getStreakReminderState(streak: StreakState): StreakReminderState {
+export function getStreakReminderState(
+  streak: StreakState,
+): StreakReminderState {
   if (streak.todayStatus === 'pending') {
     return {
       cta: 'Почати зараз',
@@ -143,7 +151,9 @@ export function didCompleteStreakToday(
   );
 }
 
-export async function restoreStreakForCoins(userId: string): Promise<StreakState> {
+export async function restoreStreakForCoins(
+  userId: string,
+): Promise<StreakState> {
   return restoreBrokenStreak(userId, { price: STREAK_RESTORE_PRICE });
 }
 
@@ -154,7 +164,10 @@ export async function applyFreezeToMissedDay(
   return applyStreakFreeze(userId, { date });
 }
 
-export async function buyStreakFreezeToken(userId: string): Promise<StreakState> {
-  return purchaseStreakFreezeToken(userId, { price: STREAK_FREEZE_TOKEN_PRICE });
+export async function buyStreakFreezeToken(
+  userId: string,
+): Promise<StreakState> {
+  return purchaseStreakFreezeToken(userId, {
+    price: STREAK_FREEZE_TOKEN_PRICE,
+  });
 }
-

@@ -13,7 +13,7 @@ const expoBin = path.join(
   '..',
   'node_modules',
   '.bin',
-  process.platform === 'win32' ? 'expo.cmd' : 'expo'
+  process.platform === 'win32' ? 'expo.cmd' : 'expo',
 );
 const args = ['start', '--lan', ...forwardedArgs];
 
@@ -21,7 +21,9 @@ console.log(`[Readovo] Dev host: ${host}`);
 console.log(`[Readovo] API mode: ${apiMode}`);
 console.log(`[Readovo] API URL: ${apiUrl}`);
 console.log(`[Readovo] Reactotron host: ${host}`);
-console.log(`[Readovo] Metro host override: ${env.REACT_NATIVE_PACKAGER_HOSTNAME}`);
+console.log(
+  `[Readovo] Metro host override: ${env.REACT_NATIVE_PACKAGER_HOSTNAME}`,
+);
 
 tryReversePorts([METRO_PORT, API_PORT, REACTOTRON_PORT]);
 
@@ -44,7 +46,10 @@ function tryReversePorts(ports) {
 
     const hasConnectedDevice = devicesOutput
       .split('\n')
-      .some((line) => /\bdevice$/.test(line.trim()) && !line.startsWith('List of devices'));
+      .some(
+        (line) =>
+          /\bdevice$/.test(line.trim()) && !line.startsWith('List of devices'),
+      );
 
     if (!hasConnectedDevice) {
       return;
@@ -58,6 +63,8 @@ function tryReversePorts(ports) {
 
     console.log(`[Readovo] ADB reverse enabled for ports: ${ports.join(', ')}`);
   } catch {
-    console.log('[Readovo] ADB reverse skipped: no adb device detected or adb is unavailable');
+    console.log(
+      '[Readovo] ADB reverse skipped: no adb device detected or adb is unavailable',
+    );
   }
 }

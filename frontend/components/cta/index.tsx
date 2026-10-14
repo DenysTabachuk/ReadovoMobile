@@ -37,9 +37,14 @@ function renderAction(
   return (
     <Button
       {...buttonProps}
-      style={[styles.button, fullWidth ? styles.buttonFullWidth : null, buttonProps.style]}
+      style={[
+        styles.button,
+        fullWidth ? styles.buttonFullWidth : null,
+        buttonProps.style,
+      ]}
       textStyle={[styles.label, textStyle]}
-      variant={buttonProps.variant ?? fallbackVariant}>
+      variant={buttonProps.variant ?? fallbackVariant}
+    >
       {label}
     </Button>
   );
@@ -57,7 +62,10 @@ export function Cta({
     { dark: '#151718', light: '#ffffff' },
     'background',
   );
-  const borderTopColor = useThemeColor({ dark: '#2b2d2f', light: '#e6e8eb' }, 'icon');
+  const borderTopColor = useThemeColor(
+    { dark: '#2b2d2f', light: '#e6e8eb' },
+    'icon',
+  );
 
   if (!primaryAction && !secondaryAction) {
     return null;
@@ -77,7 +85,8 @@ export function Cta({
         styles.wrapper,
         withBackground ? styles.wrapperFullWidth : null,
         { bottom: resolvedBottomOffset },
-      ]}>
+      ]}
+    >
       <View
         style={[
           styles.actions,
@@ -92,11 +101,14 @@ export function Cta({
               ]
             : null,
           layout === 'vertical' ? styles.vertical : styles.horizontal,
-        ]}>
+        ]}
+      >
         {secondaryAction
           ? renderAction(secondaryAction, 'secondary', fullWidth)
           : null}
-        {primaryAction ? renderAction(primaryAction, 'primary', fullWidth) : null}
+        {primaryAction
+          ? renderAction(primaryAction, 'primary', fullWidth)
+          : null}
       </View>
     </View>
   );

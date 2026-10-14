@@ -1,4 +1,7 @@
-import { type SimplifyArticleLevel, type SimplifyArticleTargetLength } from '@/api/wikipedia';
+import {
+  type SimplifyArticleLevel,
+  type SimplifyArticleTargetLength,
+} from '@/api/wikipedia';
 
 export type QuizRewardContext = {
   isFirstTestCompleted?: boolean;

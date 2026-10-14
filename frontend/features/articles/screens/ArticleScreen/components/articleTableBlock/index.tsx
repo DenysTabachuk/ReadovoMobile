@@ -40,7 +40,9 @@ export function ArticleTableBlock({
   const tableBackgroundColor = useThemeColor({}, 'background');
   const headerText = isExpanded ? 'Hide table' : 'Show table';
   const summaryText = buildTableSummary(rows, columnCount, rowCount);
-  const tableMinWidth = isWideTable ? Math.max(columnCount * 140, 420) : undefined;
+  const tableMinWidth = isWideTable
+    ? Math.max(columnCount * 140, 420)
+    : undefined;
 
   return (
     <View style={styles.container}>
@@ -53,14 +55,16 @@ export function ArticleTableBlock({
             backgroundColor: headerBackgroundColor,
             borderColor,
           },
-        ]}>
+        ]}
+      >
         <View style={styles.toggleCopy}>
           <ThemedText type="bodyStrong">{headerText}</ThemedText>
           <ThemedText
             ellipsizeMode="tail"
             numberOfLines={MAX_SUMMARY_LINES}
             style={styles.summary}
-            type="body">
+            type="body"
+          >
             {summaryText}
           </ThemedText>
         </View>
@@ -74,7 +78,8 @@ export function ArticleTableBlock({
           horizontal
           showsHorizontalScrollIndicator
           style={styles.tableViewport}
-          contentContainerStyle={styles.tableViewportContent}>
+          contentContainerStyle={styles.tableViewportContent}
+        >
           <View
             style={[
               styles.table,
@@ -83,7 +88,8 @@ export function ArticleTableBlock({
                 borderColor,
               },
               tableMinWidth ? { minWidth: tableMinWidth } : null,
-            ]}>
+            ]}
+          >
             {rows.map((row, rowIndex) => (
               <View
                 key={`row-${rowIndex}`}
@@ -92,7 +98,8 @@ export function ArticleTableBlock({
                   {
                     borderBottomColor: borderColor,
                   },
-                ]}>
+                ]}
+              >
                 {row.map((cell, cellIndex) => (
                   <View
                     key={`cell-${rowIndex}-${cellIndex}`}
@@ -107,10 +114,15 @@ export function ArticleTableBlock({
                             backgroundColor: headerBackgroundColor,
                           }
                         : null,
-                    ]}>
+                    ]}
+                  >
                     <ThemedText
-                      style={[styles.tableCellText, cell.header ? styles.tableHeaderText : null]}
-                      type={cell.header ? 'bodyStrong' : 'body'}>
+                      style={[
+                        styles.tableCellText,
+                        cell.header ? styles.tableHeaderText : null,
+                      ]}
+                      type={cell.header ? 'bodyStrong' : 'body'}
+                    >
                       {renderCellContent({
                         cell,
                         prefix: `table-${rowIndex}-${cellIndex}`,

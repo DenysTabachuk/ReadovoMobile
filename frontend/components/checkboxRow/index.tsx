@@ -24,7 +24,8 @@ export function CheckboxRow({ checked, label, onPress }: CheckboxRowProps) {
       accessibilityState={{ checked }}
       hitSlop={8}
       style={styles.root}
-      onPress={onPress}>
+      onPress={onPress}
+    >
       <CheckboxIndicator checked={checked} />
       <ThemedText type="body">{label}</ThemedText>
     </Pressable>

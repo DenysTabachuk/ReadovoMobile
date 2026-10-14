@@ -47,7 +47,15 @@ export const TouchableWord = memo(function TouchableWord({
       tokenKey,
       word,
     });
-  }, [contextSentence, onPress, sentenceKey, sentenceWordIndex, text, tokenKey, word]);
+  }, [
+    contextSentence,
+    onPress,
+    sentenceKey,
+    sentenceWordIndex,
+    text,
+    tokenKey,
+    word,
+  ]);
 
   return (
     <ThemedText
@@ -61,7 +69,8 @@ export const TouchableWord = memo(function TouchableWord({
         speaking ? styles.speakingWordText : null,
         selected ? styles.selectedWordText : null,
       ]}
-      type="paragraph">
+      type="paragraph"
+    >
       {text}
     </ThemedText>
   );

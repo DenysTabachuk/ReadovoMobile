@@ -37,16 +37,29 @@ export function StreakFreezeCard({
       <View style={styles.headerRow}>
         <View style={styles.titleRow}>
           <Ionicons color="#2d6bc9" name="snow" size={18} />
-          <ThemedText type="bodyStrong" style={isDark ? styles.titleDark : styles.titleLight}>
+          <ThemedText
+            type="bodyStrong"
+            style={isDark ? styles.titleDark : styles.titleLight}
+          >
             {t('streak.freeze.title')}
           </ThemedText>
         </View>
-        <ThemedText style={[styles.tokenValue, isDark ? styles.tokenValueDark : styles.tokenValueLight]}>
+        <ThemedText
+          style={[
+            styles.tokenValue,
+            isDark ? styles.tokenValueDark : styles.tokenValueLight,
+          ]}
+        >
           {freezeTokens}/{STREAK_MAX_FREEZE_TOKENS}
         </ThemedText>
       </View>
 
-      <ThemedText style={[styles.description, isDark ? styles.descriptionDark : styles.descriptionLight]}>
+      <ThemedText
+        style={[
+          styles.description,
+          isDark ? styles.descriptionDark : styles.descriptionLight,
+        ]}
+      >
         {t('streak.freeze.description')}
       </ThemedText>
 
@@ -57,7 +70,12 @@ export function StreakFreezeCard({
             source={require('../../../../assets/images/money.png')}
             style={styles.moneyIcon}
           />
-          <ThemedText style={[styles.priceText, isDark ? styles.descriptionDark : styles.descriptionLight]}>
+          <ThemedText
+            style={[
+              styles.priceText,
+              isDark ? styles.descriptionDark : styles.descriptionLight,
+            ]}
+          >
             {STREAK_FREEZE_TOKEN_PRICE}
           </ThemedText>
         </View>
@@ -70,7 +88,8 @@ export function StreakFreezeCard({
             isDark ? styles.buyButtonDark : styles.buyButtonLight,
             !canBuy ? styles.buyButtonDisabled : null,
             pressed ? styles.buyButtonPressed : null,
-          ]}>
+          ]}
+        >
           <Ionicons color="#ffffff" name="add-circle-outline" size={16} />
           <ThemedText type="bodyStrong" style={styles.buyButtonText}>
             {reachedLimit

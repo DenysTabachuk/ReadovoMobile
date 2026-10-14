@@ -7,10 +7,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 
-import {
-  getMascotCatalogItem,
-  mascotAccessorySlots,
-} from '../../catalog';
+import { getMascotCatalogItem, mascotAccessorySlots } from '../../catalog';
 import { type MascotEquippedItems } from '../../types';
 
 import { styles } from './styles';
@@ -66,7 +63,11 @@ export function Mascot({ equippedItems = {}, style }: MascotProps) {
               },
             ]}
           >
-            <Image contentFit="contain" source={item.asset} style={styles.accessory} />
+            <Image
+              contentFit="contain"
+              source={item.asset}
+              style={styles.accessory}
+            />
           </View>
         );
       })}

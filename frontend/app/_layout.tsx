@@ -1,4 +1,8 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import {
+  DarkTheme,
+  DefaultTheme,
+  ThemeProvider,
+} from '@react-navigation/native';
 import * as NavigationBar from 'expo-navigation-bar';
 import * as Notifications from 'expo-notifications';
 import * as SystemUI from 'expo-system-ui';
@@ -93,7 +97,12 @@ function RootLayoutContent() {
       reminderTime: learningReminderTime,
       userId: currentUser?.id,
     });
-  }, [currentUser?.id, isAuthenticated, learningReminderEnabled, learningReminderTime]);
+  }, [
+    currentUser?.id,
+    isAuthenticated,
+    learningReminderEnabled,
+    learningReminderTime,
+  ]);
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (state) => {
@@ -112,13 +121,20 @@ function RootLayoutContent() {
     return () => {
       subscription.remove();
     };
-  }, [currentUser?.id, isAuthenticated, learningReminderEnabled, learningReminderTime]);
+  }, [
+    currentUser?.id,
+    isAuthenticated,
+    learningReminderEnabled,
+    learningReminderTime,
+  ]);
 
   return (
     <GestureHandlerRootView style={{ backgroundColor, flex: 1 }}>
       <View style={{ backgroundColor, flex: 1 }}>
         <SafeAreaProvider>
-          <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+          <ThemeProvider
+            value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}
+          >
             <QueryProvider>
               <BannerProvider>
                 <Stack
@@ -126,11 +142,15 @@ function RootLayoutContent() {
                     contentStyle: {
                       backgroundColor,
                     },
-                  }}>
+                  }}
+                >
                   <Stack.Screen name="index" options={{ headerShown: false }} />
                   <Stack.Screen name="about" options={{ headerShown: false }} />
                   <Stack.Screen name="login" options={{ headerShown: false }} />
-                  <Stack.Screen name="register" options={{ headerShown: false }} />
+                  <Stack.Screen
+                    name="register"
+                    options={{ headerShown: false }}
+                  />
                   <Stack.Screen
                     name="forgot-password"
                     options={{ headerShown: false }}
@@ -139,7 +159,10 @@ function RootLayoutContent() {
                     name="reset-password"
                     options={{ headerShown: false }}
                   />
-                  <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                  <Stack.Screen
+                    name="(tabs)"
+                    options={{ headerShown: false }}
+                  />
                   <Stack.Screen name="dictionary-test" />
                   <Stack.Screen name="article/[id]" />
                   <Stack.Screen name="article-quiz/[id]" />

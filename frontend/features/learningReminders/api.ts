@@ -24,7 +24,10 @@ async function logFailedResponse(
   try {
     body = await response.text();
   } catch (error) {
-    console.error(`[LearningRemindersApi] ${operation} failed to read error body`, error);
+    console.error(
+      `[LearningRemindersApi] ${operation} failed to read error body`,
+      error,
+    );
   }
 
   console.error(`[LearningRemindersApi] ${operation} failed`, {
@@ -38,7 +41,9 @@ async function logFailedResponse(
 export async function getLearningReminderPreferences(
   userId: string,
 ): Promise<LearningReminderPreferencesResponse> {
-  const response = await authenticatedFetch(`${API_BASE_URL}/notifications/preferences/${userId}`);
+  const response = await authenticatedFetch(
+    `${API_BASE_URL}/notifications/preferences/${userId}`,
+  );
 
   if (!response.ok) {
     await logFailedResponse('getLearningReminderPreferences', response);
@@ -52,13 +57,16 @@ export async function updateLearningReminderPreferences(
   userId: string,
   payload: LearningReminderPreferencesResponse,
 ): Promise<LearningReminderPreferencesResponse> {
-  const response = await authenticatedFetch(`${API_BASE_URL}/notifications/preferences/${userId}`, {
-    body: JSON.stringify(payload),
-    headers: {
-      'Content-Type': 'application/json',
+  const response = await authenticatedFetch(
+    `${API_BASE_URL}/notifications/preferences/${userId}`,
+    {
+      body: JSON.stringify(payload),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      method: 'PUT',
     },
-    method: 'PUT',
-  });
+  );
 
   if (!response.ok) {
     await logFailedResponse('updateLearningReminderPreferences', response);
@@ -72,13 +80,16 @@ export async function registerPushToken(
   userId: string,
   payload: RegisterPushTokenPayload,
 ): Promise<void> {
-  const response = await authenticatedFetch(`${API_BASE_URL}/notifications/push-token/${userId}`, {
-    body: JSON.stringify(payload),
-    headers: {
-      'Content-Type': 'application/json',
+  const response = await authenticatedFetch(
+    `${API_BASE_URL}/notifications/push-token/${userId}`,
+    {
+      body: JSON.stringify(payload),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      method: 'POST',
     },
-    method: 'POST',
-  });
+  );
 
   if (!response.ok) {
     await logFailedResponse('registerPushToken', response);
@@ -106,13 +117,16 @@ type LearningReminderDispatchResponse = {
 export async function sendRemoteTestPush(
   userId: string,
 ): Promise<SendRemoteTestPushResponse> {
-  const response = await authenticatedFetch(`${API_BASE_URL}/notifications/test-push/${userId}`, {
-    body: JSON.stringify({}),
-    headers: {
-      'Content-Type': 'application/json',
+  const response = await authenticatedFetch(
+    `${API_BASE_URL}/notifications/test-push/${userId}`,
+    {
+      body: JSON.stringify({}),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      method: 'POST',
     },
-    method: 'POST',
-  });
+  );
 
   if (!response.ok) {
     await logFailedResponse('sendRemoteTestPush', response);

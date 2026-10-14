@@ -64,7 +64,8 @@ describe('article touchable text context', () => {
   });
 
   it('does not treat i.e. as a sentence boundary', () => {
-    const text = 'Some printers use material extrusion, i.e. melted filament, for simple parts.';
+    const text =
+      'Some printers use material extrusion, i.e. melted filament, for simple parts.';
     const filamentPart = getWordPart(text, 'filament');
 
     expect(filamentPart?.contextSentence).toBe(text);
@@ -98,7 +99,8 @@ describe('article touchable text context', () => {
   });
 
   it('does not send a tiny fragment as context when sentence detection returns one', () => {
-    const text = 'g. computer control keeps enough surrounding words for translation.';
+    const text =
+      'g. computer control keeps enough surrounding words for translation.';
     const context = getWordContext(text, 0, 'g'.length);
 
     expect(context).not.toBe('g.');
@@ -120,10 +122,14 @@ describe('article touchable text context', () => {
       { text: 'e', type: 'word' },
       { text: '.', type: 'text' },
       { text: 'g', type: 'word' },
-      { text: '. plastics, liquids, or powder grains), typically layer by layer.', type: 'text' },
+      {
+        text: '. plastics, liquids, or powder grains), typically layer by layer.',
+        type: 'text',
+      },
     ];
     const togetherPart = splitTextToTouchableParts(nodes, 'test').find(
-      (part): part is TouchableWordPart => part.type === 'word' && part.word === 'together',
+      (part): part is TouchableWordPart =>
+        part.type === 'word' && part.word === 'together',
     );
 
     expect(togetherPart?.contextSentence).toBe(
@@ -136,27 +142,32 @@ describe('article touchable text context', () => {
       'The material is added together (e. g. plastics, liquids, or powder grains), typically layer by layer.';
     const togetherPart = getWordPart(text, 'together');
 
-    expect(togetherPart?.contextSentence).not.toBe('The material is added together (e.');
+    expect(togetherPart?.contextSentence).not.toBe(
+      'The material is added together (e.',
+    );
     expect(togetherPart?.contextSentence).toContain('plastics, liquids');
     expect(togetherPart?.contextSentence).toContain('layer by layer');
   });
 
   it('keeps context across etc. inside the same sentence', () => {
-    const text = 'Printers can use plastics, liquids, powder grains, etc. for layer-based fabrication.';
+    const text =
+      'Printers can use plastics, liquids, powder grains, etc. for layer-based fabrication.';
     const fabricationPart = getWordPart(text, 'fabrication');
 
     expect(fabricationPart?.contextSentence).toBe(text);
   });
 
   it('keeps context across approx. inside measurements', () => {
-    const text = 'The nozzle stayed approx. 2 mm above the surface during calibration.';
+    const text =
+      'The nozzle stayed approx. 2 mm above the surface during calibration.';
     const surfacePart = getWordPart(text, 'surface');
 
     expect(surfacePart?.contextSentence).toBe(text);
   });
 
   it('keeps context across vs. inside a comparison', () => {
-    const text = 'Researchers compared additive vs. subtractive manufacturing in the same study.';
+    const text =
+      'Researchers compared additive vs. subtractive manufacturing in the same study.';
     const subtractivePart = getWordPart(text, 'subtractive');
 
     expect(subtractivePart?.contextSentence).toBe(text);
@@ -164,7 +175,10 @@ describe('article touchable text context', () => {
 });
 
 function getWordPart(text: string, word: string) {
-  return splitTextToTouchableParts(createInlineNodesFromPlainText(text), 'test').find(
+  return splitTextToTouchableParts(
+    createInlineNodesFromPlainText(text),
+    'test',
+  ).find(
     (part): part is TouchableWordPart =>
       part.type === 'word' && part.word === word.toLowerCase(),
   );

@@ -33,8 +33,9 @@ export default function RegisterScreen() {
   const [isSubmitted, setIsSubmitted] = useState(false);
 
   const normalizedEmail = email.trim().toLowerCase();
-  const emailError =
-    !emailPattern.test(normalizedEmail) ? t('auth.errors.invalidEmail') : '';
+  const emailError = !emailPattern.test(normalizedEmail)
+    ? t('auth.errors.invalidEmail')
+    : '';
   const passwordError =
     password.length < minPasswordLength
       ? t('auth.errors.passwordTooShort')

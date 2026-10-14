@@ -22,8 +22,7 @@ import { ArticleTransformationPlanner } from './transformation/article-transform
 import { ArticleTransformationValidator } from './transformation/article-transformation.validator';
 import { ArticlesService } from './articles.service';
 
-const createChatCompletionMock =
-  jest.fn<(...args: unknown[]) => Promise<unknown>>();
+const createChatCompletionMock = jest.fn<Promise<unknown>, unknown[]>();
 
 type GroqChatCompletionRequest = {
   messages: Array<{ content?: string }>;
@@ -139,7 +138,7 @@ jest.mock('groq-sdk', () => ({
       completions: {
         create: (...args: unknown[]) => ({
           withResponse: async () => ({
-            data: (await createChatCompletionMock(...args)) as unknown,
+            data: await createChatCompletionMock(...args),
             response: new Response(null, {
               headers: {
                 'x-ratelimit-limit-tokens': '8000',
@@ -540,7 +539,6 @@ describe('ArticlesService', () => {
 
     const response = await service.simplifyArticle({
       level: 'A2',
-      targetPercent: 25,
       text: 'Long article text',
       title: 'Solar System',
     });
@@ -594,7 +592,6 @@ describe('ArticlesService', () => {
 
     const response = await service.simplifyArticle({
       level: 'A2',
-      targetPercent: 25,
       text: 'Long article text',
       title: 'Solar System',
     });
@@ -665,7 +662,6 @@ describe('ArticlesService', () => {
 
     const response = await service.simplifyArticle({
       level: 'A2',
-      targetPercent: 100,
       text: 'Long article text',
       title: 'Solar System',
     });
@@ -714,7 +710,6 @@ describe('ArticlesService', () => {
 
     const response = await service.simplifyArticle({
       level: 'A2',
-      targetPercent: 25,
       text: 'Long article text',
       title: 'Solar System',
     });
@@ -825,7 +820,6 @@ describe('ArticlesService', () => {
     const response = await service.simplifyArticle({
       articleId: 42,
       level: 'A2',
-      targetPercent: 25,
       text: 'Long article text',
       title: 'Solar System',
     });
@@ -949,7 +943,6 @@ describe('ArticlesService', () => {
         },
       ],
       level: 'A2',
-      targetPercent: 25,
       text,
       title: 'Solar System',
     });

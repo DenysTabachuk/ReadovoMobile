@@ -45,8 +45,7 @@ export function ArticleSpeechControls({
   const tintColor = Colors[colorScheme ?? 'light'].tint;
   const isPlaying = status === 'playing';
   const isIdle = status === 'idle';
-  const progressWidth: DimensionValue =
-    `${Math.round(Math.max(0, Math.min(1, progress)) * 100)}%`;
+  const progressWidth: DimensionValue = `${Math.round(Math.max(0, Math.min(1, progress)) * 100)}%`;
 
   return (
     <View onLayout={onLayout} style={[styles.container, style]}>
@@ -64,7 +63,9 @@ export function ArticleSpeechControls({
         <View style={styles.actions}>
           <SpeechIconButton
             accessibilityLabel={
-              isPlaying ? t('article.speech.pauseAction') : t('article.speech.playAction')
+              isPlaying
+                ? t('article.speech.pauseAction')
+                : t('article.speech.playAction')
             }
             disabled={disabled}
             iconName={isPlaying ? 'pause' : 'play'}
@@ -125,10 +126,13 @@ function SpeechIconButton({
       onPress={onPress}
       style={({ pressed }) => [
         styles.iconButton,
-        variant === 'primary' ? styles.primaryIconButton : styles.secondaryIconButton,
+        variant === 'primary'
+          ? styles.primaryIconButton
+          : styles.secondaryIconButton,
         pressed && !disabled ? styles.iconButtonPressed : null,
         disabled ? styles.iconButtonDisabled : null,
-      ]}>
+      ]}
+    >
       <Ionicons
         color={variant === 'primary' ? '#ffffff' : tintColor}
         name={iconName}

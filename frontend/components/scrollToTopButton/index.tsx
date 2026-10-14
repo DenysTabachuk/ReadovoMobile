@@ -1,5 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useEffect, useMemo, useRef, type ReactNode, type RefObject } from 'react';
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  type ReactNode,
+  type RefObject,
+} from 'react';
 import { Animated, Pressable, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -10,7 +16,11 @@ import { styles } from './styles';
 
 type ScrollableRef =
   | {
-      scrollTo: (options?: { animated?: boolean; x?: number; y?: number }) => void;
+      scrollTo: (options?: {
+        animated?: boolean;
+        x?: number;
+        y?: number;
+      }) => void;
     }
   | {
       scrollToOffset: (params: { animated?: boolean; offset: number }) => void;
@@ -97,7 +107,8 @@ export function ScrollToTopButton({
             },
           ],
         },
-      ]}>
+      ]}
+    >
       <Pressable
         accessibilityLabel={accessibilityLabel}
         accessibilityRole="button"
@@ -112,7 +123,8 @@ export function ScrollToTopButton({
             height: size,
             width: size,
           },
-        ]}>
+        ]}
+      >
         {icon ?? <Ionicons color="#ffffff" name="arrow-up" size={24} />}
       </Pressable>
     </Animated.View>

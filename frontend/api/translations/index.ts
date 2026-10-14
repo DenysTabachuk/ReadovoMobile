@@ -1,9 +1,6 @@
 import { API_BASE_URL } from '@/api/auth/constants';
 
-import {
-  type TranslateWordRequest,
-  type TranslateWordResponse,
-} from './types';
+import { type TranslateWordRequest, type TranslateWordResponse } from './types';
 
 export type { TranslateWordRequest, TranslateWordResponse } from './types';
 

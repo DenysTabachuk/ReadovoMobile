@@ -38,8 +38,8 @@ export function TranslationCards({
   const resolvedBaseTranslation = baseTranslation ?? translation;
   const canToggleWordTranslation = Boolean(
     resolvedBaseTranslation &&
-      contextualTranslation &&
-      resolvedBaseTranslation !== contextualTranslation,
+    contextualTranslation &&
+    resolvedBaseTranslation !== contextualTranslation,
   );
   const displayedWordTranslation =
     showContextualWordTranslation && contextualTranslation
@@ -71,7 +71,8 @@ export function TranslationCards({
             ]).start();
             setShowContextualWordTranslation((previousState) => !previousState);
           }}
-          style={styles.translationCard}>
+          style={styles.translationCard}
+        >
           <ThemedText type="description" style={styles.cardLabel}>
             {showContextualWordTranslation && contextualTranslation
               ? t('translation.wordTranslationContextualLabel')
@@ -116,7 +117,8 @@ export function TranslationCards({
               ]).start();
               setShowTranslatedContext((previousState) => !previousState);
             }}
-            style={styles.contextCard}>
+            style={styles.contextCard}
+          >
             <ThemedText type="description" style={styles.cardLabel}>
               {showTranslatedContext && contextTranslation
                 ? t('translation.contextTranslationLabel')

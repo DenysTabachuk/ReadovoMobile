@@ -35,15 +35,31 @@ export function StreakFreezeConfirmModal({
       modalProps={{ presentationStyle: 'overFullScreen' }}
       onClose={onClose}
       open={open}
-      title={t('streak.freeze.modalTitle')}>
+      title={t('streak.freeze.modalTitle')}
+    >
       <View style={styles.content}>
-        <View style={[styles.iconCircle, isDark ? styles.iconCircleDark : styles.iconCircleLight]}>
+        <View
+          style={[
+            styles.iconCircle,
+            isDark ? styles.iconCircleDark : styles.iconCircleLight,
+          ]}
+        >
           <Ionicons color="#2d6bc9" name="snow" size={24} />
         </View>
-        <ThemedText style={[styles.description, isDark ? styles.descriptionDark : styles.descriptionLight]}>
+        <ThemedText
+          style={[
+            styles.description,
+            isDark ? styles.descriptionDark : styles.descriptionLight,
+          ]}
+        >
           {t('streak.freeze.modalDescription', { date })}
         </ThemedText>
-        <ThemedText style={[styles.tokensText, isDark ? styles.tokensTextDark : styles.tokensTextLight]}>
+        <ThemedText
+          style={[
+            styles.tokensText,
+            isDark ? styles.tokensTextDark : styles.tokensTextLight,
+          ]}
+        >
           {t('streak.freeze.tokensAvailable', { count: freezeTokens })}
         </ThemedText>
 
@@ -55,8 +71,14 @@ export function StreakFreezeConfirmModal({
               styles.secondaryButton,
               isDark ? styles.secondaryButtonDark : styles.secondaryButtonLight,
               pressed ? styles.buttonPressed : null,
-            ]}>
-            <ThemedText type="bodyStrong" style={isDark ? styles.secondaryTextDark : styles.secondaryTextLight}>
+            ]}
+          >
+            <ThemedText
+              type="bodyStrong"
+              style={
+                isDark ? styles.secondaryTextDark : styles.secondaryTextLight
+              }
+            >
               {t('streak.freeze.cancel')}
             </ThemedText>
           </Pressable>
@@ -68,9 +90,12 @@ export function StreakFreezeConfirmModal({
               styles.primaryButton,
               !canConfirm ? styles.primaryButtonDisabled : null,
               pressed ? styles.buttonPressed : null,
-            ]}>
+            ]}
+          >
             <ThemedText type="bodyStrong" style={styles.primaryText}>
-              {isApplying ? t('streak.freeze.applying') : t('streak.freeze.confirm')}
+              {isApplying
+                ? t('streak.freeze.applying')
+                : t('streak.freeze.confirm')}
             </ThemedText>
           </Pressable>
         </View>

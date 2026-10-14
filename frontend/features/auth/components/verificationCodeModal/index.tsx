@@ -62,7 +62,10 @@ export function VerificationCodeModal({
   verifyingLabel,
 }: VerificationCodeModalProps) {
   const inputRef = useRef<TextInput>(null);
-  const borderColor = useThemeColor({ dark: '#7d8790', light: '#c8ccd6' }, 'icon');
+  const borderColor = useThemeColor(
+    { dark: '#7d8790', light: '#c8ccd6' },
+    'icon',
+  );
   const cellBackgroundColor = useThemeColor(
     { dark: '#202426', light: '#ffffff' },
     'background',
@@ -86,7 +89,11 @@ export function VerificationCodeModal({
     'background',
   );
   const codeDigits = useMemo(
-    () => Array.from({ length: verificationCodeLength }, (_, index) => code[index] ?? ''),
+    () =>
+      Array.from(
+        { length: verificationCodeLength },
+        (_, index) => code[index] ?? '',
+      ),
     [code],
   );
   const activeCellIndex = Math.min(code.length, verificationCodeLength - 1);
@@ -188,7 +195,9 @@ export function VerificationCodeModal({
 
           <View style={styles.codeCells}>
             {codeDigits.map((digit, index) => {
-              const isActive = index === activeCellIndex && code.length < verificationCodeLength;
+              const isActive =
+                index === activeCellIndex &&
+                code.length < verificationCodeLength;
 
               return (
                 <View
@@ -196,7 +205,9 @@ export function VerificationCodeModal({
                   style={[
                     styles.codeCell,
                     { backgroundColor: cellBackgroundColor, borderColor },
-                    isActive ? [styles.codeCellActive, { borderColor: tintColor }] : null,
+                    isActive
+                      ? [styles.codeCellActive, { borderColor: tintColor }]
+                      : null,
                   ]}
                 >
                   <ThemedText

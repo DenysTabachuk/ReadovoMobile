@@ -85,7 +85,8 @@ export function ModalSheet({
       statusBarTranslucent={Platform.OS === 'android'}
       transparent
       visible={open}
-      {...modalProps}>
+      {...modalProps}
+    >
       <View style={styles.backdrop}>
         <Pressable onPress={onClose} style={styles.closeArea} />
         <View
@@ -96,7 +97,8 @@ export function ModalSheet({
               paddingBottom: Spacing.xLg,
             },
             sheetStyle,
-          ]}>
+          ]}
+        >
           {showHandle ? <View style={styles.handle} /> : null}
 
           <View style={[styles.content, contentStyle]}>
@@ -106,7 +108,11 @@ export function ModalSheet({
               </ThemedText>
               <Pressable
                 onPress={onClose}
-                style={[styles.closeButton, { borderColor: closeButtonBorderColor }]}>
+                style={[
+                  styles.closeButton,
+                  { borderColor: closeButtonBorderColor },
+                ]}
+              >
                 <ThemedText type="bodyStrong">X</ThemedText>
               </Pressable>
             </View>
@@ -118,7 +124,8 @@ export function ModalSheet({
               ]}
               keyboardShouldPersistTaps="handled"
               style={styles.scrollView}
-              showsVerticalScrollIndicator={false}>
+              showsVerticalScrollIndicator={false}
+            >
               {children}
             </ScrollView>
           </View>
@@ -128,7 +135,8 @@ export function ModalSheet({
               style={[
                 styles.footerContainer,
                 { paddingBottom: Spacing.md + footerBottomInset },
-              ]}>
+              ]}
+            >
               {footer}
             </View>
           ) : null}

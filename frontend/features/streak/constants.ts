@@ -15,5 +15,12 @@ export const streakMilestones: readonly {
   { milestone: 100, rewardCoins: 1500 },
 ];
 
-export const weekDayLabels = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Нд'] as const;
-
+export const weekDayLabels = [
+  'Пн',
+  'Вт',
+  'Ср',
+  'Чт',
+  'Пт',
+  'Сб',
+  'Нд',
+] as const;

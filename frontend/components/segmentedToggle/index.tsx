@@ -41,13 +41,15 @@ export function SegmentedToggle<T extends string>({
             style={[
               styles.option,
               isActive ? { backgroundColor: activeOptionColor } : null,
-            ]}>
+            ]}
+          >
             <ThemedText
               style={[
                 styles.text,
                 { color: isActive ? activeTextColor : inactiveTextColor },
               ]}
-              type="bodyStrong">
+              type="bodyStrong"
+            >
               {option.label}
             </ThemedText>
           </Pressable>

@@ -91,7 +91,8 @@ export function TestResult({
                 style={[
                   styles.videoLoader,
                   { backgroundColor: palette.background },
-                ]}>
+                ]}
+              >
                 <ActivityIndicator color={palette.tint} size="large" />
               </View>
             ) : null}
@@ -107,11 +108,25 @@ export function TestResult({
         ) : null}
 
         <View style={styles.scoreOrbContainer}>
-          <View style={[styles.scoreGlowOuter, resolveTierScoreGlowStyle(tier).outer]} />
-          <View style={[styles.scoreGlowMid, resolveTierScoreGlowStyle(tier).mid]} />
-          <View style={[styles.scoreGlowInner, resolveTierScoreGlowStyle(tier).inner]} />
+          <View
+            style={[
+              styles.scoreGlowOuter,
+              resolveTierScoreGlowStyle(tier).outer,
+            ]}
+          />
+          <View
+            style={[styles.scoreGlowMid, resolveTierScoreGlowStyle(tier).mid]}
+          />
+          <View
+            style={[
+              styles.scoreGlowInner,
+              resolveTierScoreGlowStyle(tier).inner,
+            ]}
+          />
           <View style={[styles.scoreCircle, resolveTierRingStyle(tier)]}>
-            <ThemedText style={styles.scoreValue}>{`${result.percentage}%`}</ThemedText>
+            <ThemedText
+              style={styles.scoreValue}
+            >{`${result.percentage}%`}</ThemedText>
             <ThemedText type="sectionTitle" style={styles.messageTitle}>
               {message.title}
             </ThemedText>
@@ -125,12 +140,21 @@ export function TestResult({
       <View
         style={[
           styles.actions,
-          { paddingBottom: shouldUseSafeAreaBottom ? Math.max(insets.bottom, 8) : 8 },
-        ]}>
+          {
+            paddingBottom: shouldUseSafeAreaBottom
+              ? Math.max(insets.bottom, 8)
+              : 8,
+          },
+        ]}
+      >
         <Button onPress={onDone} style={styles.actionButton}>
           {t('dictionary.test.done', { defaultValue: 'Done' })}
         </Button>
-        <Button onPress={onRetry} style={styles.actionButton} variant="secondary">
+        <Button
+          onPress={onRetry}
+          style={styles.actionButton}
+          variant="secondary"
+        >
           {t('dictionary.test.retry', { defaultValue: 'Try the test again' })}
         </Button>
       </View>
@@ -177,7 +201,8 @@ function resolveResultMessage(
   if (tier === 'normal') {
     return {
       subtitle: t('dictionary.test.resultNormalSubtitle', {
-        defaultValue: 'Nice work, a bit more practice and you will do even better',
+        defaultValue:
+          'Nice work, a bit more practice and you will do even better',
       }),
       title: t('dictionary.test.resultNormalTitle', {
         defaultValue: 'Good result',

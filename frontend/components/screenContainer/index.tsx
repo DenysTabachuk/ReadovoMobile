@@ -19,7 +19,10 @@ export function ScreenContainer({
   edges = ['top', 'bottom'],
   ...props
 }: ScreenContainerProps) {
-  const backgroundColor = useThemeColor({ light: lightColor, dark: darkColor }, 'background');
+  const backgroundColor = useThemeColor(
+    { light: lightColor, dark: darkColor },
+    'background',
+  );
 
   return (
     <SafeAreaView

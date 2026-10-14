@@ -71,7 +71,9 @@ export async function refreshAuthSession(): Promise<AuthSessionResponse | null> 
 }
 
 async function refreshAuthSessionOnce(): Promise<AuthSessionResponse | null> {
-  const refreshToken = await AsyncStorage.getItem(AUTH_REFRESH_TOKEN_STORAGE_KEY);
+  const refreshToken = await AsyncStorage.getItem(
+    AUTH_REFRESH_TOKEN_STORAGE_KEY,
+  );
 
   if (!refreshToken) {
     await clearAuthTokens();

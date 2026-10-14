@@ -4,10 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
-import {
-  requestPasswordReset,
-  verifyPasswordResetCode,
-} from '@/api/auth';
+import { requestPasswordReset, verifyPasswordResetCode } from '@/api/auth';
 import { Button } from '@/components/button';
 import { useBanner } from '@/components/banner';
 import { FormTextInput } from '@/components/formTextInput';
@@ -22,7 +19,7 @@ const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const verificationCodePattern = /^\d{6}$/;
 
 function getParamValue(param: string | string[] | undefined): string {
-  return Array.isArray(param) ? param[0] ?? '' : param ?? '';
+  return Array.isArray(param) ? (param[0] ?? '') : (param ?? '');
 }
 
 export default function ForgotPasswordScreen() {
@@ -34,8 +31,7 @@ export default function ForgotPasswordScreen() {
   const [pendingEmail, setPendingEmail] = useState('');
   const [verificationExpiresAt, setVerificationExpiresAt] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
-  const [isVerificationModalOpen, setIsVerificationModalOpen] =
-    useState(false);
+  const [isVerificationModalOpen, setIsVerificationModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isResendingCode, setIsResendingCode] = useState(false);
   const [isVerifyingCode, setIsVerifyingCode] = useState(false);
@@ -181,7 +177,9 @@ export default function ForgotPasswordScreen() {
           accessibilityLabel={t('auth.backToSignIn')}
           hitSlop={8}
           style={styles.backButton}
-          onPress={() => router.replace({ pathname: '/login', params: { email } })}
+          onPress={() =>
+            router.replace({ pathname: '/login', params: { email } })
+          }
         >
           <Ionicons name="arrow-back" size={24} color={iconColor} />
         </Pressable>
@@ -218,7 +216,6 @@ export default function ForgotPasswordScreen() {
                 ? t('auth.enterPasswordResetCode')
                 : t('auth.sendPasswordResetCode')}
           </Button>
-
         </View>
       </View>
 

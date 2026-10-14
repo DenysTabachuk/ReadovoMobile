@@ -38,9 +38,15 @@ export function StreakRestoreConfirmModal({
       modalProps={{ presentationStyle: 'overFullScreen' }}
       onClose={onClose}
       open={open}
-      title={t('streak.restore.title')}>
+      title={t('streak.restore.title')}
+    >
       <View style={styles.content}>
-        <View style={[styles.iconCircle, isDark ? styles.iconCircleDark : styles.iconCircleLight]}>
+        <View
+          style={[
+            styles.iconCircle,
+            isDark ? styles.iconCircleDark : styles.iconCircleLight,
+          ]}
+        >
           <Ionicons color="#d97706" name="refresh" size={26} />
         </View>
 
@@ -48,7 +54,8 @@ export function StreakRestoreConfirmModal({
           style={[
             styles.description,
             isDark ? styles.descriptionDark : styles.descriptionLight,
-          ]}>
+          ]}
+        >
           {t('streak.restore.description', { count: previousStreak })}
         </ThemedText>
 
@@ -96,10 +103,14 @@ export function StreakRestoreConfirmModal({
               styles.secondaryButton,
               isDark ? styles.secondaryButtonDark : styles.secondaryButtonLight,
               pressed ? styles.buttonPressed : null,
-            ]}>
+            ]}
+          >
             <ThemedText
               type="bodyStrong"
-              style={isDark ? styles.secondaryTextDark : styles.secondaryTextLight}>
+              style={
+                isDark ? styles.secondaryTextDark : styles.secondaryTextLight
+              }
+            >
               {t('streak.restore.cancel')}
             </ThemedText>
           </Pressable>
@@ -111,7 +122,8 @@ export function StreakRestoreConfirmModal({
               styles.primaryButton,
               !canConfirm ? styles.primaryButtonDisabled : null,
               pressed ? styles.buttonPressed : null,
-            ]}>
+            ]}
+          >
             <Ionicons color="#ffffff" name="refresh" size={18} />
             <ThemedText type="bodyStrong" style={styles.primaryText}>
               {isRestoring

@@ -1,5 +1,5 @@
-import { PREFERENCE_STORAGE_KEYS } from "../constants";
-import { PreferenceStorageBackend } from "../types";
+import { PREFERENCE_STORAGE_KEYS } from '../constants';
+import { PreferenceStorageBackend } from '../types';
 
 export function saveCompletedOnboarding(
   storage: PreferenceStorageBackend,

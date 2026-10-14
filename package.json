@@ -1,5 +1,8 @@
 {
   "scripts": {
+    "ci": "npm run ci:backend && npm run ci:frontend",
+    "ci:backend": "npm --prefix backend run ci",
+    "ci:frontend": "npm --prefix frontend run ci",
     "frontend:start:local": "npm --prefix frontend run start:local",
     "frontend:start:render": "npm --prefix frontend run start:render",
     "frontend:start:android:local": "npm --prefix frontend run start:android:local",
