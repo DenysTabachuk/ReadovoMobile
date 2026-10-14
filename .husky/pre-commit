@@ -1,2 +1,5 @@
-# Keep commits fast: check and test only files currently staged with `git add`.
+# TypeScript checks both packages because type errors can cross file boundaries.
+npm run typecheck
+
+# Then format, lint, and run related tests for staged source files.
 npm run check:staged

@@ -329,11 +329,13 @@ Husky connects commands to Git events, while lint-staged decides which staged
 files and package-specific commands the pre-commit hook should use. Those rules
 are documented directly in `lint-staged.config.mjs`.
 
-Before each commit, lint-staged automatically formats and lints staged backend
-and frontend source files, then runs only the Jest tests related to those files.
-Partially staged files are handled safely. Run the same checks manually with:
+Before each commit, Husky runs the complete TypeScript check for both packages.
+It then starts lint-staged, which automatically formats and lints staged source
+files and runs only the Jest tests related to those files. Partially staged
+files are handled safely. Run the checks manually with:
 
 ```bash
+npm run typecheck
 npm run check:staged
 ```
 

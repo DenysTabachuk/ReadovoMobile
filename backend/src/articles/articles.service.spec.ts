@@ -22,11 +22,14 @@ import { ArticleTransformationPlanner } from './transformation/article-transform
 import { ArticleTransformationValidator } from './transformation/article-transformation.validator';
 import { ArticlesService } from './articles.service';
 
-const createChatCompletionMock = jest.fn<Promise<unknown>, unknown[]>();
-
 type GroqChatCompletionRequest = {
   messages: Array<{ content?: string }>;
 };
+
+const createChatCompletionMock = jest.fn<
+  Promise<unknown>,
+  [request: GroqChatCompletionRequest]
+>();
 
 function getGroqPrompt(callIndex = 0): string {
   const calls = createChatCompletionMock.mock.calls as Array<
@@ -136,9 +139,9 @@ jest.mock('groq-sdk', () => ({
   default: jest.fn().mockImplementation(() => ({
     chat: {
       completions: {
-        create: (...args: unknown[]) => ({
+        create: (request: GroqChatCompletionRequest) => ({
           withResponse: async () => ({
-            data: await createChatCompletionMock(...args),
+            data: await createChatCompletionMock(request),
             response: new Response(null, {
               headers: {
                 'x-ratelimit-limit-tokens': '8000',

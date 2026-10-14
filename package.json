@@ -1,6 +1,9 @@
 {
   "scripts": {
     "prepare": "husky",
+    "typecheck": "npm run typecheck:backend && npm run typecheck:frontend",
+    "typecheck:backend": "npm --prefix backend run typecheck",
+    "typecheck:frontend": "npm --prefix frontend run typecheck",
     "check:staged": "lint-staged",
     "check:push": "npm run ci",
     "ci": "npm run ci:backend && npm run ci:frontend",
