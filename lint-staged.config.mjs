@@ -1,29 +1,35 @@
-// Husky runs `npm run check:staged` before every commit. That command starts
-// lint-staged, which uses this file to choose checks based on the files staged
-// with `git add`. lint-staged automatically adds formatter/linter fixes back to
-// the commit and temporarily protects unstaged changes in partially staged
-// files. The Husky hook runs the full TypeScript check before starting
-// lint-staged because type errors can cross file boundaries.
+// Husky runs `npm run check:staged` before every commit. lint-staged first
+// protects unstaged edits in partially staged files, then applies these rules
+// only to files selected with `git add`.
 export default {
-  // Backend tools come from backend/node_modules. TypeScript strict mode has
-  // already been checked by the preceding command in .husky/pre-commit.
-  // Jest's --findRelatedTests option runs only tests affected by these files.
-  "backend/{src,test}/**/*.ts": [
-    // The trailing `--` tells npm that lint-staged's file paths are arguments
-    // for the underlying script, rather than arguments for npm itself.
+  // Backend source files use the default Jest configuration rooted at src.
+  "backend/src/**/*.ts": [
+    // The trailing `--` tells npm to pass lint-staged's file paths to the
+    // underlying tool instead of treating them as npm arguments.
     "npm --prefix backend run format:staged --",
     "npm --prefix backend run lint:staged --",
     "npm --prefix backend run test:staged --",
   ],
 
-  // The frontend is also in strict mode. These tasks handle formatting,
-  // ESLint, and related tests after the full TypeScript check has passed.
+  // Tests outside src require the dedicated e2e Jest configuration. The
+  // function prevents lint-staged from appending paths to the command, so the
+  // complete small e2e suite runs when any e2e test file changes.
+  "backend/test/**/*.ts": [
+    "npm --prefix backend run format:staged --",
+    "npm --prefix backend run lint:staged --",
+    () => "npm --prefix backend run test:e2e -- --runInBand",
+  ],
+
   "frontend/**/*.{js,jsx,ts,tsx}": [
     "npm --prefix frontend run format:staged --",
     "npm --prefix frontend run lint:staged --",
     "npm --prefix frontend run test:staged --",
   ],
 
-  // JSON files can be formatted, but ESLint and Jest do not need to process them.
+  // JSON files need formatting, but ESLint and Jest do not process them.
   "frontend/**/*.json": ["npm --prefix frontend run format:staged --"],
+
+  // Run the full TypeScript check whenever at least one file is staged.
+  // The function stops lint-staged from adding file paths to this command.
+  "*": () => "npm run typecheck",
 };

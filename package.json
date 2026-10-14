@@ -5,7 +5,6 @@
     "typecheck:backend": "npm --prefix backend run typecheck",
     "typecheck:frontend": "npm --prefix frontend run typecheck",
     "check:staged": "lint-staged",
-    "check:push": "npm run ci",
     "ci": "npm run ci:backend && npm run ci:frontend",
     "ci:backend": "npm --prefix backend run ci",
     "ci:frontend": "npm --prefix frontend run ci",

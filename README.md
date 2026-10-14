@@ -329,20 +329,22 @@ Husky connects commands to Git events, while lint-staged decides which staged
 files and package-specific commands the pre-commit hook should use. Those rules
 are documented directly in `lint-staged.config.mjs`.
 
-Before each commit, Husky runs the complete TypeScript check for both packages.
-It then starts lint-staged, which automatically formats and lints staged source
-files and runs only the Jest tests related to those files. Partially staged
-files are handled safely. Run the checks manually with:
+Before each commit, Husky starts lint-staged. It protects partially staged
+files, automatically formats and lints staged source files, runs related unit
+tests (or the backend e2e suite for staged e2e tests), and then runs the strict
+TypeScript check for both packages against that protected staged state. Run the
+checks manually with:
 
 ```bash
 npm run typecheck
 npm run check:staged
 ```
 
-Before each push, Husky runs the complete local CI suite:
+There is no pre-push hook. GitHub CI validates the exact pushed commit. To run
+the same complete suite locally before pushing, use:
 
 ```bash
-npm run check:push
+npm run ci
 ```
 
 This includes TypeScript, ESLint, Prettier, and all unit tests for both
