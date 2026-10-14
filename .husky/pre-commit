@@ -1,0 +1,3 @@
+# lint-staged protects partially staged files before it runs TypeScript and the
+# file-specific checks, so every check sees the content that will be committed.
+npm run check:staged

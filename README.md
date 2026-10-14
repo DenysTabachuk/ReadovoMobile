@@ -5,7 +5,7 @@ database for local development.
 
 ## Prerequisites
 
-- Node.js and npm
+- Node.js 22.22.1 or newer, with npm
 - Docker Desktop
 - Expo Go for limited UI development, or Android Studio for a native Android build
 - JDK 17 and Android SDK 36 for native Android builds
@@ -28,8 +28,7 @@ cd ../frontend
 npm install
 ```
 
-The root package contains helper scripts. Install it as well if you want to use
-the root-level commands:
+The root package contains helper scripts and the Git hooks. Install it as well:
 
 ```bash
 cd ..
@@ -322,6 +321,34 @@ GitHub Actions runs the same TypeScript, ESLint, Prettier, and unit-test checks
 for both packages on every pull request and on pushes to `main`. To prevent
 merging broken changes, enable branch protection for `main` in GitHub and make
 `Backend quality gate` and `Frontend quality gate` required status checks.
+
+## Git Hooks
+
+Running `npm install` at the repository root installs the Husky hooks.
+Husky connects commands to Git events, while lint-staged decides which staged
+files and package-specific commands the pre-commit hook should use. Those rules
+are documented directly in `lint-staged.config.mjs`.
+
+Before each commit, Husky starts lint-staged. It temporarily hides unstaged and
+untracked files, automatically formats and lints staged source files, runs
+related unit tests (or the backend e2e suite for staged e2e tests), and runs the
+strict TypeScript check for both packages against the staged project snapshot.
+Hidden local changes are restored afterward. Run the checks manually with:
+
+```bash
+npm run typecheck
+npm run check:staged
+```
+
+There is no pre-push hook. GitHub CI validates the exact pushed commit. To run
+the same complete suite locally before pushing, use:
+
+```bash
+npm run ci
+```
+
+This includes TypeScript, ESLint, Prettier, and all unit tests for both
+packages.
 
 ## Common Issues
 

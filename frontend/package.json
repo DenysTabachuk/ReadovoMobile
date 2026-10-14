@@ -19,10 +19,13 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "lint:fix": "expo lint --fix",
+    "lint:staged": "eslint --fix",
     "typecheck": "tsc --noEmit --incremental false",
     "format": "prettier --write \"{app,api,components,constants,devtools,features,hooks,localization,providers,utils}/**/*.{js,json,ts,tsx}\" \"scripts/**/*.js\" \"*.js\" \"app.json\" \"tsconfig.json\"",
     "format:check": "prettier --check \"{app,api,components,constants,devtools,features,hooks,localization,providers,utils}/**/*.{js,json,ts,tsx}\" \"scripts/**/*.js\" \"*.js\" \"app.json\" \"tsconfig.json\"",
+    "format:staged": "prettier --write",
     "test": "jest",
+    "test:staged": "jest --findRelatedTests --runInBand --passWithNoTests",
     "ci": "npm run typecheck && npm run lint && npm run format:check && npm test -- --runInBand"
   },
   "dependencies": {
