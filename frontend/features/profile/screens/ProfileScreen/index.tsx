@@ -23,15 +23,17 @@ import {
   getAchievementsProfile,
 } from '@/features/achievements';
 import { getMascotProfile, Mascot } from '@/features/mascot';
-import { ActivityCalendar } from '@/features/streak/components/activityCalendar';
-import { StreakAchievementCard } from '@/features/streak/components/streakAchievementCard';
-import { StreakFreezeCard } from '@/features/streak/components/streakFreezeCard';
-import { StreakFreezeConfirmModal } from '@/features/streak/components/streakFreezeConfirmModal';
-import { StreakFreezePurchaseModal } from '@/features/streak/components/streakFreezePurchaseModal';
-import { StreakRestoreConfirmModal } from '@/features/streak/components/streakRestoreConfirmModal';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useAuth } from '@/features/auth';
-import { useStreak } from '@/features/streak';
+import {
+  useStreak,
+  ActivityCalendar,
+  StreakAchievementCard,
+  StreakFreezeCard,
+  StreakFreezeConfirmModal,
+  StreakFreezePurchaseModal,
+  StreakRestoreConfirmModal,
+} from '@/features/streak';
 
 import { styles } from './styles';
 

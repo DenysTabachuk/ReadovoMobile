@@ -1,3 +1,3 @@
-import { ResetPasswordScreen } from '@/features/auth/screens';
+import { ResetPasswordScreen } from '@/features/auth';
 
 export default ResetPasswordScreen;

@@ -10,6 +10,11 @@ import {
 } from 'react';
 import { useColorScheme as useSystemColorScheme } from 'react-native';
 import i18n from '@/localization';
+import {
+  DEFAULT_LANGUAGE_PREFERENCE,
+  DEFAULT_LEARNING_REMINDER_TIME,
+  DEFAULT_THEME_PREFERENCE,
+} from './constants';
 import type {
   LanguagePreference,
   LearningReminderTime,
@@ -27,7 +32,7 @@ export type {
   ThemePreference,
 } from './types';
 
-export const DEFAULT_LEARNING_REMINDER_TIME: LearningReminderTime = '19:00';
+export { DEFAULT_LEARNING_REMINDER_TIME } from './constants';
 
 type PreferencesContextValue = {
   colorScheme: Exclude<ThemePreference, 'system'>;
@@ -70,10 +75,10 @@ export function PreferencesProvider({ children }: PreferencesProviderProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [preferences, setPreferences] = useState<StoredPreferencesState>({
     hasCompletedOnboarding: false,
-    languagePreference: 'en',
+    languagePreference: DEFAULT_LANGUAGE_PREFERENCE,
     learningReminderEnabled: false,
     learningReminderTime: DEFAULT_LEARNING_REMINDER_TIME,
-    themePreference: 'system',
+    themePreference: DEFAULT_THEME_PREFERENCE,
   });
   const systemColorScheme = useSystemColorScheme();
 
@@ -88,12 +93,14 @@ export function PreferencesProvider({ children }: PreferencesProviderProps) {
 
         setPreferences({
           hasCompletedOnboarding: storedPreferences.hasCompletedOnboarding,
-          languagePreference: storedPreferences.languagePreference ?? 'en',
+          languagePreference:
+            storedPreferences.languagePreference ?? DEFAULT_LANGUAGE_PREFERENCE,
           learningReminderEnabled: storedPreferences.learningReminderEnabled,
           learningReminderTime:
             storedPreferences.learningReminderTime ??
             DEFAULT_LEARNING_REMINDER_TIME,
-          themePreference: storedPreferences.themePreference ?? 'system',
+          themePreference:
+            storedPreferences.themePreference ?? DEFAULT_THEME_PREFERENCE,
         });
       } catch (error) {
         console.error('Failed to initialize preferences', error);

@@ -35,7 +35,8 @@ import { ArticleImageBlock } from '../articleImageBlock';
 import { ArticleTableBlock } from '../articleTableBlock';
 import { TouchableWord } from '../touchableWord';
 import { styles } from './styles';
-import { splitTextToTouchableParts, type TouchableTextPart } from './textParts';
+import { splitTextToTouchableParts } from './utils';
+import type { TouchableTextPart } from './types';
 
 type InteractiveArticleTextProps = {
   blocks?: ArticleBlock[];

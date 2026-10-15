@@ -1,7 +1,7 @@
 import reactotron from 'reactotron-react-native';
 import { Platform } from 'react-native';
 
-import { getDevServerHost } from '@/utils/devServerHost';
+import { getDevServerHost } from '@/utils/getDevServerHost';
 
 const isSupportedPlatform = Platform.OS === 'android' || Platform.OS === 'ios';
 

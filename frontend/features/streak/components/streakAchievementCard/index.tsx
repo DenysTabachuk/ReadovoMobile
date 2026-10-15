@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { View } from 'react-native';
 
 import { ThemedText } from '@/components/themedText';
-import { type StreakAchievement } from '@/features/streak';
+import { type StreakAchievement } from '../../types';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
 import { styles } from './styles';

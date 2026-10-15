@@ -1,12 +1,8 @@
-type QuizRewardLevel = 'A1' | 'A2' | 'B1' | 'B2';
-type QuizRewardTargetLength = 'short' | 'medium' | 'long';
-
-export type QuizRewardContext = {
-  isFirstTestCompleted?: boolean;
-  level?: QuizRewardLevel;
-  percentage: number;
-  targetLength?: QuizRewardTargetLength;
-};
+import type {
+  QuizRewardContext,
+  QuizRewardLevel,
+  QuizRewardTargetLength,
+} from './types';
 
 const BASE_REWARD = 20;
 const FIRST_TEST_BONUS = 10;

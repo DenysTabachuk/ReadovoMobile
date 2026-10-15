@@ -5,23 +5,19 @@ import {
   type InlineNode,
 } from '@/features/articles/api/wikipedia';
 
-export type ArticleSpeechWord = {
-  charEnd: number;
-  charStart: number;
-  text: string;
-  tokenKey: string;
-};
-
-export type ArticleSpeechChunk = {
-  text: string;
-  words: ArticleSpeechWord[];
-};
+import type { ArticleSpeechChunk, ArticleSpeechWord } from '../../types';
 
 const WORD_PATTERN = /[A-Za-z]+(?:['\u2019-][A-Za-z]+)*/g;
 const CHUNK_SEPARATOR = '\n\n';
+const MIN_SAFE_CHUNK_LENGTH = 800;
+const FALLBACK_SPEECH_INPUT_LENGTH = 4000;
+const MAX_SAFE_CHUNK_LENGTH = 3800;
 const SAFE_CHUNK_LENGTH = Math.max(
-  800,
-  Math.min(Speech.maxSpeechInputLength || 4000, 3800),
+  MIN_SAFE_CHUNK_LENGTH,
+  Math.min(
+    Speech.maxSpeechInputLength || FALLBACK_SPEECH_INPUT_LENGTH,
+    MAX_SAFE_CHUNK_LENGTH,
+  ),
 );
 
 type SpeechSection = {

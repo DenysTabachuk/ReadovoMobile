@@ -46,3 +46,15 @@ export type {
   StreakTodayStatus,
 } from './types';
 export { useStreak } from './useStreak';
+
+export { ActivityCalendar } from './components/activityCalendar';
+
+export { StreakAchievementCard } from './components/streakAchievementCard';
+
+export { StreakFreezeCard } from './components/streakFreezeCard';
+
+export { StreakFreezeConfirmModal } from './components/streakFreezeConfirmModal';
+
+export { StreakFreezePurchaseModal } from './components/streakFreezePurchaseModal';
+
+export { StreakRestoreConfirmModal } from './components/streakRestoreConfirmModal';

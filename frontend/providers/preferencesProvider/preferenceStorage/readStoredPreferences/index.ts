@@ -4,7 +4,7 @@ import {
   type LanguagePreference,
   type LearningReminderTime,
   type ThemePreference,
-} from '../..';
+} from '../../types';
 
 type StoredPreferences = {
   hasCompletedOnboarding: boolean;

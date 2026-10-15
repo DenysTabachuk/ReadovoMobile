@@ -4,8 +4,8 @@ import {
   getContextSentence,
   getWordContext,
   splitTextToTouchableParts,
-  type TouchableTextPart,
-} from './textParts';
+} from './utils';
+import type { TouchableTextPart } from './types';
 
 type TouchableWordPart = Extract<TouchableTextPart, { type: 'word' }>;
 

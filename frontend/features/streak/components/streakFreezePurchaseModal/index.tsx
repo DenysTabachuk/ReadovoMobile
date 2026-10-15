@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 
 import { ModalSheet } from '@/components/modalSheet';
 import { ThemedText } from '@/components/themedText';
-import { STREAK_FREEZE_TOKEN_PRICE } from '@/features/streak';
+import { STREAK_FREEZE_TOKEN_PRICE } from '../../constants';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
 import { styles } from './styles';

@@ -1,4 +1,4 @@
-import { getDevServerHost } from '@/utils/devServerHost';
+import { getDevServerHost } from '@/utils/getDevServerHost';
 
 const DEFAULT_API_PORT = '3000';
 

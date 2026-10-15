@@ -6,12 +6,12 @@ import { Pressable, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { ThemedText } from '@/components/themedText';
+import { getStreakCalendarMonth } from '../../api';
 import {
-  getStreakCalendarMonth,
   type CalendarDayStatus,
   type StreakCalendarDay,
   type StreakState,
-} from '@/features/streak';
+} from '../../types';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
 import { styles } from './styles';
