@@ -13,6 +13,15 @@ export type QuizRewardContext = {
 const BASE_REWARD = 20;
 const FIRST_TEST_BONUS = 10;
 const PERFECT_RESULT_BONUS = 10;
+const PERFECT_RESULT_PERCENTAGE = 100;
+
+const ACCURACY_MULTIPLIER_TIERS = [
+  { minimumPercentage: 90, multiplier: 1.6 },
+  { minimumPercentage: 75, multiplier: 1.3 },
+  { minimumPercentage: 60, multiplier: 1 },
+  { minimumPercentage: 40, multiplier: 0.8 },
+] as const;
+const LOWEST_ACCURACY_MULTIPLIER = 0.5;
 
 const LEVEL_MULTIPLIERS: Record<SimplifyArticleLevel, number> = {
   A1: 1,
@@ -40,27 +49,15 @@ export function calculateQuizReward({
     (targetLength ? LENGTH_MULTIPLIERS[targetLength] : 1);
   const bonuses =
     (isFirstTestCompleted ? FIRST_TEST_BONUS : 0) +
-    (percentage === 100 ? PERFECT_RESULT_BONUS : 0);
+    (percentage === PERFECT_RESULT_PERCENTAGE ? PERFECT_RESULT_BONUS : 0);
 
   return Math.max(0, Math.round(multiplierReward + bonuses));
 }
 
 function getAccuracyMultiplier(percentage: number): number {
-  if (percentage < 40) {
-    return 0.5;
-  }
-
-  if (percentage < 60) {
-    return 0.8;
-  }
-
-  if (percentage < 75) {
-    return 1;
-  }
-
-  if (percentage < 90) {
-    return 1.3;
-  }
-
-  return 1.6;
+  return (
+    ACCURACY_MULTIPLIER_TIERS.find(
+      ({ minimumPercentage }) => percentage >= minimumPercentage,
+    )?.multiplier ?? LOWEST_ACCURACY_MULTIPLIER
+  );
 }

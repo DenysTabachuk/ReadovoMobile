@@ -14,15 +14,9 @@ import {
   type DictionaryTest,
 } from '@/api/dictionary';
 import { isMockApiEnabled } from '@/api/auth/constants';
-import {
-  ArticleQuizRunner,
-  type QuizQuestion,
-  type QuizSessionResult,
-} from '@/components/articleQuizRunner';
 import { Button } from '@/components/button';
 import { ModalSheet } from '@/components/modalSheet';
 import { ScreenContainer } from '@/components/screenContainer';
-import { TestResult } from '@/components/testResult';
 import { ThemedText } from '@/components/themedText';
 import { Colors } from '@/constants/theme';
 import {
@@ -31,7 +25,13 @@ import {
   getNewlyUnlockedAchievements,
   updateAchievementsProgress,
 } from '@/features/achievements';
-import { calculateQuizReward } from '@/features/quizRewards';
+import {
+  calculateQuizReward,
+  QuizResult,
+  QuizRunner,
+  type QuizQuestion,
+  type QuizSessionResult,
+} from '@/features/quiz';
 import {
   didCompleteStreakToday,
   getStreakProfile,
@@ -291,7 +291,7 @@ export default function DictionaryTestScreen() {
           </Button>
         </View>
       ) : testResult ? (
-        <TestResult
+        <QuizResult
           onDone={() => router.back()}
           onRetry={handleRetryTest}
           result={testResult}
@@ -299,7 +299,7 @@ export default function DictionaryTestScreen() {
           title={t('dictionary.test.title')}
         />
       ) : quizQuestions.length > 0 ? (
-        <ArticleQuizRunner
+        <QuizRunner
           onFinish={handleFinishTest}
           onSubmitAnswer={handleSubmitQuizAnswer}
           questions={quizQuestions}

@@ -10,12 +10,12 @@ import { Button } from '@/components/button';
 import { CheckboxRow } from '@/components/checkboxRow';
 import { useAuth } from '@/providers/authProvider';
 import { usePreferences } from '@/providers/preferencesProvider';
-import { LanguageSelector } from '@/components/languageSelector';
 import { ModalSheet } from '@/components/modalSheet';
 import { ScreenContainer } from '@/components/screenContainer';
 import { ThemedText } from '@/components/themedText';
 import { IconSymbol } from '@/components/iconSymbol';
 import { TimePickerField } from '@/components/timePickerField';
+import { LanguageSelector } from '@/features/preferences';
 
 import { styles } from './styles';
 

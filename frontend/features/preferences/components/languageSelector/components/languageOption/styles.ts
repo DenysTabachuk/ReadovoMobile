@@ -1,11 +1,9 @@
 import { StyleSheet } from 'react-native';
 
 import { Spacing } from '@/constants/spacing';
+import { Colors } from '@/constants/theme';
 
 export const styles = StyleSheet.create({
-  languageList: {
-    gap: Spacing.md,
-  },
   languageButton: {
     alignItems: 'center',
     borderRadius: 8,
@@ -16,14 +14,14 @@ export const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
   },
+  languageButtonSelected: {
+    backgroundColor: Colors.light.tint,
+    borderColor: Colors.light.tint,
+  },
   languageLabel: {
     flexShrink: 1,
   },
-  languageButtonSelected: {
-    backgroundColor: '#0a7ea4',
-    borderColor: '#0a7ea4',
-  },
   selectedLanguageText: {
-    color: '#fff',
+    color: Colors.dark.tint,
   },
 });

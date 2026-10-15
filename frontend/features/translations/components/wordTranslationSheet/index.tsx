@@ -3,11 +3,12 @@ import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/button';
 import { ModalSheet } from '@/components/modalSheet';
-import { PronunciationButton } from '@/components/pronunciationButton';
 import { ThemedText } from '@/components/themedText';
-import { TranslationCards } from '../translationCards';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+
+import { PronunciationButton } from '../pronunciationButton';
+import { TranslationCards } from '../translationCards';
 
 import { styles } from './styles';
 

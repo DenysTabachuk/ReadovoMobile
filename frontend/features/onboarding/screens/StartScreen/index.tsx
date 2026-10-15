@@ -3,9 +3,9 @@ import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/button';
-import { LanguageSelector } from '@/components/languageSelector';
 import { ScreenContainer } from '@/components/screenContainer';
 import { ThemedText } from '@/components/themedText';
+import { LanguageSelector } from '@/features/preferences';
 
 import { styles } from './styles';
 

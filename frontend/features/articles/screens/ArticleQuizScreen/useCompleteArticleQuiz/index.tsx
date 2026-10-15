@@ -7,14 +7,13 @@ import {
 } from '@/api/wikipedia';
 import { isMockApiEnabled } from '@/api/auth/constants';
 import { useBanner } from '@/components/banner';
-import { type QuizSessionResult } from '@/components/articleQuizRunner';
 import {
   getAchievementBadge,
   getAchievementsProfile,
   getNewlyUnlockedAchievements,
   updateAchievementsProgress,
 } from '@/features/achievements';
-import { calculateQuizReward } from '@/features/quizRewards';
+import { calculateQuizReward, type QuizSessionResult } from '@/features/quiz';
 import {
   didCompleteStreakToday,
   getStreakProfile,
