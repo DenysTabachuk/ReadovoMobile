@@ -16,7 +16,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
-import { createDictionaryWord } from '@/api/dictionary';
+import { createDictionaryWord } from '@/features/dictionary';
 import {
   type ArticleAdaptationSummary,
   type ArticleBlock,
@@ -28,7 +28,7 @@ import {
   type SimplifyArticleLevel,
   simplifyWikipediaArticle,
   type SimplifyArticleResponse,
-} from '@/api/wikipedia';
+} from '@/features/articles/api/wikipedia';
 import { useBanner } from '@/components/banner';
 import { Button } from '@/components/button';
 import { Cta } from '@/components/cta';
@@ -60,7 +60,7 @@ import { WordTranslationSheet } from '@/features/translations/components/wordTra
 import { useWordTranslation } from '@/features/translations/hooks/useWordTranslation';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { useAuth } from '@/providers/authProvider';
+import { useAuth } from '@/features/auth';
 
 import { ArticleSpeechControls } from './components/articleSpeechControls';
 import { InteractiveArticleText } from './components/interactiveArticleText';
@@ -528,10 +528,10 @@ export default function ArticleScreen() {
     [availableAdaptations, t],
   );
   const generatedTextModeOptions = useMemo(() => {
-    const options: Array<{
+    const options: {
       label: string;
       value: ArticleTextViewMode;
-    }> = [{ label: t('article.textModeShort.original'), value: 'original' }];
+    }[] = [{ label: t('article.textModeShort.original'), value: 'original' }];
 
     if (isSelectedAdaptationAvailable) {
       options.push({

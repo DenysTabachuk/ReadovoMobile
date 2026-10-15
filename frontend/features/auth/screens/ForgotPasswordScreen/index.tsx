@@ -4,14 +4,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
-import { requestPasswordReset, verifyPasswordResetCode } from '@/api/auth';
 import { Button } from '@/components/button';
 import { useBanner } from '@/components/banner';
 import { FormTextInput } from '@/components/formTextInput';
 import { ScreenContainer } from '@/components/screenContainer';
 import { ThemedText } from '@/components/themedText';
-import { VerificationCodeModal } from '@/features/auth/components/verificationCodeModal';
 import { useThemeColor } from '@/hooks/use-theme-color';
+
+import { requestPasswordReset, verifyPasswordResetCode } from '../../api';
+import { VerificationCodeModal } from '../../components/verificationCodeModal';
 
 import { styles } from './styles';
 

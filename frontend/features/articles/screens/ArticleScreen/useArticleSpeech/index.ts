@@ -2,7 +2,7 @@ import * as Speech from 'expo-speech';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Platform } from 'react-native';
 
-import { type ArticleBlock } from '@/api/wikipedia';
+import { type ArticleBlock } from '@/features/articles/api/wikipedia';
 
 import {
   createArticleSpeechChunks,

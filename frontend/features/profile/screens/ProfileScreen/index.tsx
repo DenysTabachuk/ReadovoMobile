@@ -13,7 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 
-import { isMockApiEnabled } from '@/api/auth/constants';
+import { isMockApiEnabled } from '@/api';
 import { ScreenContainer } from '@/components/screenContainer';
 import { useBanner } from '@/components/banner';
 import { FullScreenLoader } from '@/components/fullScreenLoader';
@@ -30,7 +30,7 @@ import { StreakFreezeConfirmModal } from '@/features/streak/components/streakFre
 import { StreakFreezePurchaseModal } from '@/features/streak/components/streakFreezePurchaseModal';
 import { StreakRestoreConfirmModal } from '@/features/streak/components/streakRestoreConfirmModal';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { useAuth } from '@/providers/authProvider';
+import { useAuth } from '@/features/auth';
 import { useStreak } from '@/features/streak';
 
 import { styles } from './styles';

@@ -20,7 +20,7 @@ import {
   updateDictionaryWordProgress,
   type DictionaryWord,
   type DictionaryWordProgress,
-} from '@/api/dictionary';
+} from '../../api';
 import { Button } from '@/components/button';
 import { ModalSheet } from '@/components/modalSheet';
 import { useBanner } from '@/components/banner';
@@ -36,7 +36,7 @@ import {
 } from '@/features/translations';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { useAuth } from '@/providers/authProvider';
+import { useAuth } from '@/features/auth';
 
 import { styles } from './styles';
 
@@ -73,7 +73,7 @@ export default function DictionaryScreen() {
     queryFn: () => fetchDictionaryWords(userId ?? ''),
     queryKey: ['dictionary', 'words', userId],
   });
-  const words = data ?? [];
+  const words = useMemo(() => data ?? [], [data]);
   const filteredWords = useMemo(() => {
     return words.filter((word) => {
       if (

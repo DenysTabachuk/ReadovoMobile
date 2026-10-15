@@ -15,6 +15,27 @@ Apply these rules when working in `frontend/**`:
 - Prefer the dependency direction `app` to `features` to shared code.
 - Apply this target structure to new and touched code; do not perform unrelated repository-wide moves.
 
+## Frontend API functions
+
+Apply these rules when working in `frontend/**`:
+
+- Give each exported API request function its own named directory with an `index.ts` entry point, for example `api/getAchievementsProfile/index.ts`.
+- Use `api/index.ts` as the feature API barrel and expose cross-feature API functions through the feature's root `index.ts`.
+- Keep request and response types shared by multiple API functions in the feature's `types.ts` or `api/types.ts`.
+- Helpers used only by one API request may remain private in that request's `index.ts`; helpers shared by multiple requests belong in `api/utils/<helperName>/index.ts`.
+- Do not combine unrelated endpoint functions in a single `api.ts` or `api/index.ts` implementation file.
+- Apply this structure to new and touched API code; avoid unrelated repository-wide migrations.
+- Before finishing a refactor, audit every API module changed in the current diff, including moved files and request functions mixed into other modules, and apply this rule consistently across that scope.
+
+## Frontend utilities
+
+Apply these rules to all utility modules in `frontend/**`, including feature-level and shared utilities:
+
+- Give each independent utility its own named directory with an `index.ts` entry point. Do not group independent utilities merely because they belong to the same feature.
+- Keep a helper private in the owning utility's file only when it is used exclusively to implement that utility. Extract helpers shared by multiple utilities to the narrowest common owner.
+- Use barrel files for re-exports, keep shared types in colocated `types.ts`, and keep shared constants in `constants.ts`.
+- Apply these rules consistently to all utility modules touched or moved by the current task. Audit the complete diff before finishing.
+
 ## Frontend component utilities
 
 Apply these rules when working in `frontend/**`:

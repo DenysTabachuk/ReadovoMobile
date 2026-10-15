@@ -4,7 +4,7 @@ import {
   generateArticleQuiz,
   type SimplifyArticleLevel,
   type WikipediaArticleDetail,
-} from '@/api/wikipedia';
+} from '@/features/articles/api/wikipedia';
 import { useBanner } from '@/components/banner';
 import { resolveEffectiveTargetLength } from '../resolveEffectiveArticleLength';
 import { type ArticleQuizLengthParam } from '../types';

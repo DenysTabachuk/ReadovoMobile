@@ -4,8 +4,8 @@ import { useTranslation } from 'react-i18next';
 import {
   type SimplifyArticleLevel,
   type WikipediaArticleDetail,
-} from '@/api/wikipedia';
-import { isMockApiEnabled } from '@/api/auth/constants';
+} from '@/features/articles/api/wikipedia';
+import { isMockApiEnabled } from '@/api';
 import { useBanner } from '@/components/banner';
 import {
   getAchievementBadge,

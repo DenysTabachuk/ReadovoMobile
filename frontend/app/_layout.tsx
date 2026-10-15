@@ -18,12 +18,12 @@ import 'react-native-reanimated';
 
 import { BannerProvider } from '@/components/banner';
 import { Colors } from '@/constants/theme';
+import { AuthProvider, useAuth } from '@/features/auth';
 import {
   loadLearningReminderPreferences,
   syncLearningReminder,
 } from '@/features/learningReminders/service';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { AuthProvider, useAuth } from '@/providers/authProvider';
 import {
   PreferencesProvider,
   usePreferences,

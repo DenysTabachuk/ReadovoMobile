@@ -1,6 +1,9 @@
 import * as Speech from 'expo-speech';
 
-import { type ArticleBlock, type InlineNode } from '@/api/wikipedia';
+import {
+  type ArticleBlock,
+  type InlineNode,
+} from '@/features/articles/api/wikipedia';
 
 export type ArticleSpeechWord = {
   charEnd: number;

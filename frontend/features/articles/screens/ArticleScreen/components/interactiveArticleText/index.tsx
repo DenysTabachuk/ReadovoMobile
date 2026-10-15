@@ -26,7 +26,7 @@ import {
   type ArticleBlock,
   type InlineNode,
   type TableCell,
-} from '@/api/wikipedia';
+} from '@/features/articles/api/wikipedia';
 import { ThemedText } from '@/components/themedText';
 import { useThemeColor } from '@/hooks/use-theme-color';
 
@@ -276,10 +276,10 @@ export function InteractiveArticleText({
     ({
       viewableItems,
     }: {
-      viewableItems: Array<{
+      viewableItems: {
         index: number | null;
         item?: ArticleBlockListItem;
-      }>;
+      }[];
     }) => {
       const sortedVisibleItems = viewableItems
         .filter((viewableItem) => viewableItem.index !== null)

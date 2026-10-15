@@ -1,13 +1,11 @@
-import {
-  type SimplifyArticleLevel,
-  type SimplifyArticleTargetLength,
-} from '@/api/wikipedia';
+type QuizRewardLevel = 'A1' | 'A2' | 'B1' | 'B2';
+type QuizRewardTargetLength = 'short' | 'medium' | 'long';
 
 export type QuizRewardContext = {
   isFirstTestCompleted?: boolean;
-  level?: SimplifyArticleLevel;
+  level?: QuizRewardLevel;
   percentage: number;
-  targetLength?: SimplifyArticleTargetLength;
+  targetLength?: QuizRewardTargetLength;
 };
 
 const BASE_REWARD = 20;
@@ -23,14 +21,14 @@ const ACCURACY_MULTIPLIER_TIERS = [
 ] as const;
 const LOWEST_ACCURACY_MULTIPLIER = 0.5;
 
-const LEVEL_MULTIPLIERS: Record<SimplifyArticleLevel, number> = {
+const LEVEL_MULTIPLIERS: Record<QuizRewardLevel, number> = {
   A1: 1,
   A2: 1.2,
   B1: 1.5,
   B2: 1.9,
 };
 
-const LENGTH_MULTIPLIERS: Record<SimplifyArticleTargetLength, number> = {
+const LENGTH_MULTIPLIERS: Record<QuizRewardTargetLength, number> = {
   short: 1,
   medium: 1.2,
   long: 1.5,

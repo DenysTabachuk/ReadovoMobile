@@ -1,4 +1,4 @@
-import { type SimplifyArticleTargetLength } from '@/api/wikipedia';
+import { type SimplifyArticleTargetLength } from '@/features/articles/api/wikipedia';
 import { countSentences } from '@/utils/getNumSentences';
 
 import { TARGET_LENGTH_MAX_SENTENCES } from '../constants';

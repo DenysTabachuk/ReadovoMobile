@@ -4,19 +4,22 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
-import { loginUser, loginWithGoogle } from '@/api/auth';
 import { Button } from '@/components/button';
 import { useBanner } from '@/components/banner';
 import { CheckboxRow } from '@/components/checkboxRow';
 import { FormTextInput } from '@/components/formTextInput';
-import { PasswordTextInput } from '@/features/auth/components/passwordTextInput';
 import { ScreenContainer } from '@/components/screenContainer';
 import { ThemedText } from '@/components/themedText';
-import { useAuth } from '@/providers/authProvider';
+
+import { loginUser, loginWithGoogle } from '../../api';
+import { PasswordTextInput } from '../../components/passwordTextInput';
+import { useAuth } from '../../providers/authProvider';
 
 import { styles } from './styles';
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const GOOGLE_ICON_COLOR = '#4285F4';
+const GOOGLE_ICON_SIZE = 32;
 
 function getParamValue(param: string | string[] | undefined): string {
   return Array.isArray(param) ? (param[0] ?? '') : (param ?? '');
@@ -88,7 +91,7 @@ export default function LoginScreen() {
     try {
       setIsLoading(true);
 
-      const { signInWithGoogle } = await import('@/auth/googleAuth');
+      const { signInWithGoogle } = await import('../../googleAuth');
       const result = await signInWithGoogle();
 
       if (!result) {
@@ -209,7 +212,11 @@ export default function LoginScreen() {
             ]}
             onPress={handleGoogleSignIn}
           >
-            <Ionicons name="logo-google" size={32} color="#4285F4" />
+            <Ionicons
+              color={GOOGLE_ICON_COLOR}
+              name="logo-google"
+              size={GOOGLE_ICON_SIZE}
+            />
             <ThemedText type="buttonLabel" style={styles.googleButtonText}>
               {isLoading ? t('auth.signingIn') : t('auth.googleButton')}
             </ThemedText>

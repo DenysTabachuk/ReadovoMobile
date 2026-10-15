@@ -12,8 +12,8 @@ import {
   sendRemoteTestPush,
 } from '@/features/learningReminders/api';
 import { registerCurrentDevicePushToken } from '@/features/learningReminders/service';
-import { getStreakProfile } from '@/features/streak/api';
-import { useAuth } from '@/providers/authProvider';
+import { getStreakProfile } from '@/features/streak';
+import { useAuth } from '@/features/auth';
 import {
   type LearningReminderTime,
   usePreferences,
@@ -442,10 +442,10 @@ export default function NotificationTestScreen() {
             onPress={() => void handleClearTodayDispatch()}
             variant="secondary"
           >
-            Clear today's reminder dispatch
+            Clear today&apos;s reminder dispatch
           </Button>
           <ThemedText type="description">
-            Removes today's already-sent marker for this user so scheduled
+            Removes today&apos;s already-sent marker for this user so scheduled
             reminder delivery can be tested again on the same day.
           </ThemedText>
         </View>

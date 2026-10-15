@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import {
   type ArticleAdaptationSummary,
   type WikipediaArticle,
-} from '@/api/wikipedia';
+} from '@/features/articles/api/wikipedia';
 import { ThemedText } from '@/components/themedText';
 import { IconSymbol } from '@/components/iconSymbol';
 
