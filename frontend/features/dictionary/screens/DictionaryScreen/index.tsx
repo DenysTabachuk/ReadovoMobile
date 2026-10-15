@@ -1,3 +1,10 @@
+import type {
+  DictionaryFilter,
+  DictionaryProgressFilter,
+  ProgressFilterOption,
+} from './types';
+import { ProgressFilterDropdown } from './components/progressFilterDropdown';
+import { getProgressLabel, getProgressBadgeColors, countWords } from './utils';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
@@ -20,7 +27,7 @@ import {
   updateDictionaryWordProgress,
   type DictionaryWord,
   type DictionaryWordProgress,
-} from '@/api/dictionary';
+} from '../../api';
 import { Button } from '@/components/button';
 import { ModalSheet } from '@/components/modalSheet';
 import { useBanner } from '@/components/banner';
@@ -35,17 +42,9 @@ import {
   useWordTranslation,
 } from '@/features/translations';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { useThemeColor } from '@/hooks/use-theme-color';
-import { useAuth } from '@/providers/authProvider';
+import { useAuth } from '@/features/auth';
 
 import { styles } from './styles';
-
-type DictionaryFilter = 'all' | 'phrases' | 'words';
-type DictionaryProgressFilter = 'all' | DictionaryWordProgress;
-type ProgressFilterOption = {
-  label: string;
-  value: DictionaryProgressFilter;
-};
 
 export default function DictionaryScreen() {
   const { t } = useTranslation();
@@ -73,7 +72,7 @@ export default function DictionaryScreen() {
     queryFn: () => fetchDictionaryWords(userId ?? ''),
     queryKey: ['dictionary', 'words', userId],
   });
-  const words = data ?? [];
+  const words = useMemo(() => data ?? [], [data]);
   const filteredWords = useMemo(() => {
     return words.filter((word) => {
       if (
@@ -480,207 +479,4 @@ export default function DictionaryScreen() {
       </ModalSheet>
     </ScreenContainer>
   );
-}
-
-type ProgressFilterDropdownProps = {
-  colorScheme: ReturnType<typeof useColorScheme>;
-  label: string;
-  onClose: () => void;
-  onOpen: () => void;
-  onSelect: (value: DictionaryProgressFilter) => void;
-  open: boolean;
-  options: ProgressFilterOption[];
-  selectedValue: DictionaryProgressFilter;
-  title: string;
-};
-
-function ProgressFilterDropdown({
-  colorScheme,
-  label,
-  onClose,
-  onOpen,
-  onSelect,
-  open,
-  options,
-  selectedValue,
-  title,
-}: ProgressFilterDropdownProps) {
-  const selectedOption = options.find(
-    (option) => option.value === selectedValue,
-  );
-  const borderColor = useThemeColor(
-    { dark: '#3a4348', light: '#d0d7de' },
-    'icon',
-  );
-  const buttonBackgroundColor = useThemeColor(
-    { dark: '#202425', light: '#f5f7fa' },
-    'background',
-  );
-  const optionBackgroundColor = useThemeColor(
-    { dark: '#151718', light: '#ffffff' },
-    'background',
-  );
-  const selectedBackgroundColor = useThemeColor(
-    { dark: '#123847', light: '#e8f5f9' },
-    'background',
-  );
-  const selectedBorderColor = useThemeColor(
-    { dark: '#67c6e3', light: '#0a7ea4' },
-    'tint',
-  );
-  const chevronColor = useThemeColor(
-    { dark: '#9ba1a6', light: '#687076' },
-    'icon',
-  );
-
-  const handleSelect = useCallback(
-    (value: DictionaryProgressFilter) => {
-      onSelect(value);
-      onClose();
-    },
-    [onClose, onSelect],
-  );
-
-  return (
-    <>
-      <View style={styles.progressFilterField}>
-        <ThemedText type="bodyStrong">{label}</ThemedText>
-        <Pressable
-          onPress={onOpen}
-          style={[
-            styles.progressFilterButton,
-            { backgroundColor: buttonBackgroundColor, borderColor },
-          ]}
-        >
-          {selectedValue === 'all' ? (
-            <ThemedText style={styles.progressFilterAllText} type="bodyStrong">
-              {selectedOption?.label ?? selectedValue}
-            </ThemedText>
-          ) : (
-            <ProgressStatusBadge
-              colorScheme={colorScheme}
-              label={selectedOption?.label ?? selectedValue}
-              progress={selectedValue}
-            />
-          )}
-          <Ionicons color={chevronColor} name="chevron-down" size={18} />
-        </Pressable>
-      </View>
-
-      <ModalSheet onClose={onClose} open={open} title={title}>
-        <View style={styles.progressFilterOptions}>
-          {options.map((option) => {
-            const isSelected = option.value === selectedValue;
-
-            return (
-              <Pressable
-                key={option.value}
-                onPress={() => handleSelect(option.value)}
-                style={[
-                  styles.progressFilterOption,
-                  { backgroundColor: optionBackgroundColor, borderColor },
-                  isSelected
-                    ? {
-                        backgroundColor: selectedBackgroundColor,
-                        borderColor: selectedBorderColor,
-                      }
-                    : null,
-                ]}
-              >
-                {option.value === 'all' ? (
-                  <ThemedText
-                    style={styles.progressFilterAllText}
-                    type="bodyStrong"
-                  >
-                    {option.label}
-                  </ThemedText>
-                ) : (
-                  <ProgressStatusBadge
-                    colorScheme={colorScheme}
-                    label={option.label}
-                    progress={option.value}
-                  />
-                )}
-                {isSelected ? (
-                  <Ionicons
-                    color={selectedBorderColor}
-                    name="checkmark-circle"
-                    size={20}
-                  />
-                ) : null}
-              </Pressable>
-            );
-          })}
-        </View>
-      </ModalSheet>
-    </>
-  );
-}
-
-type ProgressStatusBadgeProps = {
-  colorScheme: ReturnType<typeof useColorScheme>;
-  label: string;
-  progress: DictionaryWordProgress;
-};
-
-function ProgressStatusBadge({
-  colorScheme,
-  label,
-  progress,
-}: ProgressStatusBadgeProps) {
-  const progressColors = getProgressBadgeColors(progress, colorScheme);
-
-  return (
-    <View
-      style={[
-        styles.progressBadge,
-        styles.progressFilterBadge,
-        { backgroundColor: progressColors.backgroundColor },
-      ]}
-    >
-      <ThemedText
-        type="bodyStrong"
-        style={[styles.progressText, { color: progressColors.textColor }]}
-      >
-        {label}
-      </ThemedText>
-    </View>
-  );
-}
-
-function getProgressLabel(
-  progress: DictionaryWordProgress,
-  t: ReturnType<typeof useTranslation>['t'],
-): string {
-  return t(`dictionary.progress.${progress}`);
-}
-
-function getProgressBadgeColors(
-  progress: DictionaryWordProgress,
-  colorScheme: ReturnType<typeof useColorScheme>,
-): { backgroundColor: string; textColor: string } {
-  const isDark = colorScheme === 'dark';
-
-  if (progress === 'learned') {
-    return {
-      backgroundColor: isDark ? '#173522' : '#dff7e8',
-      textColor: isDark ? '#7ee0a0' : '#1f8a4c',
-    };
-  }
-
-  if (progress === 'in_progress') {
-    return {
-      backgroundColor: isDark ? '#3a2d14' : '#fff2cc',
-      textColor: isDark ? '#ffd36a' : '#9a6700',
-    };
-  }
-
-  return {
-    backgroundColor: isDark ? '#263238' : '#e6f4f8',
-    textColor: isDark ? '#7ccce6' : '#0a7ea4',
-  };
-}
-
-function countWords(value: string): number {
-  return value.trim().split(/\s+/).filter(Boolean).length;
 }

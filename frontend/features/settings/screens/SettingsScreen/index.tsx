@@ -8,7 +8,7 @@ import { useState } from 'react';
 
 import { Button } from '@/components/button';
 import { CheckboxRow } from '@/components/checkboxRow';
-import { useAuth } from '@/providers/authProvider';
+import { useAuth } from '@/features/auth';
 import { usePreferences } from '@/providers/preferencesProvider';
 import { ModalSheet } from '@/components/modalSheet';
 import { ScreenContainer } from '@/components/screenContainer';

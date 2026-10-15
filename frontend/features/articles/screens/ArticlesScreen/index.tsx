@@ -24,8 +24,8 @@ import {
   fetchWikipediaArticles,
   type WikipediaArticle,
   type WikipediaArticleCategory,
-} from '@/api/wikipedia';
-import { DEFAULT_ARTICLE_LIMIT } from '@/api/wikipedia/constants';
+} from '@/features/articles/api/wikipedia';
+import { DEFAULT_ARTICLE_LIMIT } from '@/features/articles/api/wikipedia';
 import { useBanner } from '@/components/banner';
 import { Button } from '@/components/button';
 import { ScreenContainer } from '@/components/screenContainer';
@@ -48,7 +48,7 @@ import {
 } from '@/features/articles';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { useAuth } from '@/providers/authProvider';
+import { useAuth } from '@/features/auth';
 
 import { styles } from './styles';
 import {

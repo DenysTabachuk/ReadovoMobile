@@ -1,3 +1,17 @@
+import type { SelectedTextToken } from './types';
+import {
+  extractTextFromArticleBlocks,
+  getTextComplexityMetrics,
+  stripDuplicateTitleHeading,
+  hasDuplicateArticleImage,
+  createSimplificationRequestBlocks,
+  createAdaptationKey,
+  isSameAdaptation,
+  getBlockIndexFromTokenKey,
+  buildSelectedFragment,
+  resolveNextTokenSelection,
+} from './utils';
+import { MetricComparison } from './components/metricComparison';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
@@ -16,10 +30,9 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
-import { createDictionaryWord } from '@/api/dictionary';
+import { createDictionaryWord } from '@/features/dictionary';
 import {
   type ArticleAdaptationSummary,
-  type ArticleBlock,
   type ArticleTextTransformationType,
   fetchArticleAdaptations,
   fetchWikipediaArticleDetail,
@@ -28,7 +41,7 @@ import {
   type SimplifyArticleLevel,
   simplifyWikipediaArticle,
   type SimplifyArticleResponse,
-} from '@/api/wikipedia';
+} from '@/features/articles/api/wikipedia';
 import { useBanner } from '@/components/banner';
 import { Button } from '@/components/button';
 import { Cta } from '@/components/cta';
@@ -56,38 +69,18 @@ import {
   type ArticleQuizMode,
   type SavedArticle,
 } from '@/features/articles';
-import { WordTranslationSheet } from '@/features/translations/components/wordTranslationSheet';
-import { useWordTranslation } from '@/features/translations/hooks/useWordTranslation';
+import {
+  WordTranslationSheet,
+  useWordTranslation,
+} from '@/features/translations';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { useAuth } from '@/providers/authProvider';
+import { useAuth } from '@/features/auth';
 
 import { ArticleSpeechControls } from './components/articleSpeechControls';
 import { InteractiveArticleText } from './components/interactiveArticleText';
 import { styles } from './styles';
 import { useArticleSpeech } from './useArticleSpeech';
-
-type SelectedTextToken = {
-  context: string;
-  sentenceKey?: string;
-  sentenceWordIndex?: number;
-  text: string;
-  tokenKey: string;
-  word: string;
-};
-type SelectedTextFragment = {
-  context: string;
-  text: string;
-  tokenKeys: string[];
-  words: string[];
-};
-type TextComplexityMetrics = {
-  averageSentenceWords: number;
-  averageWordLength: number;
-  characterCount: number;
-  sentenceCount: number;
-  wordCount: number;
-};
 
 const DEFAULT_SIMPLIFICATION_LEVEL: SimplifyArticleLevel = 'A2';
 const TRANSLATION_SHEET_OPEN_DELAY_MS = 1000;
@@ -528,10 +521,10 @@ export default function ArticleScreen() {
     [availableAdaptations, t],
   );
   const generatedTextModeOptions = useMemo(() => {
-    const options: Array<{
+    const options: {
       label: string;
       value: ArticleTextViewMode;
-    }> = [{ label: t('article.textModeShort.original'), value: 'original' }];
+    }[] = [{ label: t('article.textModeShort.original'), value: 'original' }];
 
     if (isSelectedAdaptationAvailable) {
       options.push({
@@ -1470,285 +1463,4 @@ export default function ArticleScreen() {
       ) : null}
     </ScreenContainer>
   );
-}
-
-function MetricComparison({
-  adaptedValue,
-  decimals = 0,
-  label,
-  originalValue,
-  suffix = '',
-}: {
-  adaptedValue: number;
-  decimals?: number;
-  label: string;
-  originalValue: number;
-  suffix?: string;
-}) {
-  const formatValue = (value: number) => {
-    const formatted =
-      decimals > 0 ? value.toFixed(decimals) : String(Math.round(value));
-
-    return suffix ? `${formatted} ${suffix}` : formatted;
-  };
-
-  return (
-    <View style={styles.simplificationMetricItem}>
-      <ThemedText type="description" style={styles.simplificationMetricLabel}>
-        {label}
-      </ThemedText>
-      <View style={styles.simplificationMetricValues}>
-        <ThemedText type="bodyStrong">{formatValue(originalValue)}</ThemedText>
-        <Ionicons color="#7c7c7c" name="arrow-forward" size={14} />
-        <ThemedText type="bodyStrong">{formatValue(adaptedValue)}</ThemedText>
-      </View>
-    </View>
-  );
-}
-
-function extractTextFromArticleBlocks(blocks: ArticleBlock[]): string {
-  return blocks
-    .map((block) => {
-      if (block.type === 'heading') {
-        return block.text;
-      }
-
-      if (block.type === 'paragraph') {
-        return block.children.map((node) => node.text).join('');
-      }
-
-      if (block.type === 'list') {
-        return block.items
-          .map((item) => item.map((node) => node.text).join(''))
-          .join('\n');
-      }
-
-      if (block.type === 'table') {
-        return block.rows
-          .map((row) => row.map((cell) => cell.text).join(' '))
-          .join('\n');
-      }
-
-      if (block.type === 'formula') {
-        return block.altText;
-      }
-
-      return [block.alt, block.caption].filter(Boolean).join(' ');
-    })
-    .filter(Boolean)
-    .join('\n\n');
-}
-
-function getTextComplexityMetrics(text: string): TextComplexityMetrics {
-  const normalizedText = text.replace(/\s+/g, ' ').trim();
-  const words = normalizedText.match(/[A-Za-z]+(?:['-][A-Za-z]+)?/g) ?? [];
-  const sentences =
-    normalizedText
-      .match(/[^.!?]+(?:[.!?]+(?=\s|$)|$)/g)
-      ?.filter((sentence) => sentence.trim()) ?? [];
-  const totalWordLength = words.reduce((total, word) => total + word.length, 0);
-  const sentenceCount = Math.max(sentences.length, 1);
-  const wordCount = words.length;
-
-  return {
-    averageSentenceWords: wordCount / sentenceCount,
-    averageWordLength: wordCount > 0 ? totalWordLength / wordCount : 0,
-    characterCount: normalizedText.length,
-    sentenceCount: sentences.length,
-    wordCount,
-  };
-}
-
-function stripDuplicateTitleHeading(
-  blocks: ArticleBlock[],
-  articleTitle: string,
-): ArticleBlock[] {
-  const normalizedTitle = articleTitle.trim().toLowerCase();
-  const firstBlock = blocks[0];
-
-  if (
-    firstBlock?.type === 'heading' &&
-    firstBlock.level === 1 &&
-    firstBlock.text.trim().toLowerCase() === normalizedTitle
-  ) {
-    return blocks.slice(1);
-  }
-
-  return blocks;
-}
-
-function hasDuplicateArticleImage(
-  thumbnailUrl: string,
-  blocks: ArticleBlock[],
-): boolean {
-  const normalizedThumbnailIdentity = getWikipediaImageIdentity(thumbnailUrl);
-
-  if (!normalizedThumbnailIdentity) {
-    return false;
-  }
-
-  return blocks.some((block) => {
-    return (
-      block.type === 'image' &&
-      getWikipediaImageIdentity(block.src) === normalizedThumbnailIdentity
-    );
-  });
-}
-
-function getWikipediaImageIdentity(imageUrl: string): string | null {
-  try {
-    const { pathname } = new URL(imageUrl);
-    const pathSegments = pathname.split('/').filter(Boolean);
-
-    if (pathSegments.length === 0) {
-      return null;
-    }
-
-    const thumbIndex = pathSegments.findIndex((segment) => segment === 'thumb');
-    const rawFileName =
-      thumbIndex >= 0 && thumbIndex + 3 < pathSegments.length
-        ? pathSegments[pathSegments.length - 2]
-        : pathSegments[pathSegments.length - 1];
-
-    if (!rawFileName) {
-      return null;
-    }
-
-    return decodeURIComponent(rawFileName)
-      .replace(/^\d+px-/, '')
-      .trim()
-      .toLowerCase();
-  } catch {
-    return imageUrl.trim().toLowerCase() || null;
-  }
-}
-
-function createSimplificationRequestBlocks(
-  blocks: ArticleBlock[],
-): ArticleBlock[] {
-  return blocks.map((block) => {
-    if (block.type !== 'formula') {
-      return block;
-    }
-
-    return {
-      altText: block.altText,
-      display: block.display,
-      type: 'formula',
-    };
-  });
-}
-
-function createAdaptationKey(
-  level: SimplifyArticleLevel,
-  transformationType: ArticleTextTransformationType,
-): string {
-  return `${transformationType}:${level}`;
-}
-
-function isSameAdaptation(
-  adaptation: ArticleAdaptationSummary,
-  level: SimplifyArticleLevel,
-  transformationType: ArticleTextTransformationType,
-): boolean {
-  return (
-    adaptation.level === level &&
-    adaptation.transformationType === transformationType
-  );
-}
-
-function getBlockIndexFromTokenKey(
-  tokenKey: string | undefined,
-): number | null {
-  const match = tokenKey?.match(/^block-(\d+)(?:-|$)/);
-  const blockIndex = match?.[1] ? Number(match[1]) : NaN;
-
-  if (!Number.isFinite(blockIndex)) {
-    return null;
-  }
-
-  return blockIndex;
-}
-
-function buildSelectedFragment(
-  selectedTokens: SelectedTextToken[],
-): SelectedTextFragment | null {
-  if (selectedTokens.length === 0) {
-    return null;
-  }
-
-  const sortedTokens = [...selectedTokens].sort((leftToken, rightToken) => {
-    return (
-      (leftToken.sentenceWordIndex ?? 0) - (rightToken.sentenceWordIndex ?? 0)
-    );
-  });
-
-  const context = sortedTokens[0]?.context?.trim() ?? '';
-  const words = sortedTokens.map((token) => token.word);
-  const text = sortedTokens
-    .map((token) => token.text)
-    .join(' ')
-    .trim();
-
-  if (!text || !context) {
-    return null;
-  }
-
-  return {
-    context,
-    text,
-    tokenKeys: sortedTokens.map((token) => token.tokenKey),
-    words,
-  };
-}
-
-function resolveNextTokenSelection(
-  currentSelection: SelectedTextToken[],
-  nextToken: SelectedTextToken,
-): SelectedTextToken[] {
-  if (currentSelection.length === 0) {
-    return [nextToken];
-  }
-
-  const firstSelectedToken = currentSelection[0];
-  const sameSentence = Boolean(
-    firstSelectedToken?.sentenceKey &&
-    nextToken.sentenceKey &&
-    firstSelectedToken.sentenceKey === nextToken.sentenceKey,
-  );
-  const nextTokenAlreadySelected = currentSelection.some(
-    (token) => token.tokenKey === nextToken.tokenKey,
-  );
-
-  if (!sameSentence) {
-    return [nextToken];
-  }
-
-  if (nextTokenAlreadySelected) {
-    return currentSelection;
-  }
-
-  const selectedIndexes = currentSelection
-    .map((token) => token.sentenceWordIndex)
-    .filter((index): index is number => typeof index === 'number');
-  const nextTokenIndex = nextToken.sentenceWordIndex;
-
-  if (selectedIndexes.length === 0 || typeof nextTokenIndex !== 'number') {
-    return [nextToken];
-  }
-
-  const minIndex = Math.min(...selectedIndexes);
-  const maxIndex = Math.max(...selectedIndexes);
-  const isAdjacent =
-    nextTokenIndex === minIndex - 1 || nextTokenIndex === maxIndex + 1;
-
-  if (!isAdjacent) {
-    return [nextToken];
-  }
-
-  if (currentSelection.length >= 5) {
-    return currentSelection;
-  }
-
-  return [...currentSelection, nextToken];
 }

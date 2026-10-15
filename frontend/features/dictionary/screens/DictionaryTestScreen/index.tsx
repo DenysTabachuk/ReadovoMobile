@@ -12,8 +12,8 @@ import {
   fetchDictionaryTest,
   submitDictionaryTestAnswer,
   type DictionaryTest,
-} from '@/api/dictionary';
-import { isMockApiEnabled } from '@/api/auth/constants';
+} from '../../api';
+import { isMockApiEnabled } from '@/api';
 import { Button } from '@/components/button';
 import { ModalSheet } from '@/components/modalSheet';
 import { ScreenContainer } from '@/components/screenContainer';
@@ -40,7 +40,7 @@ import {
 } from '@/features/streak';
 import { useBanner } from '@/components/banner';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { useAuth } from '@/providers/authProvider';
+import { useAuth } from '@/features/auth';
 
 import { styles } from './styles';
 
@@ -83,6 +83,7 @@ export default function DictionaryTestScreen() {
       setTest(nextTest);
     },
   });
+  const { mutate: generateTest } = testMutation;
 
   const answerMutation = useMutation({
     mutationFn: (request: { selectedOptionId: string; wordId: string }) =>
@@ -208,8 +209,8 @@ export default function DictionaryTestScreen() {
   });
 
   useEffect(() => {
-    testMutation.mutate();
-  }, []);
+    generateTest();
+  }, [generateTest]);
 
   const handleConfirmExitTest = useCallback(() => {
     setIsExitTestConfirmOpen(false);

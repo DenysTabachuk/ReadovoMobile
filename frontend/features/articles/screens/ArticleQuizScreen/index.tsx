@@ -25,12 +25,12 @@ import {
   type QuizSessionResult,
 } from '@/features/quiz';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { useAuth } from '@/providers/authProvider';
-import { createDictionaryWord } from '@/api/dictionary';
+import { useAuth } from '@/features/auth';
+import { createDictionaryWord } from '@/features/dictionary';
 import {
   type ArticleQuizSessionResponse,
   type ArticleVocabularyQuizQuestion,
-} from '@/api/wikipedia';
+} from '@/features/articles/api/wikipedia';
 import { useBanner } from '@/components/banner';
 
 import {

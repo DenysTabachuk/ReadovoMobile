@@ -7,7 +7,7 @@ import { ThemedText } from '@/components/themedText';
 import {
   STREAK_FREEZE_TOKEN_PRICE,
   STREAK_MAX_FREEZE_TOKENS,
-} from '@/features/streak';
+} from '../../constants';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
 import { styles } from './styles';

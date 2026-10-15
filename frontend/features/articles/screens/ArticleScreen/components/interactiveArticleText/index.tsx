@@ -26,7 +26,7 @@ import {
   type ArticleBlock,
   type InlineNode,
   type TableCell,
-} from '@/api/wikipedia';
+} from '@/features/articles/api/wikipedia';
 import { ThemedText } from '@/components/themedText';
 import { useThemeColor } from '@/hooks/use-theme-color';
 
@@ -35,7 +35,8 @@ import { ArticleImageBlock } from '../articleImageBlock';
 import { ArticleTableBlock } from '../articleTableBlock';
 import { TouchableWord } from '../touchableWord';
 import { styles } from './styles';
-import { splitTextToTouchableParts, type TouchableTextPart } from './textParts';
+import { splitTextToTouchableParts } from './utils';
+import type { TouchableTextPart } from './types';
 
 type InteractiveArticleTextProps = {
   blocks?: ArticleBlock[];
@@ -276,10 +277,10 @@ export function InteractiveArticleText({
     ({
       viewableItems,
     }: {
-      viewableItems: Array<{
+      viewableItems: {
         index: number | null;
         item?: ArticleBlockListItem;
-      }>;
+      }[];
     }) => {
       const sortedVisibleItems = viewableItems
         .filter((viewableItem) => viewableItem.index !== null)

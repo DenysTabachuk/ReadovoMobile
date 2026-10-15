@@ -7,7 +7,7 @@ import { IconSymbol } from '@/components/iconSymbol';
 import { FullScreenLoader } from '@/components/fullScreenLoader';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { useAuth } from '@/providers/authProvider';
+import { useAuth } from '@/features/auth';
 
 export default function TabLayout() {
   const { t } = useTranslation();

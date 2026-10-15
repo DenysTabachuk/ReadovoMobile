@@ -32,7 +32,7 @@ import {
   type MascotCatalogItem,
 } from '@/features/mascot';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { useAuth } from '@/providers/authProvider';
+import { useAuth } from '@/features/auth';
 
 import { styles } from './styles';
 

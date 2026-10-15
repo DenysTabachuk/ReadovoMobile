@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 
-import { translateWord, type TranslateWordResponse } from '@/api/translations';
+import { translateWord, type TranslateWordResponse } from '../api';
 
 type UseWordTranslationParams = {
   context?: string;

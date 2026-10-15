@@ -113,22 +113,6 @@ export const styles = StyleSheet.create({
     width: 52,
     zIndex: 30,
   },
-  simplificationMetricItem: {
-    borderRadius: 10,
-    flex: 1,
-    gap: Spacing.xs,
-    minWidth: 132,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.sm,
-  },
-  simplificationMetricLabel: {
-    opacity: 0.72,
-  },
-  simplificationMetricValues: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: Spacing.xs,
-  },
   simplificationMetricsCard: {
     borderRadius: 12,
     borderWidth: 1,

@@ -2,13 +2,10 @@ import * as Speech from 'expo-speech';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Platform } from 'react-native';
 
-import { type ArticleBlock } from '@/api/wikipedia';
+import { type ArticleBlock } from '@/features/articles/api/wikipedia';
 
-import {
-  createArticleSpeechChunks,
-  type ArticleSpeechChunk,
-  type ArticleSpeechWord,
-} from './speechParts';
+import { createArticleSpeechChunks } from './utils/createArticleSpeechChunks';
+import type { ArticleSpeechChunk, ArticleSpeechWord } from './types';
 
 type ArticleSpeechStatus = 'idle' | 'paused' | 'playing';
 

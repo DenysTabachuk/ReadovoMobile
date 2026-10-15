@@ -5,6 +5,8 @@ type QueryProviderProps = {
   children: ReactNode;
 };
 
+const QUERY_STALE_TIME_MS = 60_000;
+
 export function QueryProvider({ children }: QueryProviderProps) {
   const [queryClient] = useState(
     () =>
@@ -13,8 +15,7 @@ export function QueryProvider({ children }: QueryProviderProps) {
           queries: {
             // Retry a failed query once before returning an error to the UI.
             retry: 1,
-            // Keep fetched query data fresh for 1 minute before allowing a background refetch.
-            staleTime: 1000 * 60,
+            staleTime: QUERY_STALE_TIME_MS,
           },
         },
       }),

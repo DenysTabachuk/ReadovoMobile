@@ -1,7 +1,7 @@
 import {
   type SimplifyArticleLevel,
   type SimplifyArticleTargetLength,
-} from '@/api/wikipedia';
+} from '@/features/articles/api/wikipedia';
 
 export const DEFAULT_LEVEL: SimplifyArticleLevel = 'A2';
 export const DEFAULT_LENGTH: SimplifyArticleTargetLength = 'medium';

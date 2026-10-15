@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { fetchWikipediaArticleDetail } from '@/api/wikipedia';
+import { fetchWikipediaArticleDetail } from '@/features/articles/api/wikipedia';
 import { useBanner } from '@/components/banner';
 
 type UseFetchWikipediaArticleDetailParams = {

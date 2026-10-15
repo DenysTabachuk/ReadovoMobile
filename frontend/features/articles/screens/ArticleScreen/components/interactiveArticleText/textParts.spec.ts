@@ -1,11 +1,11 @@
-import { type InlineNode } from '@/api/wikipedia';
+import { type InlineNode } from '@/features/articles/api/wikipedia';
 
 import {
   getContextSentence,
   getWordContext,
   splitTextToTouchableParts,
-  type TouchableTextPart,
-} from './textParts';
+} from './utils';
+import type { TouchableTextPart } from './types';
 
 type TouchableWordPart = Extract<TouchableTextPart, { type: 'word' }>;
 

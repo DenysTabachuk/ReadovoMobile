@@ -13,7 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 
-import { isMockApiEnabled } from '@/api/auth/constants';
+import { isMockApiEnabled } from '@/api';
 import { ScreenContainer } from '@/components/screenContainer';
 import { useBanner } from '@/components/banner';
 import { FullScreenLoader } from '@/components/fullScreenLoader';
@@ -23,15 +23,17 @@ import {
   getAchievementsProfile,
 } from '@/features/achievements';
 import { getMascotProfile, Mascot } from '@/features/mascot';
-import { ActivityCalendar } from '@/features/streak/components/activityCalendar';
-import { StreakAchievementCard } from '@/features/streak/components/streakAchievementCard';
-import { StreakFreezeCard } from '@/features/streak/components/streakFreezeCard';
-import { StreakFreezeConfirmModal } from '@/features/streak/components/streakFreezeConfirmModal';
-import { StreakFreezePurchaseModal } from '@/features/streak/components/streakFreezePurchaseModal';
-import { StreakRestoreConfirmModal } from '@/features/streak/components/streakRestoreConfirmModal';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { useAuth } from '@/providers/authProvider';
-import { useStreak } from '@/features/streak';
+import { useAuth } from '@/features/auth';
+import {
+  useStreak,
+  ActivityCalendar,
+  StreakAchievementCard,
+  StreakFreezeCard,
+  StreakFreezeConfirmModal,
+  StreakFreezePurchaseModal,
+  StreakRestoreConfirmModal,
+} from '@/features/streak';
 
 import { styles } from './styles';
 

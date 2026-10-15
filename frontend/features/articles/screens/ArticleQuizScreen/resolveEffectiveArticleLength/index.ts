@@ -1,5 +1,5 @@
-import { type SimplifyArticleTargetLength } from '@/api/wikipedia';
-import { countSentences } from '@/utils/getNumSentences';
+import { type SimplifyArticleTargetLength } from '@/features/articles/api/wikipedia';
+import { countSentences } from '@/utils/countSentences';
 
 import { TARGET_LENGTH_MAX_SENTENCES } from '../constants';
 import { type ArticleQuizLengthParam } from '../types';

@@ -3,12 +3,13 @@ import { View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
-import { resetPassword } from '@/api/auth';
 import { Button } from '@/components/button';
 import { useBanner } from '@/components/banner';
-import { PasswordTextInput } from '@/features/auth/components/passwordTextInput';
 import { ScreenContainer } from '@/components/screenContainer';
 import { ThemedText } from '@/components/themedText';
+
+import { resetPassword } from '../../api';
+import { PasswordTextInput } from '../../components/passwordTextInput';
 
 import { styles } from './styles';
 

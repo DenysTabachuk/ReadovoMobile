@@ -1,4 +1,4 @@
-import { type SimplifyArticleLevel } from '@/api/wikipedia';
+import { type SimplifyArticleLevel } from '@/features/articles/api/wikipedia';
 
 import { type ArticleQuizLengthParam } from '../types';
 import { type ArticleQuizMode } from '@/features/articles';

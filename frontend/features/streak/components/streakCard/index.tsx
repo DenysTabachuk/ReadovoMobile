@@ -2,7 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { Pressable, View } from 'react-native';
 
 import { ThemedText } from '@/components/themedText';
-import { weekDayLabels, type StreakState } from '@/features/streak';
+import { weekDayLabels } from '../../constants';
+import { type StreakState } from '../../types';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
 import { styles } from './styles';
