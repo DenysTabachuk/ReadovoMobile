@@ -23,15 +23,17 @@ import {
 } from '@/api/dictionary';
 import { Button } from '@/components/button';
 import { ModalSheet } from '@/components/modalSheet';
-import { PronunciationButton } from '@/components/pronunciationButton';
 import { useBanner } from '@/components/banner';
 import { FloatingActionButton } from '@/components/floatingActionButton';
 import { ScreenContainer } from '@/components/screenContainer';
 import { SegmentedToggle } from '@/components/segmentedToggle';
 import { ThemedText } from '@/components/themedText';
 import { Colors } from '@/constants/theme';
-import { TranslationCards } from '@/features/translations/components/translationCards';
-import { useWordTranslation } from '@/features/translations/hooks/useWordTranslation';
+import {
+  PronunciationButton,
+  TranslationCards,
+  useWordTranslation,
+} from '@/features/translations';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useAuth } from '@/providers/authProvider';

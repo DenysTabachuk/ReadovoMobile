@@ -14,16 +14,16 @@ import { ActivityIndicator, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/button';
-import {
-  ArticleQuizRunner,
-  type QuizSessionResult,
-} from '@/components/articleQuizRunner';
 import { ModalSheet } from '@/components/modalSheet';
 import { ScreenContainer } from '@/components/screenContainer';
-import { TestResult } from '@/components/testResult';
 import { ThemedText } from '@/components/themedText';
 import { Colors } from '@/constants/theme';
 import { getArticleQuizSessionKey } from '@/features/articles';
+import {
+  QuizResult,
+  QuizRunner,
+  type QuizSessionResult,
+} from '@/features/quiz';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useAuth } from '@/providers/authProvider';
 import { createDictionaryWord } from '@/api/dictionary';
@@ -283,7 +283,7 @@ export default function ArticleQuizScreen() {
         }}
       />
       {quizResult ? (
-        <TestResult
+        <QuizResult
           onDone={() => router.back()}
           onRetry={() => {
             setQuizResult(null);
@@ -298,7 +298,7 @@ export default function ArticleQuizScreen() {
           }
         />
       ) : quizSession?.questions?.length ? (
-        <ArticleQuizRunner
+        <QuizRunner
           key={`article-quiz-${quizAttempt}`}
           onFinish={(result) => {
             setQuizResult(result);
