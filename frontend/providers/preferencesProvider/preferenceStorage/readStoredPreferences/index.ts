@@ -40,10 +40,19 @@ function parseLearningReminderTime(
     : undefined;
 }
 
-// Reads user preferences from persistent storage
-//  and maps raw stored values into validated application settings
-// (onboarding status, theme, and language).
-//  Falls back to safe defaults when stored values are missing or invalid.
+/**
+ * Load persisted preferences and parse supported values for provider initialization.
+ *
+ * Reads storage concurrently. Reminder times are checked for the HH:mm shape only; numeric
+ * hour and minute ranges are not validated.
+ *
+ * @param storage - Storage backend providing asynchronous reads by preference key.
+ * @returns Parsed preferences: missing or invalid theme/language/time values are undefined,
+ *   boolean flags default to false. Storage failures propagate.
+ * @example
+ * await readStoredPreferences({ getItem: async () => null, setItem: async () => {} });
+ * // => { hasCompletedOnboarding: false, languagePreference: undefined, learningReminderEnabled: false, learningReminderTime: undefined, themePreference: undefined }
+ */
 export async function readStoredPreferences(
   storage: PreferenceStorageBackend,
 ): Promise<StoredPreferences> {

@@ -2,6 +2,21 @@ import type { SelectedTextToken } from '../../types';
 
 const MAX_SELECTED_WORDS = 5;
 
+/**
+ * Extend a phrase selection only with adjacent words from the same sentence.
+ *
+ * Allows at most five words. Returning the existing array for unchanged selection also
+ * avoids an unnecessary state update.
+ *
+ * @param currentSelection - Currently selected tokens.
+ * @param nextToken - Word the reader just pressed.
+ * @returns The next selection: a new single-word selection for an incompatible word, an
+ *   extended array, or the existing array for duplicates or a reached limit.
+ * @example
+ * const token = { context: 'Hello world.', text: 'Hello', word: 'hello', tokenKey: 'block-0-word-0-0' };
+ * resolveNextTokenSelection([], token);
+ * // => [token]
+ */
 export function resolveNextTokenSelection(
   currentSelection: SelectedTextToken[],
   nextToken: SelectedTextToken,

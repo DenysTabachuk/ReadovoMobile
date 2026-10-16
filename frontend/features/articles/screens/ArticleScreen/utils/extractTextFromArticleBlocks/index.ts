@@ -1,5 +1,15 @@
 import type { ArticleBlock } from '@/features/articles/api/wikipedia';
 
+/**
+ * Flatten article blocks into readable text for complexity measurements.
+ *
+ * @param blocks - Structured article content in reading order.
+ * @returns Text separated by blank lines, using formula alt text and image descriptions; no
+ *   blocks produce an empty string.
+ * @example
+ * extractTextFromArticleBlocks([{ type: 'heading', level: 1, text: 'Intro' }, { type: 'paragraph', children: [{ type: 'word', text: 'Hello' }] }]);
+ * // => 'Intro\n\nHello'
+ */
 export function extractTextFromArticleBlocks(blocks: ArticleBlock[]): string {
   return blocks
     .map((block) => {

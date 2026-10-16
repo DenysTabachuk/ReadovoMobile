@@ -1,6 +1,16 @@
 import type { DictionaryWordProgress } from '../../../../api/types';
 import type { useColorScheme } from '@/hooks/use-color-scheme';
 
+/**
+ * Choose badge colors for a dictionary progress state and theme.
+ *
+ * @param progress - Dictionary learning state.
+ * @param colorScheme - Active theme; only dark selects the dark palette.
+ * @returns Background and text colors for the progress badge.
+ * @example
+ * getProgressBadgeColors('learned', 'light');
+ * // => { backgroundColor: '#dff7e8', textColor: '#1f8a4c' }
+ */
 export function getProgressBadgeColors(
   progress: DictionaryWordProgress,
   colorScheme: ReturnType<typeof useColorScheme>,

@@ -1,3 +1,5 @@
+type SentenceRange = { end: number; start: number; text: string };
+
 const SENTENCE_ABBREVIATIONS = [
   'approx.',
   'dr.',
@@ -14,6 +16,19 @@ const SENTENCE_ABBREVIATIONS = [
   'vs.',
 ];
 
+/**
+ * Find sentence boundaries for translation context and speech highlighting.
+ *
+ * Line breaks also end sentences. Known abbreviations and dotted initials are kept
+ * together; this is a heuristic, not a language parser.
+ *
+ * @param text - Source text whose original string offsets must be retained.
+ * @returns Nonempty sentence ranges with inclusive start, exclusive end, and trimmed text;
+ *   blank input returns no ranges.
+ * @example
+ * getSentenceRanges('Hi! Bye.');
+ * // => [{ start: 0, end: 3, text: 'Hi!' }, { start: 3, end: 8, text: 'Bye.' }]
+ */
 export function getSentenceRanges(text: string): SentenceRange[] {
   const ranges: SentenceRange[] = [];
   let sentenceStart = 0;
@@ -41,6 +56,7 @@ export function getSentenceRanges(text: string): SentenceRange[] {
 
     const boundaryEnd = getSentenceBoundaryEnd(text, index);
 
+    // A period inside an abbreviation must not detach a word from its sentence context.
     if (
       boundaryEnd === null ||
       isAbbreviationBoundary(text.slice(sentenceStart, boundaryEnd))
@@ -124,5 +140,3 @@ function isAbbreviationBoundary(sentencePrefix: string): boolean {
 function isSentenceTerminal(character: string | undefined): boolean {
   return character === '.' || character === '!' || character === '?';
 }
-
-type SentenceRange = { end: number; start: number; text: string };

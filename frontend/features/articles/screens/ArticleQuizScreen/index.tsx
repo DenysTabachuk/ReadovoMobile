@@ -33,11 +33,6 @@ import {
 } from '@/features/articles/api/wikipedia';
 import { useBanner } from '@/components/banner';
 
-import {
-  normalizeLevel,
-  normalizeMode,
-  normalizeTargetLength,
-} from './articleQuizParams';
 import { DEFAULT_LENGTH, DEFAULT_LEVEL } from './constants';
 import { styles } from './styles';
 import { useFetchWikipediaArticleDetail } from './useFetchWikipediaArticleDetail';
@@ -73,10 +68,21 @@ export default function ArticleQuizScreen() {
     : params.targetLength;
   const parsedArticleId = Number(rawArticleId);
   const articleId = Number.isFinite(parsedArticleId) ? parsedArticleId : null;
-  const quizLevel = normalizeLevel(rawLevel) ?? DEFAULT_LEVEL;
-  const quizMode = normalizeMode(rawMode) ?? 'article';
+  const quizLevel =
+    rawLevel === 'A1' ||
+    rawLevel === 'A2' ||
+    rawLevel === 'B1' ||
+    rawLevel === 'B2'
+      ? rawLevel
+      : DEFAULT_LEVEL;
+  const quizMode = rawMode === 'vocabulary' ? 'vocabulary' : 'article';
   const quizTargetLength =
-    normalizeTargetLength(rawTargetLength) ?? DEFAULT_LENGTH;
+    rawTargetLength === 'original' ||
+    rawTargetLength === 'short' ||
+    rawTargetLength === 'medium' ||
+    rawTargetLength === 'long'
+      ? rawTargetLength
+      : DEFAULT_LENGTH;
   const quizSessionTargetLength =
     quizTargetLength === 'original' ? DEFAULT_LENGTH : quizTargetLength;
 

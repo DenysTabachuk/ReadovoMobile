@@ -8,6 +8,22 @@ import type {
 
 const ARTICLE_QUIZ_GENERATION_TIMEOUT_MS = 60000;
 
+/**
+ * POST a quiz-generation request with a timeout shared by both quiz modes.
+ *
+ * Performs a network request. Aborts the fetch after 60 seconds; the timer ends when fetch
+ * settles, before JSON parsing.
+ *
+ * @param path - API path, including its leading slash.
+ * @param request - Article or vocabulary quiz settings to serialize as JSON.
+ * @returns The parsed quiz session. Rejects with article.quiz.error on fetch failure or a
+ *   non-OK response; JSON errors propagate.
+ * @example
+ * await generateArticleQuizRequest('/api/articles/quiz', {
+ *   title: 'Space', text: 'The Moon orbits Earth.', level: 'A2', targetLength: 'short',
+ * });
+ * // => the quiz session returned by the server
+ */
 export async function generateArticleQuizRequest<
   TRequest extends
     GenerateArticleQuizRequest | GenerateArticleVocabularyQuizRequest,

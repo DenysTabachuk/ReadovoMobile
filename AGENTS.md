@@ -36,6 +36,57 @@ Apply these rules to all utility modules in `frontend/**`, including feature-lev
 - Use barrel files for re-exports, keep shared types in colocated `types.ts`, and keep shared constants in `constants.ts`.
 - Apply these rules consistently to all utility modules touched or moved by the current task. Audit the complete diff before finishing.
 
+## Frontend type placement
+
+Apply these rules when working in `frontend/**`:
+
+- Place module-level `type` and `interface` declarations near the top of the file, after imports and before constants, functions, or components.
+- Keep utility-private types in the owning utility's `index.ts`; do not export or move them to `types.ts` just to satisfy ordering.
+- Keep types shared by multiple modules in the closest owning `types.ts`, following the existing scope rules.
+- Apply this ordering to new and touched code; avoid unrelated repository-wide moves.
+
+## Frontend utility documentation
+
+Apply these rules to all utility modules in `frontend/**`, including component-level, feature-level, and shared utilities:
+
+- Document every independent utility function with JSDoc immediately above its implementation, including utilities created or moved during refactoring.
+- Describe what the utility does, document each input with `@param`, explain the output with `@returns`, and include at least one concrete `@example` with the expected result.
+- For parameterless utilities, omit `@param`. For utilities returning `void`, describe their effect in `@returns`.
+- Explain relevant edge cases, fallback behavior, input mutation, or side effects when they affect how callers should use the utility.
+- Add inline comments for non-obvious implementation choices or invariants. Explain why the code works that way rather than narrating obvious statements.
+- Keep descriptions concise and consistent with the implementation. Private implementation helpers need additional documentation only when their behavior is not clear from their name and code.
+- Apply this documentation requirement to every utility created, changed, or moved by the current task; do not document unrelated modules as part of the same change.
+
+Use this template, adapting the parameters and example to the actual utility:
+
+```ts
+/**
+ * Briefly describe the operation and its purpose.
+ *
+ * @param input - Describe the accepted input and relevant constraints.
+ * @returns Describe the result and relevant edge cases.
+ * @example
+ * utilityName(exampleInput);
+ * // => expectedResult
+ */
+```
+
+## Frontend utility tests
+
+Apply these rules to all utility modules in `frontend/**`, including component-level, feature-level, shared, and API utilities:
+
+- Create a colocated `index.spec.ts` whenever creating or extracting an independent utility, for example `utils/countSentences/index.spec.ts`. A new utility is not complete without meaningful tests.
+- When changing utility behavior, update its tests in the same task. When moving a utility, move and update its existing tests; add the colocated test file if it has none.
+- Cover the main expected behavior and relevant edge cases: empty or missing inputs accepted by the signature, boundaries and thresholds, fallback behavior, and error paths where applicable. Choose cases based on the utility's contract rather than imposing a fixed test count.
+- Use concrete inputs and independently determined expected results. Do not compute expectations with the same algorithm as the implementation or rely only on assertions that a result exists.
+- Treat JSDoc examples as useful starting cases, and add cases that exercise the utility's decisions. Do not turn a suspected bug into expected behavior just to make a test pass; resolve the intended behavior from the task and call sites.
+- Check input immutability, ordering, stable keys, or reference reuse when these are part of the utility's contract.
+- Make tests deterministic: control time and mock storage, native modules, and network boundaries when needed. Do not perform real network requests or depend on the developer's device or environment.
+- Test private implementation helpers through the owning utility's public behavior; do not export them solely for tests.
+- Use the existing Jest setup and keep tests at the narrowest owning scope. Do not add a new test framework for utility tests.
+- Run the relevant tests before finishing, inspect failures, and fix problems introduced by the task. Report what was run and any checks that could not be completed; creating a test file alone is not verification.
+- Apply this requirement to utilities created, extracted, moved, or behaviorally changed in the current task. Documentation-only edits do not require a repository-wide test backfill.
+
 ## Frontend component utilities
 
 Apply these rules when working in `frontend/**`:

@@ -1,5 +1,21 @@
 import type { ArticleBlock } from '@/features/articles/api/wikipedia';
 
+/**
+ * Detect whether the hero thumbnail already appears in the article content.
+ *
+ * Wikipedia thumbnail paths and original image paths can refer to the same file at
+ * different sizes; this compares identities rather than full URLs.
+ *
+ * @param thumbnailUrl - Hero image URL to compare.
+ * @param blocks - Article blocks that may contain the same image.
+ * @returns True when an image block resolves to the same normalized filename; false when no
+ *   match is found.
+ * @example
+ * hasDuplicateArticleImage('https://example.com/thumb/a/ab/Moon.jpg/200px-Moon.jpg', [
+ *   { type: 'image', src: 'https://example.com/a/ab/Moon.jpg' },
+ * ]);
+ * // => true
+ */
 export function hasDuplicateArticleImage(
   thumbnailUrl: string,
   blocks: ArticleBlock[],
@@ -28,6 +44,7 @@ function getWikipediaImageIdentity(imageUrl: string): string | null {
     }
 
     const thumbIndex = pathSegments.findIndex((segment) => segment === 'thumb');
+    // Thumbnail URLs end with a resized filename; the preceding segment is the original file.
     const rawFileName =
       thumbIndex >= 0 && thumbIndex + 3 < pathSegments.length
         ? pathSegments[pathSegments.length - 2]

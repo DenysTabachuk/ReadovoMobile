@@ -1,3 +1,13 @@
+/**
+ * Collect standard and native error details for Google sign-in diagnostics.
+ *
+ * @param error - Any thrown value, including non-Error values.
+ * @returns Error fields when the value is an Error instance, otherwise an object retaining
+ *   the raw value.
+ * @example
+ * getErrorDebugInfo('failed');
+ * // => { rawError: 'failed' }
+ */
 export function getErrorDebugInfo(error: unknown) {
   if (!(error instanceof Error)) {
     return {
