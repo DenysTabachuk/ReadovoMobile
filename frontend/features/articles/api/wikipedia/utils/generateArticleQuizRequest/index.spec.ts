@@ -16,7 +16,7 @@ describe('generateArticleQuizRequest', () => {
   it('POSTs a quiz request and clears its timeout after parsing the response', async () => {
     const payload = { questions: [] };
     const fetchMock = jest
-      .spyOn(global, 'fetch')
+      .spyOn(globalThis, 'fetch')
       .mockResolvedValue(Response.json(payload));
     await expect(
       generateArticleQuizRequest('/api/articles/quiz', request),
@@ -34,7 +34,7 @@ describe('generateArticleQuizRequest', () => {
   });
   it('maps both HTTP and network failures to the quiz error key and clears timers', async () => {
     const fetchMock = jest
-      .spyOn(global, 'fetch')
+      .spyOn(globalThis, 'fetch')
       .mockResolvedValue(new Response('Unavailable', { status: 503 }));
     await expect(
       generateArticleQuizRequest('/api/articles/quiz', request),
@@ -47,7 +47,7 @@ describe('generateArticleQuizRequest', () => {
   });
   it('aborts a hanging request at 60 seconds and rejects with the quiz error', async () => {
     let signal: AbortSignal | undefined;
-    jest.spyOn(global, 'fetch').mockImplementation(
+    jest.spyOn(globalThis, 'fetch').mockImplementation(
       (_input, init) =>
         new Promise((_resolve, reject) => {
           signal = init?.signal ?? undefined;
@@ -64,7 +64,9 @@ describe('generateArticleQuizRequest', () => {
     expect(jest.getTimerCount()).toBe(0);
   });
   it('propagates invalid JSON without leaking a timer', async () => {
-    jest.spyOn(global, 'fetch').mockResolvedValue(new Response('invalid JSON'));
+    jest
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(new Response('invalid JSON'));
     await expect(
       generateArticleQuizRequest('/api/articles/quiz', request),
     ).rejects.toThrow();
