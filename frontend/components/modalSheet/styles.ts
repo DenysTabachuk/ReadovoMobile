@@ -20,14 +20,6 @@ export const styles = StyleSheet.create({
   closeArea: {
     flex: 1,
   },
-  closeButton: {
-    alignItems: 'center',
-    borderRadius: 999,
-    borderWidth: 1,
-    height: 36,
-    justifyContent: 'center',
-    width: 36,
-  },
   content: {
     flexShrink: 1,
     gap: Spacing.md,
@@ -43,12 +35,6 @@ export const styles = StyleSheet.create({
     height: 4,
     width: 48,
   },
-  header: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: Spacing.md,
-    minHeight: 36,
-  },
   scrollView: {
     flexShrink: 1,
     minHeight: 0,
@@ -57,9 +43,5 @@ export const styles = StyleSheet.create({
     flexGrow: 1,
     gap: Spacing.md,
     paddingBottom: Spacing.xs,
-  },
-  title: {
-    flex: 1,
-    minWidth: 0,
   },
 });

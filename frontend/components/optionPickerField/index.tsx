@@ -1,10 +1,4 @@
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  type ComponentProps,
-} from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Animated,
   Pressable,
@@ -18,29 +12,19 @@ import { ModalSheet } from '@/components/modalSheet';
 import { ThemedText } from '@/components/themedText';
 import { useThemeColor } from '@/hooks/use-theme-color';
 
+import { PickerOption } from './components/pickerOption';
+import type { PickerOptionValue } from './types';
 import { styles } from './styles';
 
-type StatusIcon = {
-  accessibilityLabel: string;
-  name: ComponentProps<typeof Ionicons>['name'];
-};
-
-type Option<T extends string> = {
-  badgeLabel?: string;
-  badgeLabels?: string[];
-  description?: string;
-  disabled?: boolean;
-  displayLabel?: string;
-  label: string;
-  statusIcons?: StatusIcon[];
-  value: T;
-};
+const CHEVRON_ANIMATION_DURATION_MS = 180;
+const CHEVRON_ICON_SIZE = 18;
+const CHEVRON_ROTATION_RANGE = ['0deg', '180deg'];
 
 type OptionPickerFieldProps<T extends string> = {
   containerStyle?: StyleProp<ViewStyle>;
   label: string;
   onSelect: (value: T) => void;
-  options: Option<T>[];
+  options: PickerOptionValue<T>[];
   selectedValue: T;
   title: string;
 };
@@ -66,18 +50,6 @@ export function OptionPickerField<T extends string>({
     { dark: '#202425', light: '#f5f7fa' },
     'background',
   );
-  const selectedBackgroundColor = useThemeColor(
-    { dark: '#123847', light: '#e8f5f9' },
-    'background',
-  );
-  const selectedBorderColor = useThemeColor(
-    { dark: '#67c6e3', light: '#0a7ea4' },
-    'tint',
-  );
-  const badgeColor = useThemeColor(
-    { dark: '#7ee0a0', light: '#1f8a4c' },
-    'tint',
-  );
   const chevronColor = useThemeColor(
     { dark: '#9ba1a6', light: '#687076' },
     'icon',
@@ -101,7 +73,7 @@ export function OptionPickerField<T extends string>({
 
   useEffect(() => {
     Animated.timing(chevronProgress, {
-      duration: 180,
+      duration: CHEVRON_ANIMATION_DURATION_MS,
       toValue: open ? 1 : 0,
       useNativeDriver: true,
     }).start();
@@ -112,7 +84,7 @@ export function OptionPickerField<T extends string>({
       {
         rotate: chevronProgress.interpolate({
           inputRange: [0, 1],
-          outputRange: ['0deg', '180deg'],
+          outputRange: CHEVRON_ROTATION_RANGE,
         }),
       },
     ],
@@ -135,116 +107,25 @@ export function OptionPickerField<T extends string>({
               selectedValue}
           </ThemedText>
           <Animated.View style={chevronAnimatedStyle}>
-            <Ionicons color={chevronColor} name="chevron-down" size={18} />
+            <Ionicons
+              color={chevronColor}
+              name="chevron-down"
+              size={CHEVRON_ICON_SIZE}
+            />
           </Animated.View>
         </Pressable>
       </View>
 
       <ModalSheet onClose={handleClose} open={open} title={title}>
         <View style={styles.optionsList}>
-          {options.map((option) => {
-            const isSelected = option.value === selectedValue;
-            const badgeLabels =
-              option.badgeLabels ??
-              (option.badgeLabel ? [option.badgeLabel] : []);
-
-            return (
-              <Pressable
-                disabled={option.disabled}
-                key={option.value}
-                onPress={
-                  option.disabled ? undefined : () => handleSelect(option.value)
-                }
-                style={[
-                  styles.optionButton,
-                  { borderColor },
-                  option.disabled ? styles.optionButtonDisabled : null,
-                  isSelected
-                    ? {
-                        backgroundColor: selectedBackgroundColor,
-                        borderColor: selectedBorderColor,
-                      }
-                    : null,
-                ]}
-              >
-                <View style={styles.optionContent}>
-                  <View style={styles.optionMain}>
-                    <ThemedText
-                      style={[
-                        styles.optionLabel,
-                        option.disabled ? styles.optionTextDisabled : null,
-                      ]}
-                      type="bodyStrong"
-                    >
-                      {option.label}
-                    </ThemedText>
-                    {option.description ? (
-                      <ThemedText
-                        style={styles.optionDescription}
-                        type="description"
-                      >
-                        {option.description}
-                      </ThemedText>
-                    ) : null}
-                    {badgeLabels.length > 0 ? (
-                      <View style={styles.optionBadges}>
-                        {badgeLabels.map((badgeLabel) => (
-                          <View
-                            key={badgeLabel}
-                            style={[
-                              styles.optionBadge,
-                              {
-                                backgroundColor: selectedBackgroundColor,
-                                borderColor: badgeColor,
-                              },
-                            ]}
-                          >
-                            <Ionicons
-                              color={badgeColor}
-                              name="checkmark-circle"
-                              size={16}
-                            />
-                            <ThemedText
-                              type="description"
-                              style={[
-                                styles.optionBadgeText,
-                                { color: badgeColor },
-                              ]}
-                            >
-                              {badgeLabel}
-                            </ThemedText>
-                          </View>
-                        ))}
-                      </View>
-                    ) : null}
-                  </View>
-                  {option.statusIcons?.length ? (
-                    <View style={styles.statusIcons}>
-                      {option.statusIcons.map((statusIcon) => (
-                        <View
-                          accessibilityLabel={statusIcon.accessibilityLabel}
-                          key={`${option.value}-${statusIcon.name}-${statusIcon.accessibilityLabel}`}
-                          style={[
-                            styles.statusIconBadge,
-                            {
-                              backgroundColor: selectedBackgroundColor,
-                              borderColor: badgeColor,
-                            },
-                          ]}
-                        >
-                          <Ionicons
-                            color={badgeColor}
-                            name={statusIcon.name}
-                            size={16}
-                          />
-                        </View>
-                      ))}
-                    </View>
-                  ) : null}
-                </View>
-              </Pressable>
-            );
-          })}
+          {options.map((option) => (
+            <PickerOption
+              key={option.value}
+              isSelected={option.value === selectedValue}
+              onSelect={handleSelect}
+              option={option}
+            />
+          ))}
         </View>
       </ModalSheet>
     </>

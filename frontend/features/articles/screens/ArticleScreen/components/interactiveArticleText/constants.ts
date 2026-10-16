@@ -1,0 +1,3 @@
+export const ENABLE_SPEECH_SENTENCE_HIGHLIGHT = true;
+
+export const ENABLE_SPEECH_WORD_HIGHLIGHT = false;

@@ -13,32 +13,21 @@ import {
 
 import { ThemedText } from '@/components/themedText';
 import { useThemeColor } from '@/hooks/use-theme-color';
-import type { LearningReminderTime } from '@/providers/preferencesProvider';
 
 import { styles } from './styles';
+import type { TimeValue } from './types';
+import { createDateFromTime } from './utils/createDateFromTime';
+import { formatTime } from './utils/formatTime';
+
+const TIME_ICON_SIZE = 20;
+const CHEVRON_ICON_SIZE = 18;
 
 type TimePickerFieldProps = {
   containerStyle?: StyleProp<ViewStyle>;
   label: string;
-  onChange: (time: LearningReminderTime) => void;
-  value: LearningReminderTime;
+  onChange: (time: TimeValue) => void;
+  value: TimeValue;
 };
-
-function createDateFromTime(time: LearningReminderTime): Date {
-  const [hours, minutes] = time.split(':').map(Number);
-  const date = new Date();
-
-  date.setHours(hours, minutes, 0, 0);
-
-  return date;
-}
-
-function formatTime(date: Date): LearningReminderTime {
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-
-  return `${hours}:${minutes}` as LearningReminderTime;
-}
 
 export function TimePickerField({
   containerStyle,
@@ -89,12 +78,20 @@ export function TimePickerField({
         ]}
       >
         <View style={styles.pickerButtonContent}>
-          <Ionicons color={iconColor} name="time-outline" size={20} />
+          <Ionicons
+            color={iconColor}
+            name="time-outline"
+            size={TIME_ICON_SIZE}
+          />
           <ThemedText style={styles.pickerLabel} type="body">
             {value}
           </ThemedText>
         </View>
-        <Ionicons color={iconColor} name="chevron-down" size={18} />
+        <Ionicons
+          color={iconColor}
+          name="chevron-down"
+          size={CHEVRON_ICON_SIZE}
+        />
       </Pressable>
 
       {isPickerVisible || Platform.OS === 'ios' ? (

@@ -1,4 +1,4 @@
-import { type ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import * as NavigationBar from 'expo-navigation-bar';
 import {
   Modal,
@@ -10,15 +10,15 @@ import {
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
-import { useEffect } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { ThemedText, type ThemedTextProps } from '@/components/themedText';
+import type { ThemedTextProps } from '@/components/themedText';
 import { Colors } from '@/constants/theme';
 import { Spacing } from '@/constants/spacing';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 
+import { SheetHeader } from './components/sheetHeader';
 import { styles } from './styles';
 
 type ModalSheetProps = {
@@ -60,10 +60,6 @@ export function ModalSheet({
     Platform.OS === 'android'
       ? Math.max(insets.bottom, Spacing.md)
       : insets.bottom;
-  const closeButtonBorderColor = useThemeColor(
-    { dark: '#4f5b62', light: '#d0d7de' },
-    'icon',
-  );
   const appBackgroundColor = Colors[colorScheme].background;
 
   useEffect(() => {
@@ -102,20 +98,11 @@ export function ModalSheet({
           {showHandle ? <View style={styles.handle} /> : null}
 
           <View style={[styles.content, contentStyle]}>
-            <View style={styles.header}>
-              <ThemedText type={titleType} style={styles.title}>
-                {title}
-              </ThemedText>
-              <Pressable
-                onPress={onClose}
-                style={[
-                  styles.closeButton,
-                  { borderColor: closeButtonBorderColor },
-                ]}
-              >
-                <ThemedText type="bodyStrong">X</ThemedText>
-              </Pressable>
-            </View>
+            <SheetHeader
+              onClose={onClose}
+              title={title}
+              titleType={titleType}
+            />
 
             <ScrollView
               contentContainerStyle={[
