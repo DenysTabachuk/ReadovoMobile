@@ -48,6 +48,7 @@ export function useCompleteArticleQuiz({
       }
 
       const profile = await getAchievementsProfile(currentUserId);
+      // TODO: Submit answers and use the server-awarded reward. See docs/server-side-quiz-rewards.md.
       const rewardCoins = calculateQuizReward({
         isFirstTestCompleted: profile.progress.testsCompleted === 0,
         level: quizLevel,

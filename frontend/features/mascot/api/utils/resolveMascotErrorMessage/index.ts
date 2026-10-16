@@ -2,6 +2,21 @@ type ErrorResponseBody = {
   message?: string | string[];
 };
 
+// TODO: Resolve stable backend error codes instead of message text. See docs/mascot-error-codes.md.
+/**
+ * Translate recognized mascot API errors into UI message keys.
+ *
+ * Consumes the response body. JSON parsing and body-reading errors are handled with the
+ * fallback key.
+ *
+ * @param response - Error response with an unread JSON body.
+ * @param fallbackKey - Translation key to return for an unknown or unreadable error.
+ * @returns The recognized error key, or fallbackKey. For message arrays, only the first
+ *   message is checked.
+ * @example
+ * await resolveMascotErrorMessage(new Response(JSON.stringify({ message: 'Not enough coins.' })), 'mascot.errors.generic');
+ * // => 'mascot.errors.notEnoughCoins'
+ */
 export async function resolveMascotErrorMessage(
   response: Response,
   fallbackKey: string,

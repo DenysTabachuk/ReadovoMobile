@@ -1,5 +1,19 @@
 import { type InlineNode } from '@/features/articles/api/wikipedia';
 
+/**
+ * Split text nodes into selectable English word tokens while preserving emphasis.
+ *
+ * Recognizes Latin words with internal apostrophes or hyphens; other characters remain text
+ * nodes.
+ *
+ * @param nodes - Inline nodes, including text nodes that may still contain whole sentences.
+ * @returns A new node array with existing word nodes reused and text nodes split without
+ *   mutating input.
+ * @example
+ * normalizeInlineNodesForWordSelection([{ type: 'text', text: 'Hello!', bold: true }])
+ *   .map(({ type, text }) => [type, text]);
+ * // => [['word', 'Hello'], ['text', '!']]
+ */
 export function normalizeInlineNodesForWordSelection(
   nodes: InlineNode[],
 ): InlineNode[] {

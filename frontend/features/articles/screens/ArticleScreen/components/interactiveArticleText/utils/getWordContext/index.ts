@@ -3,6 +3,21 @@ import { isUsefulContext } from '../isUsefulContext';
 
 const CONTEXT_WINDOW_RADIUS = 140;
 
+/**
+ * Choose readable context for translating a selected word or phrase.
+ *
+ * The fallback avoids sending only a short or incomplete sentence to translation; window
+ * edges prefer whitespace.
+ *
+ * @param text - Full source text.
+ * @param start - Inclusive selection offset.
+ * @param end - Exclusive selection offset.
+ * @returns A useful containing sentence, otherwise a nearby window of up to roughly 140
+ *   characters on each side; trimmed full text is the final fallback.
+ * @example
+ * getWordContext('Hi!', 0, 2);
+ * // => 'Hi!'
+ */
 export function getWordContext(
   text: string,
   start: number,

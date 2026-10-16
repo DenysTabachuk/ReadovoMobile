@@ -30,6 +30,21 @@ const LENGTH_MULTIPLIERS: Record<QuizRewardTargetLength, number> = {
   long: 1.5,
 };
 
+// TODO: Move authoritative quiz rewards to the backend. See docs/server-side-quiz-rewards.md.
+/**
+ * Calculate quiz coins from accuracy, difficulty, length, and completion bonuses.
+ *
+ * Accuracy thresholds are checked from highest to lowest. Input percentages are not
+ * validated or clamped.
+ *
+ * @param context - Accuracy percentage plus optional level, target length, and first-test
+ *   bonus flag.
+ * @returns The rounded coin reward clamped to at least zero; omitted level and length use a
+ *   multiplier of one.
+ * @example
+ * calculateQuizReward({ percentage: 100, isFirstTestCompleted: true });
+ * // => 52
+ */
 export function calculateQuizReward({
   isFirstTestCompleted = false,
   level,

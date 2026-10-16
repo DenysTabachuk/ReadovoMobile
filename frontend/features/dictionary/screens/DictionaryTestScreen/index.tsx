@@ -102,6 +102,7 @@ export default function DictionaryTestScreen() {
       }
 
       const profile = await getAchievementsProfile(userId);
+      // TODO: Submit the completed session for server-side rewards. See docs/server-side-quiz-rewards.md.
       const rewardCoins = calculateQuizReward({
         isFirstTestCompleted: profile.progress.testsCompleted === 0,
         percentage: result.percentage,

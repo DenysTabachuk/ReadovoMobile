@@ -12,6 +12,12 @@ const blocks: ArticleBlock[] = [
 ];
 
 describe('createVisibleBlockItems', () => {
+  it('handles empty articles and retains every block when nothing is collapsed', () => {
+    expect(createVisibleBlockItems([], {})).toEqual([]);
+    expect(
+      createVisibleBlockItems(blocks, {}).map((item) => item.sourceIndex),
+    ).toEqual([0, 1, 2, 3, 4, 5]);
+  });
   it('hides nested sections while retaining the next sibling section and source indexes', () => {
     const visible = createVisibleBlockItems(blocks, {
       'heading-0-First section': true,

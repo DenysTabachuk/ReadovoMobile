@@ -12,6 +12,37 @@ const props: ArticleBlockRowProps = {
 };
 
 describe('areArticleBlockRowPropsEqual', () => {
+  it('invalidates changed block content, callbacks, and collapse state', () => {
+    expect(
+      areArticleBlockRowPropsEqual(props, {
+        ...props,
+        block: { ...props.block },
+      }),
+    ).toBe(false);
+    expect(
+      areArticleBlockRowPropsEqual(props, {
+        ...props,
+        onWordPress: () => undefined,
+      }),
+    ).toBe(false);
+    expect(
+      areArticleBlockRowPropsEqual(props, { ...props, collapsed: true }),
+    ).toBe(false);
+  });
+
+  it('ignores token updates for headings', () => {
+    const headingProps: ArticleBlockRowProps = {
+      ...props,
+      block: { type: 'heading', level: 1, text: 'Intro' },
+    };
+    expect(
+      areArticleBlockRowPropsEqual(headingProps, {
+        ...headingProps,
+        speakingTokenKey: 'block-1-word-0-0',
+        selectedTokenKeys: ['block-1-word-0-0'],
+      }),
+    ).toBe(true);
+  });
   it('skips rerendering when speech moves between other blocks', () => {
     expect(
       areArticleBlockRowPropsEqual(

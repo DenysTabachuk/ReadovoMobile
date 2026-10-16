@@ -4,6 +4,20 @@ import { getSentenceRanges } from '../getSentenceRanges';
 import { getWordContext } from '../getWordContext';
 import { isUsefulContext } from '../isUsefulContext';
 
+/**
+ * Attach stable token keys, sentence positions, and translation context to inline nodes.
+ *
+ * Keys include the original node index and character offset so selection and speech can
+ * refer to the same word. Input is not mutated.
+ *
+ * @param nodes - Ordered inline nodes with words already tokenized.
+ * @param prefix - Block or list-item identifier used to namespace generated keys.
+ * @returns New render parts preserving emphasis and source text; empty input returns no parts.
+ * @example
+ * splitTextToTouchableParts([{ type: 'word', text: 'Hello' }], 'block-0')
+ *   .map(({ key }) => key);
+ * // => ['block-0-word-0-0']
+ */
 export function splitTextToTouchableParts(
   nodes: InlineNode[],
   prefix: string,

@@ -4,11 +4,25 @@ import {
 } from '@/features/articles/api/wikipedia';
 import { createInlineNodesFromPlainText } from '../createInlineNodesFromPlainText';
 
+// Alphabetic list markers are single letters; a full word plus a period is a sentence.
 const LIST_ITEM_PATTERN =
-  /^([*#-]+|[\u2022\u25cf\u25aa\u25e6]+|[A-Za-z0-9]+[.)])\s*(.*)$/;
+  /^([*#-]+|[\u2022\u25cf\u25aa\u25e6]+|(?:[A-Za-z]|\d+)[.)])\s*(.*)$/;
 
 const SECTION_HEADING_PATTERN = /^(={2,})\s*(.*?)\s*\1$/;
 
+/**
+ * Convert fallback plain text into article paragraphs, headings, and lists.
+ *
+ * Consecutive paragraph lines are joined with spaces. Heading depth is capped at three;
+ * this does not parse arbitrary HTML or Markdown.
+ *
+ * @param text - Text using blank lines, wiki-style headings, and supported list markers.
+ * @returns Article blocks in reading order with tokenized inline text; blank input returns
+ *   no blocks.
+ * @example
+ * parsePlainTextToBlocks('== Intro ==\nHello world.').map(({ type }) => type);
+ * // => ['heading', 'paragraph']
+ */
 export function parsePlainTextToBlocks(text: string): ArticleBlock[] {
   const blocks: ArticleBlock[] = [];
   const lines = text.split(/\r?\n/);

@@ -7,6 +7,11 @@ import {
 
 import type { ArticleSpeechChunk, ArticleSpeechWord } from '../../types';
 
+type SpeechSection = {
+  text: string;
+  words: ArticleSpeechWord[];
+};
+
 const WORD_PATTERN = /[A-Za-z]+(?:['\u2019-][A-Za-z]+)*/g;
 const CHUNK_SEPARATOR = '\n\n';
 const MIN_SAFE_CHUNK_LENGTH = 800;
@@ -20,11 +25,19 @@ const SAFE_CHUNK_LENGTH = Math.max(
   ),
 );
 
-type SpeechSection = {
-  text: string;
-  words: ArticleSpeechWord[];
-};
-
+/**
+ * Build speech chunks with word offsets linking narration to rendered article tokens.
+ *
+ * Reads paragraphs and list items only. Uses the native speech input limit to pack whole
+ * sections; an individual oversized section is not split further.
+ *
+ * @param blocks - Article blocks to narrate, or undefined before loading.
+ * @returns Chunks containing text and word character offsets; missing blocks or blocks
+ *   without speakable words produce no chunks.
+ * @example
+ * createArticleSpeechChunks([{ type: 'paragraph', children: [{ type: 'word', text: 'Hello' }] }]);
+ * // => [{ text: 'Hello', words: [{ charStart: 0, charEnd: 5, text: 'Hello', tokenKey: 'block-0-word-0-0' }] }]
+ */
 export function createArticleSpeechChunks(
   blocks?: ArticleBlock[],
 ): ArticleSpeechChunk[] {
@@ -51,6 +64,7 @@ export function createArticleSpeechChunks(
       currentChunkWords = [];
     }
 
+    // Speech reports offsets within a chunk, while each section starts at zero.
     const charOffset = currentChunkText
       ? currentChunkText.length + CHUNK_SEPARATOR.length
       : 0;
@@ -118,6 +132,7 @@ function appendSpeechSection(
     return;
   }
 
+  // Word offsets must be shifted by the same leading whitespace removed from speech text.
   sections.push({
     text: trimmedText,
     words: createSpeechWords(
@@ -149,7 +164,8 @@ function createSpeechWords(
         charEnd,
         charStart: Math.max(0, charStart),
         text: node.text,
-        tokenKey: `${prefix}-word-${index}-${Math.max(0, charStart)}`,
+        // Rendered tokens keep source offsets even when speech text is trimmed.
+        tokenKey: `${prefix}-word-${index}-${cursor}`,
       });
     }
 

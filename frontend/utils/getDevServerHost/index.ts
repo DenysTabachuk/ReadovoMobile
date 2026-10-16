@@ -21,6 +21,18 @@ function getHostname(value: HostCandidate) {
   }
 }
 
+/**
+ * Resolve a development hostname from an explicit override or available Expo metadata.
+ *
+ * Reads Expo runtime configuration, supporting both current and legacy manifest formats.
+ *
+ * @param explicitHost - Optional host or URL, tried before Expo host candidates.
+ * @returns The first parsed hostname without scheme or port, falling back to localhost if
+ *   no candidate is usable.
+ * @example
+ * getDevServerHost('http://192.168.1.20:8081/path');
+ * // => '192.168.1.20'
+ */
 export function getDevServerHost(explicitHost?: string) {
   const constants = Constants as typeof Constants & {
     manifest?: {
