@@ -20,6 +20,22 @@ type UseSimplifyArticleMutationParams = {
   onSuccess: (response: SimplifyArticleResponse) => void;
 };
 
+/**
+ * Requests an adaptation or summary at the selected level when explicitly mutated.
+ * Prepares article blocks for transport, then invalidates article lists, adaptation
+ * availability, and the user's recent/saved lists on success before notifying the
+ * caller. Failures are logged and show a banner specific to the requested mode.
+ *
+ * @param params - Source article, generation level, and success callback responsible
+ * for applying the generated response to the reader's local state.
+ * @returns Mutation controls accepting 'adaptation' or 'summary', with pending/error
+ * state. Invalidation schedules refreshes; the callback does not await those refreshes.
+ * @example
+ * // Inside a component or another hook:
+ * const simplify = useSimplifyArticleMutation({ article, selectedLevel: 'B1', onSuccess: applyVersion });
+ * simplify.mutate('summary');
+ * // Requests a B1 summary and passes its response to applyVersion on success.
+ */
 export function useSimplifyArticleMutation({
   article,
   selectedLevel,

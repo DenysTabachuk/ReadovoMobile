@@ -22,6 +22,21 @@ type UseGenerateArticleQuizMutationParams = {
 
 const ARTICLE_QUIZ_TARGET_LENGTH = 'medium';
 
+/**
+ * Generates the requested quiz mode from original article content on mutate.
+ * Caches a successful session by article, mode, level, and target length before
+ * invoking the caller's success callback. Failures show an error banner.
+ *
+ * @param params - Source article, generation level, and callback receiving the
+ * completed mode/level so the caller can handle navigation or other UI effects.
+ * @returns Mutation controls accepting 'article' or 'vocabulary'; mounting the
+ * hook does not generate a quiz. Article quizzes use the medium target length.
+ * @example
+ * // Inside a component or another hook:
+ * const quiz = useGenerateArticleQuizMutation({ article, selectedLevel: 'A2', onSuccess: openQuiz });
+ * quiz.mutate('vocabulary');
+ * // Generates vocabulary questions, caches the session, then calls openQuiz on success.
+ */
 export function useGenerateArticleQuizMutation({
   article,
   selectedLevel,

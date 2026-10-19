@@ -23,11 +23,11 @@ import { useArticleReaderScroll } from '../../hooks/useArticleReaderScroll';
 import { useArticleTransformations } from '../../hooks/useArticleTransformations';
 import { useArticleTranslation } from '../../hooks/useArticleTranslation';
 import { useArticleSpeech } from '../../useArticleSpeech';
-import { ArticleQuizPicker } from '../articleQuizPicker';
-import { ArticleReaderHeader } from '../articleReaderHeader';
-import { ArticleTextSettings } from '../articleTextSettings';
-import { FloatingSpeechControls } from '../floatingSpeechControls';
-import { InteractiveArticleText } from '../interactiveArticleText';
+import { ArticleQuizPicker } from './components/articleQuizPicker';
+import { ArticleReaderHeader } from './components/articleReaderHeader';
+import { ArticleTextSettings } from './components/articleTextSettings';
+import { FloatingSpeechControls } from './components/floatingSpeechControls';
+import { InteractiveArticleText } from './components/interactiveArticleText';
 import { styles } from './styles';
 type Props = { article: WikipediaArticleDetail };
 

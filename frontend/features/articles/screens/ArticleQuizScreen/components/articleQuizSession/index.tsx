@@ -22,8 +22,8 @@ import { View } from 'react-native';
 import type { ArticleQuizMode } from '../../../../articleQuizSession';
 import { useQuizVocabulary } from '../../hooks/useQuizVocabulary';
 import { isVocabularyWordQuestion } from '../../utils/isVocabularyWordQuestion';
-import { QuizExitConfirmation } from '../quizExitConfirmation';
-import { SaveVocabularyWordButton } from '../saveVocabularyWordButton';
+import { QuizExitConfirmation } from './components/quizExitConfirmation';
+import { SaveVocabularyWordButton } from './components/saveVocabularyWordButton';
 import { styles } from './styles';
 
 type ArticleQuizSessionProps = {

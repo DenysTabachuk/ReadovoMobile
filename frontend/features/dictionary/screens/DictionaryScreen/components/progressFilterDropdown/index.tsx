@@ -9,7 +9,7 @@ import type {
   DictionaryProgressFilter,
   ProgressFilterOption,
 } from '../../types';
-import { ProgressStatusBadge } from '../progressStatusBadge';
+import { ProgressStatusBadge } from './components/progressStatusBadge';
 import { styles } from './styles';
 
 type ProgressFilterDropdownProps = {
