@@ -1,6 +1,6 @@
 {
   "scripts": {
-    "prepare": "husky",
+    "prepare": "node scripts/setup-git.cjs && husky",
     "typecheck": "npm run typecheck:backend && npm run typecheck:frontend",
     "typecheck:backend": "npm --prefix backend run typecheck",
     "typecheck:frontend": "npm --prefix frontend run typecheck",
