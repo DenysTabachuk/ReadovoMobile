@@ -2,9 +2,16 @@ import { TRANSLATION_SHEET_OPEN_DELAY_MS } from '../../constants';
 import { useAuth } from '@/features/auth';
 import { useCreateDictionaryWordMutation } from '@/features/dictionary';
 import { useWordTranslation } from '@/features/translations';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useReducer } from 'react';
 import type { SelectedTextToken } from '../../types';
-import { buildSelectedFragment, resolveNextTokenSelection } from '../../utils';
+import { buildSelectedFragment } from '../../utils';
+import type { ArticleTranslationState } from './types';
+import { articleTranslationReducer } from './utils/articleTranslationReducer';
+
+const INITIAL_STATE: ArticleTranslationState = {
+  selectedTokens: [],
+  isTranslationSheetOpen: false,
+};
 
 /**
  * Coordinates word selection, translation fetching, and the translation sheet.
@@ -22,8 +29,10 @@ import { buildSelectedFragment, resolveNextTokenSelection } from '../../utils';
  */
 export function useArticleTranslation() {
   const { currentUser } = useAuth();
-  const [selectedTokens, setSelectedTokens] = useState<SelectedTextToken[]>([]);
-  const [isTranslationSheetOpen, setIsTranslationSheetOpen] = useState(false);
+  const [{ selectedTokens, isTranslationSheetOpen }, dispatch] = useReducer(
+    articleTranslationReducer,
+    INITIAL_STATE,
+  );
   const selectedFragment = useMemo(
     () => buildSelectedFragment(selectedTokens),
     [selectedTokens],
@@ -39,36 +48,21 @@ export function useArticleTranslation() {
     word: selectedFragment?.text,
   });
   const dictionaryMutation = useCreateDictionaryWordMutation();
-  const handleWordPress = useCallback(
-    (selection: SelectedTextToken) => {
-      const currentSelection = selectedTokens;
-      const isTappedTokenAlreadySelected = currentSelection.some(
-        (token) => token.tokenKey === selection.tokenKey,
-      );
-
-      if (isTappedTokenAlreadySelected) {
-        setIsTranslationSheetOpen(true);
-        return;
-      }
-
-      setIsTranslationSheetOpen(false);
-      setSelectedTokens(resolveNextTokenSelection(currentSelection, selection));
-    },
-    [selectedTokens],
-  );
+  const handleWordPress = useCallback((selection: SelectedTextToken) => {
+    dispatch({ type: 'wordPressed', token: selection });
+  }, []);
 
   useEffect(() => {
     if (selectedTokens.length === 0 || isTranslationSheetOpen) return;
     const timeout = setTimeout(
-      () => setIsTranslationSheetOpen(true),
+      () => dispatch({ type: 'sheetOpened' }),
       TRANSLATION_SHEET_OPEN_DELAY_MS,
     );
     return () => clearTimeout(timeout);
   }, [isTranslationSheetOpen, selectedTokens]);
 
   const handleCloseTranslation = useCallback(() => {
-    setSelectedTokens([]);
-    setIsTranslationSheetOpen(false);
+    dispatch({ type: 'closed' });
   }, []);
 
   const handleAddToDictionary = useCallback(() => {

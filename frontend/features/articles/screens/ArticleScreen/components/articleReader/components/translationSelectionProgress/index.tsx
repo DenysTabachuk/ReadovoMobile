@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Animated, View } from 'react-native';
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { TRANSLATION_SHEET_OPEN_DELAY_MS } from '../../constants';
+import { TRANSLATION_SHEET_OPEN_DELAY_MS } from '../../../../constants';
 import { styles } from './styles';
 
 type TranslationSelectionProgressProps = { selectionKey: string };

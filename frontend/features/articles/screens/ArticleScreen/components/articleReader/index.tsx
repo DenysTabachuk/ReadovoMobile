@@ -1,4 +1,4 @@
-import { TranslationSelectionProgress } from '../translationSelectionProgress';
+import { TranslationSelectionProgress } from './components/translationSelectionProgress';
 import { Cta } from '@/components/cta';
 import { IconSymbol } from '@/components/iconSymbol';
 import { ScreenContainer } from '@/components/screenContainer';

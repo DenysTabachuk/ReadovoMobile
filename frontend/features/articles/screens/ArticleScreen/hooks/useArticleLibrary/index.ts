@@ -14,6 +14,22 @@ import { useAuth } from '@/features/auth';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect } from 'react';
 
+/**
+ * Provides saved-article state/actions and automatically records the current article
+ * as recently read for an authenticated user. The effect reruns when the article
+ * reference or user changes, updates the recent-list cache on success, and logs
+ * failures; in-flight recording is not cancelled on unmount.
+ *
+ * @param article - Loaded article to record and optionally save/remove.
+ * @returns Saved status, pending-save status, and an explicit toggle action that
+ * ignores calls while saving. The owning mutation handles optimistic cache updates
+ * and outcome banners; unauthenticated save attempts are rejected there.
+ * @example
+ * // Inside a component or another hook:
+ * const library = useArticleLibrary(article);
+ * library.handleToggleSavedArticle();
+ * // Adds/removes the article according to its current saved state.
+ */
 export function useArticleLibrary(article: WikipediaArticleDetail) {
   const articleId = article.id;
   const { currentUser } = useAuth();
