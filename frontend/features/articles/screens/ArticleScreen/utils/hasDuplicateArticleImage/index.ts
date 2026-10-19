@@ -1,4 +1,4 @@
-import type { ArticleBlock } from '@/features/articles/api/wikipedia';
+import type { ArticleBlock } from '@/features/articles/api';
 
 /**
  * Detect whether the hero thumbnail already appears in the article content.

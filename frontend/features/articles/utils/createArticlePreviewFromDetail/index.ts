@@ -1,7 +1,4 @@
-import type {
-  WikipediaArticle,
-  WikipediaArticleDetail,
-} from '../../api/wikipedia/types';
+import type { WikipediaArticle, WikipediaArticleDetail } from '../../api/types';
 import { createArticleExtract } from '../createArticleExtract';
 
 /**

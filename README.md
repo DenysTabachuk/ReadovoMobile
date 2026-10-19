@@ -12,6 +12,7 @@ database for local development.
 
 Expo Go is not sufficient for testing Google Sign-In or Firebase Cloud
 Messaging. Use a native development build for those features.
+
 - A physical Android device or Android emulator
 
 Commands below assume you are starting from the repository root.
@@ -33,6 +34,18 @@ The root package contains helper scripts and the Git hooks. Install it as well:
 ```bash
 cd ..
 npm install
+```
+
+Root `npm install` / `npm ci` automatically installs Husky hooks and, on Windows,
+enables Git long-path support (`core.longpaths`) for this checkout. Existing
+contributors can apply the updated setup with `npm run prepare` from the root.
+The Git setting is local to this repository; macOS and Linux skip that step.
+
+When cloning on Windows, enable long paths from the start so Git can check out
+the nested component files before the setup script is available:
+
+```bash
+git clone -c core.longpaths=true https://github.com/DenysTabachuk/ReadovoMobile.git
 ```
 
 ## Database
@@ -185,9 +198,9 @@ keytool -list -v `
 
 Google Sign-In needs two OAuth clients:
 
-| Client type | Purpose |
-| --- | --- |
-| Android | Authorizes the package name and signing-certificate SHA-1 |
+| Client type     | Purpose                                                                    |
+| --------------- | -------------------------------------------------------------------------- |
+| Android         | Authorizes the package name and signing-certificate SHA-1                  |
 | Web application | Provides the audience used for frontend ID tokens and backend verification |
 
 Create a Web application OAuth client in the same Google Cloud project. Put its

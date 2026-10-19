@@ -18,3 +18,5 @@ export type {
   SubmitDictionaryTestAnswerRequest,
   UpdateDictionaryWordProgressRequest,
 } from './api';
+
+export { useCreateDictionaryWordMutation } from './api';

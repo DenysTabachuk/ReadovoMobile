@@ -1,11 +1,6 @@
-import { StyleSheet } from 'react-native';
-
 import { Spacing } from '@/constants/spacing';
-
+import { StyleSheet } from 'react-native';
 export const styles = StyleSheet.create({
-  container: {
-    gap: Spacing.md,
-  },
   sectionCard: {
     borderRadius: 16,
     borderWidth: 1,
@@ -16,55 +11,10 @@ export const styles = StyleSheet.create({
   sectionHeader: {
     marginBottom: Spacing.xs,
   },
-  sheetHeader: {
-    marginHorizontal: -Spacing.md,
-  },
-  sheetHeaderButton: {
-    alignItems: 'center',
-    flex: 1,
-    justifyContent: 'center',
-    paddingHorizontal: Spacing.md,
-  },
-  sheetTitleRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-  },
-  sheetContainer: {
-    borderRadius: 18,
-    borderWidth: 1,
-    overflow: 'hidden',
-    paddingHorizontal: Spacing.md,
-  },
-  filtersContentAnimated: {
-    overflow: 'hidden',
-  },
   sectionHeaderText: {
     fontSize: 13,
     letterSpacing: 0.4,
     textTransform: 'uppercase',
-  },
-  searchClearButton: {
-    alignItems: 'center',
-    height: 40,
-    justifyContent: 'center',
-    width: 40,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 16,
-    minHeight: 52,
-    paddingLeft: Spacing.lg,
-    paddingRight: Spacing.xs,
-    paddingVertical: Spacing.md,
-  },
-  searchInputContainer: {
-    alignItems: 'center',
-    borderRadius: 16,
-    borderWidth: 1,
-    flexDirection: 'row',
-    minHeight: 52,
   },
   filtersRow: {
     alignItems: 'flex-end',
@@ -96,38 +46,6 @@ export const styles = StyleSheet.create({
     flex: 1,
     minWidth: 180,
   },
-  filterChip: {
-    borderRadius: 999,
-    borderWidth: 1,
-    minHeight: 36,
-    justifyContent: 'center',
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-  },
-  filterChipActive: {
-    borderWidth: 0,
-  },
-  infoButton: {
-    alignItems: 'center',
-    borderRadius: 14,
-    borderWidth: 1,
-    height: 52,
-    justifyContent: 'center',
-    width: 52,
-  },
-  resultsRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.sm,
-    justifyContent: 'space-between',
-  },
-  resultsStatus: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.sm,
-  },
   recommendedToggle: {
     alignItems: 'center',
     borderRadius: 14,
@@ -152,14 +70,66 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: Spacing.sm,
   },
-  recommendedInfoContent: {
+  container: {
     gap: Spacing.md,
   },
-  recommendedInfoButton: {
-    marginTop: Spacing.sm,
+  sheetHeader: {
+    marginHorizontal: -Spacing.md,
   },
-  recommendedInfoText: {
-    lineHeight: 22,
+  sheetHeaderButton: {
+    alignItems: 'center',
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: Spacing.md,
+  },
+  sheetTitleRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  sheetContainer: {
+    borderRadius: 18,
+    borderWidth: 1,
+    overflow: 'hidden',
+    paddingHorizontal: Spacing.md,
+  },
+  filtersContentAnimated: {
+    overflow: 'hidden',
+  },
+  searchClearButton: {
+    alignItems: 'center',
+    height: 40,
+    justifyContent: 'center',
+    width: 40,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    minHeight: 52,
+    paddingLeft: Spacing.lg,
+    paddingRight: Spacing.xs,
+    paddingVertical: Spacing.md,
+  },
+  searchInputContainer: {
+    alignItems: 'center',
+    borderRadius: 16,
+    borderWidth: 1,
+    flexDirection: 'row',
+    minHeight: 52,
+  },
+  resultsRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+    justifyContent: 'space-between',
+  },
+  resultsStatus: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
   },
   clearButton: {
     alignItems: 'center',
@@ -173,9 +143,5 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     gap: Spacing.xs,
-  },
-  savedCount: {
-    minWidth: 16,
-    textAlign: 'right',
   },
 });

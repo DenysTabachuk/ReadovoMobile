@@ -1,0 +1,1 @@
+export { useCreateDictionaryWordMutation } from './useCreateDictionaryWordMutation';

@@ -1,4 +1,4 @@
-import type { ArticleBlock } from '@/features/articles/api/wikipedia';
+import type { ArticleBlock } from '@/features/articles/api';
 
 /**
  * Flatten article blocks into readable text for complexity measurements.

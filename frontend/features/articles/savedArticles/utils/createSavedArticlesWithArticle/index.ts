@@ -1,5 +1,5 @@
+import type { WikipediaArticle } from '../../../api/types';
 import type { SavedArticle } from '../../types';
-import type { WikipediaArticle } from '../../../api/wikipedia/types';
 
 /**
  * Put an article first in the saved list for an optimistic UI update.

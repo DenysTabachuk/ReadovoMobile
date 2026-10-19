@@ -1,10 +1,8 @@
-export { extractTextFromArticleBlocks } from './extractTextFromArticleBlocks';
-export { getTextComplexityMetrics } from './getTextComplexityMetrics';
-export { stripDuplicateTitleHeading } from './stripDuplicateTitleHeading';
-export { hasDuplicateArticleImage } from './hasDuplicateArticleImage';
-export { createSimplificationRequestBlocks } from './createSimplificationRequestBlocks';
-export { createAdaptationKey } from './createAdaptationKey';
-export { isSameAdaptation } from './isSameAdaptation';
-export { getBlockIndexFromTokenKey } from './getBlockIndexFromTokenKey';
 export { buildSelectedFragment } from './buildSelectedFragment';
+export { createAdaptationKey } from './createAdaptationKey';
+export { extractTextFromArticleBlocks } from './extractTextFromArticleBlocks';
+export { getBlockIndexFromTokenKey } from './getBlockIndexFromTokenKey';
+export { getTextComplexityMetrics } from './getTextComplexityMetrics';
+export { hasDuplicateArticleImage } from './hasDuplicateArticleImage';
+export { isSameAdaptation } from './isSameAdaptation';
 export { resolveNextTokenSelection } from './resolveNextTokenSelection';
