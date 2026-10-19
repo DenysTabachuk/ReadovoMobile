@@ -16,32 +16,4 @@ export const styles = StyleSheet.create({
   centerTitle: {
     textAlign: 'center',
   },
-  container: {
-    flex: 1,
-    gap: Spacing.md,
-    paddingBottom: 0,
-  },
-  confirmModalActions: {
-    flexDirection: 'row',
-    gap: Spacing.sm,
-  },
-  confirmModalButton: {
-    flex: 1,
-  },
-  setupContent: {
-    flex: 1,
-    justifyContent: 'space-between',
-  },
-  setupBody: {
-    gap: Spacing.md,
-  },
-  setupButton: {
-    width: '100%',
-  },
-  quizFooterButton: {
-    width: '100%',
-  },
-  setupFooter: {
-    marginTop: 'auto',
-  },
 });

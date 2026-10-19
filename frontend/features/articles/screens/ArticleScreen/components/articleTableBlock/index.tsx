@@ -1,8 +1,8 @@
 import { type ReactNode, useMemo, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 
-import { type TableCell } from '@/features/articles/api/wikipedia';
 import { ThemedText } from '@/components/themedText';
+import { type TableCell } from '@/features/articles/api';
 import { useThemeColor } from '@/hooks/use-theme-color';
 
 import { styles } from './styles';

@@ -1,12 +1,12 @@
-import { type ArticleBlock } from '@/features/articles/api/wikipedia';
+import { type ArticleBlock } from '@/features/articles/api';
+import { type ReactElement, type RefObject } from 'react';
 import {
+  type FlatList,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
   type StyleProp,
   type ViewStyle,
-  type NativeSyntheticEvent,
-  type NativeScrollEvent,
-  type FlatList,
 } from 'react-native';
-import { type ReactElement, type RefObject } from 'react';
 
 export type TouchableTextPart =
   | {
@@ -33,11 +33,7 @@ export type InteractiveArticleTextProps = {
   contentContainerStyle?: StyleProp<ViewStyle>;
   ListHeaderComponent?: ReactElement | null;
   onScroll?: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
-  onVisibleBlockIndexChange?: (sourceIndex: number) => void;
-  onVisibleBlockRangeChange?: (range: {
-    firstSourceIndex: number;
-    lastSourceIndex: number;
-  }) => void;
+  onVisibleBlockIndexesChange?: (sourceIndexes: number[]) => void;
   onWordPress: (selection: {
     context: string;
     sentenceKey?: string;
@@ -50,6 +46,7 @@ export type InteractiveArticleTextProps = {
   speakingTokenKey?: string;
   scrollEventThrottle?: number;
   scrollRef?: RefObject<FlatList<ArticleBlockListItem> | null>;
+  scrollToSourceIndexRef?: RefObject<((sourceIndex: number) => void) | null>;
   text?: string;
 };
 

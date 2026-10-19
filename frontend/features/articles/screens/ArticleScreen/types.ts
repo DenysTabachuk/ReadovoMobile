@@ -1,3 +1,8 @@
+import type {
+  SimplifyArticleLevel,
+  SimplifyArticleResponse,
+} from '@/features/articles/api';
+
 export type SelectedTextToken = {
   context: string;
   sentenceKey?: string;
@@ -18,4 +23,17 @@ export type TextComplexityMetrics = {
   characterCount: number;
   sentenceCount: number;
   wordCount: number;
+};
+
+export type ArticleTextViewMode = 'original' | 'adaptation' | 'summary';
+
+export type ArticleSimplificationMetrics = {
+  adapted: TextComplexityMetrics;
+  original: TextComplexityMetrics;
+};
+
+export type ArticleTransformationDetails = {
+  displayedArticle: SimplifyArticleResponse | null;
+  latestGeneratedArticle: SimplifyArticleResponse | null;
+  selectedLevel: SimplifyArticleLevel;
 };

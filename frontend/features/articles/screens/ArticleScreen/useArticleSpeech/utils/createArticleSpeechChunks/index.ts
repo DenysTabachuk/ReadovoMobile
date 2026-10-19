@@ -1,9 +1,6 @@
 import * as Speech from 'expo-speech';
 
-import {
-  type ArticleBlock,
-  type InlineNode,
-} from '@/features/articles/api/wikipedia';
+import { type ArticleBlock, type InlineNode } from '@/features/articles/api';
 
 import type { ArticleSpeechChunk, ArticleSpeechWord } from '../../types';
 

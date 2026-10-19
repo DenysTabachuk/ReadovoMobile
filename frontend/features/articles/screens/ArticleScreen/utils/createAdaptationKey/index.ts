@@ -1,7 +1,7 @@
 import type {
-  SimplifyArticleLevel,
   ArticleTextTransformationType,
-} from '@/features/articles/api/wikipedia';
+  SimplifyArticleLevel,
+} from '@/features/articles/api';
 
 /**
  * Identify a generated text variant by transformation type and language level.

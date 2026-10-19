@@ -1,4 +1,4 @@
-import { type InlineNode } from '@/features/articles/api/wikipedia';
+import { type InlineNode } from '@/features/articles/api';
 
 /**
  * Tokenize unformatted text for per-word interaction and translation.

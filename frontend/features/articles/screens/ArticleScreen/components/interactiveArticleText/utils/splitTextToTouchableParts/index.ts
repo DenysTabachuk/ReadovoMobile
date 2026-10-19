@@ -1,4 +1,4 @@
-import type { InlineNode } from '@/features/articles/api/wikipedia';
+import type { InlineNode } from '@/features/articles/api';
 import type { TouchableTextPart } from '../../types';
 import { getSentenceRanges } from '../getSentenceRanges';
 import { getWordContext } from '../getWordContext';

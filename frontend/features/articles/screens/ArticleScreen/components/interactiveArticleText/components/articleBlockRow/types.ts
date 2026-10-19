@@ -1,4 +1,4 @@
-import { type ArticleBlock } from '@/features/articles/api/wikipedia';
+import { type ArticleBlock } from '@/features/articles/api';
 import { type InteractiveArticleTextProps } from '../../types';
 
 export type ArticleBlockRowProps = {

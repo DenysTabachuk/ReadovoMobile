@@ -1,7 +1,4 @@
-import {
-  type ArticleBlock,
-  type InlineNode,
-} from '@/features/articles/api/wikipedia';
+import { type ArticleBlock, type InlineNode } from '@/features/articles/api';
 import { createInlineNodesFromPlainText } from '../createInlineNodesFromPlainText';
 
 // Alphabetic list markers are single letters; a full word plus a period is a sentence.

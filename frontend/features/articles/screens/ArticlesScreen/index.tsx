@@ -1,15 +1,14 @@
 import {
-  keepPreviousData,
-  useInfiniteQuery,
-  useMutation,
-  useQuery,
-  useQueryClient,
-  type InfiniteData,
-  type QueryKey,
-} from '@tanstack/react-query';
+  useArticleAdaptationsQuery,
+  useRecentArticlesQuery,
+  useSavedArticlesQuery,
+  useToggleSavedArticleMutation,
+  useWikipediaArticlesQuery,
+} from '@/features/articles/api';
 import { useFocusEffect } from '@react-navigation/native';
 import { router } from 'expo-router';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
   FlatList,
@@ -17,16 +16,11 @@ import {
   View,
   type ListRenderItem,
 } from 'react-native';
-import { useTranslation } from 'react-i18next';
+import { ArticlesEmptyState } from './components/articlesEmptyState';
+import { useArticleFilters } from './hooks/useArticleFilters';
+import { mergeArticlePages } from './utils/mergeArticlePages';
+import { resolveDisplayedArticles } from './utils/resolveDisplayedArticles';
 
-import {
-  fetchArticleAdaptations,
-  fetchWikipediaArticles,
-  type WikipediaArticle,
-  type WikipediaArticleCategory,
-} from '@/features/articles/api/wikipedia';
-import { DEFAULT_ARTICLE_LIMIT } from '@/features/articles/api/wikipedia';
-import { useBanner } from '@/components/banner';
 import { Button } from '@/components/button';
 import { ScreenContainer } from '@/components/screenContainer';
 import { ScrollToTopButton } from '@/components/scrollToTopButton';
@@ -35,57 +29,51 @@ import { Spacing } from '@/constants/spacing';
 import { Colors } from '@/constants/theme';
 import {
   ArticleCard,
-  createSavedArticlesWithArticle,
   isArticleRecentlyOpened,
   isArticleSaved,
-  readSavedArticles,
-  readRecentArticles,
-  removeSavedArticle,
-  saveArticleForLater,
-  RECENT_ARTICLES_QUERY_KEY,
-  SAVED_ARTICLES_QUERY_KEY,
-  type SavedArticle,
 } from '@/features/articles';
+import { type WikipediaArticle } from '@/features/articles/api';
+import { useAuth } from '@/features/auth';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { useAuth } from '@/features/auth';
 
+import { ArticlesToolbar } from './components/articlesToolbar';
 import { styles } from './styles';
-import {
-  ArticlesToolbar,
-  type ArticleCategoryFilter,
-  type ArticlePersonalFilter,
-  type ArticleReadyLevelFilter,
-  type ArticleSortFilter,
-} from './components/articlesToolbar';
 
-const ARTICLE_SEARCH_DEBOUNCE_MS = 1200;
+const SCROLL_TO_TOP_BOTTOM_OFFSET = 72;
 
 export default function ArticlesScreen() {
   const { t } = useTranslation();
-  const queryClient = useQueryClient();
   const { currentUser } = useAuth();
   const colorScheme = useColorScheme();
   const iconColor = useThemeColor({}, 'icon');
   const tintColor = Colors[colorScheme ?? 'light'].tint;
   const savedAccentColor = colorScheme === 'dark' ? '#c4a7ff' : tintColor;
-  const { showBanner } = useBanner();
   const borderColor = colorScheme === 'dark' ? '#2d3336' : '#d0d7de';
   const userId = currentUser?.id;
-  const [searchValue, setSearchValue] = useState('');
-  const [debouncedSearchValue, setDebouncedSearchValue] = useState('');
-  const [categoryFilter, setCategoryFilter] =
-    useState<ArticleCategoryFilter>('all');
-  const [sortByFilter, setSortByFilter] =
-    useState<ArticleSortFilter>('default');
-  const [preferImagesFirst, setPreferImagesFirst] = useState(false);
-  const [readyLevelFilter, setReadyLevelFilter] =
-    useState<ArticleReadyLevelFilter>('all');
-  const [readyAdaptationEnabled, setReadyAdaptationEnabled] = useState(false);
-  const [readySummaryEnabled, setReadySummaryEnabled] = useState(false);
-  const [recommendedArticles, setRecommendedArticles] = useState(true);
-  const [personalFilter, setPersonalFilter] =
-    useState<ArticlePersonalFilter>(null);
+  const {
+    searchValue,
+    debouncedSearchValue,
+    categoryFilter,
+    sortByFilter,
+    preferImagesFirst,
+    readyLevelFilter,
+    readyAdaptationEnabled,
+    readySummaryEnabled,
+    recommendedArticles,
+    personalFilter,
+    readyTransformationType,
+    clearFilters,
+    handleChangePersonalFilter,
+    handleChangeCategoryFilter,
+    handleChangeSortByFilter,
+    handleChangeSearchValue,
+    handleChangeReadyLevelFilter,
+    handleChangePreferImagesFirst,
+    handleChangeReadyAdaptationEnabled,
+    handleChangeReadySummaryEnabled,
+    handleChangeRecommendedArticles,
+  } = useArticleFilters();
   const [isFiltersCollapsed, setIsFiltersCollapsed] = useState(true);
   const [isManualRefresh, setIsManualRefresh] = useState(false);
   const [scrollOffsetY, setScrollOffsetY] = useState(0);
@@ -100,23 +88,6 @@ export default function ArticlesScreen() {
     }, []),
   );
 
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      setDebouncedSearchValue(searchValue.trim());
-    }, ARTICLE_SEARCH_DEBOUNCE_MS);
-
-    return () => clearTimeout(timeoutId);
-  }, [searchValue]);
-
-  const readyTransformationType =
-    readyAdaptationEnabled && readySummaryEnabled
-      ? 'both'
-      : readyAdaptationEnabled
-        ? 'adaptation'
-        : readySummaryEnabled
-          ? 'summary'
-          : undefined;
-
   const {
     data,
     error,
@@ -127,56 +98,17 @@ export default function ArticlesScreen() {
     isFetchingNextPage,
     isLoading,
     refetch,
-  } = useInfiniteQuery<
-    WikipediaArticle[],
-    Error,
-    InfiniteData<WikipediaArticle[], number[]>,
-    QueryKey,
-    number[]
-  >({
-    initialPageParam: [] as number[],
-    getNextPageParam: (lastPage, pages) => {
-      if (lastPage.length === 0) {
-        return undefined;
-      }
-
-      return pages.flat().map((article) => article.id);
-    },
-    placeholderData: keepPreviousData,
-    queryFn: ({ pageParam }) =>
-      fetchWikipediaArticles({
-        category: categoryFilter as WikipediaArticleCategory,
-        excludeIds: pageParam,
-        preferImagesFirst,
-        readyLevel: readyLevelFilter,
-        readyTransformationType,
-        recommended: recommendedArticles,
-        search: debouncedSearchValue,
-        sortBy: sortByFilter,
-      }),
-    queryKey: [
-      'wikipedia',
-      'articles',
-      debouncedSearchValue,
-      categoryFilter,
-      preferImagesFirst,
-      readyLevelFilter,
-      readyAdaptationEnabled,
-      readySummaryEnabled,
-      recommendedArticles,
-      sortByFilter,
-    ],
+  } = useWikipediaArticlesQuery({
+    category: categoryFilter,
+    preferImagesFirst,
+    readyLevel: readyLevelFilter,
+    readyTransformationType,
+    recommended: recommendedArticles,
+    search: debouncedSearchValue,
+    sortBy: sortByFilter,
   });
-  const { data: savedArticles = [] } = useQuery({
-    enabled: Boolean(userId),
-    queryFn: () => readSavedArticles(userId ?? ''),
-    queryKey: [...SAVED_ARTICLES_QUERY_KEY, userId],
-  });
-  const { data: recentArticles = [] } = useQuery({
-    enabled: Boolean(userId),
-    queryFn: () => readRecentArticles(userId ?? ''),
-    queryKey: [...RECENT_ARTICLES_QUERY_KEY, userId],
-  });
+  const { data: savedArticles = [] } = useSavedArticlesQuery(userId);
+  const { data: recentArticles = [] } = useRecentArticlesQuery(userId);
   const personalArticleIds = useMemo(() => {
     const sourceArticles =
       personalFilter === 'saved'
@@ -187,135 +119,27 @@ export default function ArticlesScreen() {
 
     return sourceArticles.map((article) => article.id);
   }, [personalFilter, recentArticles, savedArticles]);
-  const { data: personalArticleAdaptations = {} } = useQuery({
-    enabled: personalArticleIds.length > 0,
-    queryFn: () => fetchArticleAdaptations(personalArticleIds, 'all'),
-    queryKey: ['wikipedia', 'article-adaptations', personalArticleIds],
-  });
-  const savedArticleMutation = useMutation<
-    { saved: boolean; savedArticles: SavedArticle[] },
-    Error,
-    { article: WikipediaArticle; saved: boolean },
-    { previousSavedArticles?: SavedArticle[] }
-  >({
-    mutationFn: async ({
-      article,
-      saved,
-    }: {
-      article: WikipediaArticle;
-      saved: boolean;
-    }) => {
-      if (!userId) {
-        throw new Error('auth.required');
-      }
-
-      const nextSavedArticles = saved
-        ? await removeSavedArticle(userId, article.id)
-        : await saveArticleForLater(userId, article);
-
-      return {
-        saved: !saved,
-        savedArticles: nextSavedArticles,
-      };
-    },
-    onError: (_error, _variables, context) => {
-      if (context?.previousSavedArticles) {
-        queryClient.setQueryData(
-          [...SAVED_ARTICLES_QUERY_KEY, userId],
-          context.previousSavedArticles,
-        );
-      }
-
-      showBanner({
-        title: t('article.savedArticles.error'),
-        variant: 'error',
-      });
-    },
-    onMutate: async ({ article, saved }) => {
-      await queryClient.cancelQueries({
-        queryKey: [...SAVED_ARTICLES_QUERY_KEY, userId],
-      });
-
-      const previousSavedArticles =
-        queryClient.getQueryData<SavedArticle[]>([
-          ...SAVED_ARTICLES_QUERY_KEY,
-          userId,
-        ]) ?? [];
-      const nextSavedArticles = saved
-        ? previousSavedArticles.filter(
-            (savedArticle) => savedArticle.id !== article.id,
-          )
-        : createSavedArticlesWithArticle(previousSavedArticles, article);
-
-      queryClient.setQueryData(
-        [...SAVED_ARTICLES_QUERY_KEY, userId],
-        nextSavedArticles,
-      );
-
-      return { previousSavedArticles };
-    },
-    onSuccess: (response) => {
-      queryClient.setQueryData(
-        [...SAVED_ARTICLES_QUERY_KEY, userId],
-        response.savedArticles,
-      );
-      showBanner({
-        title: response.saved
-          ? t('article.savedArticles.saved')
-          : t('article.savedArticles.removed'),
-        variant: 'success',
-      });
-    },
-  });
-  const articles = useMemo(() => {
-    const articleById = new Map<number, WikipediaArticle>();
-
-    for (const article of data?.pages.flat() ?? []) {
-      articleById.set(article.id, article);
-    }
-
-    return Array.from(articleById.values());
-  }, [data?.pages]);
-  const availableAdaptationsByArticleId = useMemo(() => {
-    const adaptationsByArticleId = new Map<
-      number,
-      WikipediaArticle['availableAdaptations']
-    >();
-
-    articles.forEach((article) => {
-      if (article.availableAdaptations?.length) {
-        adaptationsByArticleId.set(article.id, article.availableAdaptations);
-      }
-    });
-
-    return adaptationsByArticleId;
-  }, [articles]);
-  const displayedArticles = useMemo(() => {
-    const sourceArticles =
-      personalFilter === 'saved'
-        ? savedArticles
-        : personalFilter === 'recent'
-          ? recentArticles
-          : articles;
-
-    return sourceArticles.map((article) => {
-      const availableAdaptations =
-        article.availableAdaptations ??
-        personalArticleAdaptations[String(article.id)] ??
-        availableAdaptationsByArticleId.get(article.id);
-
-      return availableAdaptations?.length
-        ? { ...article, availableAdaptations }
-        : article;
-    });
-  }, [
-    articles,
-    availableAdaptationsByArticleId,
-    personalFilter,
-    personalArticleAdaptations,
-    recentArticles,
-    savedArticles,
-  ]);
+  const { data: personalArticleAdaptations = {} } =
+    useArticleAdaptationsQuery(personalArticleIds);
+  const savedArticleMutation = useToggleSavedArticleMutation();
+  const articles = useMemo(() => mergeArticlePages(data?.pages), [data?.pages]);
+  const displayedArticles = useMemo(
+    () =>
+      resolveDisplayedArticles({
+        articles,
+        savedArticles,
+        recentArticles,
+        personalFilter,
+        personalArticleAdaptations,
+      }),
+    [
+      articles,
+      savedArticles,
+      recentArticles,
+      personalFilter,
+      personalArticleAdaptations,
+    ],
+  );
   const shouldShowInitialLoader =
     personalFilter === null && isLoading && articles.length === 0;
   const shouldShowErrorState =
@@ -339,65 +163,6 @@ export default function ArticlesScreen() {
     readyAdaptationEnabled ||
     readySummaryEnabled ||
     !recommendedArticles;
-
-  const clearFilters = useCallback(() => {
-    setSearchValue('');
-    setDebouncedSearchValue('');
-    setCategoryFilter('all');
-    setSortByFilter('default');
-    setPreferImagesFirst(false);
-    setReadyLevelFilter('all');
-    setReadyAdaptationEnabled(false);
-    setReadySummaryEnabled(false);
-    setRecommendedArticles(true);
-    setPersonalFilter(null);
-  }, []);
-
-  const handleChangeCategoryFilter = useCallback(
-    (value: ArticleCategoryFilter) => {
-      setPersonalFilter(null);
-      setCategoryFilter(value);
-    },
-    [],
-  );
-
-  const handleChangeSortByFilter = useCallback((value: ArticleSortFilter) => {
-    setPersonalFilter(null);
-    setSortByFilter(value);
-  }, []);
-
-  const handleChangePreferImagesFirst = useCallback((value: boolean) => {
-    setPersonalFilter(null);
-    setPreferImagesFirst(value);
-  }, []);
-
-  const handleChangeReadyLevelFilter = useCallback(
-    (value: ArticleReadyLevelFilter) => {
-      setPersonalFilter(null);
-      setReadyLevelFilter(value);
-    },
-    [],
-  );
-
-  const handleChangeReadyAdaptationEnabled = useCallback((value: boolean) => {
-    setPersonalFilter(null);
-    setReadyAdaptationEnabled(value);
-  }, []);
-
-  const handleChangeReadySummaryEnabled = useCallback((value: boolean) => {
-    setPersonalFilter(null);
-    setReadySummaryEnabled(value);
-  }, []);
-
-  const handleChangeRecommendedArticles = useCallback((value: boolean) => {
-    setPersonalFilter(null);
-    setRecommendedArticles(value);
-  }, []);
-
-  const handleChangeSearchValue = useCallback((value: string) => {
-    setPersonalFilter(null);
-    setSearchValue(value);
-  }, []);
 
   const handleRefresh = useCallback(async () => {
     setIsManualRefresh(true);
@@ -423,22 +188,6 @@ export default function ArticlesScreen() {
       [articleId]: !current[articleId],
     }));
   }, []);
-
-  const handleChangePersonalFilter = useCallback(
-    (value: ArticlePersonalFilter) => {
-      setSearchValue('');
-      setDebouncedSearchValue('');
-      setCategoryFilter('all');
-      setSortByFilter('default');
-      setPreferImagesFirst(false);
-      setReadyLevelFilter('all');
-      setReadyAdaptationEnabled(false);
-      setReadySummaryEnabled(false);
-      setRecommendedArticles(true);
-      setPersonalFilter(value);
-    },
-    [],
-  );
 
   const toggleFiltersCollapsed = useCallback(() => {
     setIsFiltersCollapsed((current) => !current);
@@ -576,42 +325,15 @@ export default function ArticlesScreen() {
           </View>
         }
         ListEmptyComponent={
-          <View style={styles.emptyState}>
-            {shouldShowErrorState ? (
-              <>
-                <ThemedText type="sectionTitle" style={styles.centerTitle}>
-                  {t('articles.loadErrorTitle')}
-                </ThemedText>
-                <ThemedText type="body" style={styles.centerDescription}>
-                  {t('articles.loadErrorDescription')}
-                </ThemedText>
-                <Button onPress={() => refetch()}>{t('articles.retry')}</Button>
-              </>
-            ) : (
-              <>
-                <ThemedText type="sectionTitle" style={styles.centerTitle}>
-                  {personalFilter === 'saved'
-                    ? t('articles.saved.emptyTitle')
-                    : personalFilter === 'recent'
-                      ? t('articles.recent.emptyTitle')
-                      : hasActiveContentFilters
-                        ? t('articles.emptyFilteredTitle')
-                        : t('articles.emptyTitle')}
-                </ThemedText>
-                <ThemedText type="body" style={styles.centerDescription}>
-                  {personalFilter === 'saved'
-                    ? t('articles.saved.emptyDescription')
-                    : personalFilter === 'recent'
-                      ? t('articles.recent.emptyDescription')
-                      : hasActiveContentFilters
-                        ? t('articles.emptyFilteredDescription')
-                        : debouncedSearchValue.length > 0
-                          ? t('articles.emptySearchDescription')
-                          : t('articles.emptyFilterDescription')}
-                </ThemedText>
-              </>
-            )}
-          </View>
+          <ArticlesEmptyState
+            isError={shouldShowErrorState}
+            personalFilter={personalFilter}
+            hasActiveContentFilters={hasActiveContentFilters}
+            isSearchActive={debouncedSearchValue.length > 0}
+            onRetry={() => {
+              void refetch();
+            }}
+          />
         }
         ListFooterComponent={
           shouldShowLoadMore ? (
@@ -643,7 +365,7 @@ export default function ArticlesScreen() {
         showsVerticalScrollIndicator={false}
       />
       <ScrollToTopButton
-        bottomOffset={72}
+        bottomOffset={SCROLL_TO_TOP_BOTTOM_OFFSET}
         rightOffset={Spacing.md}
         scrollOffsetY={scrollOffsetY}
         scrollRef={listRef}

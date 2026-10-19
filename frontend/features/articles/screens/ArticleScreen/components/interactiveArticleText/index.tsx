@@ -1,11 +1,5 @@
-import {
-  type InteractiveArticleTextProps,
-  type ArticleBlockListItem,
-} from './types';
-import { useState, useRef, useMemo, useCallback, useEffect } from 'react';
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { parsePlainTextToBlocks } from './utils/parsePlainTextToBlocks';
-import { createVisibleBlockItems } from './utils/createVisibleBlockItems';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { type ListRenderItem, FlatList } from 'react-native';
 import { ArticleBlockRow } from './components/articleBlockRow';
 import {
@@ -13,6 +7,13 @@ import {
   ENABLE_SPEECH_WORD_HIGHLIGHT,
 } from './constants';
 import { styles } from './styles';
+import { resolveArticleScrollIndex } from './utils/resolveArticleScrollIndex';
+import {
+  type ArticleBlockListItem,
+  type InteractiveArticleTextProps,
+} from './types';
+import { createVisibleBlockItems } from './utils/createVisibleBlockItems';
+import { parsePlainTextToBlocks } from './utils/parsePlainTextToBlocks';
 
 const INITIAL_RENDER_BLOCK_COUNT = 18;
 
@@ -21,29 +22,32 @@ const MAX_RENDER_BATCH_SIZE = 24;
 const RENDER_BATCH_INTERVAL_MS = 16;
 
 const VIRTUALIZED_WINDOW_SIZE = 13;
+const CURRENT_SPEECH_VIEW_POSITION = 0.36;
 
 export function InteractiveArticleText({
   blocks,
   contentContainerStyle,
   ListHeaderComponent,
   onScroll,
-  onVisibleBlockIndexChange,
-  onVisibleBlockRangeChange,
+  onVisibleBlockIndexesChange,
   onWordPress,
   scrollEventThrottle = 16,
   scrollRef,
+  scrollToSourceIndexRef,
   selectedTokenKeys,
   speakingTokenKey,
   text,
 }: InteractiveArticleTextProps) {
+  const [pendingScrollSourceIndex, setPendingScrollSourceIndex] = useState<
+    number | null
+  >(null);
   const [activeInteractiveBlockKey, setActiveInteractiveBlockKey] = useState<
     string | undefined
   >();
   const [collapsedHeadings, setCollapsedHeadings] = useState<
     Record<string, boolean>
   >({});
-  const onVisibleBlockIndexChangeRef = useRef(onVisibleBlockIndexChange);
-  const onVisibleBlockRangeChangeRef = useRef(onVisibleBlockRangeChange);
+  const onVisibleBlockIndexesChangeRef = useRef(onVisibleBlockIndexesChange);
   const chevronColor = useThemeColor(
     { dark: '#9ba1a6', light: '#687076' },
     'icon',
@@ -60,6 +64,41 @@ export function InteractiveArticleText({
     [collapsedHeadings, resolvedBlocks],
   );
 
+  useEffect(() => {
+    if (!scrollToSourceIndexRef) {
+      return;
+    }
+
+    scrollToSourceIndexRef.current = (sourceIndex) => {
+      // Reveal the spoken block before translating its source index to a list position.
+      setCollapsedHeadings({});
+      setPendingScrollSourceIndex(sourceIndex);
+    };
+
+    return () => {
+      scrollToSourceIndexRef.current = null;
+    };
+  }, [scrollToSourceIndexRef]);
+
+  useEffect(() => {
+    if (pendingScrollSourceIndex === null) {
+      return;
+    }
+
+    const index = resolveArticleScrollIndex(
+      visibleBlockItems,
+      pendingScrollSourceIndex,
+    );
+    if (index !== null) {
+      scrollRef?.current?.scrollToIndex({
+        animated: true,
+        index,
+        viewPosition: CURRENT_SPEECH_VIEW_POSITION,
+      });
+    }
+    setPendingScrollSourceIndex(null);
+  }, [pendingScrollSourceIndex, scrollRef, visibleBlockItems]);
+
   const handleToggleHeading = useCallback((headingKey: string) => {
     setCollapsedHeadings((current) => ({
       ...current,
@@ -70,11 +109,8 @@ export function InteractiveArticleText({
     setActiveInteractiveBlockKey(blockKey);
   }, []);
   useEffect(() => {
-    onVisibleBlockIndexChangeRef.current = onVisibleBlockIndexChange;
-  }, [onVisibleBlockIndexChange]);
-  useEffect(() => {
-    onVisibleBlockRangeChangeRef.current = onVisibleBlockRangeChange;
-  }, [onVisibleBlockRangeChange]);
+    onVisibleBlockIndexesChangeRef.current = onVisibleBlockIndexesChange;
+  }, [onVisibleBlockIndexesChange]);
   const renderItem = useCallback<ListRenderItem<ArticleBlockListItem>>(
     ({ item }) => {
       return (
@@ -126,23 +162,11 @@ export function InteractiveArticleText({
           (leftItem, rightItem) =>
             (leftItem.index ?? 0) - (rightItem.index ?? 0),
         );
-      const firstVisibleItem = sortedVisibleItems[0]?.item;
-      const lastVisibleItem =
-        sortedVisibleItems[sortedVisibleItems.length - 1]?.item;
-
-      if (typeof firstVisibleItem?.sourceIndex === 'number') {
-        onVisibleBlockIndexChangeRef.current?.(firstVisibleItem.sourceIndex);
-      }
-
-      if (
-        typeof firstVisibleItem?.sourceIndex === 'number' &&
-        typeof lastVisibleItem?.sourceIndex === 'number'
-      ) {
-        onVisibleBlockRangeChangeRef.current?.({
-          firstSourceIndex: firstVisibleItem.sourceIndex,
-          lastSourceIndex: lastVisibleItem.sourceIndex,
-        });
-      }
+      onVisibleBlockIndexesChangeRef.current?.(
+        sortedVisibleItems.flatMap(({ item }) =>
+          item ? [item.sourceIndex] : [],
+        ),
+      );
     },
   ).current;
 

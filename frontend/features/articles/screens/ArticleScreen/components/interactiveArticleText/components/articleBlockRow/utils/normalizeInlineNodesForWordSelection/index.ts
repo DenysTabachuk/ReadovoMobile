@@ -1,4 +1,4 @@
-import { type InlineNode } from '@/features/articles/api/wikipedia';
+import { type InlineNode } from '@/features/articles/api';
 
 /**
  * Split text nodes into selectable English word tokens while preserving emphasis.

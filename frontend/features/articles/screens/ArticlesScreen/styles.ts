@@ -41,23 +41,4 @@ export const styles = StyleSheet.create({
     gap: Spacing.md,
     justifyContent: 'center',
   },
-  centerTitle: {
-    textAlign: 'center',
-  },
-  centerDescription: {
-    maxWidth: 420,
-    textAlign: 'center',
-  },
-  emptyState: {
-    alignItems: 'center',
-    flex: 1,
-    gap: Spacing.sm,
-    justifyContent: 'center',
-    paddingHorizontal: Spacing.xLg,
-    paddingVertical: Spacing.xxLg,
-  },
-  emptyStateButton: {
-    marginTop: Spacing.sm,
-    minWidth: 160,
-  },
 });

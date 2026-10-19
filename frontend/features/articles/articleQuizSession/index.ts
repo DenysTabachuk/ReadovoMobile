@@ -1,7 +1,7 @@
 import {
   type SimplifyArticleLevel,
   type SimplifyArticleTargetLength,
-} from '@/features/articles/api/wikipedia';
+} from '../api/types';
 
 export type ArticleQuizMode = 'article' | 'vocabulary';
 

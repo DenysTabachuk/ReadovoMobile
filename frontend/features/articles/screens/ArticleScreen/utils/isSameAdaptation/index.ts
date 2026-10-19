@@ -1,8 +1,8 @@
 import type {
   ArticleAdaptationSummary,
-  SimplifyArticleLevel,
   ArticleTextTransformationType,
-} from '@/features/articles/api/wikipedia';
+  SimplifyArticleLevel,
+} from '@/features/articles/api';
 
 /**
  * Check whether an available text variant matches the requested settings.

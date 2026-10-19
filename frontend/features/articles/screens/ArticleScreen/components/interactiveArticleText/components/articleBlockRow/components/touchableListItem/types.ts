@@ -1,4 +1,4 @@
-import { type InlineNode } from '@/features/articles/api/wikipedia';
+import { type InlineNode } from '@/features/articles/api';
 import { type InteractiveArticleTextProps } from '../../../../types';
 
 export type TouchableListItemProps = {

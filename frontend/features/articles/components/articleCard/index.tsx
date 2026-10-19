@@ -1,13 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Pressable, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { Pressable, View } from 'react-native';
 
+import { IconSymbol } from '@/components/iconSymbol';
+import { ThemedText } from '@/components/themedText';
 import {
   type ArticleAdaptationSummary,
   type WikipediaArticle,
-} from '@/features/articles/api/wikipedia';
-import { ThemedText } from '@/components/themedText';
-import { IconSymbol } from '@/components/iconSymbol';
+} from '@/features/articles/api';
 
 import { ArticleThumbnail } from '../articleThumbnail';
 import { styles } from './styles';

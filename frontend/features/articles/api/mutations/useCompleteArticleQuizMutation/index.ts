@@ -1,0 +1,179 @@
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
+
+import { isMockApiEnabled } from '@/api';
+import { useBanner } from '@/components/banner';
+import {
+  getAchievementBadge,
+  getAchievementsProfile,
+  getNewlyUnlockedAchievements,
+  updateAchievementsProgress,
+} from '@/features/achievements';
+import { calculateQuizReward, type QuizSessionResult } from '@/features/quiz';
+import {
+  didCompleteStreakToday,
+  getStreakProfile,
+  trackLearningActivity,
+  type StreakState,
+} from '@/features/streak';
+import {
+  type SimplifyArticleLevel,
+  type WikipediaArticleDetail,
+  type ArticleQuizLengthParam,
+} from '../../types';
+
+import { resolveEffectiveTargetLength } from './utils/resolveEffectiveTargetLength';
+
+type UseCompleteArticleQuizMutationParams = {
+  article?: WikipediaArticleDetail;
+  currentUserId?: string;
+  quizLevel: SimplifyArticleLevel;
+  quizTargetLength: ArticleQuizLengthParam;
+};
+
+const QUIZ_REWARD_BANNER_DURATION_MS = 4200;
+const MOCK_ACHIEVEMENT_COINS_REWARD = 20;
+
+/**
+ * Records quiz rewards/progress, then learning activity, when explicitly mutated.
+ * Successful completion refreshes achievement/streak caches and shows reward banners.
+ * The writes are sequential, not atomic: a later failure does not undo earlier writes.
+ *
+ * @param params - Article, user ID, quiz level, and target length used to calculate
+ * rewards. Missing article/user makes the mutation resolve to null without writing.
+ * @returns Mutation controls accepting the finished quiz result; request failures
+ * are exposed through mutation state or mutateAsync rejection.
+ * @example
+ * // Inside a component or another hook:
+ * const completion = useCompleteArticleQuizMutation({
+ *   article, currentUserId, quizLevel: 'A2', quizTargetLength: 'medium',
+ * });
+ * completion.mutate(result);
+ * // Records progress/activity and updates caches and banners after success.
+ */
+export function useCompleteArticleQuizMutation({
+  article,
+  currentUserId,
+  quizLevel,
+  quizTargetLength,
+}: UseCompleteArticleQuizMutationParams) {
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+  const { showBanner } = useBanner();
+
+  return useMutation({
+    mutationFn: async (result: QuizSessionResult) => {
+      if (!currentUserId || !article) {
+        return null;
+      }
+
+      const profile = await getAchievementsProfile(currentUserId);
+      // TODO: Submit answers and use the server-awarded reward. See docs/server-side-quiz-rewards.md.
+      const rewardCoins = calculateQuizReward({
+        isFirstTestCompleted: profile.progress.testsCompleted === 0,
+        level: quizLevel,
+        percentage: result.percentage,
+        targetLength: resolveEffectiveTargetLength(
+          quizTargetLength,
+          article.content,
+        ),
+      });
+
+      const updatedProfile = await updateAchievementsProgress(currentUserId, {
+        balance: profile.progress.balance + rewardCoins,
+        testsCompleted: profile.progress.testsCompleted + 1,
+      });
+      const previousStreak =
+        queryClient.getQueryData<StreakState>([
+          'streak-profile',
+          currentUserId,
+        ]) ?? (await getStreakProfile(currentUserId).catch(() => null));
+      const streak = await trackLearningActivity(
+        currentUserId,
+        'article_quiz_completed',
+      );
+
+      return {
+        newlyUnlockedAchievements: getNewlyUnlockedAchievements(
+          profile.achievements,
+          updatedProfile.achievements,
+        ),
+        rewardCoins,
+        shouldShowStreakBanner: didCompleteStreakToday(previousStreak, streak),
+        streak,
+      };
+    },
+    onSuccess: (response) => {
+      if (!currentUserId) {
+        return;
+      }
+
+      void queryClient.invalidateQueries({
+        queryKey: ['achievements-profile', currentUserId],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: ['streak-profile', currentUserId],
+      });
+
+      if (response?.streak) {
+        queryClient.setQueryData(
+          ['streak-profile', currentUserId],
+          response.streak,
+        );
+      }
+
+      if (response?.rewardCoins !== undefined) {
+        showBanner({
+          durationMs: QUIZ_REWARD_BANNER_DURATION_MS,
+          title: t('profile.reward', { count: response.rewardCoins }),
+          variant: 'reward',
+        });
+      }
+
+      if (
+        response?.shouldShowStreakBanner ||
+        (isMockApiEnabled() && response?.streak)
+      ) {
+        showBanner({
+          description: t('streak.banner.description', {
+            count: response.streak.currentStreak,
+          }),
+          durationMs: QUIZ_REWARD_BANNER_DURATION_MS,
+          title: t('streak.banner.title'),
+          variant: 'streak',
+        });
+      }
+
+      const achievement = response?.newlyUnlockedAchievements[0];
+
+      if (achievement) {
+        showBanner({
+          achievement: {
+            badge: getAchievementBadge(achievement.badgeKey),
+            coinsReward: achievement.coinsReward,
+          },
+          description: t(achievement.descriptionKey),
+          durationMs: QUIZ_REWARD_BANNER_DURATION_MS,
+          title: t(achievement.titleKey),
+          variant: 'achievement',
+        });
+        return;
+      }
+
+      if (isMockApiEnabled() && response) {
+        showBanner({
+          achievement: {
+            badge: getAchievementBadge('first-test-completed'),
+            coinsReward: MOCK_ACHIEVEMENT_COINS_REWARD,
+          },
+          description: t(
+            'profile.achievements.first_test_completed.description',
+          ),
+          durationMs: QUIZ_REWARD_BANNER_DURATION_MS,
+          title: t('profile.achievements.first_test_completed.title'),
+          variant: 'achievement',
+        });
+      }
+    },
+  });
+}

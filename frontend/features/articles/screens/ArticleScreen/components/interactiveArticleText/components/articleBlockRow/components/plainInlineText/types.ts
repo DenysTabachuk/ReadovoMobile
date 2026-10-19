@@ -1,4 +1,4 @@
-import { type InlineNode } from '@/features/articles/api/wikipedia';
+import { type InlineNode } from '@/features/articles/api';
 import { type StyleProp, type TextStyle } from 'react-native';
 
 export type PlainInlineTextProps = {

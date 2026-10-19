@@ -2,17 +2,39 @@ import * as Speech from 'expo-speech';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Platform } from 'react-native';
 
-import { type ArticleBlock } from '@/features/articles/api/wikipedia';
+import { type ArticleBlock } from '@/features/articles/api';
 
+import { getBlockIndexFromTokenKey } from '../utils';
 import { createArticleSpeechChunks } from './utils/createArticleSpeechChunks';
-import type { ArticleSpeechChunk, ArticleSpeechWord } from './types';
+import { createPlayableChunk } from './utils/createPlayableChunk';
+import { findWordIndexAtChar } from './utils/findWordIndexAtChar';
+import { getGlobalWordIndex } from './utils/getGlobalWordIndex';
 
 type ArticleSpeechStatus = 'idle' | 'paused' | 'playing';
+
+type SpeechBoundary = { charIndex: number };
 
 type StopReason = 'pause' | 'reset' | 'stop' | null;
 
 const ACTIVE_TOKEN_UPDATE_INTERVAL_MS = 300;
+const ARTICLE_SPEECH_LANGUAGE = 'en-US';
+const ARTICLE_SPEECH_RATE = 0.92;
 
+/**
+ * Coordinates native speech across article chunks and highlights the active word.
+ * Pausing uses native support on iOS and resumes from the saved word elsewhere.
+ * Changing chunks or unmounting stops speech; session IDs ignore stale callbacks.
+ * Stopping or finishing playback resets progress and the active word.
+ *
+ * @param blocks - Article blocks to read; missing or wordless content cannot play.
+ * @returns Playback status, progress, active token, availability, a play/pause
+ * action, and asynchronous restart/stop actions.
+ * @example
+ * // Inside a component or another hook:
+ * const speech = useArticleSpeech(blocks);
+ * speech.togglePlayPause();
+ * // Starts playback when idle and readable words exist.
+ */
 export function useArticleSpeech(blocks?: ArticleBlock[]) {
   const chunks = useMemo(() => createArticleSpeechChunks(blocks), [blocks]);
   const [activeTokenKey, setActiveTokenKey] = useState<string | undefined>();
@@ -28,10 +50,10 @@ export function useArticleSpeech(blocks?: ArticleBlock[]) {
     () => chunks.reduce((sum, chunk) => sum + chunk.words.length, 0),
     [chunks],
   );
-  const currentGlobalWordIndex = useMemo(
-    () =>
-      getGlobalWordIndex(chunks, chunkIndexRef.current, wordIndexRef.current),
-    [chunks, activeTokenKey],
+  const currentGlobalWordIndex = getGlobalWordIndex(
+    chunks,
+    chunkIndexRef.current,
+    wordIndexRef.current,
   );
   const progress = totalWords > 0 ? currentGlobalWordIndex / totalWords : 0;
   const canSpeak = totalWords > 0;
@@ -90,8 +112,8 @@ export function useArticleSpeech(blocks?: ArticleBlock[]) {
       setStatus('playing');
 
       Speech.speak(playableChunk.text, {
-        language: 'en-US',
-        onBoundary: ({ charIndex }: { charIndex: number }) => {
+        language: ARTICLE_SPEECH_LANGUAGE,
+        onBoundary: ({ charIndex }: SpeechBoundary) => {
           if (sessionIdRef.current !== sessionId) {
             return;
           }
@@ -150,7 +172,7 @@ export function useArticleSpeech(blocks?: ArticleBlock[]) {
           }
         },
         pitch: 1,
-        rate: 0.92,
+        rate: ARTICLE_SPEECH_RATE,
       });
     },
     [chunks, publishActiveTokenKey, resetSpeechState],
@@ -252,73 +274,4 @@ export function useArticleSpeech(blocks?: ArticleBlock[]) {
     stop,
     togglePlayPause,
   };
-}
-
-function createPlayableChunk(
-  chunk: ArticleSpeechChunk,
-  startWordIndex: number,
-): ArticleSpeechChunk {
-  const firstWord = chunk.words[startWordIndex];
-
-  if (!firstWord) {
-    return chunk;
-  }
-
-  const charOffset = firstWord.charStart;
-  const words = chunk.words.slice(startWordIndex).map((word) => ({
-    ...word,
-    charEnd: word.charEnd - charOffset,
-    charStart: word.charStart - charOffset,
-  }));
-
-  return {
-    text: chunk.text.slice(charOffset),
-    words,
-  };
-}
-
-function findWordIndexAtChar(
-  words: ArticleSpeechWord[],
-  charIndex: number,
-): number {
-  const exactIndex = words.findIndex(
-    (word) => word.charStart <= charIndex && charIndex < word.charEnd,
-  );
-
-  if (exactIndex >= 0) {
-    return exactIndex;
-  }
-
-  const nextIndex = words.findIndex((word) => word.charStart >= charIndex);
-
-  if (nextIndex >= 0) {
-    return nextIndex;
-  }
-
-  return words.length - 1;
-}
-
-function getGlobalWordIndex(
-  chunks: ArticleSpeechChunk[],
-  chunkIndex: number,
-  wordIndex: number,
-): number {
-  const previousWords = chunks
-    .slice(0, chunkIndex)
-    .reduce((sum, chunk) => sum + chunk.words.length, 0);
-
-  return previousWords + wordIndex;
-}
-
-function getBlockIndexFromTokenKey(
-  tokenKey: string | undefined,
-): number | null {
-  const match = tokenKey?.match(/^block-(\d+)(?:-|$)/);
-  const blockIndex = match?.[1] ? Number(match[1]) : NaN;
-
-  if (!Number.isFinite(blockIndex)) {
-    return null;
-  }
-
-  return blockIndex;
 }

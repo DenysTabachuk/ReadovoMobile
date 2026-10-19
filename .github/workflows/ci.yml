@@ -95,3 +95,7 @@ jobs:
       - name: Unit tests
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: npm test -- --runInBand
+
+      - name: Repository documentation
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: npm run docs:check

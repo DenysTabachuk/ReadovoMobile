@@ -1,6 +1,6 @@
-import { type InlineNode } from '@/features/articles/api/wikipedia';
-import { type InteractiveArticleTextProps } from '../../../../types';
+import { type InlineNode } from '@/features/articles/api';
 import { type StyleProp, type TextStyle } from 'react-native';
+import { type InteractiveArticleTextProps } from '../../../../types';
 
 export type TouchableInlineTextProps = {
   nodes: InlineNode[];

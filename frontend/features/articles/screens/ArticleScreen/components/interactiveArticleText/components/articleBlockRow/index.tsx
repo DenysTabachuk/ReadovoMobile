@@ -1,27 +1,24 @@
-import { memo, useCallback } from 'react';
-import { type ArticleBlockRowProps } from './types';
-import { Pressable, View } from 'react-native';
 import { ThemedText } from '@/components/themedText';
-import { getHeadingTypographyType } from './utils/getHeadingTypographyType';
+import { type InlineNode, type TableCell } from '@/features/articles/api';
 import { Ionicons } from '@expo/vector-icons';
-import { PlainInlineText } from './components/plainInlineText';
-import { TouchableInlineText } from './components/touchableInlineText';
-import { normalizeInlineNodesForWordSelection } from './utils/normalizeInlineNodesForWordSelection';
-import { TouchableListItem } from './components/touchableListItem';
-import { PlainListItem } from './components/plainListItem';
-import { ArticleTableBlock } from '../../../articleTableBlock';
+import { memo, useCallback } from 'react';
+import { Pressable, View } from 'react-native';
 import { ArticleFormulaBlock } from '../../../articleFormulaBlock';
 import { ArticleImageBlock } from '../../../articleImageBlock';
-import { areArticleBlockRowPropsEqual } from './utils/areArticleBlockRowPropsEqual';
-import {
-  type TableCell,
-  type InlineNode,
-} from '@/features/articles/api/wikipedia';
+import { ArticleTableBlock } from '../../../articleTableBlock';
 import { type InteractiveArticleTextProps } from '../../types';
 import { createInlineNodesFromPlainText } from '../../utils/createInlineNodesFromPlainText';
-import { TouchableTextParts } from './components/touchableTextParts';
 import { splitTextToTouchableParts } from '../../utils/splitTextToTouchableParts';
+import { PlainInlineText } from './components/plainInlineText';
+import { PlainListItem } from './components/plainListItem';
+import { TouchableInlineText } from './components/touchableInlineText';
+import { TouchableListItem } from './components/touchableListItem';
+import { TouchableTextParts } from './components/touchableTextParts';
 import { styles } from './styles';
+import { type ArticleBlockRowProps } from './types';
+import { areArticleBlockRowPropsEqual } from './utils/areArticleBlockRowPropsEqual';
+import { getHeadingTypographyType } from './utils/getHeadingTypographyType';
+import { normalizeInlineNodesForWordSelection } from './utils/normalizeInlineNodesForWordSelection';
 
 export const ArticleBlockRow = memo(function ArticleBlockRow({
   activeInteractiveBlockKey,

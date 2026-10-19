@@ -1,9 +1,9 @@
-import { memo } from 'react';
-import { type InlineNode } from '@/features/articles/api/wikipedia';
-import { View } from 'react-native';
 import { ThemedText } from '@/components/themedText';
-import { PlainInlineText } from '../plainInlineText';
+import { type InlineNode } from '@/features/articles/api';
+import { memo } from 'react';
+import { View } from 'react-native';
 import { styles } from '../../styles';
+import { PlainInlineText } from '../plainInlineText';
 
 export const PlainListItem = memo(function PlainListItem({
   item,
