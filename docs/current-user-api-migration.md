@@ -37,7 +37,7 @@ data. An ID in a URL does not, by itself, indicate an authorization vulnerabilit
 ## Current inventory
 
 The target paths below are proposed contracts, except for the implemented
-dictionary migration. Before each step, inspect the current controllers, all
+dictionary and streak calendar migrations. Before each step, inspect the current controllers, all
 consumers, and the mock API.
 
 | Module        | Current route group                                     | Target route group                      | Status                                         |
@@ -74,6 +74,9 @@ screen.
       the offline queue, establish ownership of stored events and behavior when
       switching accounts. Never send one account's events using another account's
       token.
+      The calendar endpoint now uses `/streak/profile/me/calendar/month` and the
+      frontend derives its cache owner from authentication. Profile and mutation
+      endpoints still require migration; offline queue behavior is unchanged.
 - [ ] Migrate personal notifications: preferences, push tokens, test pushes, and
       clearing today's dispatch. Preserve production restrictions on development
       actions. Do not turn the global manual dispatch into a personal operation;

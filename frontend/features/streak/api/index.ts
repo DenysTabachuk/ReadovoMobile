@@ -3,4 +3,5 @@ export { completeStreakActivity } from './completeStreakActivity';
 export { restoreBrokenStreak } from './restoreBrokenStreak';
 export { applyStreakFreeze } from './applyStreakFreeze';
 export { purchaseStreakFreezeToken } from './purchaseStreakFreezeToken';
-export { getStreakCalendarMonth } from './getStreakCalendarMonth';
+export * from './requests';
+export * from './queries';

@@ -320,7 +320,6 @@ export default function ProfileScreen() {
                 }}
                 serverNow={streak.serverNow}
                 streak={streak}
-                userId={currentUser?.id ?? undefined}
               />
               <StreakRestoreConfirmModal
                 coinBalance={streak.coinBalance}

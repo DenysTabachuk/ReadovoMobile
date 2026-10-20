@@ -6,6 +6,20 @@ const backendBaseUrl = process.env.MOCK_PROXY_TARGET ?? 'http://localhost:3000';
 const backendUrl = new URL(backendBaseUrl);
 const transport = backendUrl.protocol === 'https:' ? https : http;
 
+// Mock fixture selection only; production verifies signatures in UserAuthGuard.
+function getMockTokenSubject(authorization = '') {
+  try {
+    const [scheme, token] = authorization.split(' ');
+    if (scheme !== 'Bearer' || !token) {
+      return null;
+    }
+    const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString('utf8'));
+    return typeof payload.sub === 'string' && payload.sub ? payload.sub : null;
+  } catch {
+    return null;
+  }
+}
+
 function buildNeutralCalendarMonth(year, month) {
   const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
   const days = Array.from({ length: daysInMonth }, (_, index) => ({
@@ -353,19 +367,8 @@ module.exports = (req, res, next) => {
   }
 
   if (dictionaryMatch) {
-    // Mock data only: production verifies the token signature in UserAuthGuard.
-    let userId;
-    try {
-      const [scheme, token] = (req.headers.authorization ?? '').split(' ');
-      if (scheme !== 'Bearer' || !token) {
-        throw new Error('Missing bearer token');
-      }
-      const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString('utf8'));
-      if (typeof payload.sub !== 'string' || !payload.sub) {
-        throw new Error('Missing token subject');
-      }
-      userId = payload.sub;
-    } catch {
+    const userId = getMockTokenSubject(req.headers.authorization);
+    if (!userId) {
       res.status(401).jsonp({ message: 'Authorization bearer token is required.' });
       return;
     }
@@ -481,7 +484,14 @@ module.exports = (req, res, next) => {
     return;
   }
 
-  const userId = decodeURIComponent(match[1]);
+  const isCurrentUserCalendar = req.path === '/streak/profile/me/calendar/month';
+  const userId = isCurrentUserCalendar
+    ? getMockTokenSubject(req.headers.authorization)
+    : decodeURIComponent(match[1]);
+  if (!userId) {
+    res.status(401).jsonp({ message: 'Authorization bearer token is required.' });
+    return;
+  }
   const action = match[2] ?? (req.path.endsWith('/calendar/month') ? 'calendar-month' : 'profile');
   const db = req.app.db;
   const state = db.getState();
