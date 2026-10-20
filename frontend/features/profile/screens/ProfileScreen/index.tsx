@@ -1,14 +1,7 @@
-import {
-  Pressable,
-  ScrollView,
-  View,
-  useWindowDimensions,
-  type DimensionValue,
-} from 'react-native';
+import { Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
 import { useState } from 'react';
 import { useRouter } from 'expo-router';
 import { Image } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -18,10 +11,7 @@ import { ScreenContainer } from '@/components/screenContainer';
 import { useBanner } from '@/components/banner';
 import { FullScreenLoader } from '@/components/fullScreenLoader';
 import { ThemedText } from '@/components/themedText';
-import {
-  getAchievementBadge,
-  getAchievementsProfile,
-} from '@/features/achievements';
+import { getAchievementsProfile } from '@/features/achievements';
 import { getMascotProfile, Mascot } from '@/features/mascot';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useAuth } from '@/features/auth';
@@ -36,6 +26,7 @@ import {
 } from '@/features/streak';
 
 import { styles } from './styles';
+import { ProfileAchievements } from './components/profileAchievements';
 
 const defaultStats = {
   balance: 0,
@@ -96,7 +87,6 @@ export default function ProfileScreen() {
   const achievements = achievementsQuery.data?.achievements ?? [];
   const isAchievementsLoading =
     achievementsQuery.isLoading && !achievementsQuery.data;
-  const shouldShowAchievements = achievements.length > 0;
   const unlockedAchievementsCount = (
     achievementsQuery.data?.achievements ?? []
   ).filter((achievement) => achievement.isUnlocked).length;
@@ -488,113 +478,10 @@ export default function ProfileScreen() {
           </ScrollView>
         </View>
 
-        <View style={styles.achievementsBlock}>
-          {isAchievementsLoading ? (
-            <ThemedText
-              style={[
-                styles.achievementsNoticeText,
-                isDarkTheme ? styles.achievementsNoticeTextDark : null,
-              ]}
-            >
-              {t('profile.loading')}
-            </ThemedText>
-          ) : null}
-          {shouldShowAchievements ? (
-            <ThemedText type="sectionTitle">
-              {t('profile.achievementsTitle')}
-            </ThemedText>
-          ) : null}
-          {shouldShowAchievements
-            ? achievements.map((achievement) => {
-                const isUnlocked = achievement.isUnlocked;
-                const progressValue = achievement.progressValue;
-                const progressRatio = Math.min(
-                  progressValue / achievement.targetValue,
-                  1,
-                );
-                const progressPercentage: DimensionValue = `${Math.round(progressRatio * 100)}%`;
-
-                return (
-                  <View
-                    key={achievement.id}
-                    style={[
-                      styles.achievementCard,
-                      isUnlocked
-                        ? styles.unlockedAchievementCard
-                        : styles.lockedAchievementCard,
-                    ]}
-                  >
-                    {isUnlocked ? (
-                      <LinearGradient
-                        colors={
-                          isDarkTheme
-                            ? ['#211339', '#3a2461', '#5b36ad']
-                            : ['#f3edff', '#e4d7ff', '#c9b2ff']
-                        }
-                        end={{ x: 1, y: 1 }}
-                        pointerEvents="none"
-                        start={{ x: 0, y: 0 }}
-                        style={styles.unlockedAchievementGradient}
-                      />
-                    ) : null}
-                    <Image
-                      contentFit="contain"
-                      source={getAchievementBadge(achievement.badgeKey)}
-                      style={[
-                        styles.achievementBadge,
-                        !isUnlocked && styles.lockedAchievementBadge,
-                      ]}
-                    />
-                    <View style={styles.achievementMeta}>
-                      <ThemedText type="bodyStrong">
-                        {t(achievement.titleKey)}
-                      </ThemedText>
-                      <ThemedText style={styles.achievementDescription}>
-                        {t(achievement.descriptionKey)}
-                      </ThemedText>
-                      <ThemedText
-                        style={
-                          isUnlocked ? styles.unlockedText : styles.lockedText
-                        }
-                      >
-                        {isUnlocked
-                          ? t('profile.unlocked')
-                          : t('profile.locked')}
-                      </ThemedText>
-                      <View style={styles.achievementProgressBlock}>
-                        <View style={styles.achievementProgressTrack}>
-                          <View
-                            style={[
-                              styles.achievementProgressFill,
-                              isUnlocked
-                                ? styles.unlockedAchievementProgressFill
-                                : styles.lockedAchievementProgressFill,
-                              { width: progressPercentage },
-                            ]}
-                          />
-                        </View>
-                        <ThemedText style={styles.achievementProgressText}>
-                          {`${Math.min(progressValue, achievement.targetValue)}/${achievement.targetValue}`}
-                        </ThemedText>
-                      </View>
-                      <View style={styles.rewardRow}>
-                        <Image
-                          contentFit="contain"
-                          source={require('../../../../assets/images/money.png')}
-                          style={styles.moneyIcon}
-                        />
-                        <ThemedText style={styles.rewardText}>
-                          {t('profile.reward', {
-                            count: achievement.coinsReward,
-                          })}
-                        </ThemedText>
-                      </View>
-                    </View>
-                  </View>
-                );
-              })
-            : null}
-        </View>
+        <ProfileAchievements
+          achievements={achievements}
+          isLoading={isAchievementsLoading}
+        />
       </ScrollView>
     </ScreenContainer>
   );
