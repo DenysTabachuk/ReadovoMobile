@@ -1,28 +1,23 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
-import type { ReactElement } from 'react';
 import { Pressable, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { ThemedText } from '@/components/themedText';
-import { getStreakCalendarMonth } from '../../api';
-import {
-  type CalendarDayStatus,
-  type StreakCalendarDay,
-  type StreakState,
-} from '../../types';
+import { useStreakCalendarMonthQuery } from '../../api';
+import { type StreakCalendarDay, type StreakState } from '../../types';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
 import { styles } from './styles';
+import { CalendarDay } from './components/calendarDay';
+import { createCalendarGrid } from './utils/createCalendarGrid';
 
 type ActivityCalendarProps = {
   isCtaLoading?: boolean;
   onPressCta?: () => void;
-  onRequestFreezeDay?: (day: StreakCalendarDay) => void;
+  onRequestFreezeDay: (day: StreakCalendarDay) => void;
   serverNow: string;
   streak: StreakState;
-  userId?: string;
 };
 
 const weekDayTranslationKeys = [
@@ -34,82 +29,6 @@ const weekDayTranslationKeys = [
   'streak.calendar.weekdays.sat',
   'streak.calendar.weekdays.sun',
 ] as const;
-
-const CALENDAR_GRID_CELL_COUNT = 42;
-
-function getStatusStyle(status: CalendarDayStatus) {
-  if (status === 'completed' || status === 'today_completed') {
-    return styles.dayCompleted;
-  }
-
-  if (status === 'missed') {
-    return styles.dayMissed;
-  }
-
-  if (status === 'frozen') {
-    return styles.dayFrozen;
-  }
-
-  if (status === 'restored') {
-    return styles.dayRestored;
-  }
-
-  if (status === 'today_pending') {
-    return styles.dayTodayPending;
-  }
-
-  if (status === 'future') {
-    return styles.dayFuture;
-  }
-
-  return styles.dayNeutral;
-}
-
-function getStatusIcon(
-  status: CalendarDayStatus,
-  isDark: boolean,
-): ReactElement | null {
-  if (status === 'completed' || status === 'today_completed') {
-    return (
-      <Ionicons
-        color="#ffffff"
-        name="checkmark"
-        size={12}
-        style={styles.dayIcon}
-      />
-    );
-  }
-
-  if (status === 'missed') {
-    return (
-      <Ionicons color="#ffffff" name="close" size={12} style={styles.dayIcon} />
-    );
-  }
-
-  if (status === 'frozen') {
-    return (
-      <Ionicons color="#ffffff" name="snow" size={11} style={styles.dayIcon} />
-    );
-  }
-
-  if (status === 'restored') {
-    return (
-      <Ionicons
-        color={isDark ? '#ffffff' : '#5c3410'}
-        name="refresh"
-        size={11}
-        style={styles.dayIcon}
-      />
-    );
-  }
-
-  return null;
-}
-
-function getMonthStartOffset(dateKey: string): number {
-  const day = new Date(`${dateKey}T00:00:00.000Z`).getUTCDay();
-  return day === 0 ? 6 : day - 1;
-}
 
 function getStatusTextKey(todayStatus: StreakState['todayStatus']): string {
   if (todayStatus === 'completed') {
@@ -153,7 +72,6 @@ function getCtaTextKey(streak: StreakState): string {
 
 export function ActivityCalendar({
   isCtaLoading = false,
-  userId,
   serverNow,
   streak,
   onPressCta,
@@ -169,11 +87,9 @@ export function ActivityCalendar({
     initialDate.getUTCMonth() + 1,
   );
 
-  const calendarQuery = useQuery({
-    enabled: Boolean(userId),
-    queryFn: () =>
-      getStreakCalendarMonth(userId ?? '', visibleYear, visibleMonth),
-    queryKey: ['streak-calendar-month', userId, visibleYear, visibleMonth],
+  const calendarQuery = useStreakCalendarMonthQuery({
+    year: visibleYear,
+    month: visibleMonth,
   });
 
   const monthLabel = calendarQuery.data?.monthLabel ?? '';
@@ -183,26 +99,10 @@ export function ActivityCalendar({
     (visibleYear === serverDate.getUTCFullYear() &&
       visibleMonth < serverDate.getUTCMonth() + 1);
 
-  const gridCells = useMemo(() => {
-    const monthDays = calendarQuery.data?.days ?? [];
-
-    if (monthDays.length === 0) {
-      return Array.from(
-        { length: CALENDAR_GRID_CELL_COUNT },
-        () => null,
-      ) as (StreakCalendarDay | null)[];
-    }
-
-    const offset = getMonthStartOffset(monthDays[0].date);
-    const lead = Array.from({ length: offset }, () => null);
-    const cells = [...lead, ...monthDays];
-    const trailingCellCount = Math.max(
-      CALENDAR_GRID_CELL_COUNT - cells.length,
-      0,
-    );
-
-    return [...cells, ...Array.from({ length: trailingCellCount }, () => null)];
-  }, [calendarQuery.data?.days]);
+  const gridCells = useMemo(
+    () => createCalendarGrid(calendarQuery.data?.days),
+    [calendarQuery.data?.days],
+  );
 
   const goPrevMonth = () => {
     if (visibleMonth === 1) {
@@ -283,66 +183,13 @@ export function ActivityCalendar({
       </View>
 
       <View style={styles.grid}>
-        {gridCells.map((cell, index) => {
-          if (!cell) {
-            return <View key={`empty-${index}`} style={styles.emptyDayCell} />;
-          }
-
-          const icon = getStatusIcon(cell.status, isDark);
-          const canRequestFreeze =
-            cell.status === 'missed' && Boolean(onRequestFreezeDay);
-          const dayContent = (
-            <>
-              <ThemedText
-                style={[
-                  styles.dayText,
-                  cell.status === 'future'
-                    ? isDark
-                      ? styles.futureDayTextDark
-                      : styles.futureDayTextLight
-                    : isDark
-                      ? styles.dayTextDark
-                      : styles.dayTextLight,
-                ]}
-              >
-                {cell.dayOfMonth}
-              </ThemedText>
-              {icon}
-            </>
-          );
-
-          if (canRequestFreeze) {
-            return (
-              <Pressable
-                accessibilityRole="button"
-                key={cell.date}
-                onPress={() => onRequestFreezeDay?.(cell)}
-                style={({ pressed }) => [
-                  styles.dayCell,
-                  getStatusStyle(cell.status),
-                  isDark ? styles.dayCellDark : styles.dayCellLight,
-                  styles.dayPressable,
-                  pressed ? styles.dayPressed : null,
-                ]}
-              >
-                {dayContent}
-              </Pressable>
-            );
-          }
-
-          return (
-            <View
-              key={cell.date}
-              style={[
-                styles.dayCell,
-                getStatusStyle(cell.status),
-                isDark ? styles.dayCellDark : styles.dayCellLight,
-              ]}
-            >
-              {dayContent}
-            </View>
-          );
-        })}
+        {gridCells.map((day, index) => (
+          <CalendarDay
+            key={day?.date ?? `empty-${index}`}
+            day={day}
+            onRequestFreezeDay={onRequestFreezeDay}
+          />
+        ))}
       </View>
 
       <View style={styles.summaryTopRow}>

@@ -9,6 +9,8 @@ import {
 } from '@nestjs/common';
 
 import { UserAuthGuard } from '../auth/user-auth.guard';
+import { CurrentUser } from '../auth/current-user.decorator';
+import { type AuthenticatedUser } from '../auth/types';
 import { UserIdParamsDto } from '../common/validation/request.dto';
 import {
   ApplyStreakFreezeDto,
@@ -34,12 +36,12 @@ export class StreakController {
     return this.streakService.getProfile(userId);
   }
 
-  @Get('profile/:userId/calendar/month')
+  @Get('profile/me/calendar/month')
   async getCalendarMonth(
-    @Param() { userId }: UserIdParamsDto,
+    @CurrentUser() user: AuthenticatedUser,
     @Query() { month, year }: StreakCalendarQueryDto,
   ): Promise<StreakCalendarMonthResponse> {
-    return this.streakService.getCalendarMonth(userId, year, month);
+    return this.streakService.getCalendarMonth(user.id, year, month);
   }
 
   @Post('profile/:userId/activity-completed')
