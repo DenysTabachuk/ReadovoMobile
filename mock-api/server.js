@@ -298,7 +298,7 @@ function pipeToBackend(req, res) {
 module.exports = (req, res, next) => {
   const method = req.method.toUpperCase();
   const achievementsMatch = req.path.match(/^\/achievements\/profile\/([^/]+)(?:\/progress)?$/);
-  const dictionaryMatch = req.path.match(/^\/api\/dictionary\/users\/([^/]+)\/(words|test)(?:\/([^/]+)|\/answer)?(?:\/progress)?$/);
+  const dictionaryMatch = req.path.match(/^\/api\/dictionary\/me\/(words|test)(?:\/([^/]+)|\/answer)?(?:\/progress)?$/);
   const articleDetailMatch = req.path.match(/^\/articles\/([^/]+)$/);
   const match = req.path.match(/^\/streak\/profile\/([^/]+)(?:\/(activity-completed|restore)|\/calendar\/month)?$/);
 
@@ -353,8 +353,23 @@ module.exports = (req, res, next) => {
   }
 
   if (dictionaryMatch) {
-    const userId = decodeURIComponent(dictionaryMatch[1]);
-    const resource = dictionaryMatch[2];
+    // Mock data only: production verifies the token signature in UserAuthGuard.
+    let userId;
+    try {
+      const [scheme, token] = (req.headers.authorization ?? '').split(' ');
+      if (scheme !== 'Bearer' || !token) {
+        throw new Error('Missing bearer token');
+      }
+      const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString('utf8'));
+      if (typeof payload.sub !== 'string' || !payload.sub) {
+        throw new Error('Missing token subject');
+      }
+      userId = payload.sub;
+    } catch {
+      res.status(401).jsonp({ message: 'Authorization bearer token is required.' });
+      return;
+    }
+    const resource = dictionaryMatch[1];
     const words = buildMockDictionaryWords(userId);
 
     if (method === 'GET' && resource === 'words') {
@@ -400,8 +415,14 @@ module.exports = (req, res, next) => {
       return;
     }
 
+    if (method === 'DELETE' && resource === 'words') {
+      const word = words.find((item) => item.id === dictionaryMatch[2]);
+      res.jsonp(word ?? words[0]);
+      return;
+    }
+
     if (method === 'PATCH' && req.path.endsWith('/progress')) {
-      const wordId = dictionaryMatch[3];
+      const wordId = dictionaryMatch[2];
       const word = words.find((item) => item.id === wordId) ?? words[0];
 
       res.jsonp({

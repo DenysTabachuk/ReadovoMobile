@@ -11,13 +11,12 @@ import {
 } from '@nestjs/common';
 
 import { UserAuthGuard } from '../auth/user-auth.guard';
-import {
-  UserAndWordIdParamsDto,
-  UserIdParamsDto,
-} from '../common/validation/request.dto';
+import { CurrentUser } from '../auth/current-user.decorator';
+import { type AuthenticatedUser } from '../auth/types';
 import {
   CreateDictionaryWordDto,
   DictionaryTestQueryDto,
+  DictionaryWordParamsDto,
   GenerateEmbeddingDto,
   QuizOptionsDto,
   SimilarWordsDto,
@@ -35,36 +34,38 @@ import {
 export class DictionaryController {
   constructor(private readonly dictionaryService: DictionaryService) {}
 
-  @Get('users/:userId/words')
+  @Get('me/words')
   @UseGuards(UserAuthGuard)
-  findAll(@Param() { userId }: UserIdParamsDto): Promise<DictionaryWord[]> {
-    return this.dictionaryService.findAll(userId);
+  findAll(@CurrentUser() user: AuthenticatedUser): Promise<DictionaryWord[]> {
+    return this.dictionaryService.findAll(user.id);
   }
 
-  @Post('users/:userId/words')
+  @Post('me/words')
   @UseGuards(UserAuthGuard)
   createWord(
-    @Param() { userId }: UserIdParamsDto,
+    @CurrentUser() user: AuthenticatedUser,
     @Body() body: CreateDictionaryWordDto,
   ): Promise<DictionaryWord> {
-    return this.dictionaryService.createWord(userId, body);
+    return this.dictionaryService.createWord(user.id, body);
   }
 
-  @Delete('users/:userId/words/:wordId')
+  @Delete('me/words/:wordId')
   @UseGuards(UserAuthGuard)
   deleteWord(
-    @Param() { userId, wordId }: UserAndWordIdParamsDto,
+    @CurrentUser() user: AuthenticatedUser,
+    @Param() { wordId }: DictionaryWordParamsDto,
   ): Promise<DictionaryWord> {
-    return this.dictionaryService.deleteWord(userId, wordId);
+    return this.dictionaryService.deleteWord(user.id, wordId);
   }
 
-  @Patch('users/:userId/words/:wordId/progress')
+  @Patch('me/words/:wordId/progress')
   @UseGuards(UserAuthGuard)
   updateWordProgress(
-    @Param() { userId, wordId }: UserAndWordIdParamsDto,
+    @CurrentUser() user: AuthenticatedUser,
+    @Param() { wordId }: DictionaryWordParamsDto,
     @Body() body: UpdateDictionaryWordProgressDto,
   ): Promise<DictionaryWord> {
-    return this.dictionaryService.updateWordProgress(userId, wordId, body);
+    return this.dictionaryService.updateWordProgress(user.id, wordId, body);
   }
 
   @Post('embedding')
@@ -82,21 +83,21 @@ export class DictionaryController {
     return this.dictionaryService.generateQuizOptions(body);
   }
 
-  @Get('users/:userId/test')
+  @Get('me/test')
   @UseGuards(UserAuthGuard)
   createTest(
-    @Param() { userId }: UserIdParamsDto,
+    @CurrentUser() user: AuthenticatedUser,
     @Query() { limit }: DictionaryTestQueryDto,
   ): Promise<DictionaryTest> {
-    return this.dictionaryService.createTest(userId, limit);
+    return this.dictionaryService.createTest(user.id, limit);
   }
 
-  @Post('users/:userId/test/answer')
+  @Post('me/test/answer')
   @UseGuards(UserAuthGuard)
   submitTestAnswer(
-    @Param() { userId }: UserIdParamsDto,
+    @CurrentUser() user: AuthenticatedUser,
     @Body() body: SubmitDictionaryTestAnswerDto,
   ): Promise<DictionaryTestAnswerResult> {
-    return this.dictionaryService.submitTestAnswer(userId, body);
+    return this.dictionaryService.submitTestAnswer(user.id, body);
   }
 }

@@ -17,6 +17,12 @@ import { type DictionaryWordProgress } from './types';
 
 const MAX_WORD_LIST_SIZE = 1_000;
 
+export class DictionaryWordParamsDto {
+  @IsUUID()
+  @Trim()
+  wordId!: string;
+}
+
 export class CreateDictionaryWordDto {
   @IsNotEmpty()
   @IsString()
