@@ -7,12 +7,11 @@ import {
 } from '../../types';
 
 export async function updateDictionaryWordProgress(
-  userId: string,
   wordId: string,
   request: UpdateDictionaryWordProgressRequest,
 ): Promise<DictionaryWord> {
   const response = await authenticatedFetch(
-    `${API_BASE_URL}/api/dictionary/users/${userId}/words/${wordId}/progress`,
+    `${API_BASE_URL}/api/dictionary/me/words/${wordId}/progress`,
     {
       body: JSON.stringify(request),
       headers: { 'Content-Type': 'application/json' },

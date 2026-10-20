@@ -78,7 +78,7 @@ export default function DictionaryTestScreen() {
   }, [t, test]);
 
   const testMutation = useMutation({
-    mutationFn: () => fetchDictionaryTest(userId ?? ''),
+    mutationFn: () => fetchDictionaryTest(),
     onSuccess: (nextTest) => {
       setTest(nextTest);
     },
@@ -87,7 +87,7 @@ export default function DictionaryTestScreen() {
 
   const answerMutation = useMutation({
     mutationFn: (request: { selectedOptionId: string; wordId: string }) =>
-      submitDictionaryTestAnswer(userId ?? '', request),
+      submitDictionaryTestAnswer(request),
     onSuccess: () => {
       void queryClient.invalidateQueries({
         queryKey: ['dictionary', 'words', userId],

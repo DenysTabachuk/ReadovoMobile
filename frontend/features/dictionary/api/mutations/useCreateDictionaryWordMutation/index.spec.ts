@@ -45,7 +45,7 @@ describe('useCreateDictionaryWordMutation', () => {
       translation: 'яскравий',
     };
     await mockOptions.mutationFn(request);
-    expect(createDictionaryWord).toHaveBeenCalledWith('user-42', request);
+    expect(createDictionaryWord).toHaveBeenCalledWith(request);
   });
 
   it('refreshes the user dictionary and shows a success banner', () => {
