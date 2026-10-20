@@ -17,6 +17,33 @@ import-only updates do not require refactoring the imported module.
 - Avoid importing another feature's internal files directly. Expose intentional cross-feature APIs through that feature's `index.ts`.
 - Prefer the dependency direction `app` to `features` to shared code.
 
+## Localization
+
+- All app-owned text shown to users must be resolved through translation keys.
+  This includes labels, buttons, placeholders, statuses, errors, validation,
+  accessibility labels/hints, dialogs, and notification titles/bodies/actions.
+  Development screens follow the same rule when their text is visible in the app.
+- Reuse a key when its meaning matches; otherwise add a semantic key to every
+  supported locale in `frontend/localization`. Do not use hardcoded visible
+  `defaultValue` strings as a substitute for providing translations.
+- Use interpolation for variable data and the existing i18n pluralization support
+  for counts. Do not concatenate translated fragments to construct sentences.
+- Keep pure domain utilities independent of React and the active language. Return
+  semantic translation keys and interpolation data; translate at the presentation
+  boundary with the existing i18n integration. Name key fields explicitly, such as
+  `messageKey`, so callers do not display a key as if it were translated text.
+- Resolve translations when rendering or scheduling, rather than storing translated
+  strings in domain state or computing them once when a module loads. Native
+  services that present text must use the configured i18n instance at call time.
+- Map backend failures to known translation keys; do not directly show arbitrary
+  server error messages. Keep technical error codes distinct from translated copy.
+- User-authored content, article text, proper names, and other external content
+  are not app translation copy. Developer-only logs, comments, test fixtures,
+  protocol values, resource IDs, and storage keys do not require translation.
+- Apply this to new, moved, and touched implementation within the task scope.
+  Report unrelated legacy hardcoded copy separately rather than expanding a local
+  refactor into a repository-wide localization migration.
+
 ## API functions
 
 - Organize each feature's data layer under `api/requests`, `api/queries`, and `api/mutations`. Keep HTTP functions in `requests`, React Query read hooks in `queries`, and React Query mutation hooks in `mutations`.

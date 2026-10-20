@@ -1,4 +1,4 @@
-﻿export type StreakTodayStatus =
+export type StreakTodayStatus =
   'completed' | 'pending' | 'missed' | 'frozen' | 'restored' | 'broken';
 
 export type StreakActivityType =
@@ -36,11 +36,17 @@ export type StreakAchievement = {
   rewardCoins: number;
 };
 
-export type StreakReminderState = {
-  cta: string;
-  message: string;
-  shouldShow: boolean;
-};
+export type StreakReminderState =
+  | {
+      ctaKey: 'streak.reminder.cta';
+      messageKey: 'streak.reminder.message';
+      shouldShow: true;
+    }
+  | {
+      ctaKey: null;
+      messageKey: null;
+      shouldShow: false;
+    };
 
 export type StreakState = {
   activityHistory: StreakHistoryDay[];

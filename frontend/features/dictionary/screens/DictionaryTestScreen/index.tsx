@@ -40,7 +40,7 @@ import {
 } from '@/features/streak';
 import { useBanner } from '@/components/banner';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { useAuth } from '@/features/auth';
+import { getAuthSessionSnapshot, useAuth } from '@/features/auth';
 
 import { styles } from './styles';
 
@@ -92,6 +92,7 @@ export default function DictionaryTestScreen() {
         return null;
       }
 
+      const session = await getAuthSessionSnapshot(userId);
       const profile = await getAchievementsProfile(userId);
       // TODO: Submit the completed session for server-side rewards. See docs/server-side-quiz-rewards.md.
       const rewardCoins = calculateQuizReward({
@@ -103,13 +104,16 @@ export default function DictionaryTestScreen() {
         balance: profile.progress.balance + rewardCoins,
         testsCompleted: profile.progress.testsCompleted + 1,
       });
+      session.assertCurrent();
       const previousStreak =
         queryClient.getQueryData<StreakState>(['streak-profile', userId]) ??
-        (await getStreakProfile(userId).catch(() => null));
+        (await getStreakProfile().catch(() => null));
+      session.assertCurrent();
       const streak = await trackLearningActivity(
         currentUser.id,
         'lexical_test_completed',
       );
+      session.assertCurrent();
 
       return {
         newlyUnlockedAchievements: getNewlyUnlockedAchievements(

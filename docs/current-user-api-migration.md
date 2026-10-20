@@ -139,6 +139,11 @@ Changing how ownership is determined does not change business rules for rewards,
 prices, streaks, quizzes, or administrator permissions. Related separate task:
 [move quiz rewards to the backend](server-side-quiz-rewards.md).
 
+Session infrastructure follow-up:
+[bind API operations to their initiating session](session-bound-api-client.md)
+(P1). Preserve existing session guards while replacing manual snapshot checks
+incrementally; this is separate from changing endpoint paths to `/me`.
+
 Done when all agreed personal endpoints use verified identity, their consumers
 are updated, account caches remain isolated, resource authorization is preserved,
 release compatibility is defined, and checks have been run.

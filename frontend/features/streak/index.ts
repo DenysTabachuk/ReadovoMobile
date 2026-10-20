@@ -26,7 +26,7 @@ export {
   restoreStreakForCoins,
   syncPendingStreakEvents,
   trackLearningActivity,
-} from './service';
+} from './utils';
 export type {
   ApplyStreakFreezeRequest,
   BrokenStreakInfo,
@@ -45,7 +45,7 @@ export type {
   StreakState,
   StreakTodayStatus,
 } from './types';
-export { useStreak } from './useStreak';
+export { useStreak } from './hooks';
 
 export { ActivityCalendar } from './components/activityCalendar';
 

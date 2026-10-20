@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
-import { applyFreezeToMissedDay } from '../../../service';
+import { applyFreezeToMissedDay } from '../../../utils/applyFreezeToMissedDay';
 import { useStreakCacheUpdate } from '../hooks/useStreakCacheUpdate';
 import type { StreakUpdateMutationParams } from '../types';
 
