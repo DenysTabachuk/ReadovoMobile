@@ -7,11 +7,10 @@ import {
 } from '../../types';
 
 export async function submitDictionaryTestAnswer(
-  userId: string,
   request: SubmitDictionaryTestAnswerRequest,
 ): Promise<DictionaryTestAnswerResult> {
   const response = await authenticatedFetch(
-    `${API_BASE_URL}/api/dictionary/users/${userId}/test/answer`,
+    `${API_BASE_URL}/api/dictionary/me/test/answer`,
     {
       body: JSON.stringify(request),
       headers: { 'Content-Type': 'application/json' },

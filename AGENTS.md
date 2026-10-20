@@ -8,6 +8,11 @@
   not require refactoring the module's existing implementation.
 - Keep existing user changes intact. Report logical problems and material
   improvement opportunities found while working.
+- Write documentation in English, including task documents, unless the user
+  explicitly requests another language.
+- Treat documents created to track a task as temporary. Delete the task document
+  once the task is fully completed; retain any lasting documentation in the
+  appropriate project documentation. Keep task documents while work remains.
 - Run checks relevant to the change and report what passed or could not run.
   Fix failures introduced by the task; distinguish pre-existing failures.
 - Before handing changes back to the user, verify the final implementation with

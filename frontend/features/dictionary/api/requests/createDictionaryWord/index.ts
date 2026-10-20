@@ -10,11 +10,10 @@ const DUPLICATE_DICTIONARY_WORD_MESSAGE =
   'Word or phrase already exists in dictionary.';
 
 export async function createDictionaryWord(
-  userId: string,
   request: CreateDictionaryWordRequest,
 ): Promise<DictionaryWord> {
   const response = await authenticatedFetch(
-    `${API_BASE_URL}/api/dictionary/users/${userId}/words`,
+    `${API_BASE_URL}/api/dictionary/me/words`,
     {
       body: JSON.stringify(request),
       headers: {

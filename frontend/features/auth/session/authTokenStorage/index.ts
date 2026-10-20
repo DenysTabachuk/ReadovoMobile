@@ -4,5 +4,3 @@ export {
 } from './constants';
 export { getAccessToken } from './getAccessToken';
 export { getRefreshToken } from './getRefreshToken';
-export { persistAuthTokens } from './persistAuthTokens';
-export { clearAuthTokens } from './clearAuthTokens';

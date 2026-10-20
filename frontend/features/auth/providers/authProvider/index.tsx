@@ -9,11 +9,8 @@ import {
   useState,
 } from 'react';
 
-import {
-  clearAuthTokens,
-  persistAuthTokens,
-  refreshAuthSession,
-} from '../../session';
+import { refreshAuthSession } from '../../session';
+import { authSessionStore } from '../../session/authTokenStorage/authSessionStore';
 
 import { type AuthUserProfile } from '../../types';
 
@@ -81,7 +78,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
         if (!rememberMe || !isAuthenticatedAfterHydration) {
           await Promise.all([
-            clearAuthTokens(),
+            authSessionStore.clear(),
             AsyncStorage.removeItem(AUTH_STORAGE_KEYS.userProfile),
           ]);
         }
@@ -116,12 +113,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const userProfileValue = userProfile ? JSON.stringify(userProfile) : '';
 
         await Promise.all([
-          persistAuthTokens({ accessToken, refreshToken }),
+          authSessionStore.replace({ accessToken, refreshToken }),
           AsyncStorage.setItem(AUTH_STORAGE_KEYS.userProfile, userProfileValue),
         ]);
       } else {
         await Promise.all([
-          persistAuthTokens({ accessToken, refreshToken }),
+          authSessionStore.replace({ accessToken, refreshToken }),
           AsyncStorage.removeItem(AUTH_STORAGE_KEYS.userProfile),
         ]);
       }
@@ -140,7 +137,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       });
 
     await Promise.all([
-      clearAuthTokens(),
+      authSessionStore.clear(),
       AsyncStorage.removeItem(AUTH_STORAGE_KEYS.userProfile),
       googleSignOutPromise,
     ]);

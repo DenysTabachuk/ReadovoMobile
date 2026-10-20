@@ -3,11 +3,9 @@ import { authenticatedFetch } from '@/features/auth';
 
 import { type DictionaryWord } from '../../types';
 
-export async function fetchDictionaryWords(
-  userId: string,
-): Promise<DictionaryWord[]> {
+export async function fetchDictionaryWords(): Promise<DictionaryWord[]> {
   const response = await authenticatedFetch(
-    `${API_BASE_URL}/api/dictionary/users/${userId}/words`,
+    `${API_BASE_URL}/api/dictionary/me/words`,
   );
 
   if (!response.ok) {

@@ -9,8 +9,8 @@ import { ActivityIndicator, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import {
-  fetchDictionaryTest,
-  submitDictionaryTestAnswer,
+  useGenerateDictionaryTestMutation,
+  useSubmitDictionaryTestAnswerMutation,
   type DictionaryTest,
 } from '../../api';
 import { isMockApiEnabled } from '@/api';
@@ -77,23 +77,14 @@ export default function DictionaryTestScreen() {
     }));
   }, [t, test]);
 
-  const testMutation = useMutation({
-    mutationFn: () => fetchDictionaryTest(userId ?? ''),
+  const testMutation = useGenerateDictionaryTestMutation({
     onSuccess: (nextTest) => {
       setTest(nextTest);
     },
   });
   const { mutate: generateTest } = testMutation;
 
-  const answerMutation = useMutation({
-    mutationFn: (request: { selectedOptionId: string; wordId: string }) =>
-      submitDictionaryTestAnswer(userId ?? '', request),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({
-        queryKey: ['dictionary', 'words', userId],
-      });
-    },
-  });
+  const answerMutation = useSubmitDictionaryTestAnswerMutation();
 
   const progressMutation = useMutation({
     mutationFn: async (result: QuizSessionResult) => {

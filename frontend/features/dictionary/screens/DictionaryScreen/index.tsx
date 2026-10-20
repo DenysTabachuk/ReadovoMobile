@@ -5,7 +5,6 @@ import type {
 } from './types';
 import { ProgressFilterDropdown } from './components/progressFilterDropdown';
 import { getProgressLabel, getProgressBadgeColors, countWords } from './utils';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import {
@@ -22,15 +21,13 @@ import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 
 import {
-  deleteDictionaryWord,
-  fetchDictionaryWords,
-  updateDictionaryWordProgress,
+  useDeleteDictionaryWordMutation,
+  useDictionaryWordsQuery,
+  useUpdateDictionaryWordProgressMutation,
   type DictionaryWord,
-  type DictionaryWordProgress,
 } from '../../api';
 import { Button } from '@/components/button';
 import { ModalSheet } from '@/components/modalSheet';
-import { useBanner } from '@/components/banner';
 import { FloatingActionButton } from '@/components/floatingActionButton';
 import { ScreenContainer } from '@/components/screenContainer';
 import { SegmentedToggle } from '@/components/segmentedToggle';
@@ -42,16 +39,12 @@ import {
   useWordTranslation,
 } from '@/features/translations';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { useAuth } from '@/features/auth';
 
 import { styles } from './styles';
 
 export default function DictionaryScreen() {
   const { t } = useTranslation();
   const router = useRouter();
-  const queryClient = useQueryClient();
-  const { showBanner } = useBanner();
-  const { currentUser } = useAuth();
   const colorScheme = useColorScheme();
   const borderColor = colorScheme === 'dark' ? '#2d3336' : '#d0d7de';
   const [openProgressMenuWordId, setOpenProgressMenuWordId] = useState<
@@ -65,13 +58,9 @@ export default function DictionaryScreen() {
   const [activeFilter, setActiveFilter] = useState<DictionaryFilter>('all');
   const [activeProgressFilter, setActiveProgressFilter] =
     useState<DictionaryProgressFilter>('all');
-  const userId = currentUser?.id;
 
-  const { data, error, isFetching, isLoading, refetch } = useQuery({
-    enabled: Boolean(userId),
-    queryFn: () => fetchDictionaryWords(userId ?? ''),
-    queryKey: ['dictionary', 'words', userId],
-  });
+  const { data, error, isFetching, isLoading, refetch } =
+    useDictionaryWordsQuery();
   const words = useMemo(() => data ?? [], [data]);
   const filteredWords = useMemo(() => {
     return words.filter((word) => {
@@ -119,55 +108,15 @@ export default function DictionaryScreen() {
   });
   const shouldShowInitialLoader = isLoading && words.length === 0;
   const shouldShowErrorState = Boolean(error) && words.length === 0;
-  const wordProgressMutation = useMutation({
-    mutationFn: ({
-      progress,
-      wordId,
-    }: {
-      progress: DictionaryWordProgress;
-      wordId: string;
-    }) => updateDictionaryWordProgress(userId ?? '', wordId, { progress }),
-    onError: () => {
-      showBanner({
-        description: t('dictionary.progressUpdateErrorDescription'),
-        durationMs: 4200,
-        title: t('dictionary.progressUpdateError'),
-        variant: 'error',
-      });
-    },
+  const wordProgressMutation = useUpdateDictionaryWordProgressMutation({
     onSuccess: () => {
       setOpenProgressMenuWordId(null);
-      void queryClient.invalidateQueries({
-        queryKey: ['dictionary', 'words', userId],
-      });
-      if (currentUser?.id) {
-        void queryClient.invalidateQueries({
-          queryKey: ['achievements-profile', currentUser.id],
-        });
-      }
     },
   });
-  const deleteWordMutation = useMutation({
-    mutationFn: (wordId: string) => deleteDictionaryWord(userId ?? '', wordId),
-    onError: () => {
-      showBanner({
-        description: t('dictionary.deleteErrorDescription'),
-        durationMs: 4200,
-        title: t('dictionary.deleteError'),
-        variant: 'error',
-      });
-    },
+  const deleteWordMutation = useDeleteDictionaryWordMutation({
     onSuccess: () => {
       setDeleteCandidate(null);
       setSelectedWord(null);
-      void queryClient.invalidateQueries({
-        queryKey: ['dictionary', 'words', userId],
-      });
-      showBanner({
-        durationMs: 3200,
-        title: t('dictionary.deleted'),
-        variant: 'success',
-      });
     },
   });
   const renderWord = useCallback<ListRenderItem<DictionaryWord>>(

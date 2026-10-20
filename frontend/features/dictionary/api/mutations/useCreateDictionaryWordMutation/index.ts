@@ -5,6 +5,17 @@ import { useTranslation } from 'react-i18next';
 import { createDictionaryWord } from '../../requests/createDictionaryWord';
 import type { CreateDictionaryWordRequest } from '../../types';
 
+/**
+ * Saves a word to the authenticated user's dictionary on mutate. Success refreshes
+ * that user's dictionary and shows a banner; duplicate words show an info banner.
+ *
+ * @returns Mutation controls accepting the word, translation, and context.
+ * @example
+ * // Inside a component:
+ * const saveWord = useCreateDictionaryWordMutation();
+ * saveWord.mutate({ word: 'sun', translation: 'сонце', context: 'The sun rises.' });
+ * // After saving, requests refreshed dictionary data and shows a success banner.
+ */
 export function useCreateDictionaryWordMutation() {
   const { currentUser } = useAuth();
   const { t } = useTranslation();
@@ -12,7 +23,7 @@ export function useCreateDictionaryWordMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (request: CreateDictionaryWordRequest) =>
-      createDictionaryWord(currentUser?.id ?? '', request),
+      createDictionaryWord(request),
     onError: (mutationError) => {
       const errorKey =
         mutationError instanceof Error

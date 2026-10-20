@@ -1,0 +1,1 @@
+export { useDictionaryWordsQuery } from './useDictionaryWordsQuery';
