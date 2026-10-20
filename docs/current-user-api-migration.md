@@ -121,9 +121,10 @@ Review each step before continuing to the next:
 - [x] Isolate authenticated requests and refresh operations across session changes.
       Old operations must not retry with new credentials, clear or overwrite a new
       session's tokens, or trigger automatic query retries under another account.
-      Implemented with regression tests; awaiting review before the next step.
-- [ ] Extract dictionary test generation and answer submission into separate API
+      Implemented with regression tests; reviewed before proceeding.
+- [x] Extract dictionary test generation and answer submission into separate API
       mutation hooks, retaining screen state callbacks in the screen.
+      Implemented with mutation lifecycle and cache regression tests; awaiting review.
 - [ ] Inspect the mock dictionary and make deletion survive a refetch, with
       per-user state and not-found responses. Keep this a local fix if feasible;
       agree on any broader mock API replacement or removal separately.
