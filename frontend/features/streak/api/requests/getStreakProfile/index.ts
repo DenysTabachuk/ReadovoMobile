@@ -1,11 +1,11 @@
 import { API_BASE_URL } from '@/api';
 import { authenticatedFetch } from '@/features/auth';
 
-import type { StreakState } from '../../types';
+import type { StreakState } from '../../../types';
 
-export async function getStreakProfile(userId: string): Promise<StreakState> {
+export async function getStreakProfile(): Promise<StreakState> {
   const response = await authenticatedFetch(
-    `${API_BASE_URL}/streak/profile/${userId}`,
+    `${API_BASE_URL}/streak/profile/me`,
   );
 
   if (!response.ok) {

@@ -1,15 +1,14 @@
 import { API_BASE_URL } from '@/api';
 import { authenticatedFetch } from '@/features/auth';
 
-import type { ApplyStreakFreezeRequest, StreakState } from '../../types';
-import { resolveStreakErrorMessage } from '../utils/resolveStreakErrorMessage';
+import type { ApplyStreakFreezeRequest, StreakState } from '../../../types';
+import { resolveStreakErrorMessage } from '../../utils/resolveStreakErrorMessage';
 
 export async function applyStreakFreeze(
-  userId: string,
   payload: ApplyStreakFreezeRequest,
 ): Promise<StreakState> {
   const response = await authenticatedFetch(
-    `${API_BASE_URL}/streak/profile/${userId}/freeze`,
+    `${API_BASE_URL}/streak/profile/me/freeze`,
     {
       body: JSON.stringify(payload),
       headers: {
