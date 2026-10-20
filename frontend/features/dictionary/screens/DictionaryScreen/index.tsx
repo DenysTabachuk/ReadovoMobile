@@ -4,21 +4,18 @@ import type {
   ProgressFilterOption,
 } from './types';
 import { ProgressFilterDropdown } from './components/progressFilterDropdown';
-import { getProgressLabel, getProgressBadgeColors, countWords } from './utils';
+import { countWords } from './utils';
+import { DictionaryWordCard } from './components/dictionaryWordCard';
 import { useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
-  Pressable,
   RefreshControl,
   View,
-  type DimensionValue,
-  type GestureResponderEvent,
   type ListRenderItem,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { Ionicons } from '@expo/vector-icons';
 
 import {
   useDeleteDictionaryWordMutation,
@@ -46,7 +43,6 @@ export default function DictionaryScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const colorScheme = useColorScheme();
-  const borderColor = colorScheme === 'dark' ? '#2d3336' : '#d0d7de';
   const [openProgressMenuWordId, setOpenProgressMenuWordId] = useState<
     string | null
   >(null);
@@ -108,146 +104,46 @@ export default function DictionaryScreen() {
   });
   const shouldShowInitialLoader = isLoading && words.length === 0;
   const shouldShowErrorState = Boolean(error) && words.length === 0;
-  const wordProgressMutation = useUpdateDictionaryWordProgressMutation({
-    onSuccess: () => {
-      setOpenProgressMenuWordId(null);
-    },
-  });
+  const { mutate: updateWordProgress, isPending: isUpdatingProgress } =
+    useUpdateDictionaryWordProgressMutation({
+      onSuccess: () => {
+        setOpenProgressMenuWordId(null);
+      },
+    });
   const deleteWordMutation = useDeleteDictionaryWordMutation({
     onSuccess: () => {
       setDeleteCandidate(null);
       setSelectedWord(null);
     },
   });
-  const renderWord = useCallback<ListRenderItem<DictionaryWord>>(
-    ({ item }) => {
-      const progressColors = getProgressBadgeColors(item.progress, colorScheme);
-      const progressRatio = Math.min(
-        item.correctAnswersCount / item.requiredCorrectAnswers,
-        1,
-      );
-      const progressPercentage: DimensionValue = `${Math.round(progressRatio * 100)}%`;
-      const isProgressMenuOpen = openProgressMenuWordId === item.id;
-      const inProgressColors = getProgressBadgeColors(
-        'in_progress',
-        colorScheme,
-      );
-      const isDarkTheme = colorScheme === 'dark';
-
-      const handleProgressPress = (event: GestureResponderEvent) => {
-        event.stopPropagation();
-        setOpenProgressMenuWordId((current) =>
-          current === item.id ? null : item.id,
-        );
-      };
-
-      const handleMoveBackToInProgress = (event: GestureResponderEvent) => {
-        event.stopPropagation();
-        wordProgressMutation.mutate({
-          progress: 'in_progress',
-          wordId: item.id,
-        });
-      };
-
-      return (
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => setSelectedWord(item)}
-          style={[styles.wordCard, { borderColor }]}
-        >
-          <View style={styles.cardHeader}>
-            <View style={styles.wordTitleGroup}>
-              <ThemedText type="sectionTitle" style={styles.wordText}>
-                {item.word}
-              </ThemedText>
-              <ThemedText type="body" style={styles.wordPreviewText}>
-                {item.translation}
-              </ThemedText>
-            </View>
-            <View style={styles.progressControl}>
-              <Pressable
-                disabled={item.progress !== 'learned'}
-                onPress={handleProgressPress}
-                style={[
-                  styles.progressBadge,
-                  { backgroundColor: progressColors.backgroundColor },
-                ]}
-              >
-                <ThemedText
-                  type="bodyStrong"
-                  style={[
-                    styles.progressText,
-                    { color: progressColors.textColor },
-                  ]}
-                >
-                  {getProgressLabel(item.progress, t)}
-                </ThemedText>
-              </Pressable>
-              {isProgressMenuOpen ? (
-                <View
-                  style={[
-                    styles.progressMenu,
-                    isDarkTheme && styles.progressMenuDark,
-                  ]}
-                >
-                  <ThemedText
-                    style={[
-                      styles.progressMenuHint,
-                      isDarkTheme && styles.progressMenuHintDark,
-                    ]}
-                  >
-                    {t('dictionary.progressMenuHint')}
-                  </ThemedText>
-                  <Pressable
-                    disabled={wordProgressMutation.isPending}
-                    onPress={handleMoveBackToInProgress}
-                    style={[
-                      styles.progressBadge,
-                      styles.progressMenuBadge,
-                      { backgroundColor: inProgressColors.backgroundColor },
-                    ]}
-                  >
-                    <ThemedText
-                      type="bodyStrong"
-                      style={[
-                        styles.progressText,
-                        { color: inProgressColors.textColor },
-                      ]}
-                    >
-                      {t('dictionary.progress.in_progress')}
-                    </ThemedText>
-                  </Pressable>
-                </View>
-              ) : null}
-            </View>
-          </View>
-          <View style={styles.learningProgressBlock}>
-            <View style={styles.learningProgressTrack}>
-              <View
-                style={[
-                  styles.learningProgressFill,
-                  { width: progressPercentage },
-                ]}
-              />
-            </View>
-            <ThemedText style={styles.learningProgressText}>
-              {`${Math.min(item.correctAnswersCount, item.requiredCorrectAnswers)}/${item.requiredCorrectAnswers}`}
-            </ThemedText>
-          </View>
-          <View style={styles.cardTapHint}>
-            <Ionicons
-              color={Colors[colorScheme ?? 'light'].icon}
-              name="open-outline"
-              size={13}
-            />
-            <ThemedText type="description" style={styles.cardTapHintText}>
-              {t('dictionary.tapHint')}
-            </ThemedText>
-          </View>
-        </Pressable>
-      );
+  const handleToggleProgressMenu = useCallback((wordId: string) => {
+    setOpenProgressMenuWordId((current) =>
+      current === wordId ? null : wordId,
+    );
+  }, []);
+  const handleMoveBackToInProgress = useCallback(
+    (wordId: string) => {
+      updateWordProgress({ progress: 'in_progress', wordId });
     },
-    [borderColor, colorScheme, openProgressMenuWordId, t, wordProgressMutation],
+    [updateWordProgress],
+  );
+  const renderWord = useCallback<ListRenderItem<DictionaryWord>>(
+    ({ item }) => (
+      <DictionaryWordCard
+        word={item}
+        isProgressMenuOpen={openProgressMenuWordId === item.id}
+        isUpdatingProgress={isUpdatingProgress}
+        onOpenWord={setSelectedWord}
+        onToggleProgressMenu={handleToggleProgressMenu}
+        onMoveBackToInProgress={handleMoveBackToInProgress}
+      />
+    ),
+    [
+      openProgressMenuWordId,
+      isUpdatingProgress,
+      handleToggleProgressMenu,
+      handleMoveBackToInProgress,
+    ],
   );
 
   const handleStartTest = useCallback(() => {
