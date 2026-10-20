@@ -110,10 +110,23 @@ screen.
 
 ## Compatibility and scope
 
-Before removing old URLs, check for released mobile clients. They may require a
-transition period with protected aliases; otherwise, coordinate backend and
-frontend releases. The current dictionary implementation already removes the old
-URLs, so assess this explicitly during its review.
+There are no production deployments or released clients to support in this
+migration. Legacy dictionary aliases are not required. Update development backend
+and frontend together; do not add a compatibility layer for nonexistent clients.
+
+### Follow-up review steps
+
+Review each step before continuing to the next:
+
+- [x] Isolate authenticated requests and refresh operations across session changes.
+      Old operations must not retry with new credentials, clear or overwrite a new
+      session's tokens, or trigger automatic query retries under another account.
+      Implemented with regression tests; awaiting review before the next step.
+- [ ] Extract dictionary test generation and answer submission into separate API
+      mutation hooks, retaining screen state callbacks in the screen.
+- [ ] Inspect the mock dictionary and make deletion survive a refetch, with
+      per-user state and not-found responses. Keep this a local fix if feasible;
+      agree on any broader mock API replacement or removal separately.
 
 Changing how ownership is determined does not change business rules for rewards,
 prices, streaks, quizzes, or administrator permissions. Related separate task:

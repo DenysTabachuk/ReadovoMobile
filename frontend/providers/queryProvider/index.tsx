@@ -1,6 +1,8 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { type ReactNode, useState } from 'react';
 
+import { shouldRetryQuery } from './utils/shouldRetryQuery';
+
 type QueryProviderProps = {
   children: ReactNode;
 };
@@ -13,8 +15,7 @@ export function QueryProvider({ children }: QueryProviderProps) {
       new QueryClient({
         defaultOptions: {
           queries: {
-            // Retry a failed query once before returning an error to the UI.
-            retry: 1,
+            retry: shouldRetryQuery,
             staleTime: QUERY_STALE_TIME_MS,
           },
         },
