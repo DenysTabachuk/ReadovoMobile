@@ -1,4 +1,4 @@
-import type { DictionaryWordProgress } from '../../../../api/types';
+import type { DictionaryWordProgress } from '@/features/dictionary/api/types';
 import type { useTranslation } from 'react-i18next';
 
 /**
