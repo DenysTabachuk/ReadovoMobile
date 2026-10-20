@@ -1,8 +1,7 @@
 ﻿# TODO: standardize APIs for the authenticated user
 
-Status: planned. The dictionary migration is implemented in the current working
-tree and awaits review. This document records the plan; other modules are not
-being migrated yet.
+Status: in progress. Dictionary and streak personal endpoints use `/me`.
+The remaining modules are tracked below; the current streak changes await review.
 
 ## Problem
 
@@ -37,7 +36,7 @@ data. An ID in a URL does not, by itself, indicate an authorization vulnerabilit
 ## Current inventory
 
 The target paths below are proposed contracts, except for the implemented
-dictionary and streak calendar migrations. Before each step, inspect the current controllers, all
+dictionary and streak migrations. Before each step, inspect the current controllers, all
 consumers, and the mock API.
 
 | Module        | Current route group                                     | Target route group                      | Status                                         |
@@ -46,7 +45,7 @@ consumers, and the mock API.
 | Achievements  | `/achievements/profile/:userId`                         | `/achievements/profile/me`              | Planned                                        |
 | Mascot        | `/mascot/profile/:userId`                               | `/mascot/profile/me`                    | Planned                                        |
 | Articles      | `/api/users/:userId/articles/{saved,recent}`            | `/api/users/me/articles/{saved,recent}` | Planned                                        |
-| Streak        | `/streak/profile/:userId`                               | `/streak/profile/me`                    | Planned                                        |
+| Streak        | `/streak/profile/me`                                    | Existing new routes                     | Implemented; awaiting review                   |
 | Notifications | `/notifications/preferences/:userId` and related routes | `me` segment in personal routes         | Planned; review development actions separately |
 
 Controller locations:
@@ -74,9 +73,13 @@ screen.
       the offline queue, establish ownership of stored events and behavior when
       switching accounts. Never send one account's events using another account's
       token.
-      The calendar endpoint now uses `/streak/profile/me/calendar/month` and the
-      frontend derives its cache owner from authentication. Profile and mutation
-      endpoints still require migration; offline queue behavior is unchanged.
+      All six endpoints now use `/streak/profile/me` and derive the owner from
+      `@CurrentUser()`. HTTP functions take no owner ID. Local IDs remain in cache
+      keys and service calls to validate the expected session and select the queue.
+      Pending events are stored under per-user keys; legacy unowned events remain
+      untouched and are not replayed. Session snapshots stop multi-step operations
+      after login/logout. Retry ordering and existing business rules are unchanged.
+      Implementation and regression tests are complete; review remains pending.
 - [ ] Migrate personal notifications: preferences, push tokens, test pushes, and
       clearing today's dispatch. Preserve production restrictions on development
       actions. Do not turn the global manual dispatch into a personal operation;

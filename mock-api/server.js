@@ -314,7 +314,7 @@ module.exports = (req, res, next) => {
   const achievementsMatch = req.path.match(/^\/achievements\/profile\/([^/]+)(?:\/progress)?$/);
   const dictionaryMatch = req.path.match(/^\/api\/dictionary\/me\/(words|test)(?:\/([^/]+)|\/answer)?(?:\/progress)?$/);
   const articleDetailMatch = req.path.match(/^\/articles\/([^/]+)$/);
-  const match = req.path.match(/^\/streak\/profile\/([^/]+)(?:\/(activity-completed|restore)|\/calendar\/month)?$/);
+  const match = req.path.match(/^\/streak\/profile\/me(?:\/(activity-completed|restore)|\/calendar\/month)?$/);
 
   if (method === 'GET' && req.path === '/articles') {
     res.jsonp([
@@ -484,15 +484,12 @@ module.exports = (req, res, next) => {
     return;
   }
 
-  const isCurrentUserCalendar = req.path === '/streak/profile/me/calendar/month';
-  const userId = isCurrentUserCalendar
-    ? getMockTokenSubject(req.headers.authorization)
-    : decodeURIComponent(match[1]);
+  const userId = getMockTokenSubject(req.headers.authorization);
   if (!userId) {
     res.status(401).jsonp({ message: 'Authorization bearer token is required.' });
     return;
   }
-  const action = match[2] ?? (req.path.endsWith('/calendar/month') ? 'calendar-month' : 'profile');
+  const action = match[1] ?? (req.path.endsWith('/calendar/month') ? 'calendar-month' : 'profile');
   const db = req.app.db;
   const state = db.getState();
 
