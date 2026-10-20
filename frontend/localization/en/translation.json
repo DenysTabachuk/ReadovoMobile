@@ -555,6 +555,10 @@
       "description": "Today's test is saved. Current streak: {{count}} days.",
       "title": "Streak continued"
     },
+    "reminder": {
+      "cta": "Start now",
+      "message": "Your streak is at risk"
+    },
     "calendar": {
       "weekdays": {
         "mon": "Mon",

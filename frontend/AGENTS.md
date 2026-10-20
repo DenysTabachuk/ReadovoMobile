@@ -52,6 +52,17 @@ full requirements, examples, documentation template, and edge cases.
 - Name non-obvious behavioral/design values and prefer existing theme tokens.
   Do not extract self-explanatory literals or obvious, single-use StyleSheet values.
 
+## Localization
+
+- All app-owned text presented to users must come from translation keys, including
+  buttons, statuses, errors, validation, accessibility labels, and notification copy.
+- Add or update keys in every supported locale under `frontend/localization`.
+  Do not hardcode visible fallback text or build sentences by concatenation; use
+  interpolation and pluralization. Translate at presentation/scheduling time.
+- Pure domain utilities return translation keys and data, not localized text or
+  React hooks. User-authored and external content is not translation copy; developer
+  logs and technical identifiers do not need translation. See the guide for details.
+
 ## Hook and utility documentation, utility tests
 
 - Document complex hooks with JSDoc explaining responsibility, inputs, returned

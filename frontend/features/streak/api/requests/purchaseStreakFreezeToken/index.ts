@@ -1,14 +1,13 @@
 import { API_BASE_URL } from '@/api';
 import { authenticatedFetch } from '@/features/auth';
 
-import type { PurchaseStreakFreezeRequest, StreakState } from '../../types';
+import type { PurchaseStreakFreezeRequest, StreakState } from '../../../types';
 
 export async function purchaseStreakFreezeToken(
-  userId: string,
   payload: PurchaseStreakFreezeRequest,
 ): Promise<StreakState> {
   const response = await authenticatedFetch(
-    `${API_BASE_URL}/streak/profile/${userId}/freeze-token/purchase`,
+    `${API_BASE_URL}/streak/profile/me/freeze-token/purchase`,
     {
       body: JSON.stringify(payload),
       headers: {

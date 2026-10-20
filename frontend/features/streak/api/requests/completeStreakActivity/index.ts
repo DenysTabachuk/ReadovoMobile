@@ -4,14 +4,13 @@ import { authenticatedFetch } from '@/features/auth';
 import type {
   CompleteActivityRequest,
   CompleteActivityResponse,
-} from '../../types';
+} from '../../../types';
 
 export async function completeStreakActivity(
-  userId: string,
   payload: CompleteActivityRequest,
 ): Promise<CompleteActivityResponse> {
   const response = await authenticatedFetch(
-    `${API_BASE_URL}/streak/profile/${userId}/activity-completed`,
+    `${API_BASE_URL}/streak/profile/me/activity-completed`,
     {
       body: JSON.stringify(payload),
       headers: {

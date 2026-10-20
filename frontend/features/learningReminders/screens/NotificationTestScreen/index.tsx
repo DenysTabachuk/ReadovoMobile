@@ -13,7 +13,7 @@ import {
 } from '@/features/learningReminders/api';
 import { registerCurrentDevicePushToken } from '@/features/learningReminders/service';
 import { getStreakProfile } from '@/features/streak';
-import { useAuth } from '@/features/auth';
+import { getAuthSessionSnapshot, useAuth } from '@/features/auth';
 import {
   type LearningReminderTime,
   usePreferences,
@@ -121,7 +121,10 @@ export default function NotificationTestScreen() {
         console.log(
           `[NotificationTest] loading streak profile userId=${currentUser.id}`,
         );
-        const streakProfile = await getStreakProfile(currentUser.id);
+        const session = await getAuthSessionSnapshot(currentUser.id);
+        session.assertCurrent();
+        const streakProfile = await getStreakProfile();
+        session.assertCurrent();
         console.log('[NotificationTest] streak profile loaded', {
           todayStatus: streakProfile.todayStatus,
         });

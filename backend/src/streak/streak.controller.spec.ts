@@ -29,14 +29,57 @@ const CALENDAR = {
   timezone: 'Europe/Kyiv',
 };
 const PATH = '/streak/profile/me/calendar/month';
+const OPERATIONS = [
+  {
+    path: '/streak/profile/me',
+    method: 'get',
+    service: 'getProfile',
+    body: undefined,
+    args: [],
+  },
+  {
+    path: '/streak/profile/me/activity-completed',
+    method: 'post',
+    service: 'completeActivity',
+    body: { activityType: 'article_quiz_completed' },
+    args: [{ activityType: 'article_quiz_completed' }],
+  },
+  {
+    path: '/streak/profile/me/restore',
+    method: 'post',
+    service: 'restore',
+    body: { price: 10 },
+    args: [10],
+  },
+  {
+    path: '/streak/profile/me/freeze',
+    method: 'post',
+    service: 'applyFreeze',
+    body: { date: '2026-07-08' },
+    args: ['2026-07-08'],
+  },
+  {
+    path: '/streak/profile/me/freeze-token/purchase',
+    method: 'post',
+    service: 'purchaseFreezeToken',
+    body: { price: 5 },
+    args: [5],
+  },
+] as const;
 
-describe('StreakController current-user calendar', () => {
+describe('StreakController current-user routes', () => {
   let app: INestApplication<App>;
   let jwt: JwtService;
   let token: string;
   const service = {
     getCalendarMonth: jest.fn().mockResolvedValue(CALENDAR),
-    getProfile: jest.fn(),
+    getProfile: jest.fn().mockResolvedValue({ currentStreak: 3 }),
+    completeActivity: jest
+      .fn()
+      .mockResolvedValue({ streak: { currentStreak: 3 } }),
+    restore: jest.fn().mockResolvedValue({ currentStreak: 3 }),
+    applyFreeze: jest.fn().mockResolvedValue({ currentStreak: 3 }),
+    purchaseFreezeToken: jest.fn().mockResolvedValue({ currentStreak: 3 }),
   };
 
   beforeAll(async () => {
@@ -126,11 +169,105 @@ describe('StreakController current-user calendar', () => {
     expect(service.getCalendarMonth).not.toHaveBeenCalled();
   });
 
-  it('preserves owner checks on the other streak routes', async () => {
+  it.each(OPERATIONS)(
+    '$method $path takes its owner exclusively from the token',
+    async (operation) => {
+      for (const id of [USER_ID, OTHER_ID]) {
+        const ownerToken = jwt.issueAccessToken({ ...USER, id }).accessToken;
+        const response =
+          operation.method === 'get'
+            ? request(app.getHttpServer()).get(operation.path)
+            : request(app.getHttpServer())
+                .post(operation.path)
+                .send(operation.body);
+        await response
+          .set('Authorization', `Bearer ${ownerToken}`)
+          .expect(operation.method === 'get' ? 200 : 201);
+        expect(service[operation.service]).toHaveBeenLastCalledWith(
+          id,
+          ...operation.args,
+        );
+      }
+    },
+  );
+
+  it.each(OPERATIONS)(
+    '$method $path rejects missing, invalid, and expired credentials',
+    async (operation) => {
+      const clock = jest.spyOn(Date, 'now').mockReturnValue(0);
+      let expiredToken: string;
+      try {
+        expiredToken = jwt.issueAccessToken(USER).accessToken;
+      } finally {
+        clock.mockRestore();
+      }
+      for (const authorization of [
+        '',
+        'Bearer invalid',
+        `Bearer ${expiredToken}`,
+      ]) {
+        const response =
+          operation.method === 'get'
+            ? request(app.getHttpServer()).get(operation.path)
+            : request(app.getHttpServer())
+                .post(operation.path)
+                .send(operation.body);
+        await response.set('Authorization', authorization).expect(401);
+      }
+      expect(service[operation.service]).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(OPERATIONS.filter((operation) => operation.method === 'post'))(
+    '$path rejects a client-supplied body owner',
+    async (operation) => {
+      await request(app.getHttpServer())
+        .post(operation.path)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ ...operation.body, userId: OTHER_ID })
+        .expect(400);
+      expect(service[operation.service]).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([
+    {
+      path: 'activity-completed',
+      body: { activityType: 'invalid' },
+      service: 'completeActivity',
+    },
+    { path: 'restore', body: { price: -1 }, service: 'restore' },
+    { path: 'freeze', body: { date: '2026-02-30' }, service: 'applyFreeze' },
+    {
+      path: 'freeze-token/purchase',
+      body: { price: '5' },
+      service: 'purchaseFreezeToken',
+    },
+  ] as const)(
+    'keeps payload validation for $path',
+    async ({ path, body, service: method }) => {
+      await request(app.getHttpServer())
+        .post(`/streak/profile/me/${path}`)
+        .set('Authorization', `Bearer ${token}`)
+        .send(body)
+        .expect(400);
+      expect(service[method]).not.toHaveBeenCalled();
+    },
+  );
+
+  it('does not expose the removed owner-specific profile route', async () => {
     await request(app.getHttpServer())
       .get(`/streak/profile/${OTHER_ID}`)
       .set('Authorization', `Bearer ${token}`)
-      .expect(403);
+      .expect(404);
     expect(service.getProfile).not.toHaveBeenCalled();
+  });
+
+  it('cannot override the profile owner through a query parameter', async () => {
+    await request(app.getHttpServer())
+      .get(`/streak/profile/me?userId=${OTHER_ID}`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+    expect(service.getProfile).toHaveBeenCalledWith(USER_ID);
   });
 });

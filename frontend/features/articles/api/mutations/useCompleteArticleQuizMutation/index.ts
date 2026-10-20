@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 import { isMockApiEnabled } from '@/api';
 import { useBanner } from '@/components/banner';
+import { getAuthSessionSnapshot } from '@/features/auth';
 import {
   getAchievementBadge,
   getAchievementsProfile,
@@ -67,6 +68,7 @@ export function useCompleteArticleQuizMutation({
         return null;
       }
 
+      const session = await getAuthSessionSnapshot(currentUserId);
       const profile = await getAchievementsProfile(currentUserId);
       // TODO: Submit answers and use the server-awarded reward. See docs/server-side-quiz-rewards.md.
       const rewardCoins = calculateQuizReward({
@@ -83,15 +85,18 @@ export function useCompleteArticleQuizMutation({
         balance: profile.progress.balance + rewardCoins,
         testsCompleted: profile.progress.testsCompleted + 1,
       });
+      session.assertCurrent();
       const previousStreak =
         queryClient.getQueryData<StreakState>([
           'streak-profile',
           currentUserId,
-        ]) ?? (await getStreakProfile(currentUserId).catch(() => null));
+        ]) ?? (await getStreakProfile().catch(() => null));
+      session.assertCurrent();
       const streak = await trackLearningActivity(
         currentUserId,
         'article_quiz_completed',
       );
+      session.assertCurrent();
 
       return {
         newlyUnlockedAchievements: getNewlyUnlockedAchievements(

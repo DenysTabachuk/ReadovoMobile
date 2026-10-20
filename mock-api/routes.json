@@ -11,8 +11,8 @@
   "/api/dictionary/me/words/:wordId/progress": "/api/dictionary/me/words/:wordId/progress",
   "/articles": "/articles",
   "/articles/:articleId": "/articles/:articleId",
-  "/streak/profile/:userId": "/streak/profile/:userId",
-  "/streak/profile/:userId/activity-completed": "/streak/profile/:userId/activity-completed",
-  "/streak/profile/:userId/restore": "/streak/profile/:userId/restore",
+  "/streak/profile/me": "/streak/profile/me",
+  "/streak/profile/me/activity-completed": "/streak/profile/me/activity-completed",
+  "/streak/profile/me/restore": "/streak/profile/me/restore",
   "/streak/profile/me/calendar/month": "/streak/profile/me/calendar/month"
 }
