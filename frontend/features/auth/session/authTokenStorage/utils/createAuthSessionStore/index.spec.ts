@@ -135,4 +135,51 @@ describe('createAuthSessionStore', () => {
     await store.replace(TOKENS_B);
     expect(await store.read()).toEqual(TOKENS_B);
   });
+
+  it('aborts and notifies synchronously, preserving the signal on refresh', async () => {
+    const { store } = setup();
+    await store.replace(TOKENS_A);
+    const signal = store.signal;
+    const listener = jest.fn();
+    const unsubscribe = store.subscribe(listener);
+    await store.commitRefresh({ version: store.version, tokens: TOKENS_A });
+    expect(store.signal).toBe(signal);
+    expect(signal.aborted).toBe(false);
+    expect(listener).not.toHaveBeenCalled();
+    const clearing = store.clear();
+    expect(signal.aborted).toBe(true);
+    expect(listener).toHaveBeenCalledTimes(1);
+    unsubscribe();
+    await clearing;
+    await store.replace(TOKENS_B);
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
+
+  it('rejects obsolete reads before accessing replacement credentials', async () => {
+    const { store, storage } = setup();
+    await store.replace(TOKENS_A);
+    const version = store.version;
+    const replacing = store.replace(TOKENS_B);
+    storage.getItem.mockClear();
+    const reading = store.read(version);
+    await expect(reading).rejects.toMatchObject({ name: 'AbortError' });
+    await replacing;
+    expect(storage.getItem).not.toHaveBeenCalled();
+  });
+
+  it('orders a login started by an abort listener after the invalidating write', async () => {
+    const { store } = setup();
+    await store.replace(TOKENS_A);
+    let login: Promise<void> | undefined;
+    store.signal.addEventListener(
+      'abort',
+      () => {
+        login = store.replace(TOKENS_B);
+      },
+      { once: true },
+    );
+    await store.clear();
+    await login;
+    expect(await store.read()).toEqual(TOKENS_B);
+  });
 });

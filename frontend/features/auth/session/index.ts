@@ -5,3 +5,4 @@ export {
   AUTH_REFRESH_TOKEN_STORAGE_KEY,
 } from './authTokenStorage';
 export { refreshAuthSession } from './refreshAuthSession';
+export type { AuthSessionClient, SessionRequest } from './types';

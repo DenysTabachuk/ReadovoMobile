@@ -9,6 +9,8 @@ const pendingRefreshes = new Map<number, Promise<AuthTokens | null>>();
  * Refreshes tokens for one session, sharing concurrent refreshes of that version.
  * Captures its refresh token before the HTTP call. Obsolete responses neither
  * replace nor clear a newer session's tokens; new sessions use separate requests.
+ * Session invalidation aborts the shared HTTP request; caller cancellation is
+ * handled by each bound client without canceling refresh for other callers.
  *
  * @param version - Initiating session version; defaults to the current session.
  * @returns Refreshed tokens, or null for an obsolete/unsuccessful session.
@@ -27,9 +29,16 @@ export function refreshAuthSession(
   if (pending) {
     return pending;
   }
-  const refresh = refreshAuthSessionOnce(version).finally(() => {
-    pendingRefreshes.delete(version);
-  });
+  const refresh = refreshAuthSessionOnce(version)
+    .catch((error) => {
+      // Keep the compatibility API's null result for obsolete refreshes, including
+      // native fetch aborts. Active network/storage failures still reject.
+      if (version !== authSessionStore.version) return null;
+      throw error;
+    })
+    .finally(() => {
+      pendingRefreshes.delete(version);
+    });
   pendingRefreshes.set(version, refresh);
   return refresh;
 }
@@ -37,7 +46,8 @@ export function refreshAuthSession(
 async function refreshAuthSessionOnce(
   version: number,
 ): Promise<AuthTokens | null> {
-  const { refreshToken } = await authSessionStore.read();
+  const signal = authSessionStore.signal;
+  const { refreshToken } = await authSessionStore.read(version);
   if (version !== authSessionStore.version) {
     return null;
   }
@@ -52,6 +62,7 @@ async function refreshAuthSessionOnce(
       'Content-Type': 'application/json',
     },
     method: 'POST',
+    signal,
   });
 
   if (version !== authSessionStore.version) {
@@ -63,6 +74,17 @@ async function refreshAuthSessionOnce(
   }
 
   const tokens = (await response.json()) as AuthTokens;
+  if (version !== authSessionStore.version) return null;
+  if (
+    !tokens ||
+    typeof tokens.accessToken !== 'string' ||
+    !tokens.accessToken ||
+    typeof tokens.refreshToken !== 'string' ||
+    !tokens.refreshToken
+  ) {
+    await authSessionStore.clearIfCurrent(version);
+    return null;
+  }
   const committed = await authSessionStore.commitRefresh({ version, tokens });
   return committed ? tokens : null;
 }

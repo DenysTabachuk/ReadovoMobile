@@ -65,6 +65,7 @@ describe('authenticatedFetch session isolation', () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: '{"refreshToken":"refresh-A"}',
+        signal: expect.any(AbortSignal),
       },
     ]);
     const retry = fetchMock.mock.calls[2][1];

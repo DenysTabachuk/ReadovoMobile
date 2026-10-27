@@ -2,26 +2,16 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   createContext,
   type ReactNode,
-  useCallback,
   useContext,
   useEffect,
-  useMemo,
-  useState,
+  useSyncExternalStore,
 } from 'react';
 
-import { refreshAuthSession } from '../../session';
-import { authSessionStore } from '../../session/authTokenStorage/authSessionStore';
+import type { AuthUserProfile } from '../../types';
+import { signOutFromGoogle } from '../../googleAuth';
+import { createAuthSessionController } from './utils/createAuthSessionController';
 
-import { type AuthUserProfile } from '../../types';
-
-import { AUTH_STORAGE_KEYS } from './constants';
-import { isJwtExpired } from './utils/isJwtExpired';
-
-type AuthContextValue = {
-  currentUser: AuthUserProfile | null;
-  isAuthenticated: boolean;
-  isHydratingAuth: boolean;
-  rememberMePreference: boolean;
+type AuthContextValue = ReturnType<typeof controller.getSnapshot> & {
   setRememberMePreference: (rememberMe: boolean) => Promise<void>;
   signIn: (
     rememberMe: boolean,
@@ -36,145 +26,61 @@ type AuthProviderProps = {
   children: ReactNode;
 };
 
+// Auth and its token store share the application lifetime, including provider remounts.
+const controller = createAuthSessionController(AsyncStorage);
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
+const signIn: AuthContextValue['signIn'] = (
+  rememberMe,
+  accessToken,
+  refreshToken,
+  userProfile,
+) =>
+  controller.signIn({
+    rememberMe,
+    tokens: { accessToken, refreshToken },
+    userProfile,
+  });
+
+const signOut = async () => {
+  const cleared = controller.signOut();
+  const googleSignOut = signOutFromGoogle().catch((error) =>
+    console.warn('Failed to clear Google sign-in session', error),
+  );
+  await Promise.all([cleared, googleSignOut]);
+};
+
 export function AuthProvider({ children }: AuthProviderProps) {
-  const [isHydratingAuth, setIsHydratingAuth] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [currentUser, setCurrentUser] = useState<AuthUserProfile | null>(null);
-  const [rememberMePreference, setRememberMePreferenceState] = useState(false);
+  const state = useSyncExternalStore(
+    controller.subscribe,
+    controller.getSnapshot,
+    controller.getSnapshot,
+  );
 
   useEffect(() => {
-    async function hydrateAuthState() {
-      try {
-        const [
-          storedRememberMe,
-          storedAccessToken,
-          storedRefreshToken,
-          storedUserProfile,
-        ] = await Promise.all([
-          AsyncStorage.getItem(AUTH_STORAGE_KEYS.rememberMe),
-          AsyncStorage.getItem(AUTH_STORAGE_KEYS.accessToken),
-          AsyncStorage.getItem(AUTH_STORAGE_KEYS.refreshToken),
-          AsyncStorage.getItem(AUTH_STORAGE_KEYS.userProfile),
-        ]);
-
-        const rememberMe = storedRememberMe === 'true';
-        const hasValidStoredToken =
-          Boolean(storedAccessToken) && !isJwtExpired(storedAccessToken);
-        const refreshedSession =
-          rememberMe && !hasValidStoredToken && storedRefreshToken
-            ? await refreshAuthSession()
-            : null;
-        const isAuthenticatedAfterHydration =
-          rememberMe && (hasValidStoredToken || Boolean(refreshedSession));
-        setRememberMePreferenceState(rememberMe);
-        setIsAuthenticated(isAuthenticatedAfterHydration);
-        setCurrentUser(
-          isAuthenticatedAfterHydration && storedUserProfile
-            ? (JSON.parse(storedUserProfile) as AuthUserProfile)
-            : null,
-        );
-
-        if (!rememberMe || !isAuthenticatedAfterHydration) {
-          await Promise.all([
-            authSessionStore.clear(),
-            AsyncStorage.removeItem(AUTH_STORAGE_KEYS.userProfile),
-          ]);
-        }
-      } catch (error) {
+    void controller.hydrate().catch((error) => {
+      if (!(error instanceof Error && error.name === 'AbortError')) {
         console.error('Failed to hydrate auth state', error);
-      } finally {
-        setIsHydratingAuth(false);
       }
-    }
-
-    void hydrateAuthState();
+    });
   }, []);
 
-  const setRememberMePreference = useCallback(async (rememberMe: boolean) => {
-    setRememberMePreferenceState(rememberMe);
-    await AsyncStorage.setItem(
-      AUTH_STORAGE_KEYS.rememberMe,
-      String(rememberMe),
-    );
-  }, []);
-
-  const signIn = useCallback(
-    async (
-      rememberMe: boolean,
-      accessToken: string,
-      refreshToken: string,
-      userProfile: AuthUserProfile | null = null,
-    ) => {
-      await setRememberMePreference(rememberMe);
-
-      if (rememberMe) {
-        const userProfileValue = userProfile ? JSON.stringify(userProfile) : '';
-
-        await Promise.all([
-          authSessionStore.replace({ accessToken, refreshToken }),
-          AsyncStorage.setItem(AUTH_STORAGE_KEYS.userProfile, userProfileValue),
-        ]);
-      } else {
-        await Promise.all([
-          authSessionStore.replace({ accessToken, refreshToken }),
-          AsyncStorage.removeItem(AUTH_STORAGE_KEYS.userProfile),
-        ]);
-      }
-
-      setCurrentUser(userProfile);
-      setIsAuthenticated(true);
-    },
-    [setRememberMePreference],
+  return (
+    <AuthContext.Provider
+      value={{
+        ...state,
+        signIn,
+        signOut,
+        setRememberMePreference: controller.setRememberMePreference,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
   );
-
-  const signOut = useCallback(async () => {
-    const googleSignOutPromise = import('../../googleAuth')
-      .then(({ signOutFromGoogle }) => signOutFromGoogle())
-      .catch((error) => {
-        console.warn('Failed to clear Google sign-in session', error);
-      });
-
-    await Promise.all([
-      authSessionStore.clear(),
-      AsyncStorage.removeItem(AUTH_STORAGE_KEYS.userProfile),
-      googleSignOutPromise,
-    ]);
-    setCurrentUser(null);
-    setIsAuthenticated(false);
-  }, []);
-
-  const value = useMemo<AuthContextValue>(
-    () => ({
-      isAuthenticated,
-      isHydratingAuth,
-      currentUser,
-      rememberMePreference,
-      setRememberMePreference,
-      signIn,
-      signOut,
-    }),
-    [
-      isAuthenticated,
-      isHydratingAuth,
-      currentUser,
-      rememberMePreference,
-      setRememberMePreference,
-      signIn,
-      signOut,
-    ],
-  );
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth(): AuthContextValue {
   const auth = useContext(AuthContext);
-
-  if (!auth) {
-    throw new Error('useAuth must be used within AuthProvider.');
-  }
-
+  if (!auth) throw new Error('useAuth must be used within AuthProvider.');
   return auth;
 }

@@ -1,4 +1,5 @@
 import { refreshAuthSession } from '.';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authSessionStore } from '../authTokenStorage/authSessionStore';
 
 jest.mock('@/api', () => ({ API_BASE_URL: 'https://api.example.test' }));
@@ -162,5 +163,51 @@ describe('refreshAuthSession', () => {
     await expect(refreshAuthSession()).rejects.toBe(offline);
     expect(await authSessionStore.read()).toEqual(ACCOUNT_A);
     await expect(refreshAuthSession()).resolves.toEqual(ROTATED_A);
+  });
+
+  it.each([
+    null,
+    {},
+    { accessToken: 1, refreshToken: 'refresh' },
+    { accessToken: 'access', refreshToken: '' },
+  ])('does not commit malformed token pairs: %j', async (body) => {
+    jest
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(new Response(JSON.stringify(body)));
+    await expect(refreshAuthSession()).resolves.toBeNull();
+    expect(await authSessionStore.read()).toEqual({
+      accessToken: null,
+      refreshToken: null,
+    });
+  });
+
+  it('propagates refresh storage failure and releases the single-flight slot', async () => {
+    const failure = new Error('storage failed');
+    jest.mocked(AsyncStorage.setItem).mockRejectedValueOnce(failure);
+    jest
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(async () => new Response(JSON.stringify(ROTATED_A)));
+    await expect(refreshAuthSession()).rejects.toBe(failure);
+    await expect(refreshAuthSession()).resolves.toEqual(ROTATED_A);
+    expect(await authSessionStore.read()).toEqual(ROTATED_A);
+  });
+
+  it('does not read replacement credentials when queued refresh work becomes obsolete', async () => {
+    const started = Promise.withResolvers<void>();
+    const token = Promise.withResolvers<string | null>();
+    jest.mocked(AsyncStorage.getItem).mockImplementationOnce(() => {
+      started.resolve();
+      return token.promise;
+    });
+    const blockingRead = authSessionStore.read();
+    await started.promise;
+    const refresh = refreshAuthSession();
+    const replacement = authSessionStore.replace(ACCOUNT_B);
+    jest.mocked(AsyncStorage.getItem).mockClear();
+    token.resolve(ACCOUNT_A.accessToken);
+    await blockingRead;
+    await expect(refresh).resolves.toBeNull();
+    await replacement;
+    expect(AsyncStorage.getItem).not.toHaveBeenCalled();
   });
 });

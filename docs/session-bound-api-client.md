@@ -1,6 +1,7 @@
 # TODO: bind authenticated API operations to their initiating session
 
-Status: planned. Priority: **P1 (high)**.
+Status: unit 1a implemented and awaiting review. Do not start unit 1b yet.
+Priority: **P1 (high)**.
 
 Implement this before spreading manual `getAuthSessionSnapshot` / `assertCurrent`
 checks across more features or expanding multi-step `/me` workflows. This is
@@ -58,6 +59,137 @@ illustrative, not an existing or mandated API.
   own query keys and cache effects; UI owns navigation and presentation. Preserve
   repository dependency boundaries when wiring logout to cache cleanup.
 
+## Reviewed client API and planned lifecycle
+
+The client contract below is implemented in unit 1a after API review. Cache,
+callback adapters, feature migration, and replay policies remain planned for their
+review units below. The repository was clean when the initial audit started.
+
+Auth infrastructure owns one immutable client per successful login/hydration.
+Expose `session: AuthSessionClient | null` through `useAuth()` and the auth feature
+root. Publish the owner and client together only after credential persistence and
+owner validation succeed. Hydration stays unavailable until it establishes the
+same invariant. Decode the token subject once in auth infrastructure and compare
+it with a supplied/stored profile ID; never publish inconsistent identities.
+Missing profiles must not make an otherwise valid token owner unknowable.
+
+Public client types (exported through the auth feature root):
+
+```ts
+type SessionRequest<T> = {
+  input: RequestInfo | URL;
+  init?: RequestInit;
+  parse: (response: Response) => Promise<T>;
+};
+
+type AuthSessionClient = {
+  readonly id: symbol;
+  readonly ownerId: string;
+  readonly signal: AbortSignal;
+  readonly isActive: boolean;
+  request<T>(request: SessionRequest<T>): Promise<T>;
+};
+```
+
+- `id` identifies a login, not an account or access token. Refresh keeps it;
+  signing into the same account again replaces it. Session IDs are process-local.
+- Feature request functions receive the captured client explicitly, for example
+  `getStreakProfile(session, { signal })`. Nested services receive that same client;
+  they never reacquire the active client. HTTP remains independent of React.
+- `request` owns credential lookup, cancellation, refresh/retry, and the complete
+  awaited `parse` boundary. Feature parsers retain status/error mapping and return
+  domain data (or `undefined` for empty responses), never a raw `Response`, lazy
+  stream, or deferred body reader. Check validity after parsing and on rejection,
+  even when the transport ignores abort. Parsing does not perform feature effects.
+- Combine `init.signal` with the session signal without mutating caller options.
+  An already aborted caller/session prevents storage and network work. Remove
+  listeners on settlement; do not assume native support for `AbortSignal.any`.
+- Before and after token access, before each network send, after each response,
+  and after parsing, reject invalid work with `AbortError`. Missing credentials
+  must never produce an unauthenticated personal request or use caller-supplied
+  Authorization as a fallback. The captured session controls Authorization.
+- Refresh stays single-flight per session. Its shared request uses the session
+  signal; canceling one caller stops that caller's wait/retry without canceling
+  refresh for other callers. Session invalidation cancels refresh for everyone.
+  Conditional token commit/clear remains protected by the existing store version.
+  Check the caller again before retrying with the rotated token.
+- Keep the compatibility `authenticatedFetch` and snapshot exports until their
+  callers migrate. They retain existing regression guarantees; migrated requests
+  must use the bound client, not a wrapper that calls `authenticatedFetch` again.
+
+Queries capture the client from their owning render, before a query executes, and
+forward the query signal. Mutations capture it at invocation, before optimistic
+work or an await, and carry it in operation state through every callback. A queued
+mutation, old event handler, timer, or continuation cannot acquire a replacement
+client, even if its account ID matches. Missing/inactive sessions reject rather
+than silently returning successful empty results.
+
+In step 2, introduce common session-aware query/mutation lifecycle adapters under
+auth (exported through its root). They guard execution, optimistic updates,
+success/error/settled callbacks, rollback, and caller callbacks against the
+captured identity. Features retain their query keys and cache effects; components
+retain banners/navigation. Guarded callbacks execute synchronous effects only;
+after an await, schedule another guarded effect instead of relying on a check
+made before that await. Scheduled effects and existing personal banners also
+need lifecycle cleanup. The final adapter signatures belong to the step 2 review;
+`isActive` is infrastructure input, not a new pattern of manual feature checks.
+
+### Session transitions and cache policy
+
+Use the store as the single transition authority. At the start of sign-out or
+account replacement, synchronously invalidate and abort the old session and
+publish its unavailability before any storage, preference, or provider await.
+Serialize persistent changes as today. Only the still-current transition may
+publish a completed login/hydration or clear provider state after sign-out.
+Failed establishment leaves no usable client; storage failures remain observable.
+A failed refresh for A cannot invalidate B. React effects alone are too late to
+provide the synchronous invalidation guarantee.
+
+Choose **cancel and remove personal queries from the existing QueryClient**.
+Keep public queries and their reusable data. Classify personal queries through
+explicit metadata (including owner/session identity); preserve existing
+account-aware keys. During incremental rollout, cover legacy personal query keys
+with a temporary explicit classifier until every personal query has metadata.
+Never identify public data by a blanket `clear()` or by guessing from `/me` URLs.
+Invalidate the session first, then cancel/remove its queries; callback guards
+prevent late mutations from recreating removed entries. Clear personal mutation
+records after guarding callbacks; clearing a record is not cancellation.
+
+Wire transitions to cache/banner cleanup in app-level composition. Shared
+`providers/queryProvider` accepts domain-neutral lifecycle inputs/callbacks and
+must not import `features/auth`. Auth transport/store must not import query keys,
+React Query, screens, or navigation. Account-owned preference state loaded in
+`app/_layout.tsx` also needs reset and late-result protection.
+
+### Repository inventory and material findings before unit 1a
+
+| Area                    | Audited entry points and scope                                                                                                                                                                                                                                                                                                                                                             |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Auth                    | `features/auth/session/{authTokenStorage,authenticatedFetch,refreshAuthSession,getAuthSessionSnapshot}` and `features/auth/providers/authProvider`: versioned storage/refresh exist; no bound parsed-result client or abort lifecycle. Hydration reads storage directly; sign-in awaits preferences before invalidating the old session; late provider completion is not transition-bound. |
+| Streak                  | All six `api/requests`, profile/calendar queries, four mutations, cache-update hook, `useStreak`, track/freeze/purchase/restore services, replay, and pending-event storage. Profile refetch currently performs replay writes.                                                                                                                                                             |
+| Achievements and mascot | Two achievements requests and four mascot requests; profile/wardrobe consumers and quiz completion callers. Keep existing owner routes and reward/purchase behavior.                                                                                                                                                                                                                       |
+| Articles                | Five saved/recent requests; library/toggle/simplify flows and quiz completion. Public discovery/detail/adaptation/quiz-generation transport stays public; bind personal writes nested in those flows.                                                                                                                                                                                      |
+| Dictionary              | Six personal requests and their query/mutation hooks; test screen completion also calls achievements/streak and presents banners. Capture one session across each complete workflow.                                                                                                                                                                                                       |
+| Notifications           | Six request modules, `learningReminders/service.ts`, development screen, and root-layout startup/AppState effects. Bind before permission/device-token/storage awaits; guard preference hydration and late UI. Global dispatch remains global with its existing permissions.                                                                                                               |
+| Cache and UI            | `providers/queryProvider`, app provider composition, banner lifecycle, profile/wardrobe queries, personal article/dictionary/streak keys, optimistic rollback and mutation caller callbacks. Public Wikipedia, adaptations, quiz generation, and translations require separate classification from personal side effects.                                                                  |
+| Backend and mock        | Existing guards/controllers and `mock-api/server.js` provide contract context. This task changes client session ownership, not backend routes, reward authority, purchase rules, or global dispatch authorization. Adjust fixtures only if client contract tests require it.                                                                                                               |
+
+The existing replay reads a queue and later replaces it wholesale. Concurrent
+appends/replays can lose events; records have only type/time, with no stable ID.
+Step 3 must serialize owner storage updates, assign local event IDs (including to
+valid existing owner-scoped records), and remove only confirmed snapshot IDs.
+Never hold a storage lock while awaiting HTTP. Use one replay worker per owner;
+a new session waits for an invalidated worker to settle before starting its own.
+Session start and explicit retry trigger replay; reconnect is optional only if a
+reliable connectivity source is already available. Successful replay invalidates
+the owner's profile/calendar queries through the owning feature. Unsent events
+remain owner-scoped; unowned legacy entries stay excluded. An accepted request
+with a lost response can still replay: local IDs do not create server idempotency
+or verifiable quiz completion. Coordinate that separately with the rewards task.
+
+These are code findings, not evidence of a production incident. Existing guards
+remain in place until each replacement passes regression tests.
+
 ## Required lifecycle behavior
 
 - [ ] Login/hydration exposes a coherent owner and session client. Multi-step work
@@ -86,9 +218,52 @@ see [server-side quiz rewards](server-side-quiz-rewards.md).
 Each step is one review boundary. Do not start the next step before review;
 split a step further if necessary to keep its PR cohesive.
 
+The repository-wide rollout uses the following smaller review units. Complete
+only one unit per approved continuation; report its diff, checks, and remaining
+limitations, then wait for review. Do not stage or commit on the user's behalf.
+
+| Unit         | Reviewable result                                                                                                                                                                                         | Required evidence before handoff                                                                                                                                                                           |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0 (reviewed) | API proposal, cache decision, audited feature inventory, and rollout in this document.                                                                                                                    | Docs checks and direct task-document formatting; no runtime changes. API review approved before unit 1a.                                                                                                   |
+| 1a           | Session owner/client, parsed transport, refresh/cancellation, coherent login/hydration, and synchronous invalidation; compatibility exports retained.                                                     | Controlled token-read, response/body, refresh/retry, same-owner login, hydration, missing-token, storage-failure, and ignored-abort tests. Existing auth regressions pass.                                 |
+| 1b           | Complete streak pilot: requests, both queries, mutations/services, and replay all receive the captured client; retain query keys, routes, offline behavior, and `useStreak` consumer API where practical. | A cannot continue as B between requests or queue awaits; normal refresh and caller/query cancellation work. No pilot manual snapshot plumbing. Replay still precedes profile reads until step 3.           |
+| 2a           | Common lifecycle adapters, central personal-query classification/cancellation/removal, provider/app bridge, and personal state/banner cleanup.                                                            | Public data survives; A/B and fresh A login isolate cache/UI; stale optimistic rollback and all callback phases are harmless. Apply adapters to the pilot and audit callback coverage in legacy consumers. |
+| 2b           | Adopt lifecycle adapters across remaining personal query/mutation/UI entry points, including direct screen operations.                                                                                    | Late callbacks, timers, navigation, preference loads, and banners cannot affect the replacement session. Bound transport migration for these features remains in units 4a-4d.                              |
+| 3a           | Owner-serialized queue updates, stable local IDs, snapshot-based acknowledgement, and single replay worker per owner.                                                                                     | Overlapping append/replay, failure, cancellation, and session replacement retain unsent/new events without duplicate workers.                                                                              |
+| 3b           | Dedicated session-owned replay trigger and read-only profile queries.                                                                                                                                     | Session start/manual retry trigger replay; profile refetch submits no events; successful replay refreshes owning queries without loops.                                                                    |
+| 4a           | Achievements and mascot transport plus profile/wardrobe consumers.                                                                                                                                        | Multi-step operations and callbacks keep original identity; preserve owner routes, purchases, and cache behavior.                                                                                          |
+| 4b           | Saved/recent article workflows, nested personal simplify/library effects, and article quiz completion.                                                                                                    | One captured client reaches achievements/streak and personal article writes; public APIs remain usable.                                                                                                    |
+| 4c           | Dictionary requests, tests, completion/reward/streak orchestration.                                                                                                                                       | One context spans generation/answer/completion as applicable to the initiating workflow; delayed results cannot update another session.                                                                    |
+| 4d           | Notification requests, device registration/service workflows, development actions, and root-layout callers.                                                                                               | Switch accounts during permission/token/storage waits; no later request or preference/UI update uses the new session. Preserve global action semantics.                                                    |
+| 5            | Final repository audit, remove unused snapshot/compatibility APIs, publish lasting usage/lifecycle docs, and delete this temporary document.                                                              | No business token reads/manual assertions or personal unbound transport remain; full frontend CI/typecheck and relevant backend/mock checks pass. Review any residual exclusions explicitly.               |
+
+Units 1a/1b together fulfill step 1; 2a/2b fulfill step 2; 3a/3b fulfill step 3;
+4a-4d and 5 fulfill step 4. Each implementation unit runs `npm run ci:frontend`
+and `npm run typecheck`, plus affected backend checks if backend code changes.
+Staged verification follows the rules below. Passing an early unit does not claim
+the lifecycle guarantees of a later unit are already implemented.
+
+### Unit 1a review notes
+
+- `useAuth().session` now exposes the immutable client and validated owner.
+  Missing profiles receive an identity-only profile; inconsistent profiles reject
+  establishment. Login/hydration publish the client and profile together.
+- The session store aborts the old version synchronously and supports guarded
+  token reads inside its storage queue. Refresh keeps its existing single-flight
+  and conditional commit/clear behavior, adding session cancellation.
+- The client checks every asynchronous boundary, including parsing, and combines
+  session/caller cancellation. Request bodies remain reusable for the one retry.
+  Compatibility fetch/snapshot APIs and their regressions remain available.
+- A controller serializes profile/preferences writes and prevents stale provider
+  completions from publishing state. Hydration refresh does not hold the metadata
+  queue, so an ignored old network abort cannot block a replacement login.
+- This unit does not migrate feature requests or guard their cache/UI callbacks.
+  Personal cache removal and replay separation are still pending. Next is unit 1b,
+  only after review; retain this task document until the whole rollout completes.
+
 ### 1. Session client and streak pilot
 
-- [ ] Implement session ownership, bound transport, refresh, and invalidation while
+- [x] Implement session ownership, bound transport, refresh, and invalidation while
       retaining the existing guards for callers not yet migrated.
 - [ ] Migrate the streak profile query and its mutation/service workflows to one
       captured context. Retain current `/me` routes, cache keys, business behavior,

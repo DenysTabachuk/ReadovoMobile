@@ -23,7 +23,9 @@ type RefreshCommit = {
  *
  * @param storage - Async token storage; all session writes must use this store.
  * @returns Session version, serialized reads/writes, conditional refresh writes,
- * conditional clearing, and an assertion throwing an AbortError for stale work.
+ * conditional clearing, synchronous invalidation signals/subscriptions, and an
+ * assertion throwing an AbortError for stale work. Passing a version to read
+ * checks it inside the storage queue, before reading and before returning tokens.
  * @example
  * const store = createAuthSessionStore(storage);
  * const version = store.version;
@@ -33,6 +35,8 @@ type RefreshCommit = {
  */
 export function createAuthSessionStore(storage: TokenStorage) {
   let version = 0;
+  let controller = new AbortController();
+  const listeners = new Set<() => void>();
   let pendingStorage: Promise<void> = Promise.resolve();
 
   function enqueue<T>(operation: () => Promise<T>): Promise<T> {
@@ -61,9 +65,27 @@ export function createAuthSessionStore(storage: TokenStorage) {
     }
   }
 
-  function clear(): Promise<void> {
+  function transition(operation: () => Promise<void>): Promise<void> {
+    const previous = controller;
     version += 1;
-    return enqueue(async () => {
+    controller = new AbortController();
+    // Queue before notifying abort listeners: a reentrant login must write later.
+    const pending = enqueue(operation);
+    previous.abort();
+    listeners.forEach((listener) => listener());
+    return pending;
+  }
+
+  function assertCurrent(expectedVersion: number): void {
+    if (version !== expectedVersion) {
+      const error = new Error('Authentication session changed.');
+      error.name = 'AbortError';
+      throw error;
+    }
+  }
+
+  function clear(): Promise<void> {
+    return transition(async () => {
       await settleStorageWrites([
         storage.removeItem(AUTH_ACCESS_TOKEN_STORAGE_KEY),
         storage.removeItem(AUTH_REFRESH_TOKEN_STORAGE_KEY),
@@ -76,24 +98,31 @@ export function createAuthSessionStore(storage: TokenStorage) {
     get version() {
       return version;
     },
+    /** Signal for the current version, aborted synchronously on replacement/clear. */
+    get signal() {
+      return controller.signal;
+    },
+    /** Observes invalidation, including failed-refresh clearing; unsubscribe on disposal. */
+    subscribe(listener: () => void) {
+      listeners.add(listener);
+      return () => {
+        listeners.delete(listener);
+      };
+    },
     /**
      * Rejects a result or retry belonging to an earlier session with AbortError.
      * Call after awaiting work; this check does not cancel the network request.
      */
-    assertCurrent(expectedVersion: number): void {
-      if (version !== expectedVersion) {
-        const error = new Error('Authentication session changed.');
-        error.name = 'AbortError';
-        throw error;
-      }
-    },
+    assertCurrent,
     /** Reads both tokens after earlier storage operations finish; missing tokens are null. */
-    read() {
+    read(expectedVersion?: number) {
       return enqueue(async () => {
+        if (expectedVersion !== undefined) assertCurrent(expectedVersion);
         const [accessToken, refreshToken] = await Promise.all([
           storage.getItem(AUTH_ACCESS_TOKEN_STORAGE_KEY),
           storage.getItem(AUTH_REFRESH_TOKEN_STORAGE_KEY),
         ]);
+        if (expectedVersion !== undefined) assertCurrent(expectedVersion);
         return { accessToken, refreshToken };
       });
     },
@@ -103,8 +132,7 @@ export function createAuthSessionStore(storage: TokenStorage) {
      */
     replace(tokens: AuthTokens): Promise<void> {
       // Invalidate outstanding work immediately, before asynchronous storage I/O.
-      version += 1;
-      return enqueue(() => writeTokens(tokens));
+      return transition(() => writeTokens(tokens));
     },
     /** Ends the session immediately and queues token removal, including on logout. */
     clear,
