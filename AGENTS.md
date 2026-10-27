@@ -8,6 +8,12 @@
   not require refactoring the module's existing implementation.
 - Keep existing user changes intact. Report logical problems and material
   improvement opportunities found while working.
+- In TypeScript, prefer inference, checked type annotations, generics and narrowing
+  over type assertions (`as Type`). Validate untrusted data at runtime. Use an
+  assertion only for a justified boundary the compiler cannot express, and explain
+  the invariant locally. Do not bypass errors with `as any`, double assertions or
+  non-null assertions. `as const` for literal inference is allowed. Apply this to
+  new and touched code; do not perform unrelated assertion-removal sweeps.
 - Write documentation in English, including task documents, unless the user
   explicitly requests another language.
 - Treat documents created to track a task as temporary. Delete the task document

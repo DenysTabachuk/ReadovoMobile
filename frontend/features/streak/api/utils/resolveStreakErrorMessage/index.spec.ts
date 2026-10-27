@@ -1,3 +1,4 @@
+import { createHttpResponse } from '@/api/testing/http';
 import { resolveStreakErrorMessage } from './index';
 
 describe('resolveStreakErrorMessage', () => {
@@ -20,22 +21,21 @@ describe('resolveStreakErrorMessage', () => {
     ],
     ['This day is already protected.', 'streak.errors.dayAlreadyProtected'],
   ])('maps %s', async (message, expected) => {
-    const response = Response.json({ message });
+    const response = createHttpResponse({ message });
     await expect(resolveStreakErrorMessage(response, 'fallback')).resolves.toBe(
       expected,
     );
-    expect(response.bodyUsed).toBe(true);
   });
   it('uses only the first error in a message array', async () => {
     await expect(
       resolveStreakErrorMessage(
-        Response.json({ message: ['Not enough coins.', 'Other'] }),
+        createHttpResponse({ message: ['Not enough coins.', 'Other'] }),
         'fallback',
       ),
     ).resolves.toBe('streak.errors.notEnoughCoins');
     await expect(
       resolveStreakErrorMessage(
-        Response.json({ message: ['Other', 'Not enough coins.'] }),
+        createHttpResponse({ message: ['Other', 'Not enough coins.'] }),
         'fallback',
       ),
     ).resolves.toBe('fallback');
@@ -44,23 +44,18 @@ describe('resolveStreakErrorMessage', () => {
     'falls back for an unmapped or non-string message %j',
     async (message) => {
       await expect(
-        resolveStreakErrorMessage(Response.json({ message }), 'fallback'),
+        resolveStreakErrorMessage(createHttpResponse({ message }), 'fallback'),
       ).resolves.toBe('fallback');
     },
   );
-  it('falls back for missing/unknown messages, malformed JSON, or an already-consumed response', async () => {
+  it('falls back for missing/unknown messages, malformed JSON, or non-object data', async () => {
     for (const payload of [{}, { message: [] }, { message: 'Unknown' }, null]) {
       await expect(
-        resolveStreakErrorMessage(Response.json(payload), 'fallback'),
+        resolveStreakErrorMessage(createHttpResponse(payload), 'fallback'),
       ).resolves.toBe('fallback');
     }
     await expect(
-      resolveStreakErrorMessage(new Response('invalid'), 'fallback'),
+      resolveStreakErrorMessage(createHttpResponse('invalid'), 'fallback'),
     ).resolves.toBe('fallback');
-    const consumed = Response.json({ message: 'Not enough coins.' });
-    await consumed.json();
-    await expect(resolveStreakErrorMessage(consumed, 'fallback')).resolves.toBe(
-      'fallback',
-    );
   });
 });

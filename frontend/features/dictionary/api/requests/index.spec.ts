@@ -1,4 +1,6 @@
-import { authenticatedFetch } from '@/features/auth';
+import { HttpError } from '@/api/httpError';
+import { createHttpResponse } from '@/api/testing/http';
+import { api } from '@/features/auth';
 import {
   createDictionaryWord,
   deleteDictionaryWord,
@@ -9,9 +11,26 @@ import {
 } from '.';
 
 jest.mock('@/api', () => ({ API_BASE_URL: 'https://api.example.test' }));
-jest.mock('@/features/auth', () => ({ authenticatedFetch: jest.fn() }));
+jest.mock('@/features/auth', () => {
+  const request = jest.fn();
+  const withBody =
+    (method: string) =>
+    (url: string, data: unknown, config?: Record<string, unknown>) =>
+      request(url, { ...config, method, data });
+  return {
+    api: Object.assign(request, {
+      get: (url: string, config?: Record<string, unknown>) =>
+        config ? request(url, config) : request(url),
+      delete: (url: string, config?: Record<string, unknown>) =>
+        request(url, { ...config, method: 'DELETE' }),
+      post: withBody('POST'),
+      put: withBody('PUT'),
+      patch: withBody('PATCH'),
+    }),
+  };
+});
 
-const mockFetch = jest.mocked(authenticatedFetch);
+const mockFetch = jest.mocked(api);
 const word = { word: 'sun', translation: 'сонце', context: 'The sun rises.' };
 const answer = { wordId: 'word-7', selectedOptionId: 'option-1' };
 
@@ -66,13 +85,15 @@ describe('authenticated dictionary request contract', () => {
     '$name uses the authenticated /me endpoint',
     async ({ run, path, method, body }) => {
       const responseBody = { result: 'server-response' };
-      mockFetch.mockResolvedValue(new Response(JSON.stringify(responseBody)));
+      mockFetch.mockResolvedValue(
+        createHttpResponse(JSON.stringify(responseBody)),
+      );
       await expect(run()).resolves.toEqual(responseBody);
       expect(mockFetch).toHaveBeenCalledTimes(1);
       const [url, options] = mockFetch.mock.calls[0];
-      expect(url).toBe(`https://api.example.test/api/dictionary/me${path}`);
+      expect(url).toBe(`/api/dictionary/me${path}`);
       expect(options?.method ?? 'GET').toBe(method);
-      expect(options?.body).toBe(body ? JSON.stringify(body) : undefined);
+      expect(options?.data).toEqual(body);
     },
   );
 
@@ -94,17 +115,21 @@ describe('authenticated dictionary request contract', () => {
     },
     { run: () => createDictionaryWord(word), error: 'dictionary.saveError' },
   ])('preserves the error contract $error', async ({ run, error }) => {
-    mockFetch.mockResolvedValue(new Response('{}', { status: 401 }));
+    mockFetch.mockRejectedValue(
+      new HttpError(createHttpResponse('{}', { status: 401 })),
+    );
     await expect(run()).rejects.toThrow(error);
   });
 
   it('preserves the duplicate-word response', async () => {
-    mockFetch.mockResolvedValue(
-      new Response(
-        JSON.stringify({
-          message: 'Word or phrase already exists in dictionary.',
-        }),
-        { status: 409 },
+    mockFetch.mockRejectedValue(
+      new HttpError(
+        createHttpResponse(
+          JSON.stringify({
+            message: 'Word or phrase already exists in dictionary.',
+          }),
+          { status: 409 },
+        ),
       ),
     );
     await expect(createDictionaryWord(word)).rejects.toThrow(

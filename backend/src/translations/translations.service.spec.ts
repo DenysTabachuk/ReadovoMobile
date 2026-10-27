@@ -1,4 +1,7 @@
-﻿import {
+import { ExternalHttpError } from '../http/external-http.error';
+import axios from 'axios';
+import { HttpService } from '@nestjs/axios';
+import {
   BadGatewayException,
   InternalServerErrorException,
 } from '@nestjs/common';
@@ -7,12 +10,14 @@ import { TranslationsService } from './translations.service';
 
 describe('TranslationsService', () => {
   let service: TranslationsService;
-  let fetchMock: jest.Mock;
+  let requestMock: jest.Mock;
 
   beforeEach(() => {
-    service = new TranslationsService();
-    fetchMock = jest.fn();
-    global.fetch = fetchMock as typeof fetch;
+    requestMock = jest.fn();
+    service = new TranslationsService(
+      new HttpService(Object.assign(requestMock, axios.create())),
+    );
+
     process.env.GOOGLE_TRANSLATE_API_KEY = 'test-key';
   });
 
@@ -21,33 +26,31 @@ describe('TranslationsService', () => {
   });
 
   it('translates a word with contextual html marker extraction', async () => {
-    fetchMock
+    requestMock
       .mockResolvedValueOnce({
-        json: () =>
-          Promise.resolve({
-            data: {
-              translations: [
-                {
-                  translatedText:
-                    'Вона була <span data-ctx-word="1">математикинею</span> свого часу.',
-                },
-              ],
-            },
-          }),
-        ok: true,
+        data: {
+          data: {
+            translations: [
+              {
+                translatedText:
+                  'Вона була <span data-ctx-word="1">математикинею</span> свого часу.',
+              },
+            ],
+          },
+        },
+        status: 200,
       })
       .mockResolvedValueOnce({
-        json: () =>
-          Promise.resolve({
-            data: {
-              translations: [
-                {
-                  translatedText: 'математик',
-                },
-              ],
-            },
-          }),
-        ok: true,
+        data: {
+          data: {
+            translations: [
+              {
+                translatedText: 'математик',
+              },
+            ],
+          },
+        },
+        status: 200,
       });
 
     const response = await service.translateWord({
@@ -57,8 +60,8 @@ describe('TranslationsService', () => {
       word: 'mathematician',
     });
 
-    expect(fetchMock).toHaveBeenCalledWith(
-      expect.any(URL),
+    expect(requestMock).toHaveBeenCalledWith(
+      expect.stringContaining('https://translation.googleapis.com/'),
       expect.objectContaining({
         method: 'POST',
       }),
@@ -76,18 +79,17 @@ describe('TranslationsService', () => {
   });
 
   it('returns a cached translation without calling Google twice', async () => {
-    fetchMock.mockResolvedValue({
-      json: () =>
-        Promise.resolve({
-          data: {
-            translations: [
-              {
-                translatedText: 'книга',
-              },
-            ],
-          },
-        }),
-      ok: true,
+    requestMock.mockResolvedValue({
+      data: {
+        data: {
+          translations: [
+            {
+              translatedText: 'книга',
+            },
+          ],
+        },
+      },
+      status: 200,
     });
 
     await service.translateWord({
@@ -101,52 +103,49 @@ describe('TranslationsService', () => {
       word: 'book',
     });
 
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(requestMock).toHaveBeenCalledTimes(1);
     expect(cached.translation).toBe('книга');
   });
 
   it('falls back to base translation when contextual extraction stays in source language', async () => {
-    fetchMock
+    requestMock
       .mockResolvedValueOnce({
-        json: () =>
-          Promise.resolve({
-            data: {
-              translations: [
-                {
-                  translatedText:
-                    'Інші терміни, що <span data-ctx-word="1">have</span> використовувалися як синоніми.',
-                },
-              ],
-            },
-          }),
-        ok: true,
+        data: {
+          data: {
+            translations: [
+              {
+                translatedText:
+                  'Інші терміни, що <span data-ctx-word="1">have</span> використовувалися як синоніми.',
+              },
+            ],
+          },
+        },
+        status: 200,
       })
       .mockResolvedValueOnce({
-        json: () =>
-          Promise.resolve({
-            data: {
-              translations: [
-                {
-                  translatedText:
-                    'Інші терміни, що мали використовуватися як синоніми.',
-                },
-              ],
-            },
-          }),
-        ok: true,
+        data: {
+          data: {
+            translations: [
+              {
+                translatedText:
+                  'Інші терміни, що мали використовуватися як синоніми.',
+              },
+            ],
+          },
+        },
+        status: 200,
       })
       .mockResolvedValueOnce({
-        json: () =>
-          Promise.resolve({
-            data: {
-              translations: [
-                {
-                  translatedText: 'мати',
-                },
-              ],
-            },
-          }),
-        ok: true,
+        data: {
+          data: {
+            translations: [
+              {
+                translatedText: 'мати',
+              },
+            ],
+          },
+        },
+        status: 200,
       });
 
     const response = await service.translateWord({
@@ -176,9 +175,7 @@ describe('TranslationsService', () => {
   });
 
   it('throws when Google returns an unsuccessful response', async () => {
-    fetchMock.mockResolvedValue({
-      ok: false,
-    });
+    requestMock.mockRejectedValue(new ExternalHttpError(503));
 
     await expect(
       service.translateWord({

@@ -1,10 +1,29 @@
-import { authenticatedFetch } from '@/features/auth';
+import { HttpError } from '@/api/httpError';
+import { createHttpResponse } from '@/api/testing/http';
+import { api } from '@/features/auth';
 import { getStreakCalendarMonth } from '.';
 
 jest.mock('@/api', () => ({ API_BASE_URL: 'https://api.example.test' }));
-jest.mock('@/features/auth', () => ({ authenticatedFetch: jest.fn() }));
+jest.mock('@/features/auth', () => {
+  const request = jest.fn();
+  const withBody =
+    (method: string) =>
+    (url: string, data: unknown, config?: Record<string, unknown>) =>
+      request(url, { ...config, method, data });
+  return {
+    api: Object.assign(request, {
+      get: (url: string, config?: Record<string, unknown>) =>
+        config ? request(url, config) : request(url),
+      delete: (url: string, config?: Record<string, unknown>) =>
+        request(url, { ...config, method: 'DELETE' }),
+      post: withBody('POST'),
+      put: withBody('PUT'),
+      patch: withBody('PATCH'),
+    }),
+  };
+});
 
-const mockFetch = jest.mocked(authenticatedFetch);
+const mockFetch = jest.mocked(api);
 
 describe('getStreakCalendarMonth', () => {
   beforeEach(() => jest.resetAllMocks());
@@ -18,17 +37,19 @@ describe('getStreakCalendarMonth', () => {
       serverNow: '2026-01-10T12:00:00Z',
       timezone: 'Europe/Kyiv',
     };
-    mockFetch.mockResolvedValue(new Response(JSON.stringify(month)));
+    mockFetch.mockResolvedValue(createHttpResponse(JSON.stringify(month)));
     await expect(
       getStreakCalendarMonth({ year: 2026, month: 1 }),
     ).resolves.toEqual(month);
     expect(mockFetch).toHaveBeenCalledWith(
-      'https://api.example.test/streak/profile/me/calendar/month?year=2026&month=1',
+      '/streak/profile/me/calendar/month?year=2026&month=1',
     );
   });
 
   it('preserves the existing error key for failed responses', async () => {
-    mockFetch.mockResolvedValue(new Response('', { status: 500 }));
+    mockFetch.mockRejectedValue(
+      new HttpError(createHttpResponse('', { status: 500 })),
+    );
     await expect(
       getStreakCalendarMonth({ year: 2026, month: 12 }),
     ).rejects.toThrow('profile.errors.loadFailed');

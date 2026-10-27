@@ -1,18 +1,15 @@
-import { API_BASE_URL } from '@/api';
-import { authenticatedFetch } from '@/features/auth';
+import { mapHttpError } from '@/api/utils/mapHttpError';
+
+import { api } from '@/features/auth';
 
 import type { SavedArticle } from '../../../savedArticles/types';
 
 export async function readSavedArticles(
   userId: string,
 ): Promise<SavedArticle[]> {
-  const response = await authenticatedFetch(
-    `${API_BASE_URL}/api/users/${userId}/articles/saved`,
-  );
+  const response = await api
+    .get<SavedArticle[]>(`/api/users/${userId}/articles/saved`)
+    .catch(mapHttpError('article.savedArticles.loadFailed'));
 
-  if (!response.ok) {
-    throw new Error('article.savedArticles.loadFailed');
-  }
-
-  return response.json() as Promise<SavedArticle[]>;
+  return response.data;
 }

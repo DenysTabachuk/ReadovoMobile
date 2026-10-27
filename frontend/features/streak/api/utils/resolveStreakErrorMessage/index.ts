@@ -1,3 +1,4 @@
+import { type HttpError } from '@/api/httpError';
 type ErrorResponseBody = {
   message?: string | string[];
 };
@@ -26,31 +27,27 @@ const ERROR_MESSAGE_KEYS = new Map<string, string>([
 /**
  * Translate recognized streak API errors into UI message keys.
  *
- * Consumes the response body. Both supported server messages for an expired freeze window
- * map to the same key.
+ * Maps parsed error data; unknown shapes fall back to the supplied translation key.
  *
- * @param response - Error response with an unread JSON body.
+ * @param response - Axios response carrying parsed error data or plain error text.
  * @param fallbackKey - Translation key for unknown or unreadable errors.
  * @returns The recognized streak error key, or fallbackKey. For message arrays, only the
  *   first entry is checked.
  * @example
- * await resolveStreakErrorMessage(new Response(JSON.stringify({ message: 'No freeze tokens available.' })), 'streak.errors.generic');
+ * await resolveStreakErrorMessage(response, 'streak.errors.generic');
  * // => 'streak.errors.noFreezeTokens'
  */
 export async function resolveStreakErrorMessage(
-  response: Response,
+  response: HttpError['response'],
   fallbackKey: string,
 ): Promise<string> {
-  try {
-    const body = (await response.json()) as ErrorResponseBody;
-    const rawMessage = Array.isArray(body.message)
-      ? body.message[0]
-      : body.message;
+  if (!response.data || typeof response.data !== 'object') return fallbackKey;
+  const body = response.data as ErrorResponseBody;
+  const rawMessage = Array.isArray(body.message)
+    ? body.message[0]
+    : body.message;
 
-    return typeof rawMessage === 'string'
-      ? (ERROR_MESSAGE_KEYS.get(rawMessage) ?? fallbackKey)
-      : fallbackKey;
-  } catch {
-    return fallbackKey;
-  }
+  return typeof rawMessage === 'string'
+    ? (ERROR_MESSAGE_KEYS.get(rawMessage) ?? fallbackKey)
+    : fallbackKey;
 }

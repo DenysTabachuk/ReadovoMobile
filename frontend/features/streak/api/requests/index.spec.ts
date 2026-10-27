@@ -1,4 +1,6 @@
-import { authenticatedFetch } from '@/features/auth';
+import { HttpError } from '@/api/httpError';
+import { createHttpResponse } from '@/api/testing/http';
+import { api } from '@/features/auth';
 
 import {
   applyStreakFreeze,
@@ -9,23 +11,37 @@ import {
 } from '.';
 
 jest.mock('@/api', () => ({ API_BASE_URL: 'https://api.example.test' }));
-jest.mock('@/features/auth', () => ({ authenticatedFetch: jest.fn() }));
+jest.mock('@/features/auth', () => {
+  const request = jest.fn();
+  const withBody =
+    (method: string) =>
+    (url: string, data: unknown, config?: Record<string, unknown>) =>
+      request(url, { ...config, method, data });
+  return {
+    api: Object.assign(request, {
+      get: (url: string, config?: Record<string, unknown>) =>
+        config ? request(url, config) : request(url),
+      delete: (url: string, config?: Record<string, unknown>) =>
+        request(url, { ...config, method: 'DELETE' }),
+      post: withBody('POST'),
+      put: withBody('PUT'),
+      patch: withBody('PATCH'),
+    }),
+  };
+});
 
-const mockFetch = jest.mocked(authenticatedFetch);
+const mockFetch = jest.mocked(api);
 const POST_OPTIONS = {
   method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
 };
 
 beforeEach(() => jest.resetAllMocks());
 
 it('preserves the current-user profile URL and response', async () => {
   const profile = { currentStreak: 3 };
-  mockFetch.mockResolvedValue(new Response(JSON.stringify(profile)));
+  mockFetch.mockResolvedValue(createHttpResponse(JSON.stringify(profile)));
   await expect(getStreakProfile()).resolves.toEqual(profile);
-  expect(mockFetch).toHaveBeenCalledWith(
-    'https://api.example.test/streak/profile/me',
-  );
+  expect(mockFetch).toHaveBeenCalledWith('/streak/profile/me');
 });
 
 it.each([
@@ -59,12 +75,12 @@ it.each([
 ])(
   'preserves the $path request and response after relocation',
   async ({ path, payload, request, result }) => {
-    mockFetch.mockResolvedValue(new Response(JSON.stringify(result)));
+    mockFetch.mockResolvedValue(createHttpResponse(JSON.stringify(result)));
     await expect(request()).resolves.toEqual(result);
-    expect(mockFetch).toHaveBeenCalledWith(
-      `https://api.example.test/streak/profile/me/${path}`,
-      { ...POST_OPTIONS, body: JSON.stringify(payload) },
-    );
+    expect(mockFetch).toHaveBeenCalledWith(`/streak/profile/me/${path}`, {
+      ...POST_OPTIONS,
+      data: payload,
+    });
   },
 );
 
@@ -76,7 +92,9 @@ it.each([
     }),
   () => purchaseStreakFreezeToken({ price: 5 }),
 ])('preserves generic request failures', async (request) => {
-  mockFetch.mockResolvedValue(new Response('', { status: 500 }));
+  mockFetch.mockRejectedValue(
+    new HttpError(createHttpResponse('', { status: 500 })),
+  );
   await expect(request()).rejects.toThrow('profile.errors.loadFailed');
 });
 
@@ -86,10 +104,12 @@ it.each([
 ])(
   'continues resolving known backend errors after relocation',
   async (request) => {
-    mockFetch.mockResolvedValue(
-      new Response(JSON.stringify({ message: 'Not enough coins.' }), {
-        status: 400,
-      }),
+    mockFetch.mockRejectedValue(
+      new HttpError(
+        createHttpResponse(JSON.stringify({ message: 'Not enough coins.' }), {
+          status: 400,
+        }),
+      ),
     );
     await expect(request()).rejects.toThrow('streak.errors.notEnoughCoins');
   },

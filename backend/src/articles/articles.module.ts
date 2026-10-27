@@ -1,3 +1,4 @@
+import { OutboundHttpModule } from '../http/outbound-http.module';
 import { Module } from '@nestjs/common';
 
 import { AuthModule } from '../auth/auth.module';
@@ -24,7 +25,7 @@ import { ArticlesController } from './articles.controller';
 import { ArticlesService } from './articles.service';
 
 @Module({
-  imports: [AuthModule],
+  imports: [OutboundHttpModule, AuthModule],
   controllers: [ArticlesController],
   providers: [
     ArticleAdaptationService,

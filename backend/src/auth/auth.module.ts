@@ -1,3 +1,4 @@
+import { OutboundHttpModule } from '../http/outbound-http.module';
 import { Module } from '@nestjs/common';
 
 import { AuthController } from './auth.controller';
@@ -11,6 +12,7 @@ import { UserAuthGuard } from './user-auth.guard';
 import { UsersRepository } from './users.repository';
 
 @Module({
+  imports: [OutboundHttpModule],
   controllers: [AuthController],
   providers: [
     AuthService,

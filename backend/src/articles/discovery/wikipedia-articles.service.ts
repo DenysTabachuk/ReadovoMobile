@@ -1,3 +1,5 @@
+import { mapProviderError } from '../../http/map-provider-error';
+import { HttpService } from '@nestjs/axios';
 import { BadGatewayException, Injectable } from '@nestjs/common';
 
 import {
@@ -48,7 +50,10 @@ type ArticlePresentationParams = {
 
 @Injectable()
 export class WikipediaArticlesService {
-  constructor(private readonly formulaRenderer: ArticleFormulaRenderer) {}
+  constructor(
+    private readonly http: HttpService,
+    private readonly formulaRenderer: ArticleFormulaRenderer,
+  ) {}
 
   normalizeLimit(limit: number): number {
     if (!Number.isFinite(limit) || limit <= 0) {
@@ -378,39 +383,44 @@ export class WikipediaArticlesService {
     params: URLSearchParams,
     languageCode = DEFAULT_LANGUAGE_CODE,
   ): Promise<WikipediaApiResponse> {
-    const response = await fetch(
-      `https://${languageCode}.wikipedia.org/w/api.php?${params.toString()}`,
-      { headers: this.createHeaders() },
-    );
+    const response = await this.http
+      .axiosRef(
+        `https://${languageCode}.wikipedia.org/w/api.php?${params.toString()}`,
+        { headers: this.createHeaders() },
+      )
+      .catch(
+        mapProviderError(
+          new BadGatewayException('Failed to fetch Wikipedia content.'),
+        ),
+      );
 
-    if (!response.ok) {
-      throw new BadGatewayException('Failed to fetch Wikipedia content.');
-    }
-
-    return response.json() as Promise<WikipediaApiResponse>;
+    return response.data as WikipediaApiResponse;
   }
 
   private async fetchWikipediaHtml(
     pageTitle: string,
     languageCode: string,
   ): Promise<string> {
-    const response = await fetch(
-      `https://${languageCode}.wikipedia.org/w/rest.php/v1/page/${encodeURIComponent(
-        pageTitle.replaceAll(' ', '_'),
-      )}/html`,
-      {
-        headers: {
-          ...this.createHeaders(),
-          Accept: 'text/html; charset=utf-8',
+    const response = await this.http
+      .axiosRef(
+        `https://${languageCode}.wikipedia.org/w/rest.php/v1/page/${encodeURIComponent(
+          pageTitle.replaceAll(' ', '_'),
+        )}/html`,
+        {
+          responseType: 'text',
+          headers: {
+            ...this.createHeaders(),
+            Accept: 'text/html; charset=utf-8',
+          },
         },
-      },
-    );
+      )
+      .catch(
+        mapProviderError(
+          new BadGatewayException('Failed to fetch Wikipedia article HTML.'),
+        ),
+      );
 
-    if (!response.ok) {
-      throw new BadGatewayException('Failed to fetch Wikipedia article HTML.');
-    }
-
-    return response.text();
+    return response.data as string;
   }
 
   private createHeaders(): Record<string, string> {

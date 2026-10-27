@@ -1,3 +1,5 @@
+import { mapProviderError } from '../http/map-provider-error';
+import { HttpService } from '@nestjs/axios';
 import {
   BadRequestException,
   ConflictException,
@@ -48,6 +50,7 @@ const refreshTokenTtlDays = 30;
 @Injectable()
 export class AuthService {
   constructor(
+    private readonly http: HttpService,
     private readonly usersRepository: UsersRepository,
     private readonly pendingRegistrationsRepository: PendingRegistrationsRepository,
     private readonly passwordResetRequestsRepository: PasswordResetRequestsRepository,
@@ -544,15 +547,17 @@ export class AuthService {
   private async verifyGoogleIdToken(
     idToken: string,
   ): Promise<{ email: string }> {
-    const response = await fetch(
-      `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`,
-    );
+    const response = await this.http
+      .axiosRef(
+        `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`,
+      )
+      .catch(
+        mapProviderError(
+          new UnauthorizedException('Google id token is invalid.'),
+        ),
+      );
 
-    if (!response.ok) {
-      throw new UnauthorizedException('Google id token is invalid.');
-    }
-
-    const payload = (await response.json()) as {
+    const payload = response.data as {
       aud?: string;
       email?: string;
       email_verified?: string;

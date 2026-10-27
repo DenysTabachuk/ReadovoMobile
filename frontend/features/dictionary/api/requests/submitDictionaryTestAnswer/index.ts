@@ -1,5 +1,6 @@
-import { API_BASE_URL } from '@/api';
-import { authenticatedFetch } from '@/features/auth';
+import { mapHttpError } from '@/api/utils/mapHttpError';
+
+import { api } from '@/features/auth';
 
 import {
   type DictionaryTestAnswerResult,
@@ -9,18 +10,9 @@ import {
 export async function submitDictionaryTestAnswer(
   request: SubmitDictionaryTestAnswerRequest,
 ): Promise<DictionaryTestAnswerResult> {
-  const response = await authenticatedFetch(
-    `${API_BASE_URL}/api/dictionary/me/test/answer`,
-    {
-      body: JSON.stringify(request),
-      headers: { 'Content-Type': 'application/json' },
-      method: 'POST',
-    },
-  );
+  const response = await api
+    .post<DictionaryTestAnswerResult>(`/api/dictionary/me/test/answer`, request)
+    .catch(mapHttpError('dictionary.test.answerError'));
 
-  if (!response.ok) {
-    throw new Error('dictionary.test.answerError');
-  }
-
-  return response.json() as Promise<DictionaryTestAnswerResult>;
+  return response.data;
 }

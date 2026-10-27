@@ -1,3 +1,4 @@
+import { type HttpError } from '@/api/httpError';
 type ErrorResponseBody = {
   message?: string | string[];
 };
@@ -6,36 +7,32 @@ type ErrorResponseBody = {
 /**
  * Translate recognized mascot API errors into UI message keys.
  *
- * Consumes the response body. JSON parsing and body-reading errors are handled with the
- * fallback key.
+ * Maps parsed error data; unknown shapes fall back to the supplied translation key.
  *
- * @param response - Error response with an unread JSON body.
+ * @param response - Axios response carrying parsed error data or plain error text.
  * @param fallbackKey - Translation key to return for an unknown or unreadable error.
  * @returns The recognized error key, or fallbackKey. For message arrays, only the first
  *   message is checked.
  * @example
- * await resolveMascotErrorMessage(new Response(JSON.stringify({ message: 'Not enough coins.' })), 'mascot.errors.generic');
+ * await resolveMascotErrorMessage(response, 'mascot.errors.generic');
  * // => 'mascot.errors.notEnoughCoins'
  */
 export async function resolveMascotErrorMessage(
-  response: Response,
+  response: HttpError['response'],
   fallbackKey: string,
 ): Promise<string> {
-  try {
-    const body = (await response.json()) as ErrorResponseBody;
-    const rawMessage = Array.isArray(body.message)
-      ? body.message[0]
-      : body.message;
+  if (!response.data || typeof response.data !== 'object') return fallbackKey;
+  const body = response.data as ErrorResponseBody;
+  const rawMessage = Array.isArray(body.message)
+    ? body.message[0]
+    : body.message;
 
-    if (rawMessage === 'Not enough coins.') {
-      return 'mascot.errors.notEnoughCoins';
-    }
+  if (rawMessage === 'Not enough coins.') {
+    return 'mascot.errors.notEnoughCoins';
+  }
 
-    if (rawMessage === 'Mascot item is not owned.') {
-      return 'mascot.errors.itemNotOwned';
-    }
-  } catch {
-    return fallbackKey;
+  if (rawMessage === 'Mascot item is not owned.') {
+    return 'mascot.errors.itemNotOwned';
   }
 
   return fallbackKey;

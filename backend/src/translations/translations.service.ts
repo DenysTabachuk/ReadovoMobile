@@ -1,3 +1,5 @@
+import { mapProviderError } from '../http/map-provider-error';
+import { HttpService } from '@nestjs/axios';
 import {
   BadGatewayException,
   Injectable,
@@ -18,6 +20,7 @@ const CONTEXT_WORD_ATTRIBUTE = 'data-ctx-word';
 
 @Injectable()
 export class TranslationsService {
+  constructor(private readonly http: HttpService) {}
   // MVP: in-memory cache keeps repeated word lookups off the Google API.
   // This should move to persistent storage once dictionary/progress data exists.
   private readonly baseWordCache = new Map<string, string>();
@@ -124,15 +127,17 @@ export class TranslationsService {
     url.searchParams.set('source', params.sourceLanguage);
     url.searchParams.set('target', params.targetLanguage);
 
-    const response = await fetch(url, {
-      method: 'POST',
-    });
+    const response = await this.http
+      .axiosRef(url.toString(), {
+        method: 'POST',
+      })
+      .catch(
+        mapProviderError(
+          new BadGatewayException('Failed to fetch translation.'),
+        ),
+      );
 
-    if (!response.ok) {
-      throw new BadGatewayException('Failed to fetch translation.');
-    }
-
-    const data = (await response.json()) as GoogleTranslateResponse;
+    const data = response.data as GoogleTranslateResponse;
     const translatedText = data.data?.translations?.[0]?.translatedText?.trim();
 
     if (!translatedText) {

@@ -1,5 +1,7 @@
-import { API_BASE_URL } from '@/api';
-import { authenticatedFetch } from '@/features/auth';
+import { mapHttpError } from '@/api/utils/mapHttpError';
+import { type HttpError } from '@/api/httpError';
+
+import { api } from '@/features/auth';
 
 import {
   type CreateDictionaryWordRequest,
@@ -12,29 +14,22 @@ const DUPLICATE_DICTIONARY_WORD_MESSAGE =
 export async function createDictionaryWord(
   request: CreateDictionaryWordRequest,
 ): Promise<DictionaryWord> {
-  const response = await authenticatedFetch(
-    `${API_BASE_URL}/api/dictionary/me/words`,
-    {
-      body: JSON.stringify(request),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      method: 'POST',
-    },
-  );
+  const response = await api
+    .post<DictionaryWord>(`/api/dictionary/me/words`, request)
+    .catch(
+      mapHttpError('dictionary.saveError', {
+        resolveMessage: resolveCreateDictionaryWordError,
+      }),
+    );
 
-  if (!response.ok) {
-    throw new Error(await resolveCreateDictionaryWordError(response));
-  }
-
-  return response.json() as Promise<DictionaryWord>;
+  return response.data;
 }
 
 async function resolveCreateDictionaryWordError(
-  response: Response,
+  response: HttpError['response'],
 ): Promise<string> {
   try {
-    const body = (await response.json()) as { message?: unknown };
+    const body = response.data as { message?: unknown };
     const message = Array.isArray(body.message)
       ? body.message[0]
       : body.message;

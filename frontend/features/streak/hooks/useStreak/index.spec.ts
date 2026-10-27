@@ -23,7 +23,7 @@ let mockProfileObserver: QueryObserver<StreakState>;
 
 jest.mock('@/api', () => ({ API_BASE_URL: 'https://api.example.test' }));
 jest.mock('@/features/auth', () => ({
-  authenticatedFetch: jest.fn(),
+  api: jest.fn(),
   useAuth: jest.fn(),
   getAuthSessionSnapshot: jest.fn(),
 }));

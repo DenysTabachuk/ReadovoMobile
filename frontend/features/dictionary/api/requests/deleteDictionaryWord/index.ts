@@ -1,19 +1,15 @@
-import { API_BASE_URL } from '@/api';
-import { authenticatedFetch } from '@/features/auth';
+import { mapHttpError } from '@/api/utils/mapHttpError';
+
+import { api } from '@/features/auth';
 
 import { type DictionaryWord } from '../../types';
 
 export async function deleteDictionaryWord(
   wordId: string,
 ): Promise<DictionaryWord> {
-  const response = await authenticatedFetch(
-    `${API_BASE_URL}/api/dictionary/me/words/${wordId}`,
-    { method: 'DELETE' },
-  );
+  const response = await api
+    .delete<DictionaryWord>(`/api/dictionary/me/words/${wordId}`)
+    .catch(mapHttpError('dictionary.deleteError'));
 
-  if (!response.ok) {
-    throw new Error('dictionary.deleteError');
-  }
-
-  return response.json() as Promise<DictionaryWord>;
+  return response.data;
 }
