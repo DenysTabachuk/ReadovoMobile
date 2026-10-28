@@ -11,13 +11,23 @@ import { DictionaryRepository } from '../dictionary.repository';
 import { DictionaryService } from '../dictionary.service';
 import { type DictionaryWord } from '../types';
 
+type EmbeddingTestDependency =
+  | Pick<
+      DictionaryEmbeddingService,
+      'generateEmbedding' | 'getSimilarWords' | 'generateQuizOptions'
+    >
+  | Record<string, never>;
+
 export const DICTIONARY_TEST_USER_ID = '11111111-1111-4111-8111-111111111111';
 export const DICTIONARY_TEST_WORD_ID = '22222222-2222-4222-8222-222222222222';
 
 /**
- * Creates a real dictionary word-operation HTTP app with fresh repository mocks.
+ * Creates a real dictionary HTTP app with fresh repository mocks.
+ * @param embeddingService - Optional real embedding service for provider-boundary
+ * tests; defaults to an unused stub for word/generation suites.
  * @returns The app/server, JWT header, word fixture and typed repository mocks.
- * Embeddings are unused and stubbed, so no model or external provider is loaded.
+ * A supplied embedding service runs its normal module lifecycle; callers must
+ * replace its external model boundary to avoid downloading a live model.
  * Registers no hooks or globals; the caller must await app.close().
  * @example
  * const testApp = await createDictionaryHttpApp();
@@ -25,7 +35,9 @@ export const DICTIONARY_TEST_WORD_ID = '22222222-2222-4222-8222-222222222222';
  * // HTTP 404 with DICTIONARY_WORD_NOT_FOUND.
  * await testApp.app.close();
  */
-export async function createDictionaryHttpApp() {
+export async function createDictionaryHttpApp(
+  embeddingService: EmbeddingTestDependency = {},
+) {
   const word: DictionaryWord = {
     id: DICTIONARY_TEST_WORD_ID,
     userId: DICTIONARY_TEST_USER_ID,
@@ -46,6 +58,7 @@ export async function createDictionaryHttpApp() {
       | 'deleteById'
       | 'updateProgress'
       | 'updateReviewResult'
+      | 'findReviewCandidates'
     >
   > = {
     create: jest.fn().mockResolvedValue(null),
@@ -54,6 +67,7 @@ export async function createDictionaryHttpApp() {
     deleteById: jest.fn().mockResolvedValue(undefined),
     updateProgress: jest.fn().mockResolvedValue(undefined),
     updateReviewResult: jest.fn().mockResolvedValue(undefined),
+    findReviewCandidates: jest.fn().mockResolvedValue([]),
   };
   const module = await Test.createTestingModule({
     controllers: [DictionaryController],
@@ -62,7 +76,7 @@ export async function createDictionaryHttpApp() {
       JwtService,
       UserAuthGuard,
       { provide: DictionaryRepository, useValue: repository },
-      { provide: DictionaryEmbeddingService, useValue: {} },
+      { provide: DictionaryEmbeddingService, useValue: embeddingService },
     ],
   }).compile();
   const app = module.createNestApplication<INestApplication<Server>>({

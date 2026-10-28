@@ -1,8 +1,7 @@
 # API error contract
 
-Status: shared backend boundaries, auth, streak, mascot and dictionary word-operation
-codes implemented. Dictionary AI generation/embeddings, other domains and frontend
-presentation remain tracked in
+Status: shared backend boundaries, auth, streak, mascot and dictionary codes
+implemented. Other domains and frontend presentation remain tracked in
 [the implementation task](api-error-codes.md).
 
 ## Response and ownership
@@ -292,7 +291,7 @@ shared by the service and error definition within dictionary. Progress membershi
 is validated once by `UpdateDictionaryWordProgressDto`; the service method's only
 production caller is the controller, so its duplicate check is removed.
 
-HTTP suites use real controllers, services, guards and production error boundaries
+Word-operation HTTP suites use real controllers, services, guards and production error boundaries
 with a typed repository mock and unused embedding dependency stub. Existing unit
 checks retain atomic duplicate detection and phrase-policy coverage. An empty list
 remains HTTP 200; correct and incorrect answers remain HTTP 201 with `isCorrect`.
@@ -302,22 +301,53 @@ Dictionary does not currently perform a separate user-existence check: list read
 can return an empty array, and database exceptions remain generic 500 failures.
 Do not add a missing-user domain code or change those outcomes in this migration.
 
-### Pending dictionary generation and embedding batch
+### Dictionary generation and embeddings
 
-The module is not fully migrated. These routes and branches still need their own
-codes and contract tests; do not mark dictionary coverage complete yet:
+These paths are implemented with the following codes. Domain errors allow no
+details. Existing statuses are preserved, including the 400 embedding-dimension
+failure; the migration does not reclassify it as a provider 5xx failure.
 
-| Route / owner      | Current failure branches and statuses                                                                                                          |
-| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| GET me/test        | No words / no review candidates: 400; missing provider key: 500; SDK request failure, empty output, invalid JSON and incomplete questions: 502 |
-| POST embedding     | DTO text validation: 400; model startup/request failures affecting a request: 500                                                              |
-| POST similar-words | DTO validation and internal blank candidate text: 400; invalid embedding dimensions: 400; model failures: 500                                  |
-| POST quiz-options  | Similar-word failures plus fewer than three distractors: 400; model failures: 500                                                              |
+| Route / branch                                                                   | Status | Code                                          | Contract test                                                |
+| -------------------------------------------------------------------------------- | ------ | --------------------------------------------- | ------------------------------------------------------------ |
+| GET me/test: dictionary has no words                                             | 400    | `DICTIONARY_TEST_NO_WORDS`                    | Generation HTTP suite, no words                              |
+| GET me/test: no review candidates                                                | 400    | `DICTIONARY_TEST_NO_REVIEW_CANDIDATES`        | Generation HTTP suite, no candidates/default limit           |
+| GET me/test: invalid limit                                                       | 400    | `VALIDATION_FAILED`                           | Generation HTTP suite, invalid query limits                  |
+| GET me/test: missing provider key or repository failure                          | 500    | `INTERNAL_ERROR`                              | Generation HTTP suite, configuration and repository cases    |
+| GET me/test: SDK request failure                                                 | 502    | `DICTIONARY_TEST_GENERATION_FAILED`           | Generation HTTP suite, SDK rejection                         |
+| GET me/test: empty provider content                                              | 502    | `DICTIONARY_TEST_GENERATION_EMPTY`            | Generation HTTP suite, empty/whitespace output               |
+| GET me/test: invalid JSON or invalid questions container                         | 502    | `DICTIONARY_TEST_GENERATION_INVALID_RESPONSE` | Generation HTTP suite, invalid JSON/null/primitive/container |
+| GET me/test: missing questions or unusable distractors                           | 502    | `DICTIONARY_TEST_GENERATION_INCOMPLETE`       | Generation HTTP suite, missing/malformed/duplicate cases     |
+| POST embedding, similar-words, quiz-options: invalid request text/candidate list | 400    | `VALIDATION_FAILED`                           | Embedding HTTP suite, target and candidate DTO cases         |
+| POST similar-words or quiz-options: invalid vector dimensions                    | 400    | `DICTIONARY_EMBEDDINGS_INVALID`               | Embedding HTTP suite, empty and mismatched vectors           |
+| POST quiz-options: fewer than three distinct distractors                         | 400    | `DICTIONARY_QUIZ_DISTRACTORS_INSUFFICIENT`    | Embedding HTTP suite, absent/insufficient candidates         |
+| Model request failure                                                            | 500    | `INTERNAL_ERROR`                              | Embedding HTTP suite, failed model request                   |
 
-Model initialization failures that prevent server startup are not public API
-responses. Preserve DTO defaults, current empty-list handling and provider-response
-parsing behavior when migrating these paths. Ensure AI catch handlers retain
-deliberate application codes and use runtime validation for untrusted output.
+`dictionary-test-generation.http.spec.ts` exercises real HTTP/service parsing with
+the Groq SDK boundary mocked. `dictionary-embeddings.http.spec.ts` uses the real
+embedding service, lifecycle, cache and similarity algorithms with TensorFlow and
+the model loader mocked. No tests download a model or call a live provider.
+
+Limit type/range/default (10) are owned by `DictionaryTestQueryDto`; the service
+does not repeat query clamping. Each candidate must contain non-whitespace text
+in the request DTO. Blank candidates still return 400, now before model access;
+the redundant internal text-required check is removed.
+
+Similar-word requests with an omitted, empty or optional null list still succeed
+with `[]`. Insufficient quiz options remain a 400 business failure. Embedding
+responses remain arrays; generation still supports plain/fenced/prose-wrapped
+JSON and translation/reverse-translation/cloze formats. HTTP tests preserve these
+success contracts without depending on shuffled option order.
+
+AI catch handlers retain deliberate application codes. The parser treats decoded
+JSON as unknown and narrows its shape without assertions. Provider error payloads,
+raw AI output and configuration details are excluded from responses and newly
+touched log paths; missing configuration gets a generic 500 public message.
+
+The embedding/related-option routes remain public; authenticated test generation
+retains its existing JWT guard. Model initialization failures that prevent server
+startup are not public API responses. Existing tensor cleanup after a failed
+`array()` call is a separate resource-management concern; this migration does not
+change its lifecycle or add recovery/retry policy.
 
 ## Frontend presentation and session actions
 

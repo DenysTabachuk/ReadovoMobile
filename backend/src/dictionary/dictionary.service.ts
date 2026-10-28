@@ -1,14 +1,9 @@
-import {
-  BadGatewayException,
-  BadRequestException,
-  Injectable,
-  InternalServerErrorException,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import Groq from 'groq-sdk';
 
 import { ApiException } from '../common/errors/api-exception';
+import { COMMON_ERRORS } from '../common/errors/common-errors';
 import { MAX_DICTIONARY_FRAGMENT_WORDS } from './constants';
 import { DICTIONARY_ERRORS } from './dictionary-errors';
 import { DictionaryRepository } from './dictionary.repository';
@@ -28,7 +23,6 @@ import {
 } from './types';
 import { DictionaryEmbeddingService } from './dictionary-embedding.service';
 
-const DEFAULT_DICTIONARY_TEST_LIMIT = 10;
 const DICTIONARY_TEST_OPTION_COUNT = 4;
 const DICTIONARY_TEST_DISTRACTOR_COUNT = DICTIONARY_TEST_OPTION_COUNT - 1;
 const DEFAULT_GROQ_MODEL = 'openai/gpt-oss-120b';
@@ -111,7 +105,7 @@ export class DictionaryService {
     const wordList = this.resolveWordList(request.wordList);
 
     return this.dictionaryEmbeddingService.getSimilarWords(
-      request.word ?? '',
+      request.word,
       wordList,
     );
   }
@@ -120,36 +114,23 @@ export class DictionaryService {
     const wordList = this.resolveWordList(request.wordList);
 
     return this.dictionaryEmbeddingService.generateQuizOptions(
-      request.correctWord ?? '',
+      request.correctWord,
       wordList,
     );
   }
 
-  async createTest(
-    userId: string,
-    limit = DEFAULT_DICTIONARY_TEST_LIMIT,
-  ): Promise<DictionaryTest> {
-    const normalizedLimit = Number.isFinite(limit)
-      ? Math.max(1, Math.min(DEFAULT_DICTIONARY_TEST_LIMIT, Math.floor(limit)))
-      : DEFAULT_DICTIONARY_TEST_LIMIT;
+  async createTest(userId: string, limit: number): Promise<DictionaryTest> {
     const words = await this.dictionaryRepository.findAll(userId);
 
     if (words.length === 0) {
-      throw new BadRequestException(
-        'At least 1 dictionary word is required to create a test.',
-      );
+      throw new ApiException(DICTIONARY_ERRORS.TEST_NO_WORDS);
     }
 
     const reviewCandidates =
-      await this.dictionaryRepository.findReviewCandidates(
-        userId,
-        normalizedLimit,
-      );
+      await this.dictionaryRepository.findReviewCandidates(userId, limit);
 
     if (reviewCandidates.length === 0) {
-      throw new BadRequestException(
-        'No dictionary words are available to create a test.',
-      );
+      throw new ApiException(DICTIONARY_ERRORS.TEST_NO_REVIEW_CANDIDATES);
     }
 
     const questions = await this.createTestQuestionsWithAi(reviewCandidates);
@@ -237,9 +218,7 @@ export class DictionaryService {
 
     if (!apiKey) {
       this.logger.error('Groq key is missing for dictionary test generation.');
-      throw new InternalServerErrorException(
-        'Dictionary test generation service is not configured.',
-      );
+      throw new ApiException(COMMON_ERRORS.INTERNAL_ERROR);
     }
 
     const prompt = this.createDictionaryTestPrompt(words);
@@ -262,9 +241,7 @@ export class DictionaryService {
         const generatedQuestion = generatedQuestionsByWordId.get(word.id);
 
         if (!generatedQuestion) {
-          throw new BadGatewayException(
-            'Dictionary test generation returned incomplete questions.',
-          );
+          throw new ApiException(DICTIONARY_ERRORS.TEST_GENERATION_INCOMPLETE);
         }
 
         return this.createTestQuestionFromGeneratedQuestion(
@@ -273,20 +250,13 @@ export class DictionaryService {
         );
       });
     } catch (error) {
-      if (error instanceof BadGatewayException) {
+      if (error instanceof ApiException) {
         throw error;
       }
 
-      const errorMessage =
-        error instanceof Error ? error.message : 'Unknown Groq error';
-      const errorStack = error instanceof Error ? error.stack : undefined;
-
-      this.logger.error(
-        `Groq dictionary test request failed: model=${getGroqModel()}, reason="${errorMessage}"`,
-        errorStack,
-      );
-
-      throw new BadGatewayException('Failed to generate dictionary test.');
+      // SDK errors can contain credentials or request/response payloads.
+      this.logger.error('Groq dictionary test request failed.');
+      throw new ApiException(DICTIONARY_ERRORS.TEST_GENERATION_FAILED);
     }
   }
 
@@ -399,16 +369,19 @@ Rules:
     words: DictionaryWord[],
   ): Map<string, GeneratedDictionaryTestQuestion> {
     if (!rawResponse) {
-      throw new BadGatewayException('Dictionary test generation was empty.');
+      throw new ApiException(DICTIONARY_ERRORS.TEST_GENERATION_EMPTY);
     }
 
-    const parsed = this.parseJsonObject<{
-      questions?: unknown;
-    }>(rawResponse);
+    const parsed = this.parseJsonObject(rawResponse);
 
-    if (!parsed || !Array.isArray(parsed.questions)) {
-      throw new BadGatewayException(
-        'Dictionary test generation returned invalid JSON.',
+    if (
+      typeof parsed !== 'object' ||
+      parsed === null ||
+      !('questions' in parsed) ||
+      !Array.isArray(parsed.questions)
+    ) {
+      throw new ApiException(
+        DICTIONARY_ERRORS.TEST_GENERATION_INVALID_RESPONSE,
       );
     }
 
@@ -424,35 +397,40 @@ Rules:
       GeneratedDictionaryTestQuestion
     >();
 
-    for (const rawQuestion of parsed.questions) {
+    const rawQuestions: unknown[] = parsed.questions;
+    for (const rawQuestion of rawQuestions) {
       if (!rawQuestion || typeof rawQuestion !== 'object') {
         continue;
       }
 
-      const candidate = rawQuestion as {
-        clozePrompt?: unknown;
-        distractors?: unknown;
-        format?: unknown;
-        wordId?: unknown;
-      };
       const wordId =
-        typeof candidate.wordId === 'string' ? candidate.wordId.trim() : '';
+        'wordId' in rawQuestion && typeof rawQuestion.wordId === 'string'
+          ? rawQuestion.wordId.trim()
+          : '';
       const word = wordsById.get(wordId);
       const format =
         expectedFormatsByWordId.get(wordId) ??
-        this.normalizeDictionaryQuestionFormat(candidate.format);
+        this.normalizeDictionaryQuestionFormat(
+          'format' in rawQuestion ? rawQuestion.format : undefined,
+        );
 
-      if (!word || !format || !Array.isArray(candidate.distractors)) {
+      if (
+        !word ||
+        !format ||
+        !('distractors' in rawQuestion) ||
+        !Array.isArray(rawQuestion.distractors)
+      ) {
         continue;
       }
 
       const distractors = this.normalizeDistractors(
-        candidate.distractors,
+        rawQuestion.distractors,
         this.getCorrectAnswerText(word, format),
       );
       const clozePrompt =
-        typeof candidate.clozePrompt === 'string'
-          ? candidate.clozePrompt.trim().replace(/\s+/g, ' ')
+        'clozePrompt' in rawQuestion &&
+        typeof rawQuestion.clozePrompt === 'string'
+          ? rawQuestion.clozePrompt.trim().replace(/\s+/g, ' ')
           : undefined;
 
       if (distractors.length === DICTIONARY_TEST_DISTRACTOR_COUNT) {
@@ -466,11 +444,9 @@ Rules:
 
     if (generatedQuestionsByWordId.size !== words.length) {
       this.logger.warn(
-        `Dictionary test AI returned ${generatedQuestionsByWordId.size} valid questions for ${words.length} words. Raw AI response: ${this.truncateForLog(rawResponse)}`,
+        `Dictionary test AI returned ${generatedQuestionsByWordId.size} valid questions for ${words.length} words.`,
       );
-      throw new BadGatewayException(
-        'Dictionary test generation returned incomplete questions.',
-      );
+      throw new ApiException(DICTIONARY_ERRORS.TEST_GENERATION_INCOMPLETE);
     }
 
     return generatedQuestionsByWordId;
@@ -613,7 +589,9 @@ Rules:
     return value.trim().replace(/\s+/g, ' ').toLowerCase();
   }
 
-  private parseJsonObject<T>(rawResponse: string): T | null {
+  // Parsing does not establish the shape: callers validate the resulting unknown.
+  // Keep support for fenced JSON and JSON wrapped in provider prose.
+  private parseJsonObject(rawResponse: string): unknown {
     const normalized = rawResponse
       .replace(/^```json\s*/i, '')
       .replace(/^```\s*/i, '')
@@ -621,7 +599,7 @@ Rules:
       .trim();
 
     try {
-      return JSON.parse(normalized) as T;
+      return JSON.parse(normalized);
     } catch {
       const objectStartIndex = normalized.indexOf('{');
       const objectEndIndex = normalized.lastIndexOf('}');
@@ -633,19 +611,11 @@ Rules:
       try {
         return JSON.parse(
           normalized.slice(objectStartIndex, objectEndIndex + 1),
-        ) as T;
+        );
       } catch {
         return null;
       }
     }
-  }
-
-  private truncateForLog(value: string, maxLength = 1200): string {
-    if (value.length <= maxLength) {
-      return value;
-    }
-
-    return `${value.slice(0, maxLength)}...`;
   }
 
   private shuffleWords<T>(words: T[]): T[] {

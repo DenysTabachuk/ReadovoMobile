@@ -1,11 +1,9 @@
-import {
-  BadRequestException,
-  Injectable,
-  Logger,
-  OnModuleInit,
-} from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import * as tf from '@tensorflow/tfjs';
 import * as use from '@tensorflow-models/universal-sentence-encoder';
+
+import { ApiException } from '../common/errors/api-exception';
+import { DICTIONARY_ERRORS } from './dictionary-errors';
 
 @Injectable()
 export class DictionaryEmbeddingService implements OnModuleInit {
@@ -39,9 +37,7 @@ export class DictionaryEmbeddingService implements OnModuleInit {
 
   cosineSimilarity(a: number[], b: number[]): number {
     if (a.length !== b.length || a.length === 0) {
-      throw new BadRequestException(
-        'Embeddings must be non-empty arrays of the same length.',
-      );
+      throw new ApiException(DICTIONARY_ERRORS.EMBEDDINGS_INVALID);
     }
 
     let dotProduct = 0;
@@ -103,9 +99,7 @@ export class DictionaryEmbeddingService implements OnModuleInit {
     );
 
     if (distractors.length < 3) {
-      throw new BadRequestException(
-        'At least 3 distractor words are required.',
-      );
+      throw new ApiException(DICTIONARY_ERRORS.QUIZ_DISTRACTORS_INSUFFICIENT);
     }
 
     return this.shuffleWords([normalizedCorrectWord, ...distractors]);
@@ -143,13 +137,8 @@ export class DictionaryEmbeddingService implements OnModuleInit {
   }
 
   private normalizeText(text: string): string {
-    const normalizedText = text?.trim().toLowerCase();
-
-    if (!normalizedText) {
-      throw new BadRequestException('Text is required.');
-    }
-
-    return normalizedText;
+    // DTOs validate target text and every candidate; only normalization belongs here.
+    return text.trim().toLowerCase();
   }
 
   private shuffleWords(words: string[]): string[] {
