@@ -29,6 +29,19 @@
   If nothing is staged, run the relevant working-tree checks and report that the
   staged check could not validate a commit snapshot; an empty run is not a pass.
 
+## Backend utility documentation
+
+- Every independent utility created, changed, or moved under `backend/**` needs
+  concise JSDoc immediately above its implementation. Describe its responsibility,
+  each input with `@param`, its output with `@returns`, and a concrete `@example`
+  with the expected result. Omit `@param` for parameterless utilities; for `void`
+  utilities, describe the effect in `@returns`.
+- Document relevant edge cases, fallbacks, thrown errors, input mutation and side
+  effects when they affect callers. Explain non-obvious invariants inline; document
+  private implementation helpers only when their behavior is unclear.
+- Apply this rule within the current task scope. Do not backfill unrelated existing
+  utilities or add unrelated tests for documentation-only edits.
+
 ## Commands
 
 Run from the repository root:

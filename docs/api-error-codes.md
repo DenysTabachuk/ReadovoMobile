@@ -1,15 +1,35 @@
 ﻿# Task: project-wide API error contract
 
-Status: planned. This is the single implementation task for API error codes across
+Status: in progress; shared backend boundaries implemented for review.
+This is the single implementation task for API error codes across
 Readovo. It incorporates the previous streak and mascot tasks. Updating this plan
 does not implement the contract or expand the Axios migration into business changes.
+
+## Review batches
+
+Pause after each batch for user review before starting the next one.
+
+1. Shared/auth contract design and branch inventory in
+   [API error contract](api-error-contract.md); shared backend boundaries and HTTP
+   tests implemented. Domain migration and frontend handling remain open.
+2. Complete domain inventories in reviewable groups: streak/mascot,
+   dictionary/achievements, articles/translations, notifications/mock outcomes.
+3. Implement and test backend boundaries, then migrate one domain per batch.
+4. Implement frontend decoding/presentation and verify auth session behavior.
+5. Migrate feature consumers/locales/mocks in matching domain batches.
+6. Run compatibility/integration checks, finalize lasting documentation and
+   remove completed temporary task documents.
+
+The user confirmed there are no existing users and no compatibility requirement.
+Deploy backend first. Do not add a legacy frontend text/status adapter or retain
+the Nest `error` field. Validation messages use strings with typed field details.
 
 ## Goal and scope
 
 Give every application-owned API failure a stable machine-readable code. Frontend
 behavior and translations must not depend on backend message text, punctuation or
 language. Cover backend responses, frontend normalization and presentation, tests,
-mock API fixtures and compatibility with installed mobile clients.
+mock API fixtures and deployment order.
 
 Include domain exceptions, authentication/authorization, DTO validation, malformed
 requests, missing routes/resources, provider failures and unexpected server errors.
@@ -55,9 +75,8 @@ without converting partial success into an unrelated HTTP error.
 - `statusCode` matches the actual HTTP status.
 - `code` is a stable, namespaced identifier owned by the application. Never derive
   it from exception text. Do not reuse a code for a different meaning.
-- `message` is a safe diagnostic description, not a translation key or UI contract.
-  Preserve existing string/array shapes during the compatibility phase where old
-  clients rely on them; define the final validation shape explicitly.
+- `message` is a safe diagnostic string, not a translation key or UI contract.
+  Validation uses a generic string with typed field errors in `details`.
 - `details` is optional, typed and allowlisted per code. Include only data the
   client needs, such as a limit or field identifier. Do not expose credentials,
   submitted passwords, raw provider payloads, SQL errors or stack traces.
@@ -126,8 +145,8 @@ items/slots and all other uncovered branches rather than stopping at this table.
 1. [ ] Complete the route/error inventory and approve the catalogue, validation
        detail shape, compatibility matrix and frontend presentation boundary.
 2. [ ] Implement backend error construction/serialization and framework-boundary
-       normalization. Preserve status codes, applicable headers and safe legacy
-       messages. Ensure catch-all handlers do not replace deliberate domain codes.
+       normalization. Preserve status codes and applicable headers. Ensure
+       catch-all handlers do not replace deliberate domain codes.
 3. [ ] Migrate every backend area in the inventory, with endpoint contract tests.
        Include provider failures and infrastructure-to-domain translations; do not
        let raw database/SDK/provider exceptions escape as public codes or messages.
@@ -135,23 +154,20 @@ items/slots and all other uncovered branches rather than stopping at this table.
        Verify auth behavior before migrating domain consumers.
 5. [ ] Migrate all feature consumers, screens/hooks, locale keys and mock fixtures.
        Remove text comparisons and redundant nested error-mapping wrappers.
-6. [ ] Validate deployment compatibility, document the final catalogue and retire
-       legacy fallbacks after the supported-client window ends.
+6. [ ] Validate deployment order and safe fallbacks, and document the final catalogue.
 
 Each step must leave a runnable, reviewable state. Keep this task open until every
 area and acceptance criterion is covered; moving one feature is not completion.
 
 ## Deployment and compatibility
 
-Deploy additive backend codes first, retaining legacy HTTP statuses, message text
-and required existing response fields. Release clients that understand codes next.
-Test old-client/new-server and new-client/old-server combinations explicitly.
+Deploy backend codes first, preserving HTTP status semantics. Release clients that
+understand codes next. Legacy client/server combinations are unsupported; missing
+codes must still produce a safe localized fallback.
 
-Where necessary, keep legacy text/status interpretation in one isolated migration
-adapter only when `code` is absent. An unknown, empty, malformed or unsupported
-code must use the safe fallback, never a misleading legacy message match. Record
-supported client/server versions and the removal condition/owner for this adapter.
-No permanent dual parsing or unspecified "remove later" compatibility layer.
+Do not add a legacy text/status adapter. An absent, unknown, empty, malformed or
+unsupported code must use the safe fallback, never a legacy message match. Record
+released client/server versions and verify backend readiness before client release.
 
 ## Acceptance and verification
 
@@ -166,8 +182,8 @@ No permanent dual parsing or unspecified "remove later" compatibility layer.
       cancellation, network/timeout failures, auth refresh/retry and stale sessions.
 - [ ] No unauthorized information, secrets or raw internal errors appear in
       responses, UI notifications or newly added client logs.
-- [ ] No permanent frontend branches depend on backend message text. Any temporary
-      compatibility handling has explicit coverage and a removal criterion.
+- [ ] No frontend branches depend on backend message text; no legacy compatibility
+      adapter is introduced.
 - [ ] Requests do not regain manual HTTP-success checks or repeated nested message
       resolvers. Existing session, retry and business protections still pass.
 - [ ] Update `mock-api` error fixtures and affected integration tests; unit tests

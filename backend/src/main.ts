@@ -4,13 +4,11 @@ import { join, resolve } from 'node:path';
 
 import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
-import { json, urlencoded } from 'express';
 
 import { AppModule } from './app.module';
-import { configureRequestValidation } from './common/validation/configure-request-validation';
+import { configureApiBoundaries } from './common/configure-api-boundaries';
 
 const bootstrapLogger = new Logger('Bootstrap');
-const REQUEST_BODY_LIMIT = '2mb';
 loadBackendEnv();
 
 async function bootstrap() {
@@ -19,9 +17,7 @@ async function bootstrap() {
   });
 
   app.enableCors();
-  configureRequestValidation(app);
-  app.use(json({ limit: REQUEST_BODY_LIMIT }));
-  app.use(urlencoded({ extended: true, limit: REQUEST_BODY_LIMIT }));
+  configureApiBoundaries(app);
 
   const port = process.env.PORT ?? 3000;
 
