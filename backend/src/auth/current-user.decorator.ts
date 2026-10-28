@@ -1,9 +1,8 @@
-import {
-  createParamDecorator,
-  type ExecutionContext,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { createParamDecorator, type ExecutionContext } from '@nestjs/common';
 
+import { ApiException } from '../common/errors/api-exception';
+
+import { AUTH_ERRORS } from './auth-errors';
 import { type AuthenticatedUser } from './types';
 
 type AuthenticatedRequest = {
@@ -19,7 +18,7 @@ export const CurrentUser = createParamDecorator(
       .switchToHttp()
       .getRequest<AuthenticatedRequest>();
     if (!authUser) {
-      throw new UnauthorizedException('Authenticated user is required.');
+      throw new ApiException(AUTH_ERRORS.AUTHENTICATION_REQUIRED);
     }
     return authUser;
   },

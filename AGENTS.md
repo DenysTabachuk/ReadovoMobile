@@ -42,6 +42,49 @@
 - Apply this rule within the current task scope. Do not backfill unrelated existing
   utilities or add unrelated tests for documentation-only edits.
 
+## Backend test organization
+
+- Apply these rules to backend tests created, changed, or moved in the current
+  task. Keep unrelated suites intact. Test observable behavior, regressions and
+  meaningful boundaries; do not add cases solely to increase test counts or mirror
+  implementation steps.
+- Do not expand a feature task into a broader test-organization migration. Record
+  existing structural debt in a separate task unless that refactoring is explicitly
+  in scope; improve the tests required by the feature without reorganizing others.
+- Give each test file a clear responsibility and test level. Split independent
+  flows such as login, password reset, Google identity and authorization into
+  focused suites instead of accumulating them in a module-wide catch-all file.
+  Name files after their behavior or owner, using `.http.spec.ts` for HTTP contract
+  suites under `backend/src` and `.spec.ts` for unit suites. Keep full-application
+  e2e tests under `backend/test` with the existing `.e2e-spec.ts` configuration.
+- Unit tests own direct service/utility behavior, including safeguards unreachable
+  through DTO validation. HTTP contract tests own routing, DTO validation, guards,
+  serialization, status, headers and public bodies. Do not mix direct service
+  assertions into HTTP suites. Repeat scenarios across levels only when each
+  level checks a distinct guarantee.
+- Keep each case readable as setup, action and expected outcome. Use descriptive
+  scenario names. Use `it.each` when cases share the same setup and assertion
+  structure; avoid large tables of unrelated callbacks or setup branches selected
+  by scenario-name strings. Group related cases with `describe`.
+- Keep scenario-specific data and mock overrides beside the test. Extract repeated
+  app construction and fixtures into narrowly owned test helpers when genuinely
+  shared. Search for existing mocks and factories before creating new ones. Prefer
+  typed factories that return fresh mocks/data for each test; keep them within the
+  owning module until multiple modules demonstrate reuse. Do not share mutable
+  mock singletons between suites.
+  Helpers must expose their dependencies and lifecycle; avoid hidden Jest
+  hooks, mutable fixtures shared across suites, or a generic test framework/DSL.
+  Keep expected statuses, codes and response fields explicit in HTTP tests rather
+  than deriving them from production definitions that could contain the same bug.
+- Use the production boundary configuration in HTTP tests and keep the components
+  being verified real. Mock external providers, mail and persistence at their
+  boundaries; do not call live services. Restore clocks, environment variables,
+  spies and app instances so cases do not depend on execution order.
+- Before handing back test changes, review the file structure and coverage as well
+  as the test results. When splitting suites, preserve meaningful cases, verify
+  Jest discovers the new files, and run the affected suites and required checks.
+  Avoid arbitrary file-length or test-count limits; split by responsibility.
+
 ## Commands
 
 Run from the repository root:

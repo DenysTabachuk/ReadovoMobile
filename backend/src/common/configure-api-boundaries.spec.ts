@@ -17,6 +17,7 @@ import request from 'supertest';
 
 import { configureApiBoundaries } from './configure-api-boundaries';
 import { ApiException } from './errors/api-exception';
+import { COMMON_ERRORS } from './errors/common-errors';
 
 class ChildDto {
   @IsString()
@@ -39,7 +40,7 @@ class BoundaryController {
 
   @Get('application')
   application() {
-    throw new ApiException('REQUEST_TOO_LARGE');
+    throw new ApiException(COMMON_ERRORS.REQUEST_TOO_LARGE);
   }
 
   @Get('unclassified')

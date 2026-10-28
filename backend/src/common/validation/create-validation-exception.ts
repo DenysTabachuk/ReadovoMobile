@@ -1,6 +1,7 @@
 import { type ValidationError } from 'class-validator';
 
 import { ApiException, type ValidationField } from '../errors/api-exception';
+import { COMMON_ERRORS } from '../errors/common-errors';
 
 const RULES = {
   isDefined: 'VALUE_REQUIRED',
@@ -60,7 +61,7 @@ function resolveRule(constraint: string): ValidationRule {
 export function createValidationException(
   errors: ValidationError[],
 ): ApiException {
-  return new ApiException('VALIDATION_FAILED', {
+  return new ApiException(COMMON_ERRORS.VALIDATION_FAILED, {
     fields: collectFields(errors),
   });
 }

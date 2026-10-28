@@ -1,10 +1,5 @@
 import { ExternalHttpError } from '../http/external-http.error';
 import { HttpService } from '@nestjs/axios';
-import {
-  BadRequestException,
-  ConflictException,
-  UnauthorizedException,
-} from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { pbkdf2Sync } from 'node:crypto';
 
@@ -183,7 +178,9 @@ describe('AuthService', () => {
       else providerRequest.mockResolvedValue(response);
       await expect(
         service.loginWithGoogle({ idToken: 'token' }),
-      ).rejects.toBeInstanceOf(UnauthorizedException);
+      ).rejects.toMatchObject({
+        response: { statusCode: 401, code: 'AUTH_GOOGLE_IDENTITY_REJECTED' },
+      });
       expect(usersRepository.findByEmail).not.toHaveBeenCalled();
     });
   });
@@ -334,7 +331,9 @@ describe('AuthService', () => {
         email: 'user@example.com',
         password: 'wrong-password',
       }),
-    ).rejects.toBeInstanceOf(UnauthorizedException);
+    ).rejects.toMatchObject({
+      response: { statusCode: 401, code: 'AUTH_CREDENTIALS_INVALID' },
+    });
   });
 
   it('rejects an already registered email', async () => {
@@ -348,7 +347,9 @@ describe('AuthService', () => {
         password: 'password123',
         passwordConfirmation: 'password123',
       }),
-    ).rejects.toBeInstanceOf(ConflictException);
+    ).rejects.toMatchObject({
+      response: { statusCode: 409, code: 'AUTH_EMAIL_ALREADY_EXISTS' },
+    });
   });
 
   it('rejects passwords shorter than 8 characters', async () => {
@@ -358,7 +359,9 @@ describe('AuthService', () => {
         password: 'short',
         passwordConfirmation: 'short',
       }),
-    ).rejects.toBeInstanceOf(BadRequestException);
+    ).rejects.toMatchObject({
+      response: { statusCode: 400, code: 'VALIDATION_FAILED' },
+    });
   });
 
   it('rejects an expired verification code', async () => {
@@ -373,7 +376,9 @@ describe('AuthService', () => {
         code: '123456',
         email: 'user@example.com',
       }),
-    ).rejects.toBeInstanceOf(BadRequestException);
+    ).rejects.toMatchObject({
+      response: { statusCode: 400, code: 'AUTH_VERIFICATION_CODE_EXPIRED' },
+    });
   });
 
   it('requests password reset without revealing missing accounts', async () => {

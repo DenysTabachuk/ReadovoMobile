@@ -1,7 +1,7 @@
 # API error contract
 
-Status: shared backend boundaries implemented; auth/domain migration and frontend
-presentation remain planned. The initial inventory covers shared boundaries and
+Status: shared backend boundaries and backend auth codes implemented; remaining
+domains and frontend presentation are planned. The initial inventory covers shared boundaries and
 auth only; other domains remain tracked in [the implementation task](api-error-codes.md).
 
 ## Response and ownership
@@ -23,12 +23,21 @@ it directly. No legacy-client compatibility is required. Do not return the Nest
 Success and partial-success bodies are unchanged. Optional `details` must follow
 the schema for that code; auth codes below allow no details.
 
-The current backend definitions live in `backend/src/common/errors/api-exception.ts`
-and `backend/src/common/validation/create-validation-exception.ts`. The planned
-cross-project machine-readable source of truth is
-`contracts/api-errors.json`: each entry owns its code, allowed statuses and details
-schema. Generate backend/frontend TypeScript declarations and runtime validators
-from it, with a CI freshness check. Do not maintain independent code enums.
+Backend definitions belong to their owners: shared errors in
+`backend/src/common/errors/common-errors.ts`, auth errors in
+`backend/src/auth/auth-errors.ts`, and validation rules in
+`backend/src/common/validation/create-validation-exception.ts`.
+`backend/src/api-error-catalogue.ts` collects module definitions for contract
+tooling; its test rejects duplicate public codes. `common` does not import auth
+or the catalogue. Callers pass a definition to the shared exception class:
+`new ApiException(AUTH_ERRORS.CREDENTIALS_INVALID)`.
+`REQUEST_REJECTED` is a shared template with no fixed status; the filter supplies
+the original exception's HTTP status. Validation definitions require field details.
+
+Generate the planned cross-project `contracts/api-errors.json` artifact and
+backend/frontend declarations and runtime validators from these owned definitions,
+including per-code details schemas and allowed statuses. Add a CI freshness check;
+do not maintain an independent code list in the frontend or edit generated data.
 Feature presentation maps own translation keys and actions, not wire definitions.
 This file explains the contract and UI intent; generated catalogue tables should
 replace hand-maintained status/schema tables when generation is implemented.
@@ -42,7 +51,10 @@ supported-client review.
 
 The following mappings are implemented and covered by HTTP tests in
 `backend/src/common/configure-api-boundaries.spec.ts`. Details are absent except
-for validation. Auth test IDs further below still represent planned coverage.
+for validation. Auth test IDs below are covered by
+`backend/src/auth/auth-errors.spec.ts`, including direct service tests for
+safeguards blocked by DTO validation. Repositories, mail and Google are mocked;
+controllers, services, JWT verification, guards, DTO validation and filters are real.
 
 | Test ID | Boundary / current behavior                                               | Status          | Proposed code       | Client behavior                                           |
 | ------- | ------------------------------------------------------------------------- | --------------- | ------------------- | --------------------------------------------------------- |
@@ -116,14 +128,15 @@ Test B01 with nested objects, arrays, unknown properties and secret sentinel val
 Source owners: `backend/src/auth/auth.controller.ts`, `auth.service.ts`,
 `jwt.service.ts`, `user-auth.guard.ts`, `current-user.decorator.ts`, auth DTOs,
 repositories and `email-verification.service.ts`. All routes below use POST under
-`/auth`. The current exception shape is Nest's `{statusCode, message, error}`;
-DTO failures use an array message and occur before the service branches below.
-The table records existing wording to identify branches, not a compatibility
-requirement. Unmigrated HTTP exceptions currently return `REQUEST_REJECTED` with
-the original status and a generic message until their domain migration is done.
+`/auth`. Before migration, errors used Nest's `{statusCode, message, error}` shape.
+DTO failures now use the shared string message and typed details and occur before
+the service branches below.
+The table records previous wording to identify branches, not a compatibility
+requirement. Auth now emits the listed codes; other unmigrated domains still use
+`REQUEST_REJECTED` with the original status and a generic message.
 
-Test IDs identify planned coverage. Reachable branches need HTTP contract tests;
-service safeguards blocked by DTO validation need unit tests plus an HTTP test of
+Test IDs identify the coverage in `auth-errors.spec.ts`. Reachable branches use HTTP tests;
+service safeguards blocked by DTO validation use unit tests plus an HTTP test of
 the corresponding DTO rejection. Rows with multiple branches require a case for
 each branch, including equivalent public outcomes.
 
@@ -154,7 +167,9 @@ each branch, including equivalent public outcomes.
 Service validation safeguards may omit details when field attribution is ambiguous.
 Keep their current HTTP status; validation uses a string message throughout.
 For A11, provider HTTP failures currently map to 401 regardless of provider status;
-retain that behavior. Validate Google payloads at runtime during migration.
+retain that behavior. Google payloads and JWT claims are validated at runtime.
+Null/absent Google data and truthy non-string email values retain a safe 500;
+primitive/array identity responses retain 401. No raw provider details are returned.
 Repository uniqueness races currently surface as generic 500 errors; translating
 them to 409 would require a separate status/business decision.
 
@@ -208,7 +223,5 @@ recorded at release; repository package versions do not establish rollout state.
 - Complete the domain inventories before marking delivery step 1 complete.
 - Complete redacted internal diagnostics and cross-project contract generation
   before marking the shared-boundary delivery step complete.
-- Add the HTTP tests and safeguard unit tests identified above; current auth
-  service unit tests and DTO tests do not establish serialization or parser behavior.
 - Existing SMTP fallback logs verification codes with email addresses. Track a
   separate credential-logging fix; preserve successful response semantics here.

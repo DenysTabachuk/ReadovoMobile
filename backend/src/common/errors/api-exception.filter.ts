@@ -9,6 +9,7 @@ import {
 import { type Request, type Response } from 'express';
 
 import { ApiException } from './api-exception';
+import { COMMON_ERRORS } from './common-errors';
 
 /**
  * Turns exceptions raised during HTTP requests into API responses.
@@ -48,24 +49,18 @@ export class ApiExceptionFilter implements ExceptionFilter {
     } else if (exception instanceof NotFoundException && !request.route) {
       // A 404 with no matched Express route means the address/method is unknown.
       // A controller's "resource not found" error must not get this routing code.
-      error = new ApiException('ROUTE_NOT_FOUND');
+      error = new ApiException(COMMON_ERRORS.ROUTE_NOT_FOUND);
     } else if (exception instanceof HttpException) {
       // A deliberate HTTP error without an application code keeps its status.
       // This is the fallback until domain exceptions are migrated to ApiException.
       // Do not copy its message/details: they may contain internal information.
-      error = new HttpException(
-        // First constructor argument: the JSON response body.
-        {
-          statusCode: exception.getStatus(),
-          code: 'REQUEST_REJECTED',
-          message: 'Request rejected.',
-        },
-        // Second constructor argument: the actual HTTP response status.
-        exception.getStatus(),
-      );
+      error = new ApiException({
+        ...COMMON_ERRORS.REQUEST_REJECTED,
+        statusCode: exception.getStatus(),
+      });
     } else {
       // An ordinary Error (or any other thrown value) becomes a safe HTTP 500.
-      error = new ApiException('INTERNAL_ERROR');
+      error = new ApiException(COMMON_ERRORS.INTERNAL_ERROR);
       // Arbitrary SDK errors can contain tokens, request bodies and credentials.
       // Keep a diagnostic category without serializing the original exception.
       this.logger.error('Unhandled API exception.');

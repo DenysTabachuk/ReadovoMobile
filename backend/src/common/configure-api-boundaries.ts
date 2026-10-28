@@ -9,11 +9,21 @@ import {
 
 import { ApiException } from './errors/api-exception';
 import { ApiExceptionFilter } from './errors/api-exception.filter';
+import { COMMON_ERRORS } from './errors/common-errors';
 import { configureRequestValidation } from './validation/configure-request-validation';
 
 const REQUEST_BODY_LIMIT = '2mb';
 
-/** Used by production and HTTP tests; create the app with bodyParser: false. */
+/**
+ * Installs shared API error serialization, DTO validation and body-parser limits.
+ * @param app - HTTP application created with bodyParser: false, before app.init().
+ * @returns Nothing; registers global filters, validation and parsing middleware.
+ * Call once during application setup, including in HTTP tests.
+ * @example
+ * const app = await NestFactory.create(AppModule, { bodyParser: false });
+ * configureApiBoundaries(app);
+ * // Invalid JSON now returns HTTP 400 with code REQUEST_MALFORMED.
+ */
 export function configureApiBoundaries(app: INestApplication): void {
   app.useGlobalFilters(new ApiExceptionFilter());
   configureRequestValidation(app);
@@ -29,11 +39,11 @@ export function configureApiBoundaries(app: INestApplication): void {
       // Decode only body-parser metadata, never its message or submitted body.
       if (typeof error === 'object' && error !== null && 'type' in error) {
         if (error.type === 'entity.parse.failed') {
-          next(new ApiException('REQUEST_MALFORMED'));
+          next(new ApiException(COMMON_ERRORS.REQUEST_MALFORMED));
           return;
         }
         if (error.type === 'entity.too.large') {
-          next(new ApiException('REQUEST_TOO_LARGE'));
+          next(new ApiException(COMMON_ERRORS.REQUEST_TOO_LARGE));
           return;
         }
         if (
