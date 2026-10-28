@@ -1,10 +1,5 @@
-import { ExternalHttpError } from '../http/external-http.error';
 import axios from 'axios';
 import { HttpService } from '@nestjs/axios';
-import {
-  BadGatewayException,
-  InternalServerErrorException,
-} from '@nestjs/common';
 
 import { TranslationsService } from './translations.service';
 
@@ -160,29 +155,5 @@ describe('TranslationsService', () => {
     expect(response.contextTranslation).toBe(
       'Інші терміни, що мали використовуватися як синоніми.',
     );
-  });
-
-  it('throws when API key is not configured', async () => {
-    delete process.env.GOOGLE_TRANSLATE_API_KEY;
-
-    await expect(
-      service.translateWord({
-        sourceLanguage: 'en',
-        targetLanguage: 'uk',
-        word: 'book',
-      }),
-    ).rejects.toBeInstanceOf(InternalServerErrorException);
-  });
-
-  it('throws when Google returns an unsuccessful response', async () => {
-    requestMock.mockRejectedValue(new ExternalHttpError(503));
-
-    await expect(
-      service.translateWord({
-        sourceLanguage: 'en',
-        targetLanguage: 'uk',
-        word: 'book',
-      }),
-    ).rejects.toBeInstanceOf(BadGatewayException);
   });
 });

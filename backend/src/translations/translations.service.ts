@@ -1,15 +1,12 @@
 import { mapProviderError } from '../http/map-provider-error';
 import { HttpService } from '@nestjs/axios';
-import {
-  BadGatewayException,
-  Injectable,
-  InternalServerErrorException,
-} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
-import {
-  type GoogleTranslateResponse,
-  type TranslateWordResponse,
-} from './types';
+import { ApiException } from '../common/errors/api-exception';
+import { COMMON_ERRORS } from '../common/errors/common-errors';
+import { GoogleTranslateResponseSchema } from './google-translate-response.schema';
+import { TRANSLATIONS_ERRORS } from './translations-errors';
+import { type TranslateWordResponse } from './types';
 
 const DEFAULT_SOURCE_LANGUAGE = 'en';
 const DEFAULT_TARGET_LANGUAGE = 'uk';
@@ -113,9 +110,7 @@ export class TranslationsService {
     const apiKey = process.env.GOOGLE_TRANSLATE_API_KEY;
 
     if (!apiKey) {
-      throw new InternalServerErrorException(
-        'Translation service is not configured.',
-      );
+      throw new ApiException(COMMON_ERRORS.INTERNAL_ERROR);
     }
 
     const url = new URL(GOOGLE_TRANSLATE_API_URL);
@@ -132,19 +127,18 @@ export class TranslationsService {
         method: 'POST',
       })
       .catch(
-        mapProviderError(
-          new BadGatewayException('Failed to fetch translation.'),
-        ),
+        mapProviderError(new ApiException(TRANSLATIONS_ERRORS.REQUEST_FAILED)),
       );
 
-    const data = response.data as GoogleTranslateResponse;
-    const translatedText = data.data?.translations?.[0]?.translatedText?.trim();
-
-    if (!translatedText) {
-      throw new BadGatewayException('Translation is unavailable.');
+    // Provider JSON is untrusted, even when its HTTP response is successful.
+    const result = GoogleTranslateResponseSchema.safeParse(response.data);
+    if (!result.success) {
+      throw new ApiException(TRANSLATIONS_ERRORS.UNAVAILABLE);
     }
 
-    return this.decodeHtmlEntities(translatedText);
+    return this.decodeHtmlEntities(
+      result.data.data.translations[0].translatedText,
+    );
   }
 
   private createBaseCacheKey(

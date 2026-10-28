@@ -1,7 +1,7 @@
 # API error contract
 
-Status: shared backend boundaries, auth, streak, mascot, dictionary and achievements codes
-implemented. Other domains and frontend presentation remain tracked in
+Status: shared backend boundaries, auth, streak, mascot, dictionary, achievements
+and translations codes implemented. Other domains and frontend presentation remain tracked in
 [the implementation task](api-error-codes.md).
 
 ## Response and ownership
@@ -29,7 +29,8 @@ Backend definitions belong to their owners: shared errors in
 `backend/src/streak/streak-errors.ts`, mascot errors in
 `backend/src/mascot/mascot-errors.ts`, dictionary errors in
 `backend/src/dictionary/dictionary-errors.ts`, achievements errors in
-`backend/src/achievements/achievements-errors.ts`, and validation rules in
+`backend/src/achievements/achievements-errors.ts`, translations errors in
+`backend/src/translations/translations-errors.ts`, and validation rules in
 `backend/src/common/validation/create-validation-exception.ts`.
 `backend/src/api-error-catalogue.ts` collects module definitions for contract
 tooling; its test rejects duplicate public codes. `common` does not import auth
@@ -376,6 +377,39 @@ The existing endpoint still accepts client-supplied balance and quiz counters.
 That known issue is tracked in [Server-side quiz rewards](server-side-quiz-rewards.md)
 and remains separate from API error codes; do not silently change permissions or
 reward rules in this migration.
+
+## Translations inventory
+
+`POST /api/translations/word` remains public. Module-owned definitions live in
+`translations/translations-errors.ts`; domain errors allow no details. Request
+formats and limits remain in `TranslateWordDto`.
+
+| Branch                                                                                                | Status | Code                          | Intended UI                                |
+| ----------------------------------------------------------------------------------------------------- | ------ | ----------------------------- | ------------------------------------------ |
+| Provider rejects with an HTTP response                                                                | 502    | `TRANSLATIONS_REQUEST_FAILED` | Translation fallback; no auth recovery     |
+| Missing, blank or malformed translation data in a decoded response                                    | 502    | `TRANSLATIONS_UNAVAILABLE`    | Translation fallback                       |
+| Missing API key                                                                                       | 500    | `INTERNAL_ERROR`              | Generic translation fallback               |
+| Network/timeout failure without a provider HTTP response, invalid provider JSON or unexpected failure | 500    | `INTERNAL_ERROR`              | Generic translation fallback               |
+| Invalid request fields                                                                                | 400    | `VALIDATION_FAILED`           | Known field feedback or operation fallback |
+
+`translations-provider.http.spec.ts` covers these branches using the real module,
+DTOs, service, outbound Axios parsing/interceptors and production API boundaries.
+Only the Axios network adapter is mocked; no requests reach Google. Exact public
+bodies exclude provider payloads, request URLs, credentials and the Nest `error`
+field. Provider status codes do not become auth errors for this public endpoint.
+
+Decoded provider data is validated with the module-owned
+`GoogleTranslateResponseSchema` before accessing the first translation. Additional
+provider metadata and unused translation entries are ignored. Wrong field types
+consistently follow the unavailable-translation
+502 branch rather than causing accidental type errors. Malformed JSON rejected by
+the transport and network failures retain their existing generic 500 status.
+Missing configuration also uses a generic public message.
+
+Success remains HTTP 201 with the existing payload, trimming, default languages,
+entity decoding and cache behavior. Existing service unit tests retain contextual
+marker extraction and fallback coverage; error serialization cases move to the
+HTTP suite. This migration does not change context matching or retry policies.
 
 ## Frontend presentation and session actions
 

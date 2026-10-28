@@ -1,8 +1,8 @@
 ﻿# Task: project-wide API error contract
 
 Status: in progress; shared backend boundaries, auth, streak, mascot and dictionary
-codes implemented. Achievements codes and HTTP tests are ready for review;
-articles, translations, notifications and frontend migration remain open.
+codes implemented. Achievements is implemented; translations codes and HTTP tests
+are ready for review. Articles, notifications and frontend migration remain open.
 This is the single implementation task for API error codes across
 Readovo. It incorporates the previous streak and mascot tasks. Updating this plan
 does not implement the contract or expand the Axios migration into business changes.
@@ -15,8 +15,8 @@ Pause after each batch for user review before starting the next one.
    [API error contract](api-error-contract.md); shared backend boundaries and HTTP
    tests implemented. Backend auth, streak and mascot codes and their HTTP tests
    are implemented. Dictionary word, generation and embedding paths are
-   implemented. Achievements is implemented; other domain migrations and frontend
-   handling remain open.
+   implemented. Achievements and translations are implemented; other domain
+   migrations and frontend handling remain open.
 2. Complete domain inventories in reviewable groups: streak/mascot,
    dictionary/achievements, articles/translations, notifications/mock outcomes.
 3. Implement and test backend boundaries, then migrate one domain per batch.

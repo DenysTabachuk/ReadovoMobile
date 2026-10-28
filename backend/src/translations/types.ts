@@ -8,11 +8,3 @@ export type TranslateWordResponse = {
   translation: string;
   word: string;
 };
-
-export type GoogleTranslateResponse = {
-  data?: {
-    translations?: Array<{
-      translatedText?: string;
-    }>;
-  };
-};
