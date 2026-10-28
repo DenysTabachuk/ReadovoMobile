@@ -1,8 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
+import { ApiException } from '../common/errors/api-exception';
 import { type UserAchievement } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { achievementDefinitions } from './definitions';
+import { ACHIEVEMENTS_ERRORS } from './achievements-errors';
 import { type UpdateProgressDto } from './dto';
 import {
   type AchievementStatus,
@@ -61,19 +63,11 @@ export class AchievementsService {
     const current = await this.getUserProgress(userId);
 
     const next: UserProgress = {
-      balance: this.resolveProgressValue(update.balance, current.balance),
-      lessonsCompleted: this.resolveProgressValue(
-        update.lessonsCompleted,
-        current.lessonsCompleted,
-      ),
-      testsCompleted: this.resolveProgressValue(
-        update.testsCompleted,
-        current.testsCompleted,
-      ),
-      wordsLearned: this.resolveProgressValue(
-        update.wordsLearned,
-        current.wordsLearned,
-      ),
+      // DTOs validate supplied numbers. Optional null/absence retains stored values.
+      balance: update.balance ?? current.balance,
+      lessonsCompleted: update.lessonsCompleted ?? current.lessonsCompleted,
+      testsCompleted: update.testsCompleted ?? current.testsCompleted,
+      wordsLearned: update.wordsLearned ?? current.wordsLearned,
     };
 
     await this.prisma.user.updateMany({
@@ -98,7 +92,7 @@ export class AchievementsService {
     ]);
 
     if (!row) {
-      throw new NotFoundException('User not found.');
+      throw new ApiException(ACHIEVEMENTS_ERRORS.USER_NOT_FOUND);
     }
 
     return {
@@ -162,16 +156,5 @@ export class AchievementsService {
 
       return inserted.length > 0;
     });
-  }
-
-  private resolveProgressValue(
-    next: number | undefined,
-    current: number,
-  ): number {
-    if (typeof next !== 'number' || Number.isNaN(next)) {
-      return current;
-    }
-
-    return Math.max(0, Math.trunc(next));
   }
 }

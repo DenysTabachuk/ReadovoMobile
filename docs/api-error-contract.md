@@ -1,6 +1,6 @@
 # API error contract
 
-Status: shared backend boundaries, auth, streak, mascot and dictionary codes
+Status: shared backend boundaries, auth, streak, mascot, dictionary and achievements codes
 implemented. Other domains and frontend presentation remain tracked in
 [the implementation task](api-error-codes.md).
 
@@ -28,7 +28,8 @@ Backend definitions belong to their owners: shared errors in
 `backend/src/auth/auth-errors.ts`, streak errors in
 `backend/src/streak/streak-errors.ts`, mascot errors in
 `backend/src/mascot/mascot-errors.ts`, dictionary errors in
-`backend/src/dictionary/dictionary-errors.ts`, and validation rules in
+`backend/src/dictionary/dictionary-errors.ts`, achievements errors in
+`backend/src/achievements/achievements-errors.ts`, and validation rules in
 `backend/src/common/validation/create-validation-exception.ts`.
 `backend/src/api-error-catalogue.ts` collects module definitions for contract
 tooling; its test rejects duplicate public codes. `common` does not import auth
@@ -348,6 +349,33 @@ retains its existing JWT guard. Model initialization failures that prevent serve
 startup are not public API responses. Existing tensor cleanup after a failed
 `array()` call is a separate resource-management concern; this migration does not
 change its lifecycle or add recovery/retry policy.
+
+## Achievements inventory
+
+Both routes are guarded and check the JWT against the route owner. Domain errors
+allow no details. The only deliberate service error is a missing user; no reward,
+balance, permission or success-payload behavior is changed by this migration.
+
+| Route / branch                                                       | Status    | Code                                                     | Intended UI                                           | Contract test                                              |
+| -------------------------------------------------------------------- | --------- | -------------------------------------------------------- | ----------------------------------------------------- | ---------------------------------------------------------- |
+| GET profile/:userId: user absent while reading progress              | 404       | `ACHIEVEMENTS_USER_NOT_FOUND`                            | Feature fallback; no token refresh                    | `achievements-profile.http.spec.ts`, missing user          |
+| PATCH profile/:userId/progress: user absent before the update        | 404       | `ACHIEVEMENTS_USER_NOT_FOUND`                            | Feature fallback; no token refresh                    | `achievements-profile.http.spec.ts`, missing user on PATCH |
+| PATCH progress: user disappears before the refreshed profile is read | 404       | `ACHIEVEMENTS_USER_NOT_FOUND`                            | Feature fallback                                      | `achievements-progress.http.spec.ts`, disappearing user    |
+| Invalid/empty progress update                                        | 400       | `VALIDATION_FAILED`                                      | Known field feedback or form fallback                 | Progress HTTP suite, field constraints and empty body      |
+| Missing JWT / different route owner                                  | 401 / 403 | `AUTH_AUTHENTICATION_REQUIRED` / `AUTH_OWNERSHIP_DENIED` | Shared auth behavior; no refresh for ownership denial | Profile HTTP suite, guard cases                            |
+| Unexpected persistence/transaction error                             | 500       | `INTERNAL_ERROR`                                         | Feature fallback; no raw database diagnostics         | Profile HTTP suite, failed progress query                  |
+
+`UpdateProgressDto` owns integer/range checks. Its only production service caller
+is the controller; the service no longer repeats truncation/clamping. Omitted or
+optional null fields retain current values, while a supplied zero remains zero.
+The HTTP tests cover both cases through real DTO/controller/service/filter paths.
+Profile reads still calculate learned words from dictionary persistence, and the
+existing reward unit tests retain automatic-claim and no-double-award coverage.
+
+The existing endpoint still accepts client-supplied balance and quiz counters.
+That known issue is tracked in [Server-side quiz rewards](server-side-quiz-rewards.md)
+and remains separate from API error codes; do not silently change permissions or
+reward rules in this migration.
 
 ## Frontend presentation and session actions
 
