@@ -1,8 +1,8 @@
 # API error contract
 
-Status: shared backend boundaries and backend auth codes implemented; remaining
-domains and frontend presentation are planned. The initial inventory covers shared boundaries and
-auth only; other domains remain tracked in [the implementation task](api-error-codes.md).
+Status: shared backend boundaries, auth and streak codes implemented. Other
+domains and frontend presentation remain tracked in
+[the implementation task](api-error-codes.md).
 
 ## Response and ownership
 
@@ -25,7 +25,8 @@ the schema for that code; auth codes below allow no details.
 
 Backend definitions belong to their owners: shared errors in
 `backend/src/common/errors/common-errors.ts`, auth errors in
-`backend/src/auth/auth-errors.ts`, and validation rules in
+`backend/src/auth/auth-errors.ts`, streak errors in
+`backend/src/streak/streak-errors.ts`, and validation rules in
 `backend/src/common/validation/create-validation-exception.ts`.
 `backend/src/api-error-catalogue.ts` collects module definitions for contract
 tooling; its test rejects duplicate public codes. `common` does not import auth
@@ -177,6 +178,54 @@ them to 409 would require a separate status/business decision.
 the same shape as for a known account. Missing SMTP configuration currently logs
 and returns successfully; do not invent a public failure for that branch. No new
 codes distinguish missing accounts from invalid credentials/reset requests.
+
+## Streak inventory
+
+All routes are guarded and derive the owner from the JWT. Paths below are relative
+to `/streak/profile/me`. Domain errors allow no details. Existing HTTP statuses
+and safe diagnostic messages are retained; only the stable codes are added.
+Frontend behavior in this table is the intended mapping for its later migration.
+
+| Route / branch                                                                                                 | Status | Code                                | Intended UI                                   | Contract test                                                        |
+| -------------------------------------------------------------------------------------------------------------- | ------ | ----------------------------------- | --------------------------------------------- | -------------------------------------------------------------------- |
+| GET profile, GET calendar/month, POST activity-completed, restore, freeze, freeze-token/purchase: missing user | 404    | `STREAK_USER_NOT_FOUND`             | Feature fallback; no token refresh            | `streak-profile.http.spec.ts`, missing-user cases for all six routes |
+| Profile balance lookup after the user disappears                                                               | 404    | `STREAK_USER_NOT_FOUND`             | Feature fallback                              | `streak-profile.http.spec.ts`, disappearing user                     |
+| Calendar: future month                                                                                         | 400    | `STREAK_CALENDAR_MONTH_UNAVAILABLE` | Calendar fallback                             | `streak-profile.http.spec.ts`, future month                          |
+| Calendar: invalid year/month; freeze: invalid date                                                             | 400    | `VALIDATION_FAILED`                 | Known field feedback or feature fallback      | DTO cases in profile/freeze HTTP suites                              |
+| POST restore: price differs from 100                                                                           | 400    | `STREAK_RESTORE_PRICE_INVALID`      | `streak.errors.restoreFailed`                 | `streak-balance.http.spec.ts`, stale/manipulated restore price       |
+| POST restore: no restorable break                                                                              | 400    | `STREAK_RESTORE_UNAVAILABLE`        | `streak.errors.restoreFailed`                 | `streak-balance.http.spec.ts`, no restorable break                   |
+| POST restore or freeze-token/purchase: insufficient balance                                                    | 400    | `STREAK_NOT_ENOUGH_COINS`           | `streak.errors.notEnoughCoins`                | `streak-balance.http.spec.ts`, both operations; no charge            |
+| POST freeze: no tokens                                                                                         | 400    | `STREAK_NO_FREEZE_TOKENS`           | `streak.errors.noFreezeTokens`                | `streak-freeze.http.spec.ts`, empty token balance                    |
+| POST freeze: completed/frozen/restored date                                                                    | 400    | `STREAK_DAY_ALREADY_PROTECTED`      | `streak.errors.dayAlreadyProtected`           | `streak-freeze.http.spec.ts`, all three statuses                     |
+| POST freeze: date has no missed history                                                                        | 400    | `STREAK_FREEZE_ONLY_MISSED_DAY`     | `streak.errors.freezeOnlyMissed`              | `streak-freeze.http.spec.ts`, no missed-day history                  |
+| POST freeze: three freezes already used in the break                                                           | 400    | `STREAK_FREEZE_DAY_LIMIT_REACHED`   | `streak.errors.freezeDayLimitReached`         | `streak-freeze.http.spec.ts`, fourth frozen day                      |
+| POST freeze-token/purchase: price differs from 100                                                             | 400    | `STREAK_FREEZE_TOKEN_PRICE_INVALID` | `streak.errors.purchaseFreezeFailed`          | `streak-balance.http.spec.ts`, stale/manipulated purchase price      |
+| POST freeze-token/purchase: three tokens already owned                                                         | 400    | `STREAK_FREEZE_TOKEN_LIMIT_REACHED` | `streak.errors.freezeLimitReached`            | `streak-balance.http.spec.ts`, full inventory                        |
+| Persistence failure or invalid stored broken-streak data                                                       | 500    | `INTERNAL_ERROR`                    | Feature fallback; no raw internal diagnostics | `streak-profile.http.spec.ts`, database and malformed-state cases    |
+
+`streak.controller.spec.ts` retains existing endpoint authentication, ownership and
+DTO coverage. New HTTP suites exercise real controllers, services, JWT guards and
+the production boundary configuration, replacing only Prisma persistence. Their
+small shared setup is local to streak; the broader test-infrastructure migration
+remains a separate task.
+
+Calendar year/month and freeze-date structure are validated once in the request
+DTOs. The controller is their only production service caller; the service is not
+exported from `StreakModule`. Business constraints such as future months, prices,
+balance and freeze limits remain in the service. HTTP tests cover invalid ranges,
+non-integer and missing calendar values and invalid dates before persistence.
+
+Activity timezone is validated and trimmed in its DTO; the service does not
+repeat the timezone check. Omitted or optional null timezone preserves the stored
+zone, while profile creation defaults to UTC. `streak-timezone.http.spec.ts` covers
+these cases and rejects malformed timezone values before persistence.
+No provider calls or partial-success delivery payloads belong to this module.
+`completeActivity` returns the existing `{ streak }` success shape.
+
+The earlier `STREAK_FREEZE_WINDOW_EXPIRED` proposal has no corresponding branch
+in the current service: freezing an old missed day is not explicitly rejected by
+age. Do not publish this code or add a time-window business rule during this
+migration. Resolve the intended policy separately before implementing that code.
 
 ## Frontend presentation and session actions
 

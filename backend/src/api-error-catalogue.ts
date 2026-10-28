@@ -1,5 +1,6 @@
 import { AUTH_ERRORS } from './auth/auth-errors';
 import { COMMON_ERRORS } from './common/errors/common-errors';
+import { STREAK_ERRORS } from './streak/streak-errors';
 
 /**
  * Application-level catalogue for contract tooling. Definitions stay in their
@@ -10,4 +11,5 @@ import { COMMON_ERRORS } from './common/errors/common-errors';
 export const API_ERROR_CATALOGUE = [
   ...Object.values(COMMON_ERRORS),
   ...Object.values(AUTH_ERRORS),
+  ...Object.values(STREAK_ERRORS),
 ] as const;
