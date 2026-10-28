@@ -29,6 +29,30 @@
   If nothing is staged, run the relevant working-tree checks and report that the
   staged check could not validate a commit snapshot; an empty run is not a pass.
 
+## Backend module ownership and validation
+
+- Keep feature-specific DTOs, domain types, constants, error definitions and
+  utilities in their owning NestJS module. Keep exclusive implementation helpers
+  private. Apply these rules within the task scope; do not migrate unrelated code.
+- Use `common` for domain-independent infrastructure and contracts with actual
+  reuse. A generic name or a potential future consumer does not justify moving
+  feature code there. For example, mascot item/slot DTOs belong in `mascot`, while
+  a genuinely shared user-ID parameter DTO may stay in `common`.
+- Feature modules may depend on shared infrastructure; shared production code must
+  not import feature internals. Application composition and catalogues may assemble
+  module-owned public definitions. Tests may exercise real modules at boundaries.
+- Expose cross-module providers through NestJS module exports only when a real
+  consumer needs them. Use intentional public providers/contracts to communicate
+  between modules; do not import another module's private DTOs or helpers.
+- Define request DTOs at the module that accepts the request. Reuse shared base
+  DTOs only for genuinely shared fields; do not put domain-specific fields in a
+  shared base and conceal them behind an empty feature subclass.
+- Validate request structure, formats and static input ranges in DTOs through the
+  global validation pipe. Keep business rules and checks against persisted state
+  in services. Do not duplicate DTO validation for hypothetical internal callers;
+  verify actual call sites before adding or retaining another validation boundary.
+  Persisted data and external provider responses require their own runtime checks.
+
 ## Backend utility documentation
 
 - Every independent utility created, changed, or moved under `backend/**` needs

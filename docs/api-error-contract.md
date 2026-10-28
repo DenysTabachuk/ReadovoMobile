@@ -1,6 +1,6 @@
 # API error contract
 
-Status: shared backend boundaries, auth and streak codes implemented. Other
+Status: shared backend boundaries, auth, streak and mascot codes implemented. Other
 domains and frontend presentation remain tracked in
 [the implementation task](api-error-codes.md).
 
@@ -26,7 +26,8 @@ the schema for that code; auth codes below allow no details.
 Backend definitions belong to their owners: shared errors in
 `backend/src/common/errors/common-errors.ts`, auth errors in
 `backend/src/auth/auth-errors.ts`, streak errors in
-`backend/src/streak/streak-errors.ts`, and validation rules in
+`backend/src/streak/streak-errors.ts`, mascot errors in
+`backend/src/mascot/mascot-errors.ts`, and validation rules in
 `backend/src/common/validation/create-validation-exception.ts`.
 `backend/src/api-error-catalogue.ts` collects module definitions for contract
 tooling; its test rejects duplicate public codes. `common` does not import auth
@@ -226,6 +227,46 @@ The earlier `STREAK_FREEZE_WINDOW_EXPIRED` proposal has no corresponding branch
 in the current service: freezing an old missed day is not explicitly rejected by
 age. Do not publish this code or add a time-window business rule during this
 migration. Resolve the intended policy separately before implementing that code.
+
+## Mascot inventory
+
+Routes below are relative to `/mascot/profile/:userId`. The JWT guard enforces
+route ownership before DTO validation. Domain errors allow no details and retain
+their existing HTTP statuses and safe messages. UI mappings are intended for the
+later frontend migration; no frontend text comparison is migrated in this batch.
+
+| Route / branch                                                | Status    | Code                                                     | Intended UI                                                     | Contract test                                                          |
+| ------------------------------------------------------------- | --------- | -------------------------------------------------------- | --------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| POST items/:itemId/buy or equip: unknown catalog item         | 400       | `MASCOT_ITEM_UNKNOWN`                                    | Buy/equip fallback                                              | Purchase and equipment HTTP suites, unknown-item cases                 |
+| POST items/:itemId/buy: insufficient coins                    | 400       | `MASCOT_NOT_ENOUGH_COINS`                                | `mascot.errors.notEnoughCoins`                                  | `mascot-purchase.http.spec.ts`, insufficient coins without mutations   |
+| POST items/:itemId/equip: known item not owned                | 400       | `MASCOT_ITEM_NOT_OWNED`                                  | `mascot.errors.itemNotOwned`                                    | `mascot-equipment.http.spec.ts`, unowned item                          |
+| GET profile, POST buy/equip, DELETE slots/:slot: missing user | 404       | `MASCOT_USER_NOT_FOUND`                                  | Feature fallback; no token refresh                              | `mascot-profile.http.spec.ts`, all four routes                         |
+| DELETE slots/:slot: unknown slot                              | 400       | `VALIDATION_FAILED`                                      | `mascot.errors.clearFailed`                                     | `mascot-equipment.http.spec.ts`, slot DTO rejection before persistence |
+| POST buy/equip: blank item ID                                 | 400       | `VALIDATION_FAILED`                                      | Known field feedback or operation fallback                      | `mascot-profile.http.spec.ts`, both routes                             |
+| Missing JWT or another route owner                            | 401 / 403 | `AUTH_AUTHENTICATION_REQUIRED` / `AUTH_OWNERSHIP_DENIED` | Shared auth handling; ownership denial must not trigger refresh | `mascot-profile.http.spec.ts`, guard cases                             |
+| Unexpected persistence exception                              | 500       | `INTERNAL_ERROR`                                         | Feature fallback; no raw database diagnostics                   | `mascot-profile.http.spec.ts`, persistence failure                     |
+
+`MascotItemParamsDto` and `ClearMascotSlotParamsDto` are defined in
+`mascot/dto.ts`, sharing only the domain-independent `UserIdParamsDto` base.
+Slot membership is validated once by `ClearMascotSlotParamsDto`; `clearSlot` has
+only a controller caller and `MascotModule` does not export the service. The
+redundant service slot assertion is removed. Catalog existence and ownership are
+business checks and remain in the service. A malformed route owner normally
+fails the guard's ownership comparison before the UUID DTO check; this ordering
+is unchanged.
+
+Purchasing an already-owned item stays a successful response without another
+charge. Equip and clear keep their response bodies and existing stored-profile
+field fallbacks. The HTTP suites cover purchase success, both equipment slots,
+both clear operations and profile reads with real controllers/services/guards and
+production boundaries. Only Prisma persistence is mocked through a small local
+test-app factory.
+
+If the user disappears after the initial existence check, the current purchase
+flow treats the missing balance row as zero and returns 400 insufficient coins.
+The contract test preserves this outcome; changing it to 404 requires a separate
+behavior decision. Existing purchase writes are not transactional, so concurrency
+and partial-write guarantees are also outside this error-code migration.
 
 ## Frontend presentation and session actions
 
