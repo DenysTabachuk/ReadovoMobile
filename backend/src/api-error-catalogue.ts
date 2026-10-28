@@ -1,5 +1,6 @@
 import { AUTH_ERRORS } from './auth/auth-errors';
 import { COMMON_ERRORS } from './common/errors/common-errors';
+import { DICTIONARY_ERRORS } from './dictionary/dictionary-errors';
 import { MASCOT_ERRORS } from './mascot/mascot-errors';
 import { STREAK_ERRORS } from './streak/streak-errors';
 
@@ -14,4 +15,5 @@ export const API_ERROR_CATALOGUE = [
   ...Object.values(AUTH_ERRORS),
   ...Object.values(STREAK_ERRORS),
   ...Object.values(MASCOT_ERRORS),
+  ...Object.values(DICTIONARY_ERRORS),
 ] as const;

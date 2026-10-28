@@ -1,0 +1,1 @@
+export const MAX_DICTIONARY_FRAGMENT_WORDS = 5;

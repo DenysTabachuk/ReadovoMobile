@@ -1,19 +1,28 @@
-import { BadRequestException } from '@nestjs/common';
+import { Test, type TestingModule } from '@nestjs/testing';
 
 import { DictionaryRepository } from './dictionary.repository';
 import { DictionaryService } from './dictionary.service';
 import { DictionaryEmbeddingService } from './dictionary-embedding.service';
 
 describe('DictionaryService', () => {
-  const repository = {
-    create: jest.fn(),
-  };
-  const service = new DictionaryService(
-    {} as DictionaryEmbeddingService,
-    repository as unknown as DictionaryRepository,
-  );
+  let module: TestingModule;
+  let service: DictionaryService;
+  let repository: jest.Mocked<Pick<DictionaryRepository, 'create'>>;
 
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(async () => {
+    repository = { create: jest.fn() };
+    module = await Test.createTestingModule({
+      providers: [
+        DictionaryService,
+        { provide: DictionaryEmbeddingService, useValue: {} },
+        { provide: DictionaryRepository, useValue: repository },
+      ],
+    }).compile();
+    service = module.get(DictionaryService);
+  });
+  afterEach(async () => {
+    await module.close();
+  });
 
   it('keeps the maximum phrase length as a domain rule', async () => {
     await expect(
@@ -22,7 +31,9 @@ describe('DictionaryService', () => {
         translation: 'Translation',
         word: 'one two three four five six',
       }),
-    ).rejects.toBeInstanceOf(BadRequestException);
+    ).rejects.toMatchObject({
+      response: { statusCode: 400, code: 'DICTIONARY_WORD_TOO_LONG' },
+    });
 
     expect(repository.create).not.toHaveBeenCalled();
   });
@@ -36,7 +47,9 @@ describe('DictionaryService', () => {
         translation: 'Translation',
         word: 'example',
       }),
-    ).rejects.toBeInstanceOf(BadRequestException);
+    ).rejects.toMatchObject({
+      response: { statusCode: 400, code: 'DICTIONARY_WORD_ALREADY_EXISTS' },
+    });
 
     expect(repository.create).toHaveBeenCalledTimes(1);
   });

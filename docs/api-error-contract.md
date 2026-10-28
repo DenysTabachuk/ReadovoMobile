@@ -1,7 +1,8 @@
 # API error contract
 
-Status: shared backend boundaries, auth, streak and mascot codes implemented. Other
-domains and frontend presentation remain tracked in
+Status: shared backend boundaries, auth, streak, mascot and dictionary word-operation
+codes implemented. Dictionary AI generation/embeddings, other domains and frontend
+presentation remain tracked in
 [the implementation task](api-error-codes.md).
 
 ## Response and ownership
@@ -27,7 +28,8 @@ Backend definitions belong to their owners: shared errors in
 `backend/src/common/errors/common-errors.ts`, auth errors in
 `backend/src/auth/auth-errors.ts`, streak errors in
 `backend/src/streak/streak-errors.ts`, mascot errors in
-`backend/src/mascot/mascot-errors.ts`, and validation rules in
+`backend/src/mascot/mascot-errors.ts`, dictionary errors in
+`backend/src/dictionary/dictionary-errors.ts`, and validation rules in
 `backend/src/common/validation/create-validation-exception.ts`.
 `backend/src/api-error-catalogue.ts` collects module definitions for contract
 tooling; its test rejects duplicate public codes. `common` does not import auth
@@ -267,6 +269,55 @@ flow treats the missing balance row as zero and returns 400 insufficient coins.
 The contract test preserves this outcome; changing it to 404 requires a separate
 behavior decision. Existing purchase writes are not transactional, so concurrency
 and partial-write guarantees are also outside this error-code migration.
+
+## Dictionary word-operation inventory
+
+This batch covers word creation/listing/deletion, manual progress and answer
+submission under `/api/dictionary/me`. JWT identity supplies the owner; another
+user's word is indistinguishable from an absent word. Domain codes allow no details.
+Existing statuses, safe diagnostic messages and success payloads are preserved.
+
+| Route / branch                                                                       | Status | Code                             | Intended UI                                     | Contract test                                                  |
+| ------------------------------------------------------------------------------------ | ------ | -------------------------------- | ----------------------------------------------- | -------------------------------------------------------------- |
+| POST words: phrase exceeds five words                                                | 400    | `DICTIONARY_WORD_TOO_LONG`       | Known phrase-length feedback                    | `dictionary-words.http.spec.ts`, phrase limit                  |
+| POST words: atomic insert reports a duplicate                                        | 400    | `DICTIONARY_WORD_ALREADY_EXISTS` | Duplicate-word feedback without message parsing | `dictionary-words.http.spec.ts`, duplicate insert              |
+| DELETE words/:wordId: no owned word found                                            | 404    | `DICTIONARY_WORD_NOT_FOUND`      | Feature fallback / refresh list                 | `dictionary-words.http.spec.ts`, missing word                  |
+| PATCH words/:wordId/progress: missing word at lookup or update                       | 404    | `DICTIONARY_WORD_NOT_FOUND`      | Feature fallback / refresh list                 | `dictionary-progress.http.spec.ts`, both missing-word branches |
+| POST test/answer: missing word at lookup or review update                            | 404    | `DICTIONARY_WORD_NOT_FOUND`      | Answer fallback / refresh dictionary            | `dictionary-answers.http.spec.ts`, both missing-word branches  |
+| Invalid create payload, word UUID, progress or answer fields                         | 400    | `VALIDATION_FAILED`              | Known field feedback or operation fallback      | DTO cases in the three HTTP suites                             |
+| Unexpected persistence failure, including insert failures not reported as duplicates | 500    | `INTERNAL_ERROR`                 | Feature fallback; no raw database diagnostics   | `dictionary-words.http.spec.ts`, persistence failure           |
+
+The five-word phrase policy remains a service business rule. Its constant is
+shared by the service and error definition within dictionary. Progress membership
+is validated once by `UpdateDictionaryWordProgressDto`; the service method's only
+production caller is the controller, so its duplicate check is removed.
+
+HTTP suites use real controllers, services, guards and production error boundaries
+with a typed repository mock and unused embedding dependency stub. Existing unit
+checks retain atomic duplicate detection and phrase-policy coverage. An empty list
+remains HTTP 200; correct and incorrect answers remain HTTP 201 with `isCorrect`.
+Manual progress reset retains the existing learned-word counter limit.
+
+Dictionary does not currently perform a separate user-existence check: list reads
+can return an empty array, and database exceptions remain generic 500 failures.
+Do not add a missing-user domain code or change those outcomes in this migration.
+
+### Pending dictionary generation and embedding batch
+
+The module is not fully migrated. These routes and branches still need their own
+codes and contract tests; do not mark dictionary coverage complete yet:
+
+| Route / owner      | Current failure branches and statuses                                                                                                          |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET me/test        | No words / no review candidates: 400; missing provider key: 500; SDK request failure, empty output, invalid JSON and incomplete questions: 502 |
+| POST embedding     | DTO text validation: 400; model startup/request failures affecting a request: 500                                                              |
+| POST similar-words | DTO validation and internal blank candidate text: 400; invalid embedding dimensions: 400; model failures: 500                                  |
+| POST quiz-options  | Similar-word failures plus fewer than three distractors: 400; model failures: 500                                                              |
+
+Model initialization failures that prevent server startup are not public API
+responses. Preserve DTO defaults, current empty-list handling and provider-response
+parsing behavior when migrating these paths. Ensure AI catch handlers retain
+deliberate application codes and use runtime validation for untrusted output.
 
 ## Frontend presentation and session actions
 

@@ -1,0 +1,99 @@
+import { type INestApplication } from '@nestjs/common';
+import { Test } from '@nestjs/testing';
+import { type Server } from 'node:http';
+
+import { JwtService } from '../../auth/jwt.service';
+import { UserAuthGuard } from '../../auth/user-auth.guard';
+import { configureApiBoundaries } from '../../common/configure-api-boundaries';
+import { DictionaryEmbeddingService } from '../dictionary-embedding.service';
+import { DictionaryController } from '../dictionary.controller';
+import { DictionaryRepository } from '../dictionary.repository';
+import { DictionaryService } from '../dictionary.service';
+import { type DictionaryWord } from '../types';
+
+export const DICTIONARY_TEST_USER_ID = '11111111-1111-4111-8111-111111111111';
+export const DICTIONARY_TEST_WORD_ID = '22222222-2222-4222-8222-222222222222';
+
+/**
+ * Creates a real dictionary word-operation HTTP app with fresh repository mocks.
+ * @returns The app/server, JWT header, word fixture and typed repository mocks.
+ * Embeddings are unused and stubbed, so no model or external provider is loaded.
+ * Registers no hooks or globals; the caller must await app.close().
+ * @example
+ * const testApp = await createDictionaryHttpApp();
+ * // With the empty repository, DELETE /api/dictionary/me/words/:wordId returns
+ * // HTTP 404 with DICTIONARY_WORD_NOT_FOUND.
+ * await testApp.app.close();
+ */
+export async function createDictionaryHttpApp() {
+  const word: DictionaryWord = {
+    id: DICTIONARY_TEST_WORD_ID,
+    userId: DICTIONARY_TEST_USER_ID,
+    context: 'An example in context.',
+    word: 'example',
+    translation: 'Translation',
+    createdAt: '2026-10-28T12:00:00.000Z',
+    progress: 'new',
+    correctAnswersCount: 0,
+    requiredCorrectAnswers: 5,
+  };
+  const repository: jest.Mocked<
+    Pick<
+      DictionaryRepository,
+      | 'create'
+      | 'findAll'
+      | 'findById'
+      | 'deleteById'
+      | 'updateProgress'
+      | 'updateReviewResult'
+    >
+  > = {
+    create: jest.fn().mockResolvedValue(null),
+    findAll: jest.fn().mockResolvedValue([]),
+    findById: jest.fn().mockResolvedValue(undefined),
+    deleteById: jest.fn().mockResolvedValue(undefined),
+    updateProgress: jest.fn().mockResolvedValue(undefined),
+    updateReviewResult: jest.fn().mockResolvedValue(undefined),
+  };
+  const module = await Test.createTestingModule({
+    controllers: [DictionaryController],
+    providers: [
+      DictionaryService,
+      JwtService,
+      UserAuthGuard,
+      { provide: DictionaryRepository, useValue: repository },
+      { provide: DictionaryEmbeddingService, useValue: {} },
+    ],
+  }).compile();
+  const app = module.createNestApplication<INestApplication<Server>>({
+    bodyParser: false,
+    logger: false,
+  });
+  configureApiBoundaries(app);
+  try {
+    await app.init();
+  } catch (error) {
+    await app.close();
+    throw error;
+  }
+  const token = module.get(JwtService).issueAccessToken({
+    id: DICTIONARY_TEST_USER_ID,
+    email: 'reader@example.test',
+    balance: 0,
+    createdAt: word.createdAt,
+    lessonsCompleted: 0,
+    testsCompleted: 0,
+    wordsLearned: 0,
+  }).accessToken;
+  return {
+    app,
+    server: app.getHttpServer(),
+    authorization: `Bearer ${token}`,
+    repository,
+    word,
+  };
+}
+
+export type DictionaryHttpTestApp = Awaited<
+  ReturnType<typeof createDictionaryHttpApp>
+>;

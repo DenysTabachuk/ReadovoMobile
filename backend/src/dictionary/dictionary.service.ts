@@ -4,11 +4,13 @@ import {
   Injectable,
   InternalServerErrorException,
   Logger,
-  NotFoundException,
 } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import Groq from 'groq-sdk';
 
+import { ApiException } from '../common/errors/api-exception';
+import { MAX_DICTIONARY_FRAGMENT_WORDS } from './constants';
+import { DICTIONARY_ERRORS } from './dictionary-errors';
 import { DictionaryRepository } from './dictionary.repository';
 import {
   type CreateDictionaryWordDto,
@@ -37,7 +39,6 @@ function getGroqModel(): string {
 const GROQ_REQUEST_TIMEOUT_MS = 180000;
 const MAX_DICTIONARY_TEST_COMPLETION_TOKENS = 6000;
 export const REQUIRED_CORRECT_ANSWERS_TO_LEARN = 5;
-const MAX_DICTIONARY_FRAGMENT_WORDS = 5;
 
 type GeneratedDictionaryTestQuestion = {
   clozePrompt?: string;
@@ -63,9 +64,7 @@ export class DictionaryService {
     const wordCount = countWords(word);
 
     if (wordCount > MAX_DICTIONARY_FRAGMENT_WORDS) {
-      throw new BadRequestException(
-        `Word or phrase must contain at most ${MAX_DICTIONARY_FRAGMENT_WORDS} words.`,
-      );
+      throw new ApiException(DICTIONARY_ERRORS.WORD_TOO_LONG);
     }
 
     const createdWord = await this.dictionaryRepository.create({
@@ -81,9 +80,7 @@ export class DictionaryService {
     });
 
     if (!createdWord) {
-      throw new BadRequestException(
-        'Word or phrase already exists in dictionary.',
-      );
+      throw new ApiException(DICTIONARY_ERRORS.WORD_ALREADY_EXISTS);
     }
 
     return createdWord;
@@ -100,7 +97,7 @@ export class DictionaryService {
     );
 
     if (!deletedWord) {
-      throw new NotFoundException('Dictionary word was not found.');
+      throw new ApiException(DICTIONARY_ERRORS.WORD_NOT_FOUND);
     }
 
     return deletedWord;
@@ -169,7 +166,7 @@ export class DictionaryService {
     const word = await this.dictionaryRepository.findById(wordId, userId);
 
     if (!word) {
-      throw new NotFoundException('Dictionary word was not found.');
+      throw new ApiException(DICTIONARY_ERRORS.WORD_NOT_FOUND);
     }
 
     const isCorrect = selectedOptionId === word.id;
@@ -187,7 +184,7 @@ export class DictionaryService {
     );
 
     if (!reviewedWord) {
-      throw new NotFoundException('Dictionary word was not found.');
+      throw new ApiException(DICTIONARY_ERRORS.WORD_NOT_FOUND);
     }
 
     return {
@@ -205,16 +202,10 @@ export class DictionaryService {
   ): Promise<DictionaryWord> {
     const progress = request.progress;
 
-    if (progress !== 'in_progress') {
-      throw new BadRequestException(
-        'Only in_progress status can be set manually.',
-      );
-    }
-
     const word = await this.dictionaryRepository.findById(wordId, userId);
 
     if (!word) {
-      throw new NotFoundException('Dictionary word was not found.');
+      throw new ApiException(DICTIONARY_ERRORS.WORD_NOT_FOUND);
     }
 
     const updatedWord = await this.dictionaryRepository.updateProgress(
@@ -225,7 +216,7 @@ export class DictionaryService {
     );
 
     if (!updatedWord) {
-      throw new NotFoundException('Dictionary word was not found.');
+      throw new ApiException(DICTIONARY_ERRORS.WORD_NOT_FOUND);
     }
 
     return updatedWord;
