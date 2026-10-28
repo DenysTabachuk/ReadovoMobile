@@ -1,4 +1,5 @@
 import { ACHIEVEMENTS_ERRORS } from './achievements/achievements-errors';
+import { ARTICLES_ERRORS } from './articles/articles-errors';
 import { AUTH_ERRORS } from './auth/auth-errors';
 import { COMMON_ERRORS } from './common/errors/common-errors';
 import { DICTIONARY_ERRORS } from './dictionary/dictionary-errors';
@@ -14,6 +15,7 @@ import { TRANSLATIONS_ERRORS } from './translations/translations-errors';
  */
 export const API_ERROR_CATALOGUE = [
   ...Object.values(ACHIEVEMENTS_ERRORS),
+  ...Object.values(ARTICLES_ERRORS),
   ...Object.values(COMMON_ERRORS),
   ...Object.values(AUTH_ERRORS),
   ...Object.values(STREAK_ERRORS),

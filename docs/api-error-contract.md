@@ -1,7 +1,8 @@
 # API error contract
 
 Status: shared backend boundaries, auth, streak, mascot, dictionary, achievements
-and translations codes implemented. Other domains and frontend presentation remain tracked in
+and translations codes implemented. Article library codes are implemented;
+article discovery/AI, other domains and frontend presentation remain tracked in
 [the implementation task](api-error-codes.md).
 
 ## Response and ownership
@@ -30,7 +31,8 @@ Backend definitions belong to their owners: shared errors in
 `backend/src/mascot/mascot-errors.ts`, dictionary errors in
 `backend/src/dictionary/dictionary-errors.ts`, achievements errors in
 `backend/src/achievements/achievements-errors.ts`, translations errors in
-`backend/src/translations/translations-errors.ts`, and validation rules in
+`backend/src/translations/translations-errors.ts`, article errors in
+`backend/src/articles/articles-errors.ts`, and validation rules in
 `backend/src/common/validation/create-validation-exception.ts`.
 `backend/src/api-error-catalogue.ts` collects module definitions for contract
 tooling; its test rejects duplicate public codes. `common` does not import auth
@@ -410,6 +412,42 @@ Success remains HTTP 201 with the existing payload, trimming, default languages,
 entity decoding and cache behavior. Existing service unit tests retain contextual
 marker extraction and fallback coverage; error serialization cases move to the
 HTTP suite. This migration does not change context matching or retry policies.
+
+## Article library inventory
+
+This batch covers saved/recent library routes only. Discovery, Wikipedia content,
+AI adaptations/summaries and quizzes remain pending separate review batches.
+Article-owned definitions live in `articles/articles-errors.ts`; the library's
+missing-user error allows no details.
+
+| Route / branch                                                  | Status    | Code                                                     | Contract test                                 |
+| --------------------------------------------------------------- | --------- | -------------------------------------------------------- | --------------------------------------------- |
+| GET api/users/:userId/articles/saved: user absent               | 404       | `ARTICLES_USER_NOT_FOUND`                                | Library errors suite, missing user            |
+| POST api/users/:userId/articles/saved: user absent              | 404       | `ARTICLES_USER_NOT_FOUND`                                | Library errors suite, missing user            |
+| DELETE api/users/:userId/articles/saved/:articleId: user absent | 404       | `ARTICLES_USER_NOT_FOUND`                                | Library errors suite, missing user            |
+| GET api/users/:userId/articles/recent: user absent              | 404       | `ARTICLES_USER_NOT_FOUND`                                | Library errors suite, missing user            |
+| POST api/users/:userId/articles/recent: user absent             | 404       | `ARTICLES_USER_NOT_FOUND`                                | Library errors suite, missing user            |
+| User disappears before a mutation's refreshed list is read      | 404       | `ARTICLES_USER_NOT_FOUND`                                | Library errors suite, refreshed response      |
+| Missing JWT / different route owner, on every library route     | 401 / 403 | `AUTH_AUTHENTICATION_REQUIRED` / `AUTH_OWNERSHIP_DENIED` | Library errors suite, access cases            |
+| Invalid article payload or numeric article route parameter      | 400       | `VALIDATION_FAILED`                                      | Library requests suite, DTO cases             |
+| Unexpected persistence failure                                  | 500       | `INTERNAL_ERROR`                                         | Library errors suite, failed saved-list query |
+
+Missing users receive a feature fallback, without auth refresh. Ownership denials
+use shared auth presentation; validation uses known field feedback or an operation
+fallback. Unexpected errors never expose persistence diagnostics.
+
+`library/article-library-errors.http.spec.ts` owns failure and access contracts;
+`library/article-library-requests.http.spec.ts` owns request validation and success
+regressions. Both use a narrowly owned app factory with real controller, facade,
+library service, JWT guard and production API boundaries. Persistence is mocked;
+unused discovery/AI dependencies are stubs and never contact external services.
+
+DTOs already own the article body and numeric parameter checks, so no validation
+is moved or duplicated. Empty lists and deletion of an absent saved article remain
+HTTP 200; save/recent writes remain HTTP 201. Saved fields/timestamps, upsert
+identity and the recent-list retention limit of 50 are preserved. Mutations retain
+their existing post-write list read and missing-user outcome; this migration does
+not introduce transaction or concurrency changes.
 
 ## Frontend presentation and session actions
 

@@ -1,6 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
+import { ApiException } from '../../common/errors/api-exception';
 import { PrismaService } from '../../prisma/prisma.service';
+import { ARTICLES_ERRORS } from '../articles-errors';
 import {
   type ArticleAdaptationsByArticleId,
   type ArticleSimplificationLevel,
@@ -216,7 +218,7 @@ export class ArticleLibraryService {
       where: { id: userId },
     });
 
-    if (!user) throw new NotFoundException('User not found.');
+    if (!user) throw new ApiException(ARTICLES_ERRORS.USER_NOT_FOUND);
   }
 
   private mapSavedArticle(row: UserArticleRow): UserSavedArticle {
