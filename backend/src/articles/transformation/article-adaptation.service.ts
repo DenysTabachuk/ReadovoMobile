@@ -1,10 +1,8 @@
-import {
-  BadGatewayException,
-  Injectable,
-  InternalServerErrorException,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 
+import { ApiException } from '../../common/errors/api-exception';
+import { COMMON_ERRORS } from '../../common/errors/common-errors';
+import { ARTICLES_ERRORS } from '../articles-errors';
 import {
   AI_SCHEMA_NAMES,
   ArticleTransformationOutputSchema,
@@ -121,9 +119,7 @@ export class ArticleAdaptationService {
       this.logger.error(
         `Groq key is missing for article simplification: title="${title}"`,
       );
-      throw new InternalServerErrorException(
-        'Article simplification service is not configured.',
-      );
+      throw new ApiException(COMMON_ERRORS.INTERNAL_ERROR);
     }
 
     try {
@@ -148,8 +144,10 @@ export class ArticleAdaptationService {
         this.logger.error(
           `Groq returned empty ${transformationType} blocks: title="${title}", level=${level}`,
         );
-        throw new BadGatewayException(
-          `Article ${transformationType} is unavailable.`,
+        throw new ApiException(
+          transformationType === 'adaptation'
+            ? ARTICLES_ERRORS.ADAPTATION_UNAVAILABLE
+            : ARTICLES_ERRORS.SUMMARY_UNAVAILABLE,
         );
       }
 
@@ -184,22 +182,10 @@ export class ArticleAdaptationService {
 
       return response;
     } catch (error) {
-      if (error instanceof BadGatewayException) {
-        this.logger.error(
-          `Simplification failed with gateway error: title="${title}", reason="${error.message}"`,
-        );
-        throw error;
-      }
-
-      const errorMessage =
-        error instanceof Error ? error.message : 'Unknown Groq error';
-      const errorStack = error instanceof Error ? error.stack : undefined;
-      this.logger.error(
-        `Groq request failed: title="${title}", model=${this.outputRunner.model}, reason="${errorMessage}"`,
-        errorStack,
-      );
-
-      throw new BadGatewayException('Failed to simplify article.');
+      if (error instanceof ApiException) throw error;
+      // SDK errors and validation diagnostics may contain credentials or raw output.
+      this.logger.error('Article simplification failed.');
+      throw new ApiException(ARTICLES_ERRORS.SIMPLIFICATION_FAILED);
     }
   }
 

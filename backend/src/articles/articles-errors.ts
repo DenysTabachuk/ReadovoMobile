@@ -1,6 +1,21 @@
 import { type ApiErrorDefinition } from '../common/errors/api-error-definition';
 
 export const ARTICLES_ERRORS = {
+  SIMPLIFICATION_FAILED: {
+    code: 'ARTICLES_SIMPLIFICATION_FAILED',
+    statusCode: 502,
+    message: 'Failed to simplify article.',
+  },
+  ADAPTATION_UNAVAILABLE: {
+    code: 'ARTICLES_ADAPTATION_UNAVAILABLE',
+    statusCode: 502,
+    message: 'Article adaptation is unavailable.',
+  },
+  SUMMARY_UNAVAILABLE: {
+    code: 'ARTICLES_SUMMARY_UNAVAILABLE',
+    statusCode: 502,
+    message: 'Article summary is unavailable.',
+  },
   WIKIPEDIA_REQUEST_FAILED: {
     code: 'ARTICLES_WIKIPEDIA_REQUEST_FAILED',
     statusCode: 502,

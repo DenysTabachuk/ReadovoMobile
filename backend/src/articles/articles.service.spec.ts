@@ -750,7 +750,7 @@ describe('ArticlesService', () => {
         title: 'Architecture',
         transformationType: 'adaptation',
       }),
-    ).rejects.toBeInstanceOf(BadGatewayException);
+    ).rejects.toBeInstanceOf(ApiException);
     expect(createChatCompletionMock).toHaveBeenCalledTimes(1);
   });
 
@@ -780,7 +780,7 @@ describe('ArticlesService', () => {
         title: 'Architecture',
         transformationType: 'adaptation',
       }),
-    ).rejects.toBeInstanceOf(BadGatewayException);
+    ).rejects.toBeInstanceOf(ApiException);
 
     expect(createChatCompletionMock).toHaveBeenCalledTimes(2);
     expect(getGroqPrompt(1)).toContain('image src must exactly match');

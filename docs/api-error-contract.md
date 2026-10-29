@@ -2,7 +2,7 @@
 
 Status: shared backend boundaries, auth, streak, mascot, dictionary, achievements
 and translations codes implemented. Article library and discovery/Wikipedia codes
-are implemented; article AI, other domains and frontend presentation remain tracked in
+and simplification are implemented; article quizzes, other domains and frontend presentation remain tracked in
 [the implementation task](api-error-codes.md).
 
 ## Response and ownership
@@ -416,7 +416,7 @@ HTTP suite. This migration does not change context matching or retry policies.
 ## Article library inventory
 
 This inventory covers saved/recent library routes only. Discovery/Wikipedia is
-covered below; AI adaptations/summaries and quizzes remain pending review batches.
+covered below, along with AI adaptations/summaries. Quizzes remain pending review.
 Article-owned definitions live in `articles/articles-errors.ts`; the library's
 missing-user error allows no details.
 
@@ -488,7 +488,51 @@ restrictions to request DTOs.
 
 Preview payloads, tokenized detail blocks and plain content remain unchanged.
 Existing article unit tests retain discovery filtering, recommendations, formula
-rendering and fallback behavior. AI errors and logging remain a later batch.
+rendering and fallback behavior. AI operations have separate inventories below.
+
+## Article simplification inventory
+
+`POST /api/articles/simplify` remains public. Adaptation and summary use the same
+orchestrator; domain definitions live in `articles/articles-errors.ts` and allow
+no details. Existing input formats and limits remain in `SimplifyArticleDto`.
+
+| Branch                                                         | Status | Code                              | Contract coverage                                                                                            |
+| -------------------------------------------------------------- | ------ | --------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Cache miss and missing provider key                            | 500    | `INTERNAL_ERROR`                  | Simplify errors HTTP suite, configuration                                                                    |
+| Initial simplification cache read fails                        | 500    | `INTERNAL_ERROR`                  | Simplify errors HTTP suite, cache read                                                                       |
+| Provider-client failure, including rejected JSON/schema output | 502    | `ARTICLES_SIMPLIFICATION_FAILED`  | Simplify errors HTTP suite, client failures; existing service/client unit tests retain real parsing coverage |
+| Semantic validation still fails after one retry                | 502    | `ARTICLES_SIMPLIFICATION_FAILED`  | Simplify errors HTTP suite, retry exhaustion                                                                 |
+| Cache write fails inside generation                            | 502    | `ARTICLES_SIMPLIFICATION_FAILED`  | Simplify errors HTTP suite, cache write                                                                      |
+| Defensive empty adaptation result after generation             | 502    | `ARTICLES_ADAPTATION_UNAVAILABLE` | Existing orchestrator guard; normal empty model output is rejected earlier by semantic validation            |
+| Defensive empty summary result after generation                | 502    | `ARTICLES_SUMMARY_UNAVAILABLE`    | Existing orchestrator guard; normal empty model output is rejected earlier by semantic validation            |
+| Invalid text, level, transformation type or article ID         | 400    | `VALIDATION_FAILED`               | Simplify requests HTTP suite, DTO cases                                                                      |
+
+Generation/planning/chunk-processing failures within the existing catch boundary
+use `ARTICLES_SIMPLIFICATION_FAILED`. Deliberate `ApiException` codes are preserved.
+Provider/configuration failures use an operation fallback without auth refresh;
+validation uses known field feedback or a form fallback. Error handlers no longer
+serialize arbitrary error messages or stacks into logs. Internal configuration
+messages are also excluded from public responses.
+
+`transformation/article-simplify-errors.http.spec.ts` owns error serialization;
+`transformation/article-simplify-requests.http.spec.ts` owns DTO/success behavior.
+Their test app uses real HTTP boundaries, facade, adaptation orchestrator, token
+planning, semantic retry runner, validators and cache services. A fresh typed
+`GroqTextClient` mock supplies validated output/client failures, and persistence
+is mocked. SDK JSON/schema parsing stays covered by existing Groq client and
+article service unit tests; these HTTP suites do not claim to exercise the SDK.
+No live AI requests are made.
+
+Existing success status (201), default A2 level, default summary operation, titles,
+block/question payloads, source hashing, chunking and cache policy are preserved.
+A cache hit still succeeds without a provider key. Existing chunk/formula tests
+remain intact. No retry, token-budget, transaction or persistence-recovery policy
+is added. Standalone quiz endpoints and their error logs remain the next batch.
+
+Known input-validation follow-up: `SimplifyArticleDto.blocks` currently validates
+only that the value is an array; nested block structure is not checked there.
+This batch does not tighten that existing request contract. Address it separately
+with a supported block schema and explicit malformed-block HTTP tests.
 
 ## Frontend presentation and session actions
 
