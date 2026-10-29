@@ -4,6 +4,7 @@ import { api } from '.';
 import { authSessionStore } from '../authTokenStorage/authSessionStore';
 import { shouldRetryQuery } from '@/providers/queryProvider/utils/shouldRetryQuery';
 import { QueryClient } from '@tanstack/react-query';
+import * as authRefresh from '../refreshAuthSession';
 
 jest.mock('@/api', () => ({
   API_BASE_URL: 'https://api.example.test',
@@ -305,6 +306,29 @@ describe('api session isolation', () => {
         'Authorization',
       ),
     ).toBe('Bearer rotated-access-A');
+  });
+
+  it('rejects a retry if the session changes after refresh has committed', async () => {
+    const refresh = authRefresh.refreshAuthSession;
+    jest
+      .spyOn(authRefresh, 'refreshAuthSession')
+      .mockImplementationOnce(async (version) => {
+        const tokens = await refresh(version);
+        await authSessionStore.replace(ACCOUNT_B);
+        return tokens;
+      });
+    const adapter = mockHttpAdapter(api)
+      .mockResolvedValueOnce(
+        createHttpResponse(ACCESS_TOKEN_EXPIRED, { status: 401 }),
+      )
+      .mockResolvedValueOnce(createHttpResponse(ROTATED_A));
+
+    await expect(api.post(WORDS_URL, { word: 'sun' })).rejects.toMatchObject({
+      name: 'AbortError',
+    });
+
+    expect(adapter).toHaveBeenCalledTimes(2);
+    expect(await authSessionStore.read()).toEqual(ACCOUNT_B);
   });
 
   it('does not send a request if the session changes while reading stored tokens', async () => {

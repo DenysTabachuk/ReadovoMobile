@@ -55,7 +55,7 @@ export class AchievementsService {
     };
   }
 
-  // TODO: Stop accepting client-owned balance and quiz counters. See docs/server-side-quiz-rewards.md.
+  // TODO: Stop accepting client-owned balance and quiz counters. See docs/tasks/server-side-quiz-rewards.md.
   async updateProgress(
     userId: string,
     update: UpdateProgressDto,

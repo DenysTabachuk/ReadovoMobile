@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   createContext,
   type ReactNode,
@@ -16,6 +17,7 @@ import { type AuthUserProfile } from '../../types';
 
 import { AUTH_STORAGE_KEYS } from './constants';
 import { isJwtExpired } from './utils/isJwtExpired';
+import { cancelQueriesOnSessionChange } from './utils/cancelQueriesOnSessionChange';
 
 type AuthContextValue = {
   currentUser: AuthUserProfile | null;
@@ -39,10 +41,13 @@ type AuthProviderProps = {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: AuthProviderProps) {
+  const queryClient = useQueryClient();
   const [isHydratingAuth, setIsHydratingAuth] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentUser, setCurrentUser] = useState<AuthUserProfile | null>(null);
   const [rememberMePreference, setRememberMePreferenceState] = useState(false);
+
+  useEffect(() => cancelQueriesOnSessionChange(queryClient), [queryClient]);
 
   useEffect(() => {
     async function hydrateAuthState() {

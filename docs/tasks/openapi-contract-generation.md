@@ -1,7 +1,7 @@
 # Task: OpenAPI contract and frontend type generation
 
 Status: planned and explicitly deferred from the implemented
-[API error contract](api-error-contract.md). Do not introduce a separate error-only
+[API error contract](../api-error-contract.md). Do not introduce a separate error-only
 generator. Start this broader migration as its own reviewable task.
 
 ## Goal

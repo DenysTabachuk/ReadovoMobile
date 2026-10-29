@@ -9,6 +9,7 @@ import { getStreakProfile } from '../../requests/getStreakProfile';
  *
  * @param userId - Cache/request owner; automatic fetching is disabled without it.
  * @returns Profile query controls. Sync/storage errors prevent the profile fetch.
+ * React Query cancellation discards the final read; replay guards its own writes.
  * @example
  * const profile = useStreakProfileQuery(userId);
  * // Each fetch attempts pending events first, then caches the server profile.
@@ -25,9 +26,7 @@ export function useStreakProfileQuery(userId?: string) {
       session.assertCurrent();
       await syncPendingStreakEvents(userId);
       session.assertCurrent();
-      const streak = await getStreakProfile();
-      session.assertCurrent();
-      return streak;
+      return getStreakProfile();
     },
     queryKey: ['streak-profile', userId],
   });

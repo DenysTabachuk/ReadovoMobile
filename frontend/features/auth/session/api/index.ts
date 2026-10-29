@@ -136,10 +136,9 @@ export const api = createHttpClient((client) => {
         // See refreshAuthSession for the flow diagram and Promise lifecycle.
         // Refresh uses the public client, so its failure cannot trigger refresh again.
         const refreshed = await refreshAuthSession(session.version);
-        authSessionStore.assertCurrent(session.version);
         if (!refreshed) throw error;
-        // Re-run the request interceptor to attach the rotated JWT. Await here so
-        // a retry failure also passes through the session check in this catch.
+        // The request interceptor checks the original session before attaching
+        // the rotated JWT. Await so failures also pass through the check below.
         return await client.request(config);
       } catch (refreshError) {
         authSessionStore.assertCurrent(session.version);

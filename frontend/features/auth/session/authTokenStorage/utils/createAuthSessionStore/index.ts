@@ -23,7 +23,8 @@ type RefreshCommit = {
  *
  * @param storage - Async token storage; all session writes must use this store.
  * @returns Session version, serialized reads/writes, conditional refresh writes,
- * conditional clearing, and an assertion throwing an AbortError for stale work.
+ * conditional clearing, synchronous change subscriptions, and an assertion
+ * throwing an AbortError for stale work. Refresh does not notify subscribers.
  * @example
  * const store = createAuthSessionStore(storage);
  * const version = store.version;
@@ -34,6 +35,13 @@ type RefreshCommit = {
 export function createAuthSessionStore(storage: TokenStorage) {
   let version = 0;
   let pendingStorage: Promise<void> = Promise.resolve();
+  const listeners = new Set<() => void>();
+
+  function invalidateSession(): void {
+    version += 1;
+    // Stop scheduled work before asynchronous storage or a new login can proceed.
+    for (const listener of listeners) listener();
+  }
 
   function enqueue<T>(operation: () => Promise<T>): Promise<T> {
     const result = pendingStorage.then(operation);
@@ -62,7 +70,7 @@ export function createAuthSessionStore(storage: TokenStorage) {
   }
 
   function clear(): Promise<void> {
-    version += 1;
+    invalidateSession();
     return enqueue(async () => {
       await settleStorageWrites([
         storage.removeItem(AUTH_ACCESS_TOKEN_STORAGE_KEY),
@@ -75,6 +83,13 @@ export function createAuthSessionStore(storage: TokenStorage) {
     /** Current session number. Capture it before starting asynchronous work. */
     get version() {
       return version;
+    },
+    /** Subscribes to synchronous login/logout invalidation; returns an unsubscribe function. */
+    subscribe(listener: () => void): () => void {
+      listeners.add(listener);
+      return () => {
+        listeners.delete(listener);
+      };
     },
     /**
      * Rejects a result or retry belonging to an earlier session with AbortError.
@@ -103,7 +118,7 @@ export function createAuthSessionStore(storage: TokenStorage) {
      */
     replace(tokens: AuthTokens): Promise<void> {
       // Invalidate outstanding work immediately, before asynchronous storage I/O.
-      version += 1;
+      invalidateSession();
       return enqueue(() => writeTokens(tokens));
     },
     /** Ends the session immediately and queues token removal, including on logout. */

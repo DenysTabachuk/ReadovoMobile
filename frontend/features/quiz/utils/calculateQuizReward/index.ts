@@ -30,7 +30,7 @@ const LENGTH_MULTIPLIERS: Record<QuizRewardTargetLength, number> = {
   long: 1.5,
 };
 
-// TODO: Move authoritative quiz rewards to the backend. See docs/server-side-quiz-rewards.md.
+// TODO: Move authoritative quiz rewards to the backend. See docs/tasks/server-side-quiz-rewards.md.
 /**
  * Calculate quiz coins from accuracy, difficulty, length, and completion bonuses.
  *

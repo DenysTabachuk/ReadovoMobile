@@ -71,7 +71,7 @@ export function useCompleteArticleQuizMutation({
 
       const session = await getAuthSessionSnapshot(currentUserId);
       const profile = await getAchievementsProfile(currentUserId);
-      // TODO: Submit answers and use the server-awarded reward. See docs/server-side-quiz-rewards.md.
+      // TODO: Submit answers and use the server-awarded reward. See docs/tasks/server-side-quiz-rewards.md.
       const rewardCoins = calculateQuizReward({
         isFirstTestCompleted: profile.progress.testsCompleted === 0,
         level: quizLevel,

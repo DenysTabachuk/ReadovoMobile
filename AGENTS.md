@@ -16,9 +16,9 @@
   new and touched code; do not perform unrelated assertion-removal sweeps.
 - Write documentation in English, including task documents, unless the user
   explicitly requests another language.
-- Treat documents created to track a task as temporary. Delete the task document
-  once the task is fully completed; retain any lasting documentation in the
-  appropriate project documentation. Keep task documents while work remains.
+- Store temporary task documents in `docs/tasks/`. Delete the task document once
+  the task is fully completed; retain lasting documentation outside `docs/tasks/`
+  in the appropriate project documentation. Keep task documents while work remains.
 - Run checks relevant to the change and report what passed or could not run.
   Fix failures introduced by the task; distinguish pre-existing failures.
 - Before handing changes back to the user, verify the final implementation with
