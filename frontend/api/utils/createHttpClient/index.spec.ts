@@ -6,6 +6,26 @@ import { createHttpResponse, mockHttpAdapter } from '../../testing/http';
 
 jest.mock('@/api/config', () => ({ API_BASE_URL: 'https://api.example.test' }));
 
+it('exposes the backend code on a normalized HTTP rejection', async () => {
+  const client = createHttpClient();
+  mockHttpAdapter(client).mockResolvedValue(
+    createHttpResponse(
+      {
+        statusCode: 400,
+        code: 'MASCOT_NOT_ENOUGH_COINS',
+        message: 'Not enough coins.',
+      },
+      { status: 400 },
+    ),
+  );
+
+  await expect(client.post('/mascot/purchase')).rejects.toMatchObject({
+    status: 400,
+    code: 'MASCOT_NOT_ENOUGH_COINS',
+    message: 'HTTP request failed.',
+  });
+});
+
 it('installs feature interceptors once, before safe error normalization', async () => {
   const rejected = jest.fn((error: unknown): never => {
     throw error;

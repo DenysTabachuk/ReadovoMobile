@@ -675,10 +675,24 @@ OpenAPI/type generation remains explicitly deferred to its own task.
 
 ## Frontend presentation and session actions
 
-Normalize once in shared HTTP handling into a safe error with status, recognized
-code and validated details. Track code presence separately from recognition.
-The auth interceptor needs the same wire decoder before its refresh decision,
-because it runs before final HTTP sanitization. Never retain raw Axios config.
+The user chose a minimal shared HTTP boundary rather than a full wire decoder.
+`HttpError` exposes the actual HTTP `status` and optional `code` extracted only
+when the response is a non-array object with a string code. Unknown strings are
+preserved without interpretation; missing or non-string codes remain undefined.
+Backend messages never become `Error.message`, and Axios config is not retained.
+The existing private response-body access remains available to current consumers.
+
+There is no client-wide code/status registry or universal details validator in
+this batch. Screens/hooks select meaningful known codes and use localized
+fallbacks otherwise. A consumer validates the details it actually uses. Auth
+interceptors must inspect the relevant code/status pairs before refresh/session
+decisions, because those interceptors run before final error normalization.
+
+`api/httpError/index.spec.ts` covers string and unknown codes, malformed/missing
+codes, non-object bodies, immutable input and safe error messages.
+`api/utils/createHttpClient/index.spec.ts` verifies code propagation through Axios
+rejection normalization. This foundation does not change auth or UI behavior;
+legacy feature wrappers that replace `HttpError` remain for later migration.
 
 Request functions return data and propagate errors. Feature presentation at the
 screen/hook feedback boundary resolves code to a known translation key and action;

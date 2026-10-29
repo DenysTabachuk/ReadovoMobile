@@ -3,8 +3,9 @@
 Status: in progress; shared backend boundaries, auth, streak, mascot and dictionary
 codes implemented. Achievements, translations and articles are implemented.
 Notifications non-2xx codes and Firebase delivery diagnostic sanitization are
-implemented. Backend completion audit and AI telemetry redaction are ready for
-review; frontend migration remains open. Cross-project generation is deferred to
+implemented. Backend completion audit and AI telemetry redaction are implemented.
+The minimal frontend HttpError.code addition is ready for review; auth/session and
+feature consumer migration remain open. Cross-project generation is deferred to
 [OpenAPI contract generation](openapi-contract-generation.md).
 This is the single implementation task for API error codes across
 Readovo. It incorporates the previous streak and mascot tasks. Updating this plan
@@ -39,8 +40,12 @@ the Nest `error` field. Validation messages use strings with typed field details
 OpenAPI/type generation is a separate, deferred task. Do not build an error-only
 generator or make the current frontend migration depend on generated types. Keep
 the module-owned backend catalogue authoritative; document temporary frontend
-decoding/presentation maps and verify the supported code/status/detail combinations
-with focused contract checks until OpenAPI generation replaces that duplication.
+presentation maps and verify behaviorally important code/status/detail combinations
+with focused checks until OpenAPI generation replaces duplicated transport types.
+The user chose a minimal HTTP boundary: extract a string `code` into `HttpError`,
+without a full decoder, client-wide code registry or universal details validator.
+Consumers handle known codes and validate details only when their behavior needs
+them. Auth refresh/session decisions remain centralized.
 
 ## Goal and scope
 
@@ -136,8 +141,9 @@ items/slots and all other uncovered branches rather than stopping at this table.
 
 ## Frontend design
 
-- Axios continues rejecting non-2xx responses. Shared normalization extracts a
-  validated code and safe details once, without exposing raw Axios configuration.
+- Axios continues rejecting non-2xx responses. Shared normalization exposes the
+  HTTP status and optional string code without exposing raw Axios configuration.
+  It does not interpret codes or copy backend messages into `Error.message`.
 - Auth interceptors retain JWT injection, single-flight refresh, one retry and
   session guards. Separate invalid credentials, expired access tokens, rejected
   refresh and ownership failures; a business denial must not trigger a refresh loop.
