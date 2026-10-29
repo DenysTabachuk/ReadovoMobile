@@ -2,7 +2,8 @@
 
 Status: in progress; shared backend boundaries, auth, streak, mascot and dictionary
 codes implemented. Achievements, translations and articles are implemented.
-Notifications non-2xx codes and HTTP tests are ready for review. Backend completion
+Notifications non-2xx codes are implemented; Firebase delivery diagnostic
+sanitization and HTTP tests are ready for review. Backend completion
 audit, shared diagnostic redaction/contract generation and frontend migration remain open.
 This is the single implementation task for API error codes across
 Readovo. It incorporates the previous streak and mascot tasks. Updating this plan
@@ -21,7 +22,7 @@ Pause after each batch for user review before starting the next one.
    reading/vocabulary quizzes. Notifications non-2xx codes are implemented.
    Complete the backend audit and shared diagnostics/contract generation before
    migrating frontend handling. Notification delivery outcomes remain success
-   payloads, with their existing diagnostic risks documented separately.
+   payloads, now with controlled delivery feedback and redacted SDK error logs.
 2. Complete domain inventories in reviewable groups: streak/mascot,
    dictionary/achievements, articles/translations, notifications/mock outcomes.
 3. Implement and test backend boundaries, then migrate one domain per batch.

@@ -598,8 +598,10 @@ HTTP coverage is split into `notifications-access.http.spec.ts`,
 `notifications-preferences.http.spec.ts`, `notifications-push-token.http.spec.ts`
 and `notifications-operations.http.spec.ts`. Their shared factory creates real
 controllers/services, JWT guards, DTO validation and production error boundaries
-with fresh narrow persistence mocks. Firebase discovery is forced unavailable
-before credentials are read; these suites do not claim SDK delivery coverage.
+with fresh narrow persistence mocks. Firebase discovery defaults to unavailable
+before credentials are read. The separate delivery suite uses a caller-owned local
+Firebase app and mocks its `send()` method; no provider requests or credential
+lookups are allowed.
 App closure clears the real service's dispatch interval. Production/test environment
 changes and logger spies are restored by their owning suites.
 
@@ -613,13 +615,29 @@ DTOs already own request constraints; no validation is moved or duplicated.
 
 Controller catch logs no longer include payloads, partial push tokens or original
 error stacks. Delivery counters are logged without repeating `failureReasons`.
-Known separate diagnostic debt remains in the untouched delivery service:
-`sendFcmPush` logs a raw token and Firebase error, `getFcmErrorMessage` copies
-provider messages into successful `failureReasons`, and initialization warnings
-serialize credential-loading errors. Redact those logs and design safe structured
-delivery feedback in a dedicated review batch; do not silently alter success
-payloads as part of the non-2xx migration. Background-job failure handling and
-delivery retry/deactivation policy are also unchanged.
+Delivery and initialization catch handlers now log fixed categories without tokens,
+SDK messages/stacks, unknown codes or credential-file paths. The module-owned
+`resolveFcmFailure` utility returns only controlled delivery messages:
+
+- Exact `messaging/invalid-registration-token` and
+  `messaging/registration-token-not-registered` codes produce
+  `Push token is invalid or no longer registered.` and still deactivate the token.
+- Every other SDK rejection produces `Push delivery failed.` without deactivation.
+- Unavailable Firebase retains the existing controlled
+  `Firebase Admin SDK is not configured.` message without deactivation.
+
+`failureReasons` remains a string array and counters/statuses are unchanged, but
+raw Firebase codes/messages are no longer copied into it. Unknown codes are neither
+logged nor stringified. The frontend currently displays these strings without
+matching their contents; localized structured delivery feedback remains separate
+from the non-2xx error decoder.
+
+`notifications-delivery.http.spec.ts` verifies safe HTTP feedback and logs,
+deactivation for both known invalid-token codes, fallback for unknown/non-string
+codes, startup warning redaction, successful delivery and token deduplication.
+Each case owns its local Firebase app, SDK send spy and Nest app; all are cleaned
+up afterward. Background-job failure handling, SDK retries and dispatch scheduling
+remain unchanged.
 
 ## Frontend presentation and session actions
 

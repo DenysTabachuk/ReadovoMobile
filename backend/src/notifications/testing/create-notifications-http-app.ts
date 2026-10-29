@@ -1,6 +1,7 @@
 import { type INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { type Server } from 'node:http';
+import { getApps, type App } from 'firebase-admin/app';
 
 import { JwtService } from '../../auth/jwt.service';
 import { UserAuthGuard } from '../../auth/user-auth.guard';
@@ -10,12 +11,15 @@ import { NotificationsController } from '../notifications.controller';
 import { NotificationsService } from '../notifications.service';
 import { type LearningReminderPreferences } from '../types';
 
-// Exercise the real unconfigured-provider outcome without reading credentials or
-// initializing Firebase. Delivery SDK behavior is outside these HTTP suites.
+// Default to an unavailable SDK without reading credentials. Delivery tests may
+// explicitly provide a local Firebase app whose network methods are mocked.
 jest.mock('firebase-admin/app', () => ({
-  getApps: () => {
+  ...jest.requireActual<typeof import('firebase-admin/app')>(
+    'firebase-admin/app',
+  ),
+  getApps: jest.fn(() => {
     throw new Error('Firebase disabled in HTTP tests.');
-  },
+  }),
 }));
 
 export const NOTIFICATIONS_TEST_USER_ID =
@@ -29,9 +33,11 @@ export const NOTIFICATIONS_TEST_TOKEN = {
 
 /**
  * Creates a notifications HTTP app with real services, guards and API boundaries.
+ * @param firebaseApp - Optional caller-owned local app with mocked SDK delivery.
  * @returns App/server, owner authorization and fresh narrow persistence mocks.
- * Firebase discovery is mocked as unavailable; no credentials are read and no
- * notifications are sent. Dispatch has no eligible users by default. The caller
+ * Firebase discovery defaults to unavailable; a supplied app bypasses credential
+ * initialization. The caller must mock its send method and delete that app.
+ * Dispatch has no eligible users by default. The caller
  * must await app.close(), which clears the real service's background interval.
  * No environment variables or clocks are changed.
  * @example
@@ -40,7 +46,8 @@ export const NOTIFICATIONS_TEST_TOKEN = {
  * // Push-token registration now returns the generic INTERNAL_ERROR response.
  * await testApp.app.close();
  */
-export async function createNotificationsHttpApp() {
+export async function createNotificationsHttpApp(firebaseApp?: App) {
+  if (firebaseApp) jest.mocked(getApps).mockReturnValueOnce([firebaseApp]);
   const preferences: LearningReminderPreferences = {
     learningReminderTime: '19:00',
     learningRemindersEnabled: false,
