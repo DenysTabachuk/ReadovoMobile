@@ -65,9 +65,8 @@ describe('useDeleteDictionaryWordMutation', () => {
     expect(mockOnSuccess).not.toHaveBeenCalled();
     expect(mockInvalidateQueries).not.toHaveBeenCalled();
     expect(mockShowBanner).toHaveBeenCalledWith({
-      description: 'dictionary.deleteErrorDescription',
       durationMs: 4200,
-      title: 'dictionary.deleteError',
+      title: 'errors.generic',
       variant: 'error',
     });
   });

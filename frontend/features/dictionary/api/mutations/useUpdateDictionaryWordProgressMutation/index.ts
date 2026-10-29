@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 
 import { useBanner } from '@/components/banner';
+import { getDictionaryErrorMessageKey } from '../../../utils/getDictionaryErrorMessageKey';
 import { useAuth } from '@/features/auth';
 
 import { updateDictionaryWordProgress } from '../../requests/updateDictionaryWordProgress';
@@ -43,11 +44,12 @@ export function useUpdateDictionaryWordProgressMutation({
   return useMutation({
     mutationFn: ({ progress, wordId }: UpdateDictionaryWordProgressVariables) =>
       updateDictionaryWordProgress(wordId, { progress }),
-    onError: () => {
+    onError: (error) => {
+      const messageKey = getDictionaryErrorMessageKey(error);
+      if (!messageKey) return;
       showBanner({
-        description: t('dictionary.progressUpdateErrorDescription'),
         durationMs: ERROR_BANNER_DURATION_MS,
-        title: t('dictionary.progressUpdateError'),
+        title: t(messageKey),
         variant: 'error',
       });
     },

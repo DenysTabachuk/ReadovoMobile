@@ -1,10 +1,9 @@
 # API error contract
 
-Status: shared backend boundaries, auth, streak, mascot, dictionary, achievements
-and translations codes implemented. Article library, discovery/Wikipedia,
-simplification, quiz and notifications non-2xx codes are implemented. The backend
-completion audit, shared diagnostics and frontend presentation remain tracked in
-[the implementation task](api-error-codes.md).
+Status: backend error codes, shared boundaries, minimal frontend code extraction,
+auth/session decisions and feature presentation are implemented. OpenAPI/type
+generation remains a [separate deferred task](openapi-contract-generation.md).
+Legacy Mock API migration/removal is excluded by the user's decision.
 
 ## Response and ownership
 
@@ -50,12 +49,10 @@ as part of this task. Future OpenAPI error schemas must use these module-owned
 definitions, validation details and allowed statuses. Generated files will remain
 read-only, with freshness checks in CI.
 
-For the current frontend migration, use small explicit decoding/presentation maps
-for supported behaviors, verify code/status/details combinations with focused
-contract tests, and avoid asserting that handwritten client types exhaust all
-backend codes. Unknown codes still receive safe fallback behavior. Feature maps
-own translation keys and actions. Replace duplicated transport metadata when the
-OpenAPI task reaches the corresponding module.
+Frontend presentation uses small feature-owned code/status/message-key maps for
+supported behaviors. Handwritten client types do not claim to exhaust all backend
+codes. Unknown codes receive safe fallback behavior. Replace duplicated transport
+metadata when the OpenAPI task reaches the corresponding module.
 
 Backend API owners maintain serialization and common codes; feature owners maintain
 domain entries, endpoint tests and presentation maps together. Adding a code is
@@ -669,9 +666,10 @@ not permission to add raw diagnostics elsewhere. Richer safe server diagnostics
 can be improved separately; their absence does not block client decoding.
 
 This is a source/automated-contract audit, not a claim of live-provider or mobile
-release verification. Frontend decoding, session actions, feature presentation,
-mock API fixtures and final cross-project checks remain in the current task.
-OpenAPI/type generation remains explicitly deferred to its own task.
+release verification. Frontend code propagation, session actions and feature
+presentation are implemented. Legacy Mock API fixtures are intentionally unchanged
+and are not a supported target of this migration. OpenAPI/type generation remains
+explicitly deferred to its own task.
 
 ## Frontend presentation and session actions
 
@@ -691,8 +689,9 @@ decisions, because those interceptors run before final error normalization.
 `api/httpError/index.spec.ts` covers string and unknown codes, malformed/missing
 codes, non-object bodies, immutable input and safe error messages.
 `api/utils/createHttpClient/index.spec.ts` verifies code propagation through Axios
-rejection normalization. Legacy feature wrappers that replace `HttpError` remain
-for later migration; auth/session handling is implemented as described below.
+rejection normalization. Feature requests preserve `HttpError` and transport error
+identity; the old `mapHttpError` wrappers and backend message-text resolvers are
+removed. API requests no longer put translation keys inside `Error.message`.
 
 Request functions return data and propagate errors. Feature presentation at the
 screen/hook feedback boundary resolves code to a known translation key and action;
@@ -727,8 +726,45 @@ temporary-error recovery and malformed successful bodies. The existing colocated
 `index.spec.ts` suites retain concurrency, one-retry, logout and cross-account
 isolation checks, now with explicit backend codes in their failure fixtures.
 Delayed HTTP 500 refresh failures from an obsolete account also remain AbortError
-on authenticated requests. No feature UI, locale, query retry or offline replay
-behavior is migrated in this batch.
+on authenticated requests. Query retry and offline replay policies are unchanged.
+
+### Feature feedback
+
+`api/utils/getApiErrorMessageKey` handles shared validation/malformed/oversized
+request errors, ownership denial, network/timeout feedback and silent AbortError.
+Unknown errors default to `errors.generic` without a fallback argument at each
+call site. A caller may override the fallback when context is useful.
+Feature-owned utilities under
+auth, streak, mascot, dictionary, articles and learning reminders select messages
+only for known code/status pairs; they do not inspect backend `message` text.
+All added keys exist in both English and Ukrainian resources.
+
+Auth forms distinguish incorrect/expired verification and reset codes. Native
+Google sign-in retains its SDK integration, with known presentation keys carried
+by `GoogleSignInError.messageKey` instead of `Error.message`. Streak/wardrobe
+mutations distinguish balance, ownership, limits and unavailable operations.
+Dictionary preserves duplicate-word info banners and provides review/word feedback.
+
+Article discovery/detail/library, AI transformations/quizzes, translation sheets,
+profile/achievements and notification operations use the same safe feedback rules.
+Generic provider failures use the shared generic feedback without exposing
+provider diagnostics. Quiz submission failures are handled at the caller's
+presentation boundary; failed progress persistence reports an error without an
+unhandled mutateAsync rejection or changing reward calculations. Cancelled saved-
+article mutations do not restore stale cache data or show a banner.
+
+Quiz generation keeps its 60-second timer and now reports its owned timeout as
+TimeoutError; other failures propagate. Push registration consumes the backend's
+JSON acknowledgement while keeping its void request result, so JSON error codes
+remain available to auth recovery and presentation. Notification delivery counters
+keep success semantics; the test screen displays localized delivery feedback
+without concatenating backend `failureReasons` into UI text.
+
+Colocated mapper tests cover code/status matching, unknown/legacy-body fallback,
+message wording independence, locale availability and cancellation. Transport and
+mutation tests verify code propagation, duplicate info, timeout cleanup and stale-
+session silence. Run both project quality gates, root typecheck and backend e2e;
+platform/provider release verification remains below.
 
 ## Deployment compatibility
 
@@ -747,10 +783,14 @@ Deployment owners must verify backend contract readiness before client release.
 Published client versions and the backend deployment identifier still need to be
 recorded at release; repository package versions do not establish rollout state.
 
-## Follow-up outside this batch
+## Release verification and separate work
 
-- Complete frontend migration, mock fixtures and release verification before
-  marking the API error-code task complete.
+- Before deployment, exercise representative login/refresh, expired verification,
+  validation, duplicate word, balance/ownership, AI failure and fallback flows on
+  supported mobile builds. Record any unavailable live-provider/platform checks.
+- Legacy Mock API changes were explicitly skipped. Its eventual removal is a
+  separate change; this migration does not claim those fixtures support the new
+  code contract. Unit-test network/SDK mocks remain in use.
 - OpenAPI/type generation is tracked separately in
   [OpenAPI contract generation](openapi-contract-generation.md) and is not a
   prerequisite for current client decoding. Do not add an error-only generator.

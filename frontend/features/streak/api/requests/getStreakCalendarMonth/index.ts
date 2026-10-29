@@ -1,5 +1,3 @@
-import { mapHttpError } from '@/api/utils/mapHttpError';
-
 import { api } from '@/features/auth';
 
 import type { StreakCalendarMonthResponse } from '../../../types';
@@ -13,11 +11,9 @@ export async function getStreakCalendarMonth({
   year,
   month,
 }: GetStreakCalendarMonthParams): Promise<StreakCalendarMonthResponse> {
-  const response = await api
-    .get<StreakCalendarMonthResponse>(
-      `/streak/profile/me/calendar/month?year=${year}&month=${month}`,
-    )
-    .catch(mapHttpError('profile.errors.loadFailed'));
+  const response = await api.get<StreakCalendarMonthResponse>(
+    `/streak/profile/me/calendar/month?year=${year}&month=${month}`,
+  );
 
   return response.data;
 }

@@ -15,13 +15,13 @@ it('returns translation data and lets Axios serialize the request', async () => 
     data: '{"word":"sun"}',
   });
 });
-it('maps a rejected HTTP response to the existing translation error', async () => {
+it('preserves a rejected HTTP response for presentation', async () => {
   mockHttpAdapter().mockResolvedValue(
     createHttpResponse('Unavailable', { status: 503 }),
   );
-  await expect(translateWord({ word: 'sun' })).rejects.toThrow(
-    'translation.error',
-  );
+  await expect(translateWord({ word: 'sun' })).rejects.toMatchObject({
+    status: 503,
+  });
 });
 it('keeps cancellation distinguishable from a translation failure', async () => {
   mockHttpAdapter().mockRejectedValue(new CanceledError());

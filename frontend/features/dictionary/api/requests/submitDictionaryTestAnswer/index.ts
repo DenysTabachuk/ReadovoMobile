@@ -1,5 +1,3 @@
-import { mapHttpError } from '@/api/utils/mapHttpError';
-
 import { api } from '@/features/auth';
 
 import {
@@ -10,9 +8,10 @@ import {
 export async function submitDictionaryTestAnswer(
   request: SubmitDictionaryTestAnswerRequest,
 ): Promise<DictionaryTestAnswerResult> {
-  const response = await api
-    .post<DictionaryTestAnswerResult>(`/api/dictionary/me/test/answer`, request)
-    .catch(mapHttpError('dictionary.test.answerError'));
+  const response = await api.post<DictionaryTestAnswerResult>(
+    `/api/dictionary/me/test/answer`,
+    request,
+  );
 
   return response.data;
 }

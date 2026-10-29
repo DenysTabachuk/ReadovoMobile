@@ -18,8 +18,8 @@ existing request/query/mutation APIs; no session argument or client hook is need
 
 The request interceptor checks the destination origin, captures the session
 version before awaiting token storage, and adds the current JWT to Axios's cloned
-headers. The response interceptor rejects stale responses and handles 401 with
-exactly one refresh/retry. Refresh is shared
+headers. The response interceptor rejects stale responses and handles HTTP 401
+with a recognized access-auth code using exactly one refresh/retry. Refresh is shared
 within the initiating session version and uses the public client, so it cannot
 recursively refresh. Old responses cannot replace or clear a newer session's
 tokens. Session changes reject authenticated operations with `AbortError`.
@@ -38,16 +38,18 @@ original Axios config; request config and tokens never escape into UI errors.
 
 - Responses use Axios `status` and `data`, never fetch `Response` methods.
 - Axios rejects non-2xx responses using its default status validation. The shared
-  client converts them to a credential-safe `HttpError`. Request functions return
-  successful data directly; `mapHttpError` maps rejections to their domain-specific
-  translation keys. Status mappings are reserved for meaningful business cases,
-  such as invalid credentials or a duplicate registration.
-- Auth handles rejected 401 responses before feature error mapping. Refresh denial
-  and a repeated 401 reject the operation; they never resolve as successful data.
+  client converts them to a credential-safe `HttpError` with actual `status` and
+  optional string `code`. Request functions return successful data and propagate
+  failures. Screens/mutation hooks select feature-owned localized feedback using
+  known code/status pairs; backend and Error.message text are not presentation keys.
+- Auth handles eligible 401 codes before feature feedback. Only explicit
+  HTTP 401/AUTH_REFRESH_REJECTED clears the initiating session after a refresh
+  rejection; temporary/unknown failures preserve tokens. A repeated 401 is never
+  refreshed again. See [API error contract](api-error-contract.md).
 - Successful JSON is parsed strictly. Non-JSON error bodies remain available for
-  status-based error mapping. Text endpoints must explicitly use
-  `responseType: 'text'`. Push-token registration uses this because it does not
-  consume a response body; an empty successful response is valid there.
+  generic fallback. Text endpoints must explicitly use `responseType: 'text'`.
+  Push-token registration consumes the backend JSON acknowledgement and preserves
+  JSON error codes, even though its public request function returns void.
 - Axios cancellation becomes `AbortError`, preserving React Query's cancellation
   retry policy. Network and timeout errors are sanitized: callers do not receive
   Axios request/config objects containing credentials or personal payloads.
@@ -56,7 +58,8 @@ original Axios config; request config and tokens never escape into UI errors.
 
 No automatic Axios retry or global timeout is introduced. Existing React Query
 retry behavior remains unchanged. Quiz generation retains its 60-second abort
-timer; with Axios it covers the complete HTTP operation, including body transfer,
+timer, reporting its owned abort as TimeoutError; it covers the complete operation,
+including body transfer,
 rather than ending when fetch received headers. JSON parse failures propagate and
 the timer is always cleared. Other requests retain their existing timeout policy.
 

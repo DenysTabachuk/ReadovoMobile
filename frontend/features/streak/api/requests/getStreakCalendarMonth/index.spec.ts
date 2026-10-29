@@ -46,13 +46,13 @@ describe('getStreakCalendarMonth', () => {
     );
   });
 
-  it('preserves the existing error key for failed responses', async () => {
+  it('preserves HTTP failures for presentation', async () => {
     mockFetch.mockRejectedValue(
       new HttpError(createHttpResponse('', { status: 500 })),
     );
     await expect(
       getStreakCalendarMonth({ year: 2026, month: 12 }),
-    ).rejects.toThrow('profile.errors.loadFailed');
+    ).rejects.toMatchObject({ status: 500 });
   });
 
   it('propagates network failures unchanged', async () => {

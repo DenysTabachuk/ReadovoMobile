@@ -1,3 +1,4 @@
+import { getAuthErrorMessageKey } from '../../utils/getAuthErrorMessageKey';
 import { useEffect, useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -12,6 +13,7 @@ import { ScreenContainer } from '@/components/screenContainer';
 import { ThemedText } from '@/components/themedText';
 
 import { loginUser, loginWithGoogle } from '../../api';
+import { GoogleSignInError } from '../../googleAuth/googleSignInError';
 import { PasswordTextInput } from '../../components/passwordTextInput';
 import { useAuth } from '../../providers/authProvider';
 
@@ -75,11 +77,11 @@ export default function LoginScreen() {
       });
       router.replace('/(tabs)');
     } catch (error) {
-      const messageKey =
-        error instanceof Error ? error.message : 'auth.errors.loginFailed';
+      const messageKey = getAuthErrorMessageKey(error);
+      if (!messageKey) return;
 
       showBanner({
-        title: t(messageKey, { defaultValue: t('auth.errors.loginFailed') }),
+        title: t(messageKey),
         variant: 'error',
       });
     } finally {
@@ -99,7 +101,7 @@ export default function LoginScreen() {
       }
 
       if (!result.idToken) {
-        throw new Error('auth.errors.googleSignInFailed');
+        throw new GoogleSignInError('auth.errors.googleSignInFailed');
       }
 
       const response = await loginWithGoogle({
@@ -118,12 +120,12 @@ export default function LoginScreen() {
       });
       router.replace('/(tabs)');
     } catch (error) {
-      console.error('[LoginScreen] Google sign-in flow failed', error);
-      const messageKey =
-        error instanceof Error ? error.message : 'auth.errors.default';
+      console.error('[LoginScreen] Google sign-in flow failed.');
+      const messageKey = getAuthErrorMessageKey(error);
+      if (!messageKey) return;
 
       showBanner({
-        title: t(messageKey, { defaultValue: t('auth.errors.default') }),
+        title: t(messageKey),
         variant: 'error',
       });
     } finally {

@@ -1,3 +1,4 @@
+import { getDictionaryErrorMessageKey } from '../../../utils/getDictionaryErrorMessageKey';
 import { useBanner } from '@/components/banner';
 import { useAuth } from '@/features/auth';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -25,13 +26,11 @@ export function useCreateDictionaryWordMutation() {
     mutationFn: (request: CreateDictionaryWordRequest) =>
       createDictionaryWord(request),
     onError: (mutationError) => {
-      const errorKey =
-        mutationError instanceof Error
-          ? mutationError.message
-          : 'dictionary.saveError';
+      const errorKey = getDictionaryErrorMessageKey(mutationError);
+      if (!errorKey) return;
 
       showBanner({
-        title: t(errorKey, { defaultValue: t('dictionary.saveError') }),
+        title: t(errorKey),
         variant: errorKey === 'dictionary.alreadyExists' ? 'info' : 'error',
       });
     },

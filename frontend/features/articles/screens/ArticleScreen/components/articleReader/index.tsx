@@ -221,7 +221,7 @@ export function ArticleReader({ article }: Props) {
         context={selectedFragment?.context}
         contextTranslation={translation?.contextTranslation}
         contextualTranslation={translation?.contextualTranslation}
-        error={Boolean(translationError)}
+        error={translationError}
         isAddToDictionaryDisabled={
           isTranslationLoading ||
           Boolean(translationError) ||

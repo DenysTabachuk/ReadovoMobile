@@ -6,6 +6,7 @@ import { ModalSheet } from '@/components/modalSheet';
 import { ThemedText } from '@/components/themedText';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { getApiErrorMessageKey } from '@/api/utils/getApiErrorMessageKey';
 
 import { PronunciationButton } from '../pronunciationButton';
 import { TranslationCards } from '../translationCards';
@@ -17,7 +18,7 @@ type WordTranslationSheetProps = {
   context?: string;
   contextTranslation?: string;
   contextualTranslation?: string;
-  error: boolean;
+  error: unknown;
   isAddToDictionaryDisabled?: boolean;
   loading: boolean;
   onAddToDictionary: () => void;
@@ -43,6 +44,7 @@ export function WordTranslationSheet({
 }: WordTranslationSheetProps) {
   const { t } = useTranslation();
   const colorScheme = useColorScheme();
+  const errorMessageKey = error ? getApiErrorMessageKey(error) : null;
 
   return (
     <ModalSheet
@@ -74,8 +76,8 @@ export function WordTranslationSheet({
         </View>
       ) : null}
 
-      {!loading && error ? (
-        <ThemedText type="body">{t('translation.error')}</ThemedText>
+      {!loading && errorMessageKey ? (
+        <ThemedText type="body">{t(errorMessageKey)}</ThemedText>
       ) : null}
 
       {!loading && !error ? (

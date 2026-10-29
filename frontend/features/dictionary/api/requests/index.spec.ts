@@ -101,39 +101,38 @@ describe('authenticated dictionary request contract', () => {
     { run: fetchDictionaryWords, error: 'dictionary.error' },
     {
       run: () => deleteDictionaryWord('word-7'),
-      error: 'dictionary.deleteError',
     },
     {
       run: () =>
         updateDictionaryWordProgress('word-7', { progress: 'in_progress' }),
-      error: 'dictionary.progressUpdateError',
     },
     { run: fetchDictionaryTest, error: 'dictionary.test.error' },
     {
       run: () => submitDictionaryTestAnswer(answer),
-      error: 'dictionary.test.answerError',
     },
     { run: () => createDictionaryWord(word), error: 'dictionary.saveError' },
-  ])('preserves the error contract $error', async ({ run, error }) => {
+  ])('preserves HTTP failures for presentation', async ({ run }) => {
     mockFetch.mockRejectedValue(
       new HttpError(createHttpResponse('{}', { status: 401 })),
     );
-    await expect(run()).rejects.toThrow(error);
+    await expect(run()).rejects.toBeInstanceOf(HttpError);
   });
 
   it('preserves the duplicate-word response', async () => {
     mockFetch.mockRejectedValue(
       new HttpError(
         createHttpResponse(
-          JSON.stringify({
-            message: 'Word or phrase already exists in dictionary.',
-          }),
-          { status: 409 },
+          {
+            code: 'DICTIONARY_WORD_ALREADY_EXISTS',
+            message: 'Changed backend wording',
+          },
+          { status: 400 },
         ),
       ),
     );
-    await expect(createDictionaryWord(word)).rejects.toThrow(
-      'dictionary.alreadyExists',
-    );
+    await expect(createDictionaryWord(word)).rejects.toMatchObject({
+      status: 400,
+      code: 'DICTIONARY_WORD_ALREADY_EXISTS',
+    });
   });
 });

@@ -1,3 +1,4 @@
+import { HttpError } from '@/api/httpError';
 import { createHttpResponse, mockHttpAdapter } from '@/api/testing/http';
 
 import {
@@ -67,58 +68,68 @@ it.each([
 );
 
 it.each([
-  {
-    status: 400,
-    run: () => loginUser(credentials),
-    error: 'auth.errors.invalidEmail',
-  },
+  { status: 400, run: () => loginUser(credentials), code: 'VALIDATION_FAILED' },
   {
     status: 401,
     run: () => loginUser(credentials),
-    error: 'auth.errors.invalidCredentials',
+    code: 'AUTH_CREDENTIALS_INVALID',
   },
   {
     status: 409,
     run: () => registerUser(registration),
-    error: 'auth.errors.emailAlreadyExists',
+    code: 'AUTH_EMAIL_ALREADY_EXISTS',
   },
   {
     status: 401,
     run: () => loginWithGoogle(google),
-    error: 'auth.errors.googleSignInFailed',
+    code: 'AUTH_GOOGLE_IDENTITY_REJECTED',
   },
   {
     status: 400,
     run: () => resetPassword(reset),
-    error: 'auth.errors.resetPasswordInvalidOrExpired',
+    code: 'AUTH_RESET_REQUEST_INVALID',
   },
   {
     status: 400,
     run: () => verifyEmail(verification),
-    error: 'auth.errors.invalidOrExpiredVerificationCode',
+    code: 'AUTH_VERIFICATION_CODE_INVALID',
   },
   {
     status: 400,
     run: () => verifyPasswordResetCode(verification),
-    error: 'auth.errors.invalidOrExpiredVerificationCode',
+    code: 'AUTH_RESET_CODE_INVALID',
   },
   {
     status: 400,
     run: () => requestPasswordReset(email),
-    error: 'auth.errors.invalidEmail',
+    code: 'VALIDATION_FAILED',
   },
   {
     status: 400,
     run: () => resendVerificationCode(email),
-    error: 'auth.errors.pendingRegistrationNotFound',
+    code: 'AUTH_REGISTRATION_NOT_PENDING',
   },
 ])(
-  'maps HTTP $status to $error even for HTML error bodies',
-  async ({ status, run, error }) => {
+  'preserves HTTP $status/$code for presentation',
+  async ({ status, run, code }) => {
     const adapter = mockHttpAdapter().mockResolvedValue(
-      createHttpResponse('<html>Error</html>', { status }),
+      createHttpResponse(
+        { code, message: 'Changed backend wording' },
+        { status },
+      ),
     );
-    await expect(run()).rejects.toThrow(error);
+    const pending = run();
+    await expect(pending).rejects.toBeInstanceOf(HttpError);
+    await expect(pending).rejects.toMatchObject({ status, code });
     expect(adapter).toHaveBeenCalledTimes(1);
   },
 );
+it('does not infer an auth code from a status or HTML body', async () => {
+  mockHttpAdapter().mockResolvedValue(
+    createHttpResponse('<html>Error</html>', { status: 401 }),
+  );
+  await expect(loginUser(credentials)).rejects.toMatchObject({
+    status: 401,
+    code: undefined,
+  });
+});

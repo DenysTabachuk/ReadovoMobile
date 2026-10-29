@@ -29,16 +29,14 @@ it('preserves language parameters and encoded adaptations with deduplicated IDs'
     'https://api.example.test/api/articles/adaptations?articleIds=42%2C7&transformationType=summary',
   );
 });
-it('skips empty adaptation requests and maps provider failures to existing errors', async () => {
+it('skips empty adaptation requests and preserves provider HTTP failures', async () => {
   const adapter = mockHttpAdapter().mockResolvedValue(
     createHttpResponse('Unavailable', { status: 503 }),
   );
   await expect(fetchArticleAdaptations([])).resolves.toEqual({});
   expect(adapter).not.toHaveBeenCalled();
-  await expect(fetchWikipediaArticles()).rejects.toThrow(
-    'articles.errorDescription',
-  );
-  await expect(fetchWikipediaArticleDetail(42)).rejects.toThrow(
-    'article.errorDescription',
-  );
+  await expect(fetchWikipediaArticles()).rejects.toMatchObject({ status: 503 });
+  await expect(fetchWikipediaArticleDetail(42)).rejects.toMatchObject({
+    status: 503,
+  });
 });

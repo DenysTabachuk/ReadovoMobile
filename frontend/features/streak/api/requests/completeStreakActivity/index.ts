@@ -1,5 +1,3 @@
-import { mapHttpError } from '@/api/utils/mapHttpError';
-
 import { api } from '@/features/auth';
 
 import type {
@@ -10,12 +8,10 @@ import type {
 export async function completeStreakActivity(
   payload: CompleteActivityRequest,
 ): Promise<CompleteActivityResponse> {
-  const response = await api
-    .post<CompleteActivityResponse>(
-      `/streak/profile/me/activity-completed`,
-      payload,
-    )
-    .catch(mapHttpError('profile.errors.loadFailed'));
+  const response = await api.post<CompleteActivityResponse>(
+    `/streak/profile/me/activity-completed`,
+    payload,
+  );
 
   return response.data;
 }

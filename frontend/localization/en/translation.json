@@ -101,7 +101,13 @@
       "requestPasswordResetFailed": "Could not send a password reset code",
       "verifyPasswordResetCodeFailed": "Could not verify the password reset code",
       "resetPasswordInvalidOrExpired": "The password reset request is invalid or has expired",
-      "resetPasswordFailed": "Could not change password"
+      "resetPasswordFailed": "Could not change password",
+      "verificationCodeInvalid": "The verification code is incorrect.",
+      "verificationCodeExpired": "The verification code has expired. Request a new code.",
+      "passwordResetCodeInvalid": "The password reset code is incorrect.",
+      "passwordResetCodeExpired": "The password reset code has expired. Request a new code.",
+      "googleSignInFailed": "Could not sign in with Google.",
+      "sessionExpired": "Your session has expired. Please sign in again."
     }
   },
   "articles": {
@@ -285,8 +291,12 @@
       "resultNormalTitle": "Good result",
       "resultNormalSubtitle": "Nice work, a bit more practice and you will do even better",
       "resultPoorTitle": "More practice needed",
-      "resultPoorSubtitle": "Try again to improve your result"
-    }
+      "resultPoorSubtitle": "Try again to improve your result",
+      "noWords": "Add words to your dictionary before starting a test.",
+      "noReviewCandidates": "There are no words available for review right now."
+    },
+    "tooManyWords": "Save a word or phrase of up to 5 words.",
+    "wordNotFound": "This word is no longer in your dictionary."
   },
   "settings": {
     "title": "Settings",
@@ -311,7 +321,9 @@
         "Take a short test today and keep your progress moving.",
         "A quick quiz now will keep your learning streak alive.",
         "Return to Readovo and complete a test to stay on track."
-      ]
+      ],
+      "manualDispatchDisabled": "Manual reminder dispatch is unavailable.",
+      "clearDispatchDisabled": "Clearing reminder history is unavailable."
     },
     "theme": {
       "title": "Theme",
@@ -324,6 +336,20 @@
     "account": {
       "title": "Account",
       "logout": "Log out"
+    },
+    "notificationTest": {
+      "remoteTestFailed": "Could not send the test push.",
+      "registerTokenFailed": "Could not register this device for push notifications.",
+      "dispatchFailed": "Could not run reminder dispatch.",
+      "clearDispatchFailed": "Could not clear reminder history.",
+      "noUser": "Please sign in again.",
+      "noTokens": "Register this device for push notifications first.",
+      "deliveryFailed": "Push delivery failed for {{count}} registered device(s).",
+      "remoteSent": "Push sent to {{sent}} of {{total}} registered device(s).",
+      "pushDisabled": "Enable notifications in your device settings first.",
+      "tokenRegistered": "This device is registered for push notifications.",
+      "dispatchResult": "Checked {{checked}} users; sent {{sent}}. Skipped: outside time {{outside}}, completed today {{completed}}, already sent {{alreadySent}}, no tokens {{noTokens}}, delivery failed {{failed}}.",
+      "dispatchCleared": "Cleared {{count}} reminder records."
     }
   },
   "article": {
@@ -432,7 +458,9 @@
       "articleKnowledge": "Check understanding of the text",
       "vocabularyKnowledge": "Check vocabulary from the text",
       "missingGeneratedQuiz": "Could not open the generated quiz."
-    }
+    },
+    "unavailable": "This article is unavailable. Try another article.",
+    "contentUnavailable": "This article has no readable content."
   },
   "translation": {
     "titleFallback": "Translation",
@@ -458,7 +486,8 @@
     "subtitle": "English Explorer",
     "loading": "Loading profile data...",
     "errors": {
-      "loadFailed": "Could not load streak data."
+      "loadFailed": "Could not load streak data.",
+      "progressUpdateFailed": "Could not save your progress. Please try again."
     },
     "stats": {
       "words": "words learned",
@@ -515,7 +544,8 @@
       "equipFailed": "Could not equip the item. Try again.",
       "clearFailed": "Could not remove the item. Try again.",
       "notEnoughCoins": "Not enough coins for this purchase.",
-      "itemNotOwned": "Buy this item before equipping it."
+      "itemNotOwned": "Buy this item before equipping it.",
+      "itemUnknown": "This item is no longer available."
     },
     "slots": {
       "head": "Head",
@@ -597,7 +627,10 @@
       "noFreezeTokens": "You do not have any freeze tokens.",
       "notEnoughCoins": "Not enough coins.",
       "purchaseFreezeFailed": "Could not buy a freeze.",
-      "restoreFailed": "Could not restore the streak."
+      "restoreFailed": "Could not restore the streak.",
+      "restoreUnavailable": "This streak can no longer be restored.",
+      "calendarUnavailable": "This calendar month is not available yet.",
+      "priceChanged": "The price has changed. Refresh and try again."
     },
     "restore": {
       "balance": "Your balance",
@@ -627,5 +660,13 @@
       },
       "daysInRow": "days in a row"
     }
+  },
+  "errors": {
+    "generic": "Something went wrong. Please try again later.",
+    "network": "Check your internet connection and try again.",
+    "timeout": "The request took too long. Please try again.",
+    "invalidRequest": "Some details are invalid. Check your input and try again.",
+    "forbidden": "You do not have permission to perform this action.",
+    "requestTooLarge": "This request is too large. Reduce its size and try again."
   }
 }

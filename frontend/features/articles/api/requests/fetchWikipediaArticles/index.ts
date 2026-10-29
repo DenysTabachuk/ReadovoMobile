@@ -1,4 +1,3 @@
-import { mapHttpError } from '@/api/utils/mapHttpError';
 import { httpClient } from '@/api/httpClient';
 import { API_BASE_URL } from '@/api';
 
@@ -59,7 +58,7 @@ export async function fetchWikipediaArticles(
 
   const response = await httpClient(
     `${API_BASE_URL}/articles?${searchParams.toString()}`,
-  ).catch(mapHttpError('articles.errorDescription'));
+  );
 
   return response.data as WikipediaArticle[];
 }

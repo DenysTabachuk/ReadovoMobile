@@ -1,4 +1,3 @@
-import { mapHttpError } from '@/api/utils/mapHttpError';
 import { httpClient } from '@/api/httpClient';
 import { API_BASE_URL } from '@/api';
 
@@ -13,7 +12,7 @@ export async function fetchWikipediaArticleDetail(
   });
   const response = await httpClient(
     `${API_BASE_URL}/articles/${pageId}?${params.toString()}`,
-  ).catch(mapHttpError('article.errorDescription'));
+  );
 
   return response.data as WikipediaArticleDetail;
 }

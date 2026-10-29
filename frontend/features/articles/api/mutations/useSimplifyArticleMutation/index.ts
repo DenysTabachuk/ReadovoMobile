@@ -1,4 +1,5 @@
 import { useBanner } from '@/components/banner';
+import { getArticleErrorMessageKey } from '../../../utils/getArticleErrorMessageKey';
 import { useAuth } from '@/features/auth';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -58,13 +59,12 @@ export function useSimplifyArticleMutation({
         transformationType,
       });
     },
-    onError: (mutationError, transformationType) => {
-      console.error('[ArticleScreen] Failed to adapt article', mutationError);
+    onError: (mutationError) => {
+      const messageKey = getArticleErrorMessageKey(mutationError);
+      if (!messageKey) return;
+      console.error('[ArticleScreen] Failed to transform article.');
       showBanner({
-        title:
-          transformationType === 'adaptation'
-            ? t('article.adaptError')
-            : t('article.summaryError'),
+        title: t(messageKey),
         variant: 'error',
       });
     },

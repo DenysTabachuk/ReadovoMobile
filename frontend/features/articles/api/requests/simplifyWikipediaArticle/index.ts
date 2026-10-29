@@ -1,4 +1,3 @@
-import { mapHttpError } from '@/api/utils/mapHttpError';
 import { httpClient } from '@/api/httpClient';
 import { API_BASE_URL } from '@/api';
 
@@ -16,7 +15,7 @@ export async function simplifyWikipediaArticle(
       'Content-Type': 'application/json',
     },
     method: 'POST',
-  }).catch(mapHttpError('article.adaptError'));
+  });
 
   return response.data as SimplifyArticleResponse;
 }

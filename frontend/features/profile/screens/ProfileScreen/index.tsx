@@ -1,3 +1,14 @@
+import { getApiErrorMessageKey } from '@/api/utils/getApiErrorMessageKey';
+import {
+  getStreakErrorMessageKey,
+  useStreak,
+  ActivityCalendar,
+  StreakAchievementCard,
+  StreakFreezeCard,
+  StreakFreezeConfirmModal,
+  StreakFreezePurchaseModal,
+  StreakRestoreConfirmModal,
+} from '@/features/streak';
 import { Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
 import { useState } from 'react';
 import { useRouter } from 'expo-router';
@@ -15,15 +26,6 @@ import { getAchievementsProfile } from '@/features/achievements';
 import { getMascotProfile, Mascot } from '@/features/mascot';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useAuth } from '@/features/auth';
-import {
-  useStreak,
-  ActivityCalendar,
-  StreakAchievementCard,
-  StreakFreezeCard,
-  StreakFreezeConfirmModal,
-  StreakFreezePurchaseModal,
-  StreakRestoreConfirmModal,
-} from '@/features/streak';
 
 import { styles } from './styles';
 import { ProfileAchievements } from './components/profileAchievements';
@@ -100,6 +102,13 @@ export default function ProfileScreen() {
     ).length;
   const isStreakLoading = streakQuery.isLoading && !streakQuery.data;
   const isStreakError = streakQuery.isError && !streakQuery.data;
+  const profileLoadError =
+    (!achievementsQuery.data && achievementsQuery.error) ||
+    (!mascotQuery.data && mascotQuery.error) ||
+    (!streakQuery.data && streakQuery.error);
+  const profileLoadErrorMessageKey = profileLoadError
+    ? getApiErrorMessageKey(profileLoadError)
+    : null;
   const isInitialProfileLoading =
     Boolean(currentUser?.id) &&
     ((achievementsQuery.isLoading && !achievementsQuery.data) ||
@@ -263,7 +272,7 @@ export default function ProfileScreen() {
               </ThemedText>
             </View>
           ) : null}
-          {isStreakError ? (
+          {profileLoadErrorMessageKey ? (
             <View
               style={[
                 styles.streakNoticeCard,
@@ -276,14 +285,14 @@ export default function ProfileScreen() {
                   isDarkTheme ? styles.streakNoticeTextDark : null,
                 ]}
               >
-                {t('profile.errors.loadFailed', {
-                  defaultValue: 'Не вдалося завантажити streak.',
-                })}
+                {t(profileLoadErrorMessageKey)}
               </ThemedText>
               <Pressable
                 accessibilityRole="button"
                 onPress={() => {
                   void streakQuery.refetch();
+                  void achievementsQuery.refetch();
+                  void mascotQuery.refetch();
                 }}
                 style={({ pressed }) => [
                   styles.streakRetryButton,
@@ -343,15 +352,11 @@ export default function ProfileScreen() {
                       });
                     })
                     .catch((error) => {
-                      const messageKey =
-                        error instanceof Error
-                          ? error.message
-                          : 'streak.errors.restoreFailed';
+                      const messageKey = getStreakErrorMessageKey(error);
+                      if (!messageKey) return;
 
                       showBanner({
-                        title: t(messageKey, {
-                          defaultValue: t('streak.errors.restoreFailed'),
-                        }),
+                        title: t(messageKey),
                         variant: 'error',
                       });
                     });
@@ -386,15 +391,11 @@ export default function ProfileScreen() {
                       setFreezeDate(null);
                     })
                     .catch((error) => {
-                      const messageKey =
-                        error instanceof Error
-                          ? error.message
-                          : 'streak.errors.freezeFailed';
+                      const messageKey = getStreakErrorMessageKey(error);
+                      if (!messageKey) return;
 
                       showBanner({
-                        title: t(messageKey, {
-                          defaultValue: t('streak.errors.freezeFailed'),
-                        }),
+                        title: t(messageKey),
                         variant: 'error',
                       });
                     });
@@ -414,15 +415,11 @@ export default function ProfileScreen() {
                       setIsPurchaseFreezeModalOpen(false);
                     })
                     .catch((error) => {
-                      const messageKey =
-                        error instanceof Error
-                          ? error.message
-                          : 'streak.errors.purchaseFreezeFailed';
+                      const messageKey = getStreakErrorMessageKey(error);
+                      if (!messageKey) return;
 
                       showBanner({
-                        title: t(messageKey, {
-                          defaultValue: t('streak.errors.purchaseFreezeFailed'),
-                        }),
+                        title: t(messageKey),
                         variant: 'error',
                       });
                     });

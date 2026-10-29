@@ -85,9 +85,8 @@ describe('useUpdateDictionaryWordProgressMutation', () => {
     expect(mockOnSuccess).not.toHaveBeenCalled();
     expect(mockInvalidateQueries).not.toHaveBeenCalled();
     expect(mockShowBanner).toHaveBeenCalledWith({
-      description: 'dictionary.progressUpdateErrorDescription',
       durationMs: 4200,
-      title: 'dictionary.progressUpdateError',
+      title: 'errors.generic',
       variant: 'error',
     });
   });

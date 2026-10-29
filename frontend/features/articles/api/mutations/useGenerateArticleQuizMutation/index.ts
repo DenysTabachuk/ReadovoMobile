@@ -1,4 +1,5 @@
 import { useBanner } from '@/components/banner';
+import { getArticleErrorMessageKey } from '../../../utils/getArticleErrorMessageKey';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import {
@@ -75,9 +76,11 @@ export function useGenerateArticleQuizMutation({
         resolvedLevel: selectedLevel,
       };
     },
-    onError: () => {
+    onError: (error) => {
+      const messageKey = getArticleErrorMessageKey(error);
+      if (!messageKey) return;
       showBanner({
-        title: t('article.quiz.error'),
+        title: t(messageKey),
         variant: 'error',
       });
     },

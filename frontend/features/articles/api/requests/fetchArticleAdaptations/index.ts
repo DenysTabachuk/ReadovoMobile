@@ -1,4 +1,3 @@
-import { mapHttpError } from '@/api/utils/mapHttpError';
 import { httpClient } from '@/api/httpClient';
 import { API_BASE_URL } from '@/api';
 
@@ -22,7 +21,7 @@ export async function fetchArticleAdaptations(
 
   const response = await httpClient(
     `${API_BASE_URL}/api/articles/adaptations?${searchParams.toString()}`,
-  ).catch(mapHttpError('articles.errorDescription'));
+  );
 
   return response.data as ArticleAdaptationsByArticleId;
 }

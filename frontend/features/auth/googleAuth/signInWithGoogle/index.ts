@@ -6,6 +6,7 @@ import {
 } from '@react-native-google-signin/google-signin';
 
 import { configureGoogleSignIn } from '../configureGoogleSignIn';
+import { GoogleSignInError } from '../googleSignInError';
 import { getGoogleSignInUserMessage } from '../utils/getGoogleSignInUserMessage';
 import { logGoogleSignInError } from '../utils/logGoogleSignInError';
 
@@ -63,7 +64,7 @@ export async function signInWithGoogle() {
       const userMessage = getGoogleSignInUserMessage(error);
 
       if (userMessage) {
-        throw new Error(userMessage);
+        throw new GoogleSignInError(userMessage);
       }
     }
 

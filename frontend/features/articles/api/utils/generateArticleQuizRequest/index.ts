@@ -18,8 +18,8 @@ const ARTICLE_QUIZ_GENERATION_TIMEOUT_MS = 60000;
  *
  * @param path - API path, including its leading slash.
  * @param request - Article or vocabulary quiz settings to serialize as JSON.
- * @returns The parsed quiz session. Rejects with article.quiz.error on transport failure or a
- *   non-OK response; JSON errors propagate.
+ * @returns The parsed quiz session. HTTP codes, JSON failures and transport errors
+ * propagate unchanged. The owned 60-second abort becomes a TimeoutError.
  * @example
  * await generateArticleQuizRequest('/api/articles/quiz', {
  *   title: 'Space', text: 'The Moon orbits Earth.', level: 'A2', targetLength: 'short',
@@ -49,8 +49,12 @@ export async function generateArticleQuizRequest<
       signal: controller.signal,
     });
   } catch (error) {
-    if (error instanceof SyntaxError) throw error;
-    throw new Error('article.quiz.error');
+    if (controller.signal.aborted) {
+      const timeout = new Error('Article quiz request timed out.');
+      timeout.name = 'TimeoutError';
+      throw timeout;
+    }
+    throw error;
   } finally {
     clearTimeout(timeoutId);
   }

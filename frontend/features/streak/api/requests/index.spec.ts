@@ -95,22 +95,28 @@ it.each([
   mockFetch.mockRejectedValue(
     new HttpError(createHttpResponse('', { status: 500 })),
   );
-  await expect(request()).rejects.toThrow('profile.errors.loadFailed');
+  await expect(request()).rejects.toMatchObject({ status: 500 });
 });
 
 it.each([
   () => restoreBrokenStreak({ price: 10 }),
   () => applyStreakFreeze({ date: '2026-07-08' }),
 ])(
-  'continues resolving known backend errors after relocation',
+  'preserves domain codes without translating them in requests',
   async (request) => {
     mockFetch.mockRejectedValue(
       new HttpError(
-        createHttpResponse(JSON.stringify({ message: 'Not enough coins.' }), {
-          status: 400,
-        }),
+        createHttpResponse(
+          { code: 'STREAK_NOT_ENOUGH_COINS', message: 'Changed wording' },
+          {
+            status: 400,
+          },
+        ),
       ),
     );
-    await expect(request()).rejects.toThrow('streak.errors.notEnoughCoins');
+    await expect(request()).rejects.toMatchObject({
+      status: 400,
+      code: 'STREAK_NOT_ENOUGH_COINS',
+    });
   },
 );

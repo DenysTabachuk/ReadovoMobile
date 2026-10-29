@@ -1,3 +1,4 @@
+import { getAuthErrorMessageKey } from '../../utils/getAuthErrorMessageKey';
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -70,15 +71,11 @@ export default function ForgotPasswordScreen() {
         variant: 'success',
       });
     } catch (error) {
-      const messageKey =
-        error instanceof Error
-          ? error.message
-          : 'auth.errors.requestPasswordResetFailed';
+      const messageKey = getAuthErrorMessageKey(error);
+      if (!messageKey) return;
 
       showBanner({
-        title: t(messageKey, {
-          defaultValue: t('auth.errors.requestPasswordResetFailed'),
-        }),
+        title: t(messageKey),
         variant: 'error',
       });
     } finally {
@@ -117,15 +114,11 @@ export default function ForgotPasswordScreen() {
         },
       });
     } catch (error) {
-      const messageKey =
-        error instanceof Error
-          ? error.message
-          : 'auth.errors.verifyPasswordResetCodeFailed';
+      const messageKey = getAuthErrorMessageKey(error);
+      if (!messageKey) return;
 
       showBanner({
-        title: t(messageKey, {
-          defaultValue: t('auth.errors.verifyPasswordResetCodeFailed'),
-        }),
+        title: t(messageKey),
         variant: 'error',
       });
     } finally {
@@ -151,15 +144,11 @@ export default function ForgotPasswordScreen() {
         variant: 'success',
       });
     } catch (error) {
-      const messageKey =
-        error instanceof Error
-          ? error.message
-          : 'auth.errors.requestPasswordResetFailed';
+      const messageKey = getAuthErrorMessageKey(error);
+      if (!messageKey) return;
 
       showBanner({
-        title: t(messageKey, {
-          defaultValue: t('auth.errors.requestPasswordResetFailed'),
-        }),
+        title: t(messageKey),
         variant: 'error',
       });
     } finally {

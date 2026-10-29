@@ -1,3 +1,4 @@
+import { getAuthErrorMessageKey } from '../../utils/getAuthErrorMessageKey';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -79,15 +80,11 @@ export default function ResetPasswordScreen() {
         },
       });
     } catch (error) {
-      const messageKey =
-        error instanceof Error
-          ? error.message
-          : 'auth.errors.resetPasswordFailed';
+      const messageKey = getAuthErrorMessageKey(error);
+      if (!messageKey) return;
 
       showBanner({
-        title: t(messageKey, {
-          defaultValue: t('auth.errors.resetPasswordFailed'),
-        }),
+        title: t(messageKey),
         variant: 'error',
       });
     } finally {

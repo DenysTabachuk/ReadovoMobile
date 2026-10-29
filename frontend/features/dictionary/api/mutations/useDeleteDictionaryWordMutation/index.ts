@@ -5,6 +5,7 @@ import { useBanner } from '@/components/banner';
 import { useAuth } from '@/features/auth';
 
 import { deleteDictionaryWord } from '../../requests/deleteDictionaryWord';
+import { getDictionaryErrorMessageKey } from '../../../utils/getDictionaryErrorMessageKey';
 
 type UseDeleteDictionaryWordMutationParams = {
   onSuccess: () => void;
@@ -37,11 +38,12 @@ export function useDeleteDictionaryWordMutation({
 
   return useMutation({
     mutationFn: (wordId: string) => deleteDictionaryWord(wordId),
-    onError: () => {
+    onError: (error) => {
+      const messageKey = getDictionaryErrorMessageKey(error);
+      if (!messageKey) return;
       showBanner({
-        description: t('dictionary.deleteErrorDescription'),
         durationMs: ERROR_BANNER_DURATION_MS,
-        title: t('dictionary.deleteError'),
+        title: t(messageKey),
         variant: 'error',
       });
     },

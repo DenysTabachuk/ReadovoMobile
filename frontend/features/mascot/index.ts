@@ -17,3 +17,5 @@ export type {
   MascotEquippedItems,
   MascotProfile,
 } from './types';
+
+export { getMascotErrorMessageKey } from './utils/getMascotErrorMessageKey';

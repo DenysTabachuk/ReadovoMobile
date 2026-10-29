@@ -19,6 +19,7 @@ import { createQuizSessionResult } from './utils/createQuizSessionResult';
 import { isAnswerSelectionCorrect } from './utils/isAnswerSelectionCorrect';
 
 type QuizRunnerProps = {
+  onSubmitError?: (error: unknown) => void;
   onFinish: (result: QuizSessionResult) => void;
   renderSubmittedQuestionAction?: (question: QuizQuestion) => ReactNode;
   onSubmitAnswer?: (
@@ -32,6 +33,7 @@ export function QuizRunner({
   onFinish,
   renderSubmittedQuestionAction,
   onSubmitAnswer,
+  onSubmitError,
   questions,
 }: QuizRunnerProps) {
   const colorScheme = useColorScheme();
@@ -113,6 +115,10 @@ export function QuizRunner({
         }
 
         setSubmitResult(result);
+      } catch (error) {
+        if (!onSubmitError) throw error;
+        onSubmitError(error);
+        return;
       } finally {
         setIsSubmitting(false);
       }

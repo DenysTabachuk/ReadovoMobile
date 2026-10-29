@@ -1,5 +1,3 @@
-import { mapHttpError } from '@/api/utils/mapHttpError';
-
 import { api } from '@/features/auth';
 
 import { type AchievementsProfileResponse } from '../../../types';
@@ -7,9 +5,9 @@ import { type AchievementsProfileResponse } from '../../../types';
 export async function getAchievementsProfile(
   userId: string,
 ): Promise<AchievementsProfileResponse> {
-  const response = await api
-    .get<AchievementsProfileResponse>(`/achievements/profile/${userId}`)
-    .catch(mapHttpError('profile.errors.loadFailed'));
+  const response = await api.get<AchievementsProfileResponse>(
+    `/achievements/profile/${userId}`,
+  );
 
   return response.data;
 }

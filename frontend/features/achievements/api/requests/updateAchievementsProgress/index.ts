@@ -1,5 +1,3 @@
-import { mapHttpError } from '@/api/utils/mapHttpError';
-
 import { api } from '@/features/auth';
 
 import {
@@ -11,12 +9,10 @@ export async function updateAchievementsProgress(
   userId: string,
   payload: UpdateAchievementProgressDto,
 ): Promise<AchievementsProfileResponse> {
-  const response = await api
-    .patch<AchievementsProfileResponse>(
-      `/achievements/profile/${userId}/progress`,
-      payload,
-    )
-    .catch(mapHttpError('profile.errors.loadFailed'));
+  const response = await api.patch<AchievementsProfileResponse>(
+    `/achievements/profile/${userId}/progress`,
+    payload,
+  );
 
   return response.data;
 }
