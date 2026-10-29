@@ -3,7 +3,7 @@
 Status: shared backend boundaries, auth, streak, mascot, dictionary, achievements
 and translations codes implemented. Article library, discovery/Wikipedia,
 simplification, quiz and notifications non-2xx codes are implemented. The backend
-completion audit, shared diagnostics/contract generation and frontend presentation remain tracked in
+completion audit, shared diagnostics and frontend presentation remain tracked in
 [the implementation task](api-error-codes.md).
 
 ## Response and ownership
@@ -43,13 +43,19 @@ or the catalogue. Callers pass a definition to the shared exception class:
 `REQUEST_REJECTED` is a shared template with no fixed status; the filter supplies
 the original exception's HTTP status. Validation definitions require field details.
 
-Generate the planned cross-project `contracts/api-errors.json` artifact and
-backend/frontend declarations and runtime validators from these owned definitions,
-including per-code details schemas and allowed statuses. Add a CI freshness check;
-do not maintain an independent code list in the frontend or edit generated data.
-Feature presentation maps own translation keys and actions, not wire definitions.
-This file explains the contract and UI intent; generated catalogue tables should
-replace hand-maintained status/schema tables when generation is implemented.
+Cross-project schema/type generation is deferred to
+[OpenAPI contract generation](openapi-contract-generation.md), which covers the
+entire HTTP API. Do not introduce a separate `contracts/api-errors.json` generator
+as part of this task. Future OpenAPI error schemas must use these module-owned
+definitions, validation details and allowed statuses. Generated files will remain
+read-only, with freshness checks in CI.
+
+For the current frontend migration, use small explicit decoding/presentation maps
+for supported behaviors, verify code/status/details combinations with focused
+contract tests, and avoid asserting that handwritten client types exhaust all
+backend codes. Unknown codes still receive safe fallback behavior. Feature maps
+own translation keys and actions. Replace duplicated transport metadata when the
+OpenAPI task reaches the corresponding module.
 
 Backend API owners maintain serialization and common codes; feature owners maintain
 domain entries, endpoint tests and presentation maps together. Adding a code is
@@ -554,8 +560,10 @@ Generation failures use an operation fallback without auth refresh. Missing
 configuration uses the generic server fallback; validation uses known field
 feedback or a form fallback. Catch handlers preserve deliberate `ApiException`
 codes and log only a fixed diagnostic category, without original provider error
-messages, raw output or stack traces. Existing upstream telemetry remains outside
-these catch handlers; its redaction is part of the shared diagnostics follow-up.
+messages, raw output or stack traces. Upstream AI telemetry also records only
+fixed `contract_error`/`provider_error` categories and a safe exception event.
+`infrastructure/ai.telemetry.spec.ts` verifies that original rejections propagate,
+spans close and raw messages/stacks are omitted, including non-Error rejections.
 
 `quiz/article-reading-quiz.http.spec.ts` and
 `quiz/article-vocabulary-quiz.http.spec.ts` keep the flows separate. Their shared,
@@ -639,6 +647,32 @@ Each case owns its local Firebase app, SDK send spy and Nest app; all are cleane
 up afterward. Background-job failure handling, SDK retries and dispatch scheduling
 remain unchanged.
 
+## Backend migration audit
+
+The completion audit covers auth, streak, mascot, dictionary, articles,
+achievements, translations, notifications and the root controller, along with
+shared HTTP parsing, filters and guards. Explicit domain HTTP failures use owned
+`ApiException` definitions collected by `API_ERROR_CATALOGUE`. No remaining legacy
+Nest domain exceptions were found in production controllers/services.
+
+The remaining `HttpException` construction belongs to the body-parser fallback;
+the global filter supplies `REQUEST_REJECTED` while retaining its status. Internal
+SDK, AI budget/schema/semantic, persistence and date/JSON utility errors remain
+internal: owning request handlers map them to domain failures or the global filter
+returns `INTERNAL_ERROR`. Bootstrap failures and scheduled dispatch failures do not
+become HTTP error responses. There is no configured HTTP rate limiter to migrate.
+
+Notification partial successes retain their documented counters and safe delivery
+feedback. AI trace status/exception events and notification diagnostics are
+redacted. Existing SMTP fallback credential logging is a separate known issue,
+not permission to add raw diagnostics elsewhere. Richer safe server diagnostics
+can be improved separately; their absence does not block client decoding.
+
+This is a source/automated-contract audit, not a claim of live-provider or mobile
+release verification. Frontend decoding, session actions, feature presentation,
+mock API fixtures and final cross-project checks remain in the current task.
+OpenAPI/type generation remains explicitly deferred to its own task.
+
 ## Frontend presentation and session actions
 
 Normalize once in shared HTTP handling into a safe error with status, recognized
@@ -681,8 +715,10 @@ recorded at release; repository package versions do not establish rollout state.
 
 ## Follow-up outside this batch
 
-- Complete the domain inventories before marking delivery step 1 complete.
-- Complete redacted internal diagnostics and cross-project contract generation
-  before marking the shared-boundary delivery step complete.
+- Complete frontend migration, mock fixtures and release verification before
+  marking the API error-code task complete.
+- OpenAPI/type generation is tracked separately in
+  [OpenAPI contract generation](openapi-contract-generation.md) and is not a
+  prerequisite for current client decoding. Do not add an error-only generator.
 - Existing SMTP fallback logs verification codes with email addresses. Track a
   separate credential-logging fix; preserve successful response semantics here.

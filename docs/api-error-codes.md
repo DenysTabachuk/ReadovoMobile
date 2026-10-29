@@ -2,9 +2,10 @@
 
 Status: in progress; shared backend boundaries, auth, streak, mascot and dictionary
 codes implemented. Achievements, translations and articles are implemented.
-Notifications non-2xx codes are implemented; Firebase delivery diagnostic
-sanitization and HTTP tests are ready for review. Backend completion
-audit, shared diagnostic redaction/contract generation and frontend migration remain open.
+Notifications non-2xx codes and Firebase delivery diagnostic sanitization are
+implemented. Backend completion audit and AI telemetry redaction are ready for
+review; frontend migration remains open. Cross-project generation is deferred to
+[OpenAPI contract generation](openapi-contract-generation.md).
 This is the single implementation task for API error codes across
 Readovo. It incorporates the previous streak and mascot tasks. Updating this plan
 does not implement the contract or expand the Axios migration into business changes.
@@ -20,7 +21,7 @@ Pause after each batch for user review before starting the next one.
    implemented. Achievements and translations are implemented. The article library
    and discovery/Wikipedia are implemented, as are article simplification and
    reading/vocabulary quizzes. Notifications non-2xx codes are implemented.
-   Complete the backend audit and shared diagnostics/contract generation before
+   Complete the backend audit and shared diagnostic redaction before
    migrating frontend handling. Notification delivery outcomes remain success
    payloads, now with controlled delivery feedback and redacted SDK error logs.
 2. Complete domain inventories in reviewable groups: streak/mascot,
@@ -34,6 +35,12 @@ Pause after each batch for user review before starting the next one.
 The user confirmed there are no existing users and no compatibility requirement.
 Deploy backend first. Do not add a legacy frontend text/status adapter or retain
 the Nest `error` field. Validation messages use strings with typed field details.
+
+OpenAPI/type generation is a separate, deferred task. Do not build an error-only
+generator or make the current frontend migration depend on generated types. Keep
+the module-owned backend catalogue authoritative; document temporary frontend
+decoding/presentation maps and verify the supported code/status/detail combinations
+with focused contract checks until OpenAPI generation replaces that duplication.
 
 ## Goal and scope
 
