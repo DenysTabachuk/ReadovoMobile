@@ -1,6 +1,14 @@
 import { mapProviderError } from '../../http/map-provider-error';
 import { HttpService } from '@nestjs/axios';
-import { BadGatewayException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+
+import { ApiException } from '../../common/errors/api-exception';
+import { ARTICLES_ERRORS } from '../articles-errors';
+import {
+  WikipediaResponseSchema,
+  type WikipediaApiResponse,
+  type WikipediaPage,
+} from './wikipedia-response.schema';
 
 import {
   getCategoryDiscoveryTerm,
@@ -18,13 +26,11 @@ import {
 import {
   type ArticleReadyLevelFilter,
   type ArticleReadyTransformationFilter,
-  type WikipediaApiResponse,
   type WikipediaArticle,
   type WikipediaArticleCategory,
   type WikipediaArticleDetail,
   type WikipediaArticlePreviewLength,
   type WikipediaArticleSortOption,
-  type WikipediaPage,
 } from '../contracts/types';
 
 const DEFAULT_ARTICLE_LIMIT = 20;
@@ -100,7 +106,7 @@ export class WikipediaArticlesService {
     );
 
     if (!page?.title || !page.fullurl) {
-      throw new BadGatewayException('Wikipedia article is unavailable.');
+      throw new ApiException(ARTICLES_ERRORS.WIKIPEDIA_ARTICLE_UNAVAILABLE);
     }
 
     const html = await this.fetchWikipediaHtml(page.title, languageCode);
@@ -108,9 +114,7 @@ export class WikipediaArticlesService {
     const content = extractPlainTextFromBlocks(blocks);
 
     if (!content) {
-      throw new BadGatewayException(
-        'Wikipedia article content is unavailable.',
-      );
+      throw new ApiException(ARTICLES_ERRORS.WIKIPEDIA_CONTENT_UNAVAILABLE);
     }
 
     return {
@@ -390,11 +394,15 @@ export class WikipediaArticlesService {
       )
       .catch(
         mapProviderError(
-          new BadGatewayException('Failed to fetch Wikipedia content.'),
+          new ApiException(ARTICLES_ERRORS.WIKIPEDIA_REQUEST_FAILED),
         ),
       );
 
-    return response.data as WikipediaApiResponse;
+    const result = WikipediaResponseSchema.safeParse(response.data);
+    if (!result.success) {
+      throw new ApiException(ARTICLES_ERRORS.WIKIPEDIA_INVALID_RESPONSE);
+    }
+    return result.data;
   }
 
   private async fetchWikipediaHtml(
@@ -416,11 +424,15 @@ export class WikipediaArticlesService {
       )
       .catch(
         mapProviderError(
-          new BadGatewayException('Failed to fetch Wikipedia article HTML.'),
+          new ApiException(ARTICLES_ERRORS.WIKIPEDIA_HTML_REQUEST_FAILED),
         ),
       );
 
-    return response.data as string;
+    const html: unknown = response.data;
+    if (typeof html !== 'string') {
+      throw new ApiException(ARTICLES_ERRORS.WIKIPEDIA_CONTENT_UNAVAILABLE);
+    }
+    return html;
   }
 
   private createHeaders(): Record<string, string> {

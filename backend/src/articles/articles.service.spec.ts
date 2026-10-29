@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { HttpService } from '@nestjs/axios';
 import { BadGatewayException } from '@nestjs/common';
+import { ApiException } from '../common/errors/api-exception';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { ArticleFormulaRenderer } from './discovery/article-formula-renderer';
@@ -516,7 +517,7 @@ describe('ArticlesService', () => {
     });
 
     await expect(service.getArticleDetail(42)).rejects.toBeInstanceOf(
-      BadGatewayException,
+      ApiException,
     );
   });
 

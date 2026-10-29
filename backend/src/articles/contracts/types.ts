@@ -177,23 +177,6 @@ export type SimplifyArticleResponse = {
   title: string;
 };
 
-export type WikipediaPage = {
-  extract?: string;
-  fullurl?: string;
-  length?: number;
-  pageid: number;
-  thumbnail?: {
-    source?: string;
-  };
-  title: string;
-};
-
-export type WikipediaApiResponse = {
-  query?: {
-    pages?: Record<string, WikipediaPage>;
-  };
-};
-
 export type SimplifiedArticleCacheRow = {
   adapted_blocks?: ArticleBlock[];
   adapted_length: number;

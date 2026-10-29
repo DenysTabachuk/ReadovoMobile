@@ -1,8 +1,8 @@
 ﻿# Task: project-wide API error contract
 
 Status: in progress; shared backend boundaries, auth, streak, mascot and dictionary
-codes implemented. Achievements and translations are implemented. Article library
-codes and HTTP tests are ready for review; article discovery/AI, notifications and
+codes implemented. Achievements, translations and the article library are implemented.
+Article discovery/Wikipedia codes and HTTP tests are ready for review; article AI, notifications and
 frontend migration remain open.
 This is the single implementation task for API error codes across
 Readovo. It incorporates the previous streak and mascot tasks. Updating this plan
@@ -17,7 +17,7 @@ Pause after each batch for user review before starting the next one.
    tests implemented. Backend auth, streak and mascot codes and their HTTP tests
    are implemented. Dictionary word, generation and embedding paths are
    implemented. Achievements and translations are implemented. The article library
-   is implemented; article discovery/AI, notifications and frontend handling remain
+   and discovery/Wikipedia are implemented; article AI, notifications and frontend handling remain
    open. Review article library, discovery and AI flows in separate batches.
 2. Complete domain inventories in reviewable groups: streak/mascot,
    dictionary/achievements, articles/translations, notifications/mock outcomes.

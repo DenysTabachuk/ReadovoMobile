@@ -1,8 +1,8 @@
 # API error contract
 
 Status: shared backend boundaries, auth, streak, mascot, dictionary, achievements
-and translations codes implemented. Article library codes are implemented;
-article discovery/AI, other domains and frontend presentation remain tracked in
+and translations codes implemented. Article library and discovery/Wikipedia codes
+are implemented; article AI, other domains and frontend presentation remain tracked in
 [the implementation task](api-error-codes.md).
 
 ## Response and ownership
@@ -415,8 +415,8 @@ HTTP suite. This migration does not change context matching or retry policies.
 
 ## Article library inventory
 
-This batch covers saved/recent library routes only. Discovery, Wikipedia content,
-AI adaptations/summaries and quizzes remain pending separate review batches.
+This inventory covers saved/recent library routes only. Discovery/Wikipedia is
+covered below; AI adaptations/summaries and quizzes remain pending review batches.
 Article-owned definitions live in `articles/articles-errors.ts`; the library's
 missing-user error allows no details.
 
@@ -448,6 +448,47 @@ HTTP 200; save/recent writes remain HTTP 201. Saved fields/timestamps, upsert
 identity and the recent-list retention limit of 50 are preserved. Mutations retain
 their existing post-write list read and missing-user outcome; this migration does
 not introduce transaction or concurrency changes.
+
+## Article discovery and Wikipedia inventory
+
+Public discovery/detail routes retain their existing statuses and success bodies.
+Definitions live in `articles/articles-errors.ts` and allow no details. Request
+formats/ranges remain owned by the existing article DTOs.
+
+| Route / branch                                                                     | Status | Code                                     | Contract test                                  |
+| ---------------------------------------------------------------------------------- | ------ | ---------------------------------------- | ---------------------------------------------- |
+| GET articles, articles/random or articles/:id: Wikipedia JSON HTTP rejection       | 502    | `ARTICLES_WIKIPEDIA_REQUEST_FAILED`      | Wikipedia errors suite, JSON HTTP failures     |
+| Recommended/category-search fallback HTTP rejection                                | 502    | `ARTICLES_WIKIPEDIA_REQUEST_FAILED`      | Wikipedia errors suite, fallback cases         |
+| GET articles/:id: Wikipedia HTML HTTP rejection                                    | 502    | `ARTICLES_WIKIPEDIA_HTML_REQUEST_FAILED` | Wikipedia errors suite, HTML failure           |
+| Detail metadata absent, blank title, missing URL, or requested page absent         | 502    | `ARTICLES_WIKIPEDIA_ARTICLE_UNAVAILABLE` | Wikipedia errors suite, absent metadata        |
+| Detail HTML has no usable content or is not a string                               | 502    | `ARTICLES_WIKIPEDIA_CONTENT_UNAVAILABLE` | Wikipedia errors suite, unusable HTML          |
+| Decoded Wikipedia JSON fails its runtime schema                                    | 502    | `ARTICLES_WIKIPEDIA_INVALID_RESPONSE`    | Wikipedia errors suite, malformed decoded JSON |
+| Transport failure without an HTTP response or malformed JSON rejected by transport | 500    | `INTERNAL_ERROR`                         | Wikipedia errors suite, transport cases        |
+| Persistence failure while attaching available adaptations                          | 500    | `INTERNAL_ERROR`                         | Wikipedia requests suite, persistence failure  |
+| Invalid list/detail query or article ID                                            | 400    | `VALIDATION_FAILED`                      | Wikipedia requests suite, DTO cases            |
+
+Provider failures use an article-operation fallback without auth recovery, even
+when Wikipedia itself responds 401/403/404. Validation uses known field feedback
+or an operation fallback. No raw provider payload or URL is exposed.
+
+`discovery/wikipedia-errors.http.spec.ts` owns failure serialization;
+`discovery/wikipedia-requests.http.spec.ts` owns DTO and success contracts. The
+shared test app keeps the facade, discovery service, library adaptation attachment,
+HTML parser, formula renderer and production Axios parsing/interceptors real.
+Network I/O and adaptation persistence are mocked; fixtures contain no formulas
+and do not start MathJax or AI providers.
+
+`WikipediaResponseSchema` validates decoded provider data and supplies inferred
+provider types within discovery. It permits unrelated metadata and missing/null
+query/pages, preserving empty discovery results. Detail requests still fail with
+502 when no matching usable page exists. Wrong field types are rejected with a
+deliberate 502 instead of accidental runtime errors. Missing/blank HTML retains
+the existing content-unavailable status. The schema adds no coercion or new input
+restrictions to request DTOs.
+
+Preview payloads, tokenized detail blocks and plain content remain unchanged.
+Existing article unit tests retain discovery filtering, recommendations, formula
+rendering and fallback behavior. AI errors and logging remain a later batch.
 
 ## Frontend presentation and session actions
 
