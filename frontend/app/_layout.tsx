@@ -46,9 +46,11 @@ Notifications.setNotificationHandler({
 export default function RootLayout() {
   return (
     <PreferencesProvider>
-      <AuthProvider>
-        <RootLayoutContent />
-      </AuthProvider>
+      <QueryProvider>
+        <AuthProvider>
+          <RootLayoutContent />
+        </AuthProvider>
+      </QueryProvider>
     </PreferencesProvider>
   );
 }
@@ -135,53 +137,48 @@ function RootLayoutContent() {
           <ThemeProvider
             value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}
           >
-            <QueryProvider>
-              <BannerProvider>
-                <Stack
-                  screenOptions={{
-                    contentStyle: {
-                      backgroundColor,
-                    },
-                  }}
-                >
-                  <Stack.Screen name="index" options={{ headerShown: false }} />
-                  <Stack.Screen name="about" options={{ headerShown: false }} />
-                  <Stack.Screen name="login" options={{ headerShown: false }} />
-                  <Stack.Screen
-                    name="register"
-                    options={{ headerShown: false }}
-                  />
-                  <Stack.Screen
-                    name="forgot-password"
-                    options={{ headerShown: false }}
-                  />
-                  <Stack.Screen
-                    name="reset-password"
-                    options={{ headerShown: false }}
-                  />
-                  <Stack.Screen
-                    name="(tabs)"
-                    options={{ headerShown: false }}
-                  />
-                  <Stack.Screen name="dictionary-test" />
-                  <Stack.Screen name="article/[id]" />
-                  <Stack.Screen name="article-quiz/[id]" />
-                  <Stack.Screen
-                    name="notification-test"
-                    options={{ title: 'Notification Test' }}
-                  />
-                  <Stack.Screen
-                    name="modal"
-                    options={{ presentation: 'modal', title: 'Modal' }}
-                  />
-                </Stack>
-                <StatusBar
-                  backgroundColor={backgroundColor}
-                  style={colorScheme === 'dark' ? 'light' : 'dark'}
-                  translucent={false}
+            <BannerProvider>
+              <Stack
+                screenOptions={{
+                  contentStyle: {
+                    backgroundColor,
+                  },
+                }}
+              >
+                <Stack.Screen name="index" options={{ headerShown: false }} />
+                <Stack.Screen name="about" options={{ headerShown: false }} />
+                <Stack.Screen name="login" options={{ headerShown: false }} />
+                <Stack.Screen
+                  name="register"
+                  options={{ headerShown: false }}
                 />
-              </BannerProvider>
-            </QueryProvider>
+                <Stack.Screen
+                  name="forgot-password"
+                  options={{ headerShown: false }}
+                />
+                <Stack.Screen
+                  name="reset-password"
+                  options={{ headerShown: false }}
+                />
+                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                <Stack.Screen name="dictionary-test" />
+                <Stack.Screen name="article/[id]" />
+                <Stack.Screen name="article-quiz/[id]" />
+                <Stack.Screen
+                  name="notification-test"
+                  options={{ title: 'Notification Test' }}
+                />
+                <Stack.Screen
+                  name="modal"
+                  options={{ presentation: 'modal', title: 'Modal' }}
+                />
+              </Stack>
+              <StatusBar
+                backgroundColor={backgroundColor}
+                style={colorScheme === 'dark' ? 'light' : 'dark'}
+                translucent={false}
+              />
+            </BannerProvider>
           </ThemeProvider>
         </SafeAreaProvider>
       </View>

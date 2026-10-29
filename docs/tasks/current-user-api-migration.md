@@ -139,10 +139,16 @@ Changing how ownership is determined does not change business rules for rewards,
 prices, streaks, quizzes, or administrator permissions. Related separate task:
 [move quiz rewards to the backend](server-side-quiz-rewards.md).
 
-Session infrastructure follow-up:
-[bind API operations to their initiating session](session-bound-api-client.md)
-(P1). Preserve existing session guards while replacing manual snapshot checks
-incrementally; this is separate from changing endpoint paths to `/me`.
+Session changes centrally cancel pending queries and scheduled retries; existing
+request, token, and multi-step workflow guards remain necessary. A repository-wide
+session-parameter or client-hook migration is not required by the verified retry fix.
+
+Offline follow-up, separate from endpoint migration: move streak replay out of
+profile reads and serialize per-owner queue updates. Current read/replace writes
+can lose an intervening append. Cover replay concurrency and event retention before
+expanding synchronization; preserve owned pending events and never replay legacy
+unowned queues. Client cancellation cannot undo accepted server writes or provide
+server-side idempotency. Coordinate with the server-side rewards task above.
 
 Done when all agreed personal endpoints use verified identity, their consumers
 are updated, account caches remain isolated, resource authorization is preserved,

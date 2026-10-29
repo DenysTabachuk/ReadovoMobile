@@ -27,15 +27,13 @@ export async function syncPendingStreakEvents(userId: string): Promise<void> {
 
   for (const event of pendingEvents) {
     try {
-      session.assertCurrent();
       await completeStreakActivity({
         activityType: event.activityType,
       });
-      session.assertCurrent();
     } catch {
-      session.assertCurrent();
       remainingEvents.push(event);
     }
+    session.assertCurrent();
   }
 
   await pendingActivityEventsStorage.write(userId, remainingEvents);

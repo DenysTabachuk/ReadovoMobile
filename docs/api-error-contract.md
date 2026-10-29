@@ -2,7 +2,7 @@
 
 Status: backend error codes, shared boundaries, minimal frontend code extraction,
 auth/session decisions and feature presentation are implemented. OpenAPI/type
-generation remains a [separate deferred task](openapi-contract-generation.md).
+generation remains a [separate deferred task](tasks/openapi-contract-generation.md).
 Legacy Mock API migration/removal is excluded by the user's decision.
 
 ## Response and ownership
@@ -43,7 +43,7 @@ or the catalogue. Callers pass a definition to the shared exception class:
 the original exception's HTTP status. Validation definitions require field details.
 
 Cross-project schema/type generation is deferred to
-[OpenAPI contract generation](openapi-contract-generation.md), which covers the
+[OpenAPI contract generation](tasks/openapi-contract-generation.md), which covers the
 entire HTTP API. Do not introduce a separate `contracts/api-errors.json` generator
 as part of this task. Future OpenAPI error schemas must use these module-owned
 definitions, validation details and allowed statuses. Generated files will remain
@@ -381,7 +381,7 @@ Profile reads still calculate learned words from dictionary persistence, and the
 existing reward unit tests retain automatic-claim and no-double-award coverage.
 
 The existing endpoint still accepts client-supplied balance and quiz counters.
-That known issue is tracked in [Server-side quiz rewards](server-side-quiz-rewards.md)
+That known issue is tracked in [Server-side quiz rewards](tasks/server-side-quiz-rewards.md)
 and remains separate from API error codes; do not silently change permissions or
 reward rules in this migration.
 
@@ -792,7 +792,7 @@ recorded at release; repository package versions do not establish rollout state.
   separate change; this migration does not claim those fixtures support the new
   code contract. Unit-test network/SDK mocks remain in use.
 - OpenAPI/type generation is tracked separately in
-  [OpenAPI contract generation](openapi-contract-generation.md) and is not a
+  [OpenAPI contract generation](tasks/openapi-contract-generation.md) and is not a
   prerequisite for current client decoding. Do not add an error-only generator.
 - Existing SMTP fallback logs verification codes with email addresses. Track a
   separate credential-logging fix; preserve successful response semantics here.

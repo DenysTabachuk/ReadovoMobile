@@ -61,6 +61,30 @@ describe('createAuthSessionStore', () => {
     expect(await store.read()).toEqual(TOKENS_A);
   });
 
+  it('notifies session invalidation before storage, but not refresh or obsolete cleanup', async () => {
+    const { store, storage } = setup();
+    const changed = jest.fn(() => store.version);
+    const unsubscribe = store.subscribe(changed);
+
+    const login = store.replace(TOKENS_A);
+    expect(changed).toHaveReturnedWith(1);
+    expect(storage.setItem).not.toHaveBeenCalled();
+    await login;
+
+    await store.commitRefresh({ version: store.version, tokens: TOKENS_B });
+    await store.clearIfCurrent(0);
+    expect(changed).toHaveBeenCalledTimes(1);
+
+    const logout = store.clearIfCurrent(store.version);
+    expect(changed).toHaveLastReturnedWith(2);
+    expect(storage.removeItem).not.toHaveBeenCalled();
+    await logout;
+
+    unsubscribe();
+    await store.replace(TOKENS_A);
+    expect(changed).toHaveBeenCalledTimes(2);
+  });
+
   it('does not revive old operations when the same account signs in again', async () => {
     const { store } = setup();
     await store.replace(TOKENS_A);

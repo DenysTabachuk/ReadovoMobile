@@ -267,7 +267,7 @@ Related work to track separately from quiz implementation:
   notification UX require explicit decisions above and separately scoped changes.
 - Personal `/me` route migration and shared error-code migration remain separate
   tasks. See [current-user API migration](current-user-api-migration.md) and
-  [API error contract](api-error-contract.md).
+  [API error contract](../api-error-contract.md).
 
 ## Main implementation locations
 
