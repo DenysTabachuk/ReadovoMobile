@@ -2,7 +2,8 @@
 
 Status: shared backend boundaries, auth, streak, mascot, dictionary, achievements
 and translations codes implemented. Article library, discovery/Wikipedia,
-simplification and quiz codes are implemented; other domains and frontend presentation remain tracked in
+simplification, quiz and notifications non-2xx codes are implemented. The backend
+completion audit, shared diagnostics/contract generation and frontend presentation remain tracked in
 [the implementation task](api-error-codes.md).
 
 ## Response and ownership
@@ -32,7 +33,8 @@ Backend definitions belong to their owners: shared errors in
 `backend/src/dictionary/dictionary-errors.ts`, achievements errors in
 `backend/src/achievements/achievements-errors.ts`, translations errors in
 `backend/src/translations/translations-errors.ts`, article errors in
-`backend/src/articles/articles-errors.ts`, and validation rules in
+`backend/src/articles/articles-errors.ts`, notifications errors in
+`backend/src/notifications/notifications-errors.ts`, and validation rules in
 `backend/src/common/validation/create-validation-exception.ts`.
 `backend/src/api-error-catalogue.ts` collects module definitions for contract
 tooling; its test rejects duplicate public codes. `common` does not import auth
@@ -569,6 +571,55 @@ normalization. Requested vocabulary level still takes precedence over the model
 level. Reading defaults remain A2/short. Both flows still retry once for semantic
 violations and may succeed with the corrected result. No SDK retry, token-budget,
 representative-excerpt or question-count policy is changed.
+
+## Notifications inventory
+
+All seven `/notifications` routes retain `UserAuthGuard`. Six user-ID routes also
+check route ownership. Manual dispatch has no route user ID; in non-production it
+remains available to any authenticated user. This migration adds no permissions.
+Definitions live in `notifications/notifications-errors.ts` and allow no details.
+
+| Route / branch                                                            | Status | Code                                     | Contract coverage                                  |
+| ------------------------------------------------------------------------- | ------ | ---------------------------------------- | -------------------------------------------------- |
+| POST learning-reminders/dispatch: production restriction                  | 403    | `NOTIFICATIONS_MANUAL_DISPATCH_DISABLED` | Operations HTTP suite, production dispatch         |
+| DELETE learning-reminders/dispatch/today/:userId: production restriction  | 403    | `NOTIFICATIONS_DISPATCH_CLEAR_DISABLED`  | Operations HTTP suite, production clearing         |
+| Missing JWT on any route                                                  | 401    | `AUTH_AUTHENTICATION_REQUIRED`           | Access HTTP suite, all seven routes                |
+| Different owner on any user-ID route                                      | 403    | `AUTH_OWNERSHIP_DENIED`                  | Access HTTP suite, all six owner routes            |
+| Invalid preferences, push-token fields, device-ID query or test-push body | 400    | `VALIDATION_FAILED`                      | Preferences, push-token and operations HTTP suites |
+| Unexpected persistence failure                                            | 500    | `INTERNAL_ERROR`                         | Preferences, push-token and operations HTTP suites |
+
+Production-operation restrictions use operation feedback without token refresh.
+Validation uses known field feedback or a form fallback; persistence failures use
+a generic operation fallback. There is no explicit user-existence check in these
+services, so database failures remain generic 500 errors rather than acquiring an
+invented missing-user code.
+
+HTTP coverage is split into `notifications-access.http.spec.ts`,
+`notifications-preferences.http.spec.ts`, `notifications-push-token.http.spec.ts`
+and `notifications-operations.http.spec.ts`. Their shared factory creates real
+controllers/services, JWT guards, DTO validation and production error boundaries
+with fresh narrow persistence mocks. Firebase discovery is forced unavailable
+before credentials are read; these suites do not claim SDK delivery coverage.
+App closure clears the real service's dispatch interval. Production/test environment
+changes and logger spies are restored by their owning suites.
+
+Success bodies and statuses are unchanged: preferences return HTTP 200 with the
+existing default reminder time; token registration returns 201 `{ ok: true }`,
+deactivation remains idempotent HTTP 200, development clearing returns 200 with
+`deletedCount`, and development dispatch/test pushes return 201 with counters.
+No-token and unavailable-Firebase test pushes remain delivery outcomes, including
+the existing `failureReasons` field, rather than becoming non-2xx API failures.
+DTOs already own request constraints; no validation is moved or duplicated.
+
+Controller catch logs no longer include payloads, partial push tokens or original
+error stacks. Delivery counters are logged without repeating `failureReasons`.
+Known separate diagnostic debt remains in the untouched delivery service:
+`sendFcmPush` logs a raw token and Firebase error, `getFcmErrorMessage` copies
+provider messages into successful `failureReasons`, and initialization warnings
+serialize credential-loading errors. Redact those logs and design safe structured
+delivery feedback in a dedicated review batch; do not silently alter success
+payloads as part of the non-2xx migration. Background-job failure handling and
+delivery retry/deactivation policy are also unchanged.
 
 ## Frontend presentation and session actions
 

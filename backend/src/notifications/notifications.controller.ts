@@ -2,7 +2,6 @@ import {
   Body,
   Controller,
   Delete,
-  ForbiddenException,
   Get,
   Logger,
   Param,
@@ -13,6 +12,7 @@ import {
 } from '@nestjs/common';
 
 import { UserAuthGuard } from '../auth/user-auth.guard';
+import { ApiException } from '../common/errors/api-exception';
 import { UserIdParamsDto } from '../common/validation/request.dto';
 import {
   DeviceIdQueryDto,
@@ -21,6 +21,7 @@ import {
   UpsertLearningReminderPreferencesDto,
 } from './dto';
 import { NotificationsService } from './notifications.service';
+import { NOTIFICATIONS_ERRORS } from './notifications-errors';
 import type {
   LearningReminderDispatchResult,
   LearningReminderPreferences,
@@ -52,10 +53,7 @@ export class NotificationsController {
         payload,
       );
     } catch (error) {
-      this.logger.error(
-        `upsertLearningReminderPreferences failed userId=${userId} payload=${JSON.stringify(payload)}`,
-        error instanceof Error ? error.stack : String(error),
-      );
+      this.logger.error('Learning reminder preferences update failed.');
       throw error;
     }
   }
@@ -75,15 +73,8 @@ export class NotificationsController {
       );
       return { ok: true };
     } catch (error) {
-      this.logger.error(
-        `registerPushToken failed userId=${userId} payload=${JSON.stringify({
-          ...payload,
-          pushToken: payload.pushToken
-            ? `${payload.pushToken.slice(0, 24)}...`
-            : payload.pushToken,
-        })}`,
-        error instanceof Error ? error.stack : String(error),
-      );
+      // Push tokens and persistence errors can contain credentials or request data.
+      this.logger.error('Push token registration failed.');
       throw error;
     }
   }
@@ -109,14 +100,11 @@ export class NotificationsController {
         payload,
       );
       this.logger.log(
-        `sendTestPush result userId=${userId} tokenCount=${result.tokenCount} sentCount=${result.sentCount} failedCount=${result.failedCount} reasons=${result.failureReasons.join(' | ')}`,
+        `sendTestPush result userId=${userId} tokenCount=${result.tokenCount} sentCount=${result.sentCount} failedCount=${result.failedCount}`,
       );
       return result;
     } catch (error) {
-      this.logger.error(
-        `sendTestPush failed userId=${userId}`,
-        error instanceof Error ? error.stack : String(error),
-      );
+      this.logger.error('Test push request failed.');
       throw error;
     }
   }
@@ -126,9 +114,7 @@ export class NotificationsController {
     @Param() { userId }: UserIdParamsDto,
   ): Promise<{ deletedCount: number }> {
     if (process.env.NODE_ENV === 'production') {
-      throw new ForbiddenException(
-        'Clearing reminder dispatches is disabled in production.',
-      );
+      throw new ApiException(NOTIFICATIONS_ERRORS.DISPATCH_CLEAR_DISABLED);
     }
 
     this.logger.log(`clear today reminder dispatch requested userId=${userId}`);
@@ -146,9 +132,7 @@ export class NotificationsController {
   @Post('learning-reminders/dispatch')
   async dispatchLearningRemindersForDevelopment(): Promise<LearningReminderDispatchResult> {
     if (process.env.NODE_ENV === 'production') {
-      throw new ForbiddenException(
-        'Manual reminder dispatch is disabled in production.',
-      );
+      throw new ApiException(NOTIFICATIONS_ERRORS.MANUAL_DISPATCH_DISABLED);
     }
 
     this.logger.log('manual learning reminder dispatch requested');
@@ -160,10 +144,7 @@ export class NotificationsController {
         `manual learning reminder dispatch completed checked=${result.checkedCount} sent=${result.sentCount} outsideWindow=${result.skippedOutsideWindowCount} completedToday=${result.skippedCompletedTodayCount} alreadySent=${result.skippedAlreadySentCount} noTokens=${result.skippedNoTokensCount} sendFailed=${result.skippedSendFailedCount}`,
       );
     } catch (error) {
-      this.logger.error(
-        'manual learning reminder dispatch failed',
-        error instanceof Error ? error.stack : String(error),
-      );
+      this.logger.error('Manual learning reminder dispatch failed.');
       throw error;
     }
 
