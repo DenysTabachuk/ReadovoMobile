@@ -1,10 +1,8 @@
-import {
-  BadGatewayException,
-  Injectable,
-  InternalServerErrorException,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 
+import { ApiException } from '../../common/errors/api-exception';
+import { COMMON_ERRORS } from '../../common/errors/common-errors';
+import { ARTICLES_ERRORS } from '../articles-errors';
 import {
   AI_SCHEMA_NAMES,
   ReadingQuizOutputSchema,
@@ -59,9 +57,7 @@ export class ArticleQuizService {
       this.logger.error(
         `Groq key is missing for article quiz: title="${title}"`,
       );
-      throw new InternalServerErrorException(
-        'Article quiz generation service is not configured.',
-      );
+      throw new ApiException(COMMON_ERRORS.INTERNAL_ERROR);
     }
 
     try {
@@ -99,17 +95,10 @@ export class ArticleQuizService {
         validate: ({ questions }) => this.quizValidator.validate(questions),
       });
     } catch (error) {
-      if (error instanceof BadGatewayException) throw error;
-
-      const errorMessage =
-        error instanceof Error ? error.message : 'Unknown Groq error';
-      const errorStack = error instanceof Error ? error.stack : undefined;
-      this.logger.error(
-        `Groq quiz request failed: title="${title}", model=${this.outputRunner.model}, reason="${errorMessage}"`,
-        errorStack,
-      );
-
-      throw new BadGatewayException('Failed to generate article quiz.');
+      if (error instanceof ApiException) throw error;
+      // Provider errors and semantic diagnostics may contain raw output or secrets.
+      this.logger.error('Article quiz generation failed.');
+      throw new ApiException(ARTICLES_ERRORS.QUIZ_GENERATION_FAILED);
     }
   }
 
@@ -126,9 +115,7 @@ export class ArticleQuizService {
       this.logger.error(
         `Groq key is missing for article vocabulary quiz: title="${title}"`,
       );
-      throw new InternalServerErrorException(
-        'Article vocabulary quiz generation service is not configured.',
-      );
+      throw new ApiException(COMMON_ERRORS.INTERNAL_ERROR);
     }
 
     const targetQuestionCount =
@@ -173,19 +160,10 @@ export class ArticleQuizService {
           }),
       });
     } catch (error) {
-      if (error instanceof BadGatewayException) throw error;
-
-      const errorMessage =
-        error instanceof Error ? error.message : 'Unknown Groq error';
-      const errorStack = error instanceof Error ? error.stack : undefined;
-      this.logger.error(
-        `Groq vocabulary quiz request failed: title="${title}", model=${this.outputRunner.model}, reason="${errorMessage}"`,
-        errorStack,
-      );
-
-      throw new BadGatewayException(
-        'Failed to generate article vocabulary quiz.',
-      );
+      if (error instanceof ApiException) throw error;
+      // Keep the public/logged category without serializing provider diagnostics.
+      this.logger.error('Article vocabulary quiz generation failed.');
+      throw new ApiException(ARTICLES_ERRORS.VOCABULARY_QUIZ_GENERATION_FAILED);
     }
   }
 

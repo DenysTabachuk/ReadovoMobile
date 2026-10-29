@@ -1,6 +1,5 @@
 import axios from 'axios';
 import { HttpService } from '@nestjs/axios';
-import { BadGatewayException } from '@nestjs/common';
 import { ApiException } from '../common/errors/api-exception';
 
 import { PrismaService } from '../prisma/prisma.service';
@@ -1375,7 +1374,7 @@ describe('ArticlesService', () => {
         text: "Alan Turing was an English mathematician. The machine could follow an algorithm. He helped develop theoretical computer science. Turing wrote about artificial intelligence. He worked at Britain's codebreaking centre.",
         title: 'Alan Turing',
       }),
-    ).rejects.toBeInstanceOf(BadGatewayException);
+    ).rejects.toBeInstanceOf(ApiException);
     expect(createChatCompletionMock).toHaveBeenCalledTimes(1);
   });
 });

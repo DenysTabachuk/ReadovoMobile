@@ -1,8 +1,8 @@
 # API error contract
 
 Status: shared backend boundaries, auth, streak, mascot, dictionary, achievements
-and translations codes implemented. Article library and discovery/Wikipedia codes
-and simplification are implemented; article quizzes, other domains and frontend presentation remain tracked in
+and translations codes implemented. Article library, discovery/Wikipedia,
+simplification and quiz codes are implemented; other domains and frontend presentation remain tracked in
 [the implementation task](api-error-codes.md).
 
 ## Response and ownership
@@ -416,7 +416,7 @@ HTTP suite. This migration does not change context matching or retry policies.
 ## Article library inventory
 
 This inventory covers saved/recent library routes only. Discovery/Wikipedia is
-covered below, along with AI adaptations/summaries. Quizzes remain pending review.
+covered below, along with AI adaptations/summaries and quizzes.
 Article-owned definitions live in `articles/articles-errors.ts`; the library's
 missing-user error allows no details.
 
@@ -527,12 +527,48 @@ Existing success status (201), default A2 level, default summary operation, titl
 block/question payloads, source hashing, chunking and cache policy are preserved.
 A cache hit still succeeds without a provider key. Existing chunk/formula tests
 remain intact. No retry, token-budget, transaction or persistence-recovery policy
-is added. Standalone quiz endpoints and their error logs remain the next batch.
+is added. Standalone quiz endpoints have their own inventory below.
 
 Known input-validation follow-up: `SimplifyArticleDto.blocks` currently validates
 only that the value is an array; nested block structure is not checked there.
 This batch does not tighten that existing request contract. Address it separately
 with a supported block schema and explicit malformed-block HTTP tests.
+
+## Article quiz inventory
+
+Both `POST /api/articles/quiz` and `POST /api/articles/vocabulary-quiz` remain
+public. Domain definitions live in `articles/articles-errors.ts` and allow no
+details. DTO constraints, prompts, question policies and semantic retry counts
+are unchanged.
+
+| Route / branch                                                                        | Status | Code                                         | Contract coverage                                           |
+| ------------------------------------------------------------------------------------- | ------ | -------------------------------------------- | ----------------------------------------------------------- |
+| Either quiz: missing provider key                                                     | 500    | `INTERNAL_ERROR`                             | Both quiz HTTP suites, configuration cases                  |
+| Reading quiz: provider/client/schema, planning or exhausted semantic retry failure    | 502    | `ARTICLES_QUIZ_GENERATION_FAILED`            | Reading HTTP suite, client failures and retry exhaustion    |
+| Vocabulary quiz: provider/client/schema, planning or exhausted semantic retry failure | 502    | `ARTICLES_VOCABULARY_QUIZ_GENERATION_FAILED` | Vocabulary HTTP suite, client failures and retry exhaustion |
+| Invalid text, level or reading target length                                          | 400    | `VALIDATION_FAILED`                          | Both quiz HTTP suites, DTO cases                            |
+
+Generation failures use an operation fallback without auth refresh. Missing
+configuration uses the generic server fallback; validation uses known field
+feedback or a form fallback. Catch handlers preserve deliberate `ApiException`
+codes and log only a fixed diagnostic category, without original provider error
+messages, raw output or stack traces. Existing upstream telemetry remains outside
+these catch handlers; its redaction is part of the shared diagnostics follow-up.
+
+`quiz/article-reading-quiz.http.spec.ts` and
+`quiz/article-vocabulary-quiz.http.spec.ts` keep the flows separate. Their shared,
+typed quiz app factory uses real controllers/facade, quiz service, token planning,
+prompt generation, semantic retry runner and validators. Each app has a fresh
+`GroqTextClient` mock supplying validated outputs or client errors; SDK JSON/schema
+parsing remains covered by existing client/service unit tests. Tests neither
+connect to persistence nor call live providers.
+
+Success stays HTTP 201: reading returns `{ questions }`, vocabulary returns
+`{ questions, resolvedLevel }` with the existing term, translation and option-ID
+normalization. Requested vocabulary level still takes precedence over the model
+level. Reading defaults remain A2/short. Both flows still retry once for semantic
+violations and may succeed with the corrected result. No SDK retry, token-budget,
+representative-excerpt or question-count policy is changed.
 
 ## Frontend presentation and session actions
 

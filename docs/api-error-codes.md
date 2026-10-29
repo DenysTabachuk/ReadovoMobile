@@ -1,10 +1,9 @@
 ﻿# Task: project-wide API error contract
 
 Status: in progress; shared backend boundaries, auth, streak, mascot and dictionary
-codes implemented. Achievements, translations and the article library are implemented.
-Article discovery/Wikipedia is implemented. Article simplification codes and HTTP
-tests are ready for review; article quizzes, notifications and frontend migration
-remain open.
+codes implemented. Achievements, translations and articles are implemented.
+Article reading/vocabulary quiz codes and HTTP tests are ready for review;
+notifications and frontend migration remain open.
 This is the single implementation task for API error codes across
 Readovo. It incorporates the previous streak and mascot tasks. Updating this plan
 does not implement the contract or expand the Axios migration into business changes.
@@ -18,9 +17,8 @@ Pause after each batch for user review before starting the next one.
    tests implemented. Backend auth, streak and mascot codes and their HTTP tests
    are implemented. Dictionary word, generation and embedding paths are
    implemented. Achievements and translations are implemented. The article library
-   and discovery/Wikipedia are implemented, as is article simplification. Article
-   quizzes, notifications and frontend handling remain open. Review article
-   simplification and quizzes in separate batches.
+   and discovery/Wikipedia are implemented, as are article simplification and
+   reading/vocabulary quizzes. Notifications and frontend handling remain open.
 2. Complete domain inventories in reviewable groups: streak/mascot,
    dictionary/achievements, articles/translations, notifications/mock outcomes.
 3. Implement and test backend boundaries, then migrate one domain per batch.

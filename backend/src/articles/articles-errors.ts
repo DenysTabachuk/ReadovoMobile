@@ -1,6 +1,16 @@
 import { type ApiErrorDefinition } from '../common/errors/api-error-definition';
 
 export const ARTICLES_ERRORS = {
+  QUIZ_GENERATION_FAILED: {
+    code: 'ARTICLES_QUIZ_GENERATION_FAILED',
+    statusCode: 502,
+    message: 'Failed to generate article quiz.',
+  },
+  VOCABULARY_QUIZ_GENERATION_FAILED: {
+    code: 'ARTICLES_VOCABULARY_QUIZ_GENERATION_FAILED',
+    statusCode: 502,
+    message: 'Failed to generate article vocabulary quiz.',
+  },
   SIMPLIFICATION_FAILED: {
     code: 'ARTICLES_SIMPLIFICATION_FAILED',
     statusCode: 502,
