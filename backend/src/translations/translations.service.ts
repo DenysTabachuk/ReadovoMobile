@@ -1,13 +1,12 @@
-import {
-  BadGatewayException,
-  Injectable,
-  InternalServerErrorException,
-} from '@nestjs/common';
+import { mapProviderError } from '../http/map-provider-error';
+import { HttpService } from '@nestjs/axios';
+import { Injectable } from '@nestjs/common';
 
-import {
-  type GoogleTranslateResponse,
-  type TranslateWordResponse,
-} from './types';
+import { ApiException } from '../common/errors/api-exception';
+import { COMMON_ERRORS } from '../common/errors/common-errors';
+import { GoogleTranslateResponseSchema } from './google-translate-response.schema';
+import { TRANSLATIONS_ERRORS } from './translations-errors';
+import { type TranslateWordResponse } from './types';
 
 const DEFAULT_SOURCE_LANGUAGE = 'en';
 const DEFAULT_TARGET_LANGUAGE = 'uk';
@@ -18,6 +17,7 @@ const CONTEXT_WORD_ATTRIBUTE = 'data-ctx-word';
 
 @Injectable()
 export class TranslationsService {
+  constructor(private readonly http: HttpService) {}
   // MVP: in-memory cache keeps repeated word lookups off the Google API.
   // This should move to persistent storage once dictionary/progress data exists.
   private readonly baseWordCache = new Map<string, string>();
@@ -110,9 +110,7 @@ export class TranslationsService {
     const apiKey = process.env.GOOGLE_TRANSLATE_API_KEY;
 
     if (!apiKey) {
-      throw new InternalServerErrorException(
-        'Translation service is not configured.',
-      );
+      throw new ApiException(COMMON_ERRORS.INTERNAL_ERROR);
     }
 
     const url = new URL(GOOGLE_TRANSLATE_API_URL);
@@ -124,22 +122,23 @@ export class TranslationsService {
     url.searchParams.set('source', params.sourceLanguage);
     url.searchParams.set('target', params.targetLanguage);
 
-    const response = await fetch(url, {
-      method: 'POST',
-    });
+    const response = await this.http
+      .axiosRef(url.toString(), {
+        method: 'POST',
+      })
+      .catch(
+        mapProviderError(new ApiException(TRANSLATIONS_ERRORS.REQUEST_FAILED)),
+      );
 
-    if (!response.ok) {
-      throw new BadGatewayException('Failed to fetch translation.');
+    // Provider JSON is untrusted, even when its HTTP response is successful.
+    const result = GoogleTranslateResponseSchema.safeParse(response.data);
+    if (!result.success) {
+      throw new ApiException(TRANSLATIONS_ERRORS.UNAVAILABLE);
     }
 
-    const data = (await response.json()) as GoogleTranslateResponse;
-    const translatedText = data.data?.translations?.[0]?.translatedText?.trim();
-
-    if (!translatedText) {
-      throw new BadGatewayException('Translation is unavailable.');
-    }
-
-    return this.decodeHtmlEntities(translatedText);
+    return this.decodeHtmlEntities(
+      result.data.data.translations[0].translatedText,
+    );
   }
 
   private createBaseCacheKey(

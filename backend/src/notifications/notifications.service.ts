@@ -16,6 +16,7 @@ import { existsSync, readFileSync } from 'node:fs';
 
 import { dateOnlyToDate } from '../common/database/date-only';
 import { PrismaService } from '../prisma/prisma.service';
+import { resolveFcmFailure } from './resolve-fcm-failure';
 import type {
   RegisterPushTokenDto,
   SendTestPushDto,
@@ -441,10 +442,8 @@ export class NotificationsService implements OnModuleInit, OnModuleDestroy {
       const existingApp = getApps()[0];
       const app = existingApp ?? this.initializeFirebaseApp();
       return getMessaging(app);
-    } catch (error) {
-      this.logger.warn(
-        `Firebase Admin SDK is not configured: ${String(error)}`,
-      );
+    } catch {
+      this.logger.warn('Firebase Admin SDK is unavailable.');
       return null;
     }
   }
@@ -534,39 +533,11 @@ export class NotificationsService implements OnModuleInit, OnModuleDestroy {
         shouldDeactivateToken: false,
       };
     } catch (error) {
-      this.logger.error(`Push dispatch failed for token ${to}`, error);
+      this.logger.error('Push dispatch failed.');
       return {
-        failureReason: this.getFcmErrorMessage(error),
+        ...resolveFcmFailure(error),
         sent: false,
-        shouldDeactivateToken: this.isInvalidFcmTokenError(error),
       };
     }
-  }
-
-  private getFcmErrorMessage(error: unknown): string {
-    if (typeof error !== 'object' || error === null) {
-      return 'Unknown Firebase Cloud Messaging error.';
-    }
-
-    const code = 'code' in error ? String(error.code) : undefined;
-    const message = 'message' in error ? String(error.message) : undefined;
-
-    return (
-      [code, message].filter(Boolean).join(': ') ||
-      'Unknown Firebase Cloud Messaging error.'
-    );
-  }
-
-  private isInvalidFcmTokenError(error: unknown): boolean {
-    if (typeof error !== 'object' || error === null || !('code' in error)) {
-      return false;
-    }
-
-    const code = String(error.code);
-
-    return (
-      code === 'messaging/invalid-registration-token' ||
-      code === 'messaging/registration-token-not-registered'
-    );
   }
 }

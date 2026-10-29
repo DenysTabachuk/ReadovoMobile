@@ -1,3 +1,4 @@
+import { getMascotErrorMessageKey } from '@/features/mascot';
 import { Image } from 'expo-image';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
@@ -91,13 +92,11 @@ export default function WardrobeScreen() {
   const buyMutation = useMutation({
     mutationFn: (itemId: string) => buyMascotItem(userId ?? '', itemId),
     onError: (error) => {
-      const messageKey =
-        error instanceof Error ? error.message : 'mascot.errors.buyFailed';
+      const messageKey = getMascotErrorMessageKey(error);
+      if (!messageKey) return;
 
       showBanner({
-        title: t(messageKey, {
-          defaultValue: t('mascot.errors.buyFailed'),
-        }),
+        title: t(messageKey),
         variant: 'error',
       });
     },
@@ -121,19 +120,22 @@ export default function WardrobeScreen() {
   const equipMutation = useMutation({
     mutationFn: (itemId: string) => equipMascotItem(userId ?? '', itemId),
     onSuccess: invalidateMascotState,
+    onError: (error) => {
+      const messageKey = getMascotErrorMessageKey(error);
+      if (!messageKey) return;
+      showBanner({ title: t(messageKey), variant: 'error' });
+    },
   });
   const clearMutation = useMutation({
     mutationFn: (slot: MascotAccessorySlot) =>
       clearMascotSlot(userId ?? '', slot),
     onSuccess: invalidateMascotState,
     onError: (error) => {
-      const messageKey =
-        error instanceof Error ? error.message : 'mascot.errors.clearFailed';
+      const messageKey = getMascotErrorMessageKey(error);
+      if (!messageKey) return;
 
       showBanner({
-        title: t(messageKey, {
-          defaultValue: t('mascot.errors.clearFailed'),
-        }),
+        title: t(messageKey),
         variant: 'error',
       });
     },
@@ -146,13 +148,11 @@ export default function WardrobeScreen() {
     },
     onSuccess: invalidateMascotState,
     onError: (error) => {
-      const messageKey =
-        error instanceof Error ? error.message : 'mascot.errors.clearFailed';
+      const messageKey = getMascotErrorMessageKey(error);
+      if (!messageKey) return;
 
       showBanner({
-        title: t(messageKey, {
-          defaultValue: t('mascot.errors.clearFailed'),
-        }),
+        title: t(messageKey),
         variant: 'error',
       });
     },
@@ -241,14 +241,17 @@ export default function WardrobeScreen() {
     );
   }
 
-  if (mascotQuery.error) {
+  const loadError = mascotQuery.error ?? achievementsQuery.error;
+  const loadErrorMessageKey = loadError
+    ? getMascotErrorMessageKey(loadError)
+    : null;
+  if (loadErrorMessageKey) {
     return (
       <ScreenContainer>
         <View style={styles.previewBlock}>
           <ThemedText type="screenTitle">{t('mascot.errorTitle')}</ThemedText>
-          <Button onPress={() => mascotQuery.refetch()}>
-            {t('dictionary.retry')}
-          </Button>
+          <ThemedText>{t(loadErrorMessageKey)}</ThemedText>
+          <Button onPress={handleRefresh}>{t('dictionary.retry')}</Button>
         </View>
       </ScreenContainer>
     );

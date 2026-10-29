@@ -1,3 +1,4 @@
+import { httpClient } from '@/api/httpClient';
 import { API_BASE_URL } from '@/api';
 
 import { DEFAULT_ARTICLE_LIMIT } from '../../constants';
@@ -55,13 +56,9 @@ export async function fetchWikipediaArticles(
     searchParams.set('recommended', String(params.recommended));
   }
 
-  const response = await fetch(
+  const response = await httpClient(
     `${API_BASE_URL}/articles?${searchParams.toString()}`,
   );
 
-  if (!response.ok) {
-    throw new Error('articles.errorDescription');
-  }
-
-  return response.json() as Promise<WikipediaArticle[]>;
+  return response.data as WikipediaArticle[];
 }

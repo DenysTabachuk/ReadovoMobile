@@ -16,6 +16,8 @@ import {
   type ListRenderItem,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { getDictionaryErrorMessageKey } from '../../utils/getDictionaryErrorMessageKey';
+import { getApiErrorMessageKey } from '@/api/utils/getApiErrorMessageKey';
 
 import {
   useDeleteDictionaryWordMutation,
@@ -103,7 +105,11 @@ export default function DictionaryScreen() {
     word: selectedWord?.word,
   });
   const shouldShowInitialLoader = isLoading && words.length === 0;
-  const shouldShowErrorState = Boolean(error) && words.length === 0;
+  const errorMessageKey = error ? getDictionaryErrorMessageKey(error) : null;
+  const translationErrorMessageKey = selectedWordTranslationError
+    ? getApiErrorMessageKey(selectedWordTranslationError)
+    : null;
+  const shouldShowErrorState = Boolean(errorMessageKey) && words.length === 0;
   const { mutate: updateWordProgress, isPending: isUpdatingProgress } =
     useUpdateDictionaryWordProgressMutation({
       onSuccess: () => {
@@ -185,7 +191,7 @@ export default function DictionaryScreen() {
             {t('dictionary.errorTitle')}
           </ThemedText>
           <ThemedText type="description" style={styles.centerDescription}>
-            {t('dictionary.errorDescription')}
+            {t(errorMessageKey ?? 'dictionary.errorDescription')}
           </ThemedText>
           <Button onPress={() => refetch()}>{t('dictionary.retry')}</Button>
         </View>
@@ -261,8 +267,8 @@ export default function DictionaryScreen() {
         title={selectedWord?.word ?? t('translation.titleFallback')}
       >
         <PronunciationButton word={selectedWord?.word} />
-        {selectedWordTranslationError ? (
-          <ThemedText type="body">{t('translation.error')}</ThemedText>
+        {translationErrorMessageKey ? (
+          <ThemedText type="body">{t(translationErrorMessageKey)}</ThemedText>
         ) : null}
         <TranslationCards
           baseTranslation={

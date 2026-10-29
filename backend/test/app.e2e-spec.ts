@@ -3,7 +3,7 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
-import { configureRequestValidation } from './../src/common/validation/configure-request-validation';
+import { configureApiBoundaries } from './../src/common/configure-api-boundaries';
 import { DictionaryEmbeddingService } from './../src/dictionary/dictionary-embedding.service';
 
 describe('AppController (e2e)', () => {
@@ -17,8 +17,8 @@ describe('AppController (e2e)', () => {
       .useValue({})
       .compile();
 
-    app = moduleFixture.createNestApplication();
-    configureRequestValidation(app);
+    app = moduleFixture.createNestApplication({ bodyParser: false });
+    configureApiBoundaries(app);
     await app.init();
   });
 
@@ -36,7 +36,7 @@ describe('AppController (e2e)', () => {
       .expect(400);
 
     expect(response.body).toMatchObject({
-      error: 'Bad Request',
+      code: 'VALIDATION_FAILED',
       statusCode: 400,
     });
   });

@@ -1,4 +1,6 @@
-import { BadGatewayException } from '@nestjs/common';
+import axios from 'axios';
+import { HttpService } from '@nestjs/axios';
+import { ApiException } from '../common/errors/api-exception';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { ArticleFormulaRenderer } from './discovery/article-formula-renderer';
@@ -159,15 +161,16 @@ jest.mock('groq-sdk', () => ({
 describe('ArticlesService', () => {
   let service: ArticlesService;
   let formulaRenderer: ArticleFormulaRenderer;
-  let fetchMock: jest.Mock;
+  let requestMock: jest.Mock;
   let queryMock: jest.Mock;
   let tokenCounter: AiTokenCounter;
 
   beforeEach(() => {
-    fetchMock = jest.fn();
+    requestMock = jest.fn();
+
     queryMock = jest.fn();
     queryMock.mockResolvedValue(null);
-    global.fetch = fetchMock as typeof fetch;
+
     createChatCompletionMock.mockReset();
     process.env.GROQ_API_KEY = 'test-key';
 
@@ -239,7 +242,10 @@ describe('ArticlesService', () => {
         quizValidator,
         vocabularyValidator,
       ),
-      new WikipediaArticlesService(formulaRenderer),
+      new WikipediaArticlesService(
+        new HttpService(Object.assign(requestMock, axios.create())),
+        formulaRenderer,
+      ),
     );
   });
 
@@ -249,35 +255,34 @@ describe('ArticlesService', () => {
   });
 
   it('maps random Wikipedia pages into article previews', async () => {
-    fetchMock.mockResolvedValue({
-      json: () =>
-        Promise.resolve({
-          query: {
-            pages: {
-              '1': {
-                extract:
-                  'Article preview with enough detail for reading practice and a useful lesson preview about a broad topic with real context.',
-                fullurl: 'https://en.wikipedia.org/wiki/Example',
-                length: 6200,
-                pageid: 1,
-                thumbnail: {
-                  source: 'https://upload.wikimedia.org/example.jpg',
-                },
-                title: 'Example',
+    requestMock.mockResolvedValue({
+      data: {
+        query: {
+          pages: {
+            '1': {
+              extract:
+                'Article preview with enough detail for reading practice and a useful lesson preview about a broad topic with real context.',
+              fullurl: 'https://en.wikipedia.org/wiki/Example',
+              length: 6200,
+              pageid: 1,
+              thumbnail: {
+                source: 'https://upload.wikimedia.org/example.jpg',
               },
+              title: 'Example',
             },
           },
-        }),
-      ok: true,
+        },
+      },
+      status: 200,
     });
 
     const articles = await service.getRandomArticles(3);
 
-    expect(fetchMock).toHaveBeenCalledWith(
+    expect(requestMock).toHaveBeenCalledWith(
       expect.stringContaining('https://en.wikipedia.org/w/api.php?'),
       expect.any(Object),
     );
-    const [, requestOptions] = (fetchMock.mock.calls[0] ?? []) as [
+    const [, requestOptions] = (requestMock.mock.calls[0] ?? []) as [
       string,
       Record<string, unknown>,
     ];
@@ -301,26 +306,25 @@ describe('ArticlesService', () => {
   });
 
   it('sanitizes wikipedia preview math artifacts', async () => {
-    fetchMock.mockResolvedValue({
-      json: () =>
-        Promise.resolve({
-          query: {
-            pages: {
-              '1': {
-                extract:
-                  'A function of a real variable (usually {\\displaystyle t}) can be mapped to {\\displaystyle s}, which makes the topic useful for a longer learning article.',
-                fullurl: 'https://en.wikipedia.org/wiki/Laplace_transform',
-                length: 9000,
-                pageid: 1,
-                thumbnail: {
-                  source: 'https://upload.wikimedia.org/laplace.jpg',
-                },
-                title: 'Laplace transform',
+    requestMock.mockResolvedValue({
+      data: {
+        query: {
+          pages: {
+            '1': {
+              extract:
+                'A function of a real variable (usually {\\displaystyle t}) can be mapped to {\\displaystyle s}, which makes the topic useful for a longer learning article.',
+              fullurl: 'https://en.wikipedia.org/wiki/Laplace_transform',
+              length: 9000,
+              pageid: 1,
+              thumbnail: {
+                source: 'https://upload.wikimedia.org/laplace.jpg',
               },
+              title: 'Laplace transform',
             },
           },
-        }),
-      ok: true,
+        },
+      },
+      status: 200,
     });
 
     const articles = await service.getRandomArticles(1);
@@ -339,28 +343,24 @@ describe('ArticlesService', () => {
   });
 
   it('returns article detail text for a page id', async () => {
-    fetchMock
+    requestMock
       .mockResolvedValueOnce({
-        json: () =>
-          Promise.resolve({
-            query: {
-              pages: {
-                '42': {
-                  fullurl: 'https://en.wikipedia.org/wiki/Answer',
-                  pageid: 42,
-                  title: 'Answer',
-                },
+        data: {
+          query: {
+            pages: {
+              '42': {
+                fullurl: 'https://en.wikipedia.org/wiki/Answer',
+                pageid: 42,
+                title: 'Answer',
               },
             },
-          }),
-        ok: true,
+          },
+        },
+        status: 200,
       })
       .mockResolvedValueOnce({
-        ok: true,
-        text: () =>
-          Promise.resolve(
-            '<html><body><section><p>Full article text.</p></section></body></html>',
-          ),
+        status: 200,
+        data: '<html><body><section><p>Full article text.</p></section></body></html>',
       });
 
     const article = await service.getArticleDetail(42);
@@ -433,26 +433,24 @@ describe('ArticlesService', () => {
       },
     ]);
 
-    fetchMock
+    requestMock
       .mockResolvedValueOnce({
-        json: () =>
-          Promise.resolve({
-            query: {
-              pages: {
-                '42': {
-                  fullurl: 'https://en.wikipedia.org/wiki/Laplace_transform',
-                  pageid: 42,
-                  title: 'Laplace transform',
-                },
+        data: {
+          query: {
+            pages: {
+              '42': {
+                fullurl: 'https://en.wikipedia.org/wiki/Laplace_transform',
+                pageid: 42,
+                title: 'Laplace transform',
               },
             },
-          }),
-        ok: true,
+          },
+        },
+        status: 200,
       })
       .mockResolvedValueOnce({
-        ok: true,
-        text: () =>
-          Promise.resolve(`
+        status: 200,
+        data: `
             <html>
               <body>
                 <section>
@@ -477,7 +475,7 @@ describe('ArticlesService', () => {
                 </section>
               </body>
             </html>
-          `),
+          `,
       });
 
     const article = await service.getArticleDetail(42);
@@ -503,23 +501,22 @@ describe('ArticlesService', () => {
   });
 
   it('throws when Wikipedia returns an invalid article payload', async () => {
-    fetchMock.mockResolvedValue({
-      json: () =>
-        Promise.resolve({
-          query: {
-            pages: {
-              '42': {
-                pageid: 42,
-                title: 'Broken article',
-              },
+    requestMock.mockResolvedValue({
+      data: {
+        query: {
+          pages: {
+            '42': {
+              pageid: 42,
+              title: 'Broken article',
             },
           },
-        }),
-      ok: true,
+        },
+      },
+      status: 200,
     });
 
     await expect(service.getArticleDetail(42)).rejects.toBeInstanceOf(
-      BadGatewayException,
+      ApiException,
     );
   });
 
@@ -752,7 +749,7 @@ describe('ArticlesService', () => {
         title: 'Architecture',
         transformationType: 'adaptation',
       }),
-    ).rejects.toBeInstanceOf(BadGatewayException);
+    ).rejects.toBeInstanceOf(ApiException);
     expect(createChatCompletionMock).toHaveBeenCalledTimes(1);
   });
 
@@ -782,7 +779,7 @@ describe('ArticlesService', () => {
         title: 'Architecture',
         transformationType: 'adaptation',
       }),
-    ).rejects.toBeInstanceOf(BadGatewayException);
+    ).rejects.toBeInstanceOf(ApiException);
 
     expect(createChatCompletionMock).toHaveBeenCalledTimes(2);
     expect(getGroqPrompt(1)).toContain('image src must exactly match');
@@ -1377,7 +1374,7 @@ describe('ArticlesService', () => {
         text: "Alan Turing was an English mathematician. The machine could follow an algorithm. He helped develop theoretical computer science. Turing wrote about artificial intelligence. He worked at Britain's codebreaking centre.",
         title: 'Alan Turing',
       }),
-    ).rejects.toBeInstanceOf(BadGatewayException);
+    ).rejects.toBeInstanceOf(ApiException);
     expect(createChatCompletionMock).toHaveBeenCalledTimes(1);
   });
 });

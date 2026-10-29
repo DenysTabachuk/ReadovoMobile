@@ -9,13 +9,17 @@ import {
   IsUUID,
   Max,
   MaxLength,
+  Matches,
   Min,
 } from 'class-validator';
 
 import { ToNumber, Trim } from '../common/validation/transforms';
 import { type DictionaryWordProgress } from './types';
+import { DEFAULT_DICTIONARY_TEST_LIMIT } from './constants';
 
 const MAX_WORD_LIST_SIZE = 1_000;
+// Text must contain at least one non-whitespace character.
+const NON_BLANK_TEXT_PATTERN = /\S/;
 
 export class DictionaryWordParamsDto {
   @IsUUID()
@@ -67,6 +71,7 @@ export class SimilarWordsDto {
   @IsArray()
   @IsOptional()
   @IsString({ each: true })
+  @Matches(NON_BLANK_TEXT_PATTERN, { each: true })
   wordList?: string[];
 }
 
@@ -81,6 +86,7 @@ export class QuizOptionsDto {
   @IsArray()
   @IsOptional()
   @IsString({ each: true })
+  @Matches(NON_BLANK_TEXT_PATTERN, { each: true })
   wordList?: string[];
 }
 
@@ -98,8 +104,8 @@ export class SubmitDictionaryTestAnswerDto {
 
 export class DictionaryTestQueryDto {
   @IsInt()
-  @Max(10)
+  @Max(DEFAULT_DICTIONARY_TEST_LIMIT)
   @Min(1)
   @ToNumber()
-  limit = 10;
+  limit = DEFAULT_DICTIONARY_TEST_LIMIT;
 }

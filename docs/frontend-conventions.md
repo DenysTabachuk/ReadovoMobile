@@ -101,6 +101,15 @@ import-only updates do not require refactoring the imported module.
 - Keep utility-private types in the owning utility's `index.ts`; do not export or move them to `types.ts` just to satisfy ordering.
 - Keep types shared by multiple modules in the closest owning `types.ts`, following the existing scope rules.
 
+## Type safety and assertions
+
+- Prefer inferred types, explicit variable/return annotations and properly typed library generics over `as Type`. An annotation checks assignability; an assertion asks the compiler to trust the programmer.
+- Use `satisfies` when checking an object against a contract while retaining its inferred type. Use narrowing (`typeof`, `instanceof`, discriminants, checked type guards) for unions and unknown values.
+- JSON, storage and external responses require runtime validation when their shape must be trusted. Neither `as Type` nor an API generic validates incoming data. A type guard must check what its return type promises.
+- Keep unavoidable assertions at narrow integration boundaries where the invariant is established but the library types cannot express it. Add a concise explanation of why the assertion is safe. First consider correcting the owning types.
+- Do not hide incompatibilities with `as any`, `as unknown as Type`, non-null assertions or unchecked replacement type guards. Fix the type or handle the missing/invalid value. `as const` remains appropriate for literal inference.
+- Avoid mechanical rewrites that only conceal an assertion behind a helper or make code harder to read. Apply this rule to new and touched code rather than refactoring unrelated modules.
+
 ## Props and parameter types
 
 - Declare component props and function/hook parameter objects as named types or interfaces instead of writing inline object types in signatures. Prefer descriptive names such as `ArticleHeaderProps` or `UseGenerateArticleQuizMutationParams`.

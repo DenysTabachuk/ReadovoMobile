@@ -1,3 +1,5 @@
+import { type GenericAbortSignal } from 'axios';
+import { createHttpResponse, mockHttpAdapter } from '@/api/testing/http';
 import { generateArticleQuizRequest } from '.';
 
 jest.mock('@/api', () => ({ API_BASE_URL: 'https://api.example.test' }));
@@ -15,47 +17,54 @@ describe('generateArticleQuizRequest', () => {
   });
   it('POSTs a quiz request and clears its timeout after parsing the response', async () => {
     const payload = { questions: [] };
-    const fetchMock = jest
-      .spyOn(globalThis, 'fetch')
-      .mockResolvedValue(Response.json(payload));
+    const fetchMock = mockHttpAdapter().mockResolvedValue(
+      createHttpResponse(payload),
+    );
     await expect(
       generateArticleQuizRequest('/api/articles/quiz', request),
     ).resolves.toEqual(payload);
     expect(fetchMock).toHaveBeenCalledWith(
-      'https://api.example.test/api/articles/quiz',
-      {
-        method: 'POST',
-        body: JSON.stringify(request),
-        headers: { 'Content-Type': 'application/json' },
+      expect.objectContaining({
+        url: 'https://api.example.test/api/articles/quiz',
+        method: 'post',
+        data: JSON.stringify(request),
+        headers: expect.objectContaining({
+          'Content-Type': 'application/json',
+        }),
         signal: expect.any(AbortSignal),
-      },
+      }),
     );
     expect(jest.getTimerCount()).toBe(0);
   });
-  it('maps both HTTP and network failures to the quiz error key and clears timers', async () => {
-    const fetchMock = jest
-      .spyOn(globalThis, 'fetch')
-      .mockResolvedValue(new Response('Unavailable', { status: 503 }));
+  it('preserves HTTP and network failures and clears timers', async () => {
+    const fetchMock = mockHttpAdapter().mockResolvedValue(
+      createHttpResponse('Unavailable', { status: 503 }),
+    );
     await expect(
       generateArticleQuizRequest('/api/articles/quiz', request),
-    ).rejects.toThrow('article.quiz.error');
-    fetchMock.mockRejectedValueOnce(new Error('Offline'));
+    ).rejects.toMatchObject({ status: 503 });
+    const offline = new Error('Offline');
+    fetchMock.mockRejectedValueOnce(offline);
     await expect(
       generateArticleQuizRequest('/api/articles/quiz', request),
-    ).rejects.toThrow('article.quiz.error');
+    ).rejects.toBe(offline);
     expect(jest.getTimerCount()).toBe(0);
   });
-  it('aborts a hanging request at 60 seconds and rejects with the quiz error', async () => {
-    let signal: AbortSignal | undefined;
-    jest.spyOn(globalThis, 'fetch').mockImplementation(
-      (_input, init) =>
+  it('aborts a hanging request at 60 seconds and rejects with TimeoutError', async () => {
+    let signal: GenericAbortSignal | undefined;
+    mockHttpAdapter().mockImplementation(
+      (init) =>
         new Promise((_resolve, reject) => {
-          signal = init?.signal ?? undefined;
-          signal?.addEventListener('abort', () => reject(new Error('Aborted')));
+          signal = init.signal;
+          signal?.addEventListener?.('abort', () =>
+            reject(new Error('Aborted')),
+          );
         }),
     );
     const pending = generateArticleQuizRequest('/api/articles/quiz', request);
-    const assertion = expect(pending).rejects.toThrow('article.quiz.error');
+    const assertion = expect(pending).rejects.toMatchObject({
+      name: 'TimeoutError',
+    });
     await jest.advanceTimersByTimeAsync(59_999);
     expect(signal?.aborted).toBe(false);
     await jest.advanceTimersByTimeAsync(1);
@@ -64,9 +73,7 @@ describe('generateArticleQuizRequest', () => {
     expect(jest.getTimerCount()).toBe(0);
   });
   it('propagates invalid JSON without leaking a timer', async () => {
-    jest
-      .spyOn(globalThis, 'fetch')
-      .mockResolvedValue(new Response('invalid JSON'));
+    mockHttpAdapter().mockResolvedValue(createHttpResponse('invalid JSON'));
     await expect(
       generateArticleQuizRequest('/api/articles/quiz', request),
     ).rejects.toThrow();

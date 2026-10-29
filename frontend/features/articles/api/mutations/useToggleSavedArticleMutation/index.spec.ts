@@ -120,4 +120,13 @@ describe('useToggleSavedArticleMutation', () => {
       variant: 'success',
     });
   });
+  it('does not restore stale cache data or show a banner for a cancelled session', () => {
+    mockOptions.onError(
+      Object.assign(new Error(), { name: 'AbortError' }),
+      { article, saved: true },
+      { previousSavedArticles: [previouslySaved] },
+    );
+    expect(mockSetQueryData).not.toHaveBeenCalled();
+    expect(mockShowBanner).not.toHaveBeenCalled();
+  });
 });

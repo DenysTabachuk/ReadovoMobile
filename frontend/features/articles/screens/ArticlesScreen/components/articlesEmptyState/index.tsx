@@ -6,6 +6,7 @@ import type { ArticlePersonalFilter } from '../articlesToolbar/types';
 import { styles } from './styles';
 
 type ArticlesEmptyStateProps = {
+  errorMessageKey?: string | null;
   isError: boolean;
   personalFilter: ArticlePersonalFilter;
   hasActiveContentFilters: boolean;
@@ -14,6 +15,7 @@ type ArticlesEmptyStateProps = {
 };
 
 export function ArticlesEmptyState({
+  errorMessageKey,
   isError,
   personalFilter,
   hasActiveContentFilters,
@@ -28,33 +30,35 @@ export function ArticlesEmptyState({
           {t('articles.loadErrorTitle')}
         </ThemedText>
         <ThemedText type="body" style={styles.centerDescription}>
-          {t('articles.loadErrorDescription')}
+          {t(errorMessageKey ?? 'errors.generic')}
         </ThemedText>
         <Button onPress={onRetry}>{t('articles.retry')}</Button>
       </View>
     );
 
+  let titleKey = 'articles.emptyTitle';
+  let descriptionKey = 'articles.emptyFilterDescription';
+
+  if (personalFilter === 'saved') {
+    titleKey = 'articles.saved.emptyTitle';
+    descriptionKey = 'articles.saved.emptyDescription';
+  } else if (personalFilter === 'recent') {
+    titleKey = 'articles.recent.emptyTitle';
+    descriptionKey = 'articles.recent.emptyDescription';
+  } else if (hasActiveContentFilters) {
+    titleKey = 'articles.emptyFilteredTitle';
+    descriptionKey = 'articles.emptyFilteredDescription';
+  } else if (isSearchActive) {
+    descriptionKey = 'articles.emptySearchDescription';
+  }
+
   return (
     <View style={styles.emptyState}>
       <ThemedText type="sectionTitle" style={styles.centerTitle}>
-        {personalFilter === 'saved'
-          ? t('articles.saved.emptyTitle')
-          : personalFilter === 'recent'
-            ? t('articles.recent.emptyTitle')
-            : hasActiveContentFilters
-              ? t('articles.emptyFilteredTitle')
-              : t('articles.emptyTitle')}
+        {t(titleKey)}
       </ThemedText>
       <ThemedText type="body" style={styles.centerDescription}>
-        {personalFilter === 'saved'
-          ? t('articles.saved.emptyDescription')
-          : personalFilter === 'recent'
-            ? t('articles.recent.emptyDescription')
-            : hasActiveContentFilters
-              ? t('articles.emptyFilteredDescription')
-              : isSearchActive
-                ? t('articles.emptySearchDescription')
-                : t('articles.emptyFilterDescription')}
+        {t(descriptionKey)}
       </ThemedText>
     </View>
   );

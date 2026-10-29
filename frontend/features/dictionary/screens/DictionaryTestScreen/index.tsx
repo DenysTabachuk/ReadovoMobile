@@ -7,6 +7,7 @@ import { Stack, useNavigation, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { getDictionaryErrorMessageKey } from '../../utils/getDictionaryErrorMessageKey';
 
 import {
   useGenerateDictionaryTestMutation,
@@ -14,6 +15,7 @@ import {
   type DictionaryTest,
 } from '../../api';
 import { isMockApiEnabled } from '@/api';
+import { getApiErrorMessageKey } from '@/api/utils/getApiErrorMessageKey';
 import { Button } from '@/components/button';
 import { ModalSheet } from '@/components/modalSheet';
 import { ScreenContainer } from '@/components/screenContainer';
@@ -126,6 +128,10 @@ export default function DictionaryTestScreen() {
         streak,
       };
     },
+    onError: (error) => {
+      const messageKey = getApiErrorMessageKey(error);
+      if (messageKey) showBanner({ title: t(messageKey), variant: 'error' });
+    },
     onSuccess: (response) => {
       if (!userId) {
         return;
@@ -225,7 +231,7 @@ export default function DictionaryTestScreen() {
     (result: QuizSessionResult) => {
       setTestResult(result);
       setTest(undefined);
-      void progressMutation.mutateAsync(result);
+      progressMutation.mutate(result);
     },
     [progressMutation],
   );
@@ -264,6 +270,9 @@ export default function DictionaryTestScreen() {
     [answerMutation, t],
   );
 
+  const testErrorMessageKey = testMutation.error
+    ? getDictionaryErrorMessageKey(testMutation.error)
+    : null;
   return (
     <ScreenContainer style={styles.container}>
       <Stack.Screen options={{ title: t('dictionary.test.title') }} />
@@ -275,13 +284,13 @@ export default function DictionaryTestScreen() {
           />
           <ThemedText type="body">{t('dictionary.test.loading')}</ThemedText>
         </View>
-      ) : testMutation.error ? (
+      ) : testErrorMessageKey ? (
         <View style={styles.centerState}>
           <ThemedText type="screenTitle" style={styles.centerTitle}>
             {t('dictionary.test.errorTitle')}
           </ThemedText>
           <ThemedText type="description" style={styles.centerDescription}>
-            {t('dictionary.test.error')}
+            {t(testErrorMessageKey)}
           </ThemedText>
           <Button onPress={() => testMutation.mutate()}>
             {t('dictionary.retry')}
@@ -299,6 +308,11 @@ export default function DictionaryTestScreen() {
         <QuizRunner
           onFinish={handleFinishTest}
           onSubmitAnswer={handleSubmitQuizAnswer}
+          onSubmitError={(error) => {
+            const messageKey = getDictionaryErrorMessageKey(error);
+            if (messageKey)
+              showBanner({ title: t(messageKey), variant: 'error' });
+          }}
           questions={quizQuestions}
         />
       ) : null}

@@ -1,12 +1,10 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
+import { ApiException } from '../common/errors/api-exception';
 import { type UserMascotProfile } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { getMascotCatalogItem } from './catalog';
+import { MASCOT_ERRORS } from './mascot-errors';
 import { type MascotAccessorySlot, type MascotProfileResponse } from './types';
 
 @Injectable()
@@ -27,7 +25,7 @@ export class MascotService {
     const item = getMascotCatalogItem(itemId);
 
     if (!item) {
-      throw new BadRequestException('Unknown mascot item.');
+      throw new ApiException(MASCOT_ERRORS.ITEM_UNKNOWN);
     }
 
     await this.ensureUserExists(userId);
@@ -44,7 +42,7 @@ export class MascotService {
     const balance = user?.balance ?? 0;
 
     if (balance < item.price) {
-      throw new BadRequestException('Not enough coins.');
+      throw new ApiException(MASCOT_ERRORS.NOT_ENOUGH_COINS);
     }
 
     await this.prisma.user.update({
@@ -64,14 +62,14 @@ export class MascotService {
     const item = getMascotCatalogItem(itemId);
 
     if (!item) {
-      throw new BadRequestException('Unknown mascot item.');
+      throw new ApiException(MASCOT_ERRORS.ITEM_UNKNOWN);
     }
 
     await this.ensureUserExists(userId);
     const profile = await this.ensureMascotProfile(userId);
 
     if (!profile.ownedItemIds.includes(itemId)) {
-      throw new BadRequestException('Mascot item is not owned.');
+      throw new ApiException(MASCOT_ERRORS.ITEM_NOT_OWNED);
     }
 
     const updatedProfile = await this.prisma.userMascotProfile.update({
@@ -101,7 +99,6 @@ export class MascotService {
   ): Promise<MascotProfileResponse> {
     await this.ensureUserExists(userId);
     await this.ensureMascotProfile(userId);
-    this.assertValidSlot(slot);
 
     const updatedProfile = await this.prisma.userMascotProfile.update({
       data:
@@ -131,7 +128,7 @@ export class MascotService {
     });
 
     if (!user) {
-      throw new NotFoundException('User not found.');
+      throw new ApiException(MASCOT_ERRORS.USER_NOT_FOUND);
     }
   }
 
@@ -160,14 +157,6 @@ export class MascotService {
       },
       where: { userId },
     });
-  }
-
-  private assertValidSlot(slot: MascotAccessorySlot): void {
-    const validSlots: MascotAccessorySlot[] = ['eyes', 'head'];
-
-    if (!validSlots.includes(slot)) {
-      throw new BadRequestException('Unknown mascot slot.');
-    }
   }
 
   private mapProfileRow(

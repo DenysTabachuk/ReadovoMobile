@@ -38,6 +38,18 @@ export class AiTelemetry {
     'ai.semantic_validation_failure.total',
   );
 
+  /**
+   * Traces one AI request without copying provider diagnostics into telemetry.
+   * @param metadata - Internal operation, model and schema identifiers, not prompts.
+   * @param request - Async operation to execute once inside the span.
+   * @returns The original result, or rethrows the original rejection after recording
+   * a fixed failure category. The span always ends; raw messages/stacks are omitted.
+   * @example
+   * await telemetry.traceRequest(
+   *   { model: 'test-model', operation: 'reading_quiz', schemaName: 'quiz' },
+   *   async () => 'quiz output',
+   * ); // 'quiz output'
+   */
   traceRequest<T>(
     metadata: AiOperationMetadata,
     request: () => Promise<T>,
@@ -64,10 +76,13 @@ export class AiTelemetry {
           span.setAttribute('ai.outcome', outcome);
           span.setStatus({
             code: SpanStatusCode.ERROR,
-            message: error instanceof Error ? error.message : String(error),
+            message: outcome,
           });
 
-          if (error instanceof Error) span.recordException(error);
+          span.recordException({
+            name: outcome,
+            message: 'AI request failed.',
+          });
           throw error;
         } finally {
           this.requestDuration.record(

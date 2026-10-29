@@ -1,4 +1,14 @@
-import { BadGatewayException, Injectable } from '@nestjs/common';
+import { mapProviderError } from '../../http/map-provider-error';
+import { HttpService } from '@nestjs/axios';
+import { Injectable } from '@nestjs/common';
+
+import { ApiException } from '../../common/errors/api-exception';
+import { ARTICLES_ERRORS } from '../articles-errors';
+import {
+  WikipediaResponseSchema,
+  type WikipediaApiResponse,
+  type WikipediaPage,
+} from './wikipedia-response.schema';
 
 import {
   getCategoryDiscoveryTerm,
@@ -16,13 +26,11 @@ import {
 import {
   type ArticleReadyLevelFilter,
   type ArticleReadyTransformationFilter,
-  type WikipediaApiResponse,
   type WikipediaArticle,
   type WikipediaArticleCategory,
   type WikipediaArticleDetail,
   type WikipediaArticlePreviewLength,
   type WikipediaArticleSortOption,
-  type WikipediaPage,
 } from '../contracts/types';
 
 const DEFAULT_ARTICLE_LIMIT = 20;
@@ -48,7 +56,10 @@ type ArticlePresentationParams = {
 
 @Injectable()
 export class WikipediaArticlesService {
-  constructor(private readonly formulaRenderer: ArticleFormulaRenderer) {}
+  constructor(
+    private readonly http: HttpService,
+    private readonly formulaRenderer: ArticleFormulaRenderer,
+  ) {}
 
   normalizeLimit(limit: number): number {
     if (!Number.isFinite(limit) || limit <= 0) {
@@ -95,7 +106,7 @@ export class WikipediaArticlesService {
     );
 
     if (!page?.title || !page.fullurl) {
-      throw new BadGatewayException('Wikipedia article is unavailable.');
+      throw new ApiException(ARTICLES_ERRORS.WIKIPEDIA_ARTICLE_UNAVAILABLE);
     }
 
     const html = await this.fetchWikipediaHtml(page.title, languageCode);
@@ -103,9 +114,7 @@ export class WikipediaArticlesService {
     const content = extractPlainTextFromBlocks(blocks);
 
     if (!content) {
-      throw new BadGatewayException(
-        'Wikipedia article content is unavailable.',
-      );
+      throw new ApiException(ARTICLES_ERRORS.WIKIPEDIA_CONTENT_UNAVAILABLE);
     }
 
     return {
@@ -378,39 +387,52 @@ export class WikipediaArticlesService {
     params: URLSearchParams,
     languageCode = DEFAULT_LANGUAGE_CODE,
   ): Promise<WikipediaApiResponse> {
-    const response = await fetch(
-      `https://${languageCode}.wikipedia.org/w/api.php?${params.toString()}`,
-      { headers: this.createHeaders() },
-    );
+    const response = await this.http
+      .axiosRef(
+        `https://${languageCode}.wikipedia.org/w/api.php?${params.toString()}`,
+        { headers: this.createHeaders() },
+      )
+      .catch(
+        mapProviderError(
+          new ApiException(ARTICLES_ERRORS.WIKIPEDIA_REQUEST_FAILED),
+        ),
+      );
 
-    if (!response.ok) {
-      throw new BadGatewayException('Failed to fetch Wikipedia content.');
+    const result = WikipediaResponseSchema.safeParse(response.data);
+    if (!result.success) {
+      throw new ApiException(ARTICLES_ERRORS.WIKIPEDIA_INVALID_RESPONSE);
     }
-
-    return response.json() as Promise<WikipediaApiResponse>;
+    return result.data;
   }
 
   private async fetchWikipediaHtml(
     pageTitle: string,
     languageCode: string,
   ): Promise<string> {
-    const response = await fetch(
-      `https://${languageCode}.wikipedia.org/w/rest.php/v1/page/${encodeURIComponent(
-        pageTitle.replaceAll(' ', '_'),
-      )}/html`,
-      {
-        headers: {
-          ...this.createHeaders(),
-          Accept: 'text/html; charset=utf-8',
+    const response = await this.http
+      .axiosRef(
+        `https://${languageCode}.wikipedia.org/w/rest.php/v1/page/${encodeURIComponent(
+          pageTitle.replaceAll(' ', '_'),
+        )}/html`,
+        {
+          responseType: 'text',
+          headers: {
+            ...this.createHeaders(),
+            Accept: 'text/html; charset=utf-8',
+          },
         },
-      },
-    );
+      )
+      .catch(
+        mapProviderError(
+          new ApiException(ARTICLES_ERRORS.WIKIPEDIA_HTML_REQUEST_FAILED),
+        ),
+      );
 
-    if (!response.ok) {
-      throw new BadGatewayException('Failed to fetch Wikipedia article HTML.');
+    const html: unknown = response.data;
+    if (typeof html !== 'string') {
+      throw new ApiException(ARTICLES_ERRORS.WIKIPEDIA_CONTENT_UNAVAILABLE);
     }
-
-    return response.text();
+    return html;
   }
 
   private createHeaders(): Record<string, string> {

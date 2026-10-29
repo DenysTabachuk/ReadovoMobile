@@ -1,5 +1,4 @@
-import { API_BASE_URL } from '@/api';
-import { authenticatedFetch } from '@/features/auth';
+import { api } from '@/features/auth';
 
 import type { RecentArticle } from '../../../recentArticles/types';
 import type { WikipediaArticle } from '../../types';
@@ -8,20 +7,10 @@ export async function recordRecentArticle(
   userId: string,
   article: WikipediaArticle,
 ): Promise<RecentArticle[]> {
-  const response = await authenticatedFetch(
-    `${API_BASE_URL}/api/users/${userId}/articles/recent`,
-    {
-      body: JSON.stringify(article),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      method: 'POST',
-    },
+  const response = await api.post<RecentArticle[]>(
+    `/api/users/${userId}/articles/recent`,
+    article,
   );
 
-  if (!response.ok) {
-    throw new Error('articles.recent.saveFailed');
-  }
-
-  return response.json() as Promise<RecentArticle[]>;
+  return response.data;
 }

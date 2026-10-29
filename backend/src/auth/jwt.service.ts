@@ -1,6 +1,9 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 
+import { ApiException } from '../common/errors/api-exception';
+
+import { AUTH_ERRORS } from './auth-errors';
 import { type AuthUser, type AuthenticatedUser } from './types';
 
 const accessTokenTtlSeconds = 60 * 15;
@@ -49,19 +52,19 @@ export class JwtService {
     const [encodedHeader, encodedPayload, signature] = token.split('.');
 
     if (!encodedHeader || !encodedPayload || !signature) {
-      throw new UnauthorizedException('Access token is invalid.');
+      throw new ApiException(AUTH_ERRORS.ACCESS_TOKEN_INVALID);
     }
 
     const expectedSignature = this.sign(`${encodedHeader}.${encodedPayload}`);
 
     if (!this.isEqual(signature, expectedSignature)) {
-      throw new UnauthorizedException('Access token is invalid.');
+      throw new ApiException(AUTH_ERRORS.ACCESS_TOKEN_INVALID);
     }
 
     const payload = this.parsePayload(encodedPayload);
 
     if (payload.exp <= Math.floor(Date.now() / 1000)) {
-      throw new UnauthorizedException('Access token has expired.');
+      throw new ApiException(AUTH_ERRORS.ACCESS_TOKEN_EXPIRED);
     }
 
     return {
@@ -72,22 +75,34 @@ export class JwtService {
 
   private parsePayload(encodedPayload: string): JwtPayload {
     try {
-      const payload = JSON.parse(
+      // JSON can contain any value. Check the required claims before using them.
+      const payload: unknown = JSON.parse(
         Buffer.from(encodedPayload, 'base64url').toString('utf8'),
-      ) as Partial<JwtPayload>;
+      );
 
       if (
+        typeof payload !== 'object' ||
+        payload === null ||
+        !('sub' in payload) ||
         typeof payload.sub !== 'string' ||
+        !('email' in payload) ||
         typeof payload.email !== 'string' ||
+        !('exp' in payload) ||
         typeof payload.exp !== 'number' ||
+        !('iat' in payload) ||
         typeof payload.iat !== 'number'
       ) {
         throw new Error('Invalid payload');
       }
 
-      return payload as JwtPayload;
+      return {
+        sub: payload.sub,
+        email: payload.email,
+        exp: payload.exp,
+        iat: payload.iat,
+      };
     } catch {
-      throw new UnauthorizedException('Access token is invalid.');
+      throw new ApiException(AUTH_ERRORS.ACCESS_TOKEN_INVALID);
     }
   }
 

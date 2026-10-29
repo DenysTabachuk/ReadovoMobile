@@ -1,5 +1,4 @@
-import { API_BASE_URL } from '@/api';
-import { authenticatedFetch } from '@/features/auth';
+import { api } from '@/features/auth';
 
 import type {
   CompleteActivityRequest,
@@ -9,20 +8,10 @@ import type {
 export async function completeStreakActivity(
   payload: CompleteActivityRequest,
 ): Promise<CompleteActivityResponse> {
-  const response = await authenticatedFetch(
-    `${API_BASE_URL}/streak/profile/me/activity-completed`,
-    {
-      body: JSON.stringify(payload),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      method: 'POST',
-    },
+  const response = await api.post<CompleteActivityResponse>(
+    `/streak/profile/me/activity-completed`,
+    payload,
   );
 
-  if (!response.ok) {
-    throw new Error('profile.errors.loadFailed');
-  }
-
-  return response.json() as Promise<CompleteActivityResponse>;
+  return response.data;
 }

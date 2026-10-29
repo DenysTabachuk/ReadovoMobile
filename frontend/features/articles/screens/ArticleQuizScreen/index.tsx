@@ -4,6 +4,7 @@ import { ScreenContainer } from '@/components/screenContainer';
 import { ThemedText } from '@/components/themedText';
 import { Colors } from '@/constants/theme';
 import { useArticleDetailQuery } from '@/features/articles/api';
+import { getArticleErrorMessageKey } from '../../utils/getArticleErrorMessageKey';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect } from 'react';
@@ -23,16 +24,20 @@ export default function ArticleQuizScreen() {
   const { articleId, ...quizParams } = resolveArticleQuizParams(routeParams);
   const {
     data: article,
+    error,
     isError: isArticleError,
     isLoading,
     refetch,
   } = useArticleDetailQuery(articleId);
+  const articleErrorMessageKey = error
+    ? getArticleErrorMessageKey(error)
+    : null;
   useEffect(() => {
-    if (isArticleError) {
-      showBanner({ title: t('article.errorDescription'), variant: 'error' });
+    if (isArticleError && articleErrorMessageKey) {
+      showBanner({ title: t(articleErrorMessageKey), variant: 'error' });
       router.back();
     }
-  }, [isArticleError, router, showBanner, t]);
+  }, [isArticleError, articleErrorMessageKey, router, showBanner, t]);
   if (articleId === null) {
     return (
       <ScreenContainer>

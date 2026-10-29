@@ -1,3 +1,4 @@
+import { getAuthErrorMessageKey } from '../../utils/getAuthErrorMessageKey';
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { router } from 'expo-router';
@@ -79,15 +80,11 @@ export default function RegisterScreen() {
         variant: 'success',
       });
     } catch (error) {
-      const messageKey =
-        error instanceof Error
-          ? error.message
-          : 'auth.errors.registrationFailed';
+      const messageKey = getAuthErrorMessageKey(error);
+      if (!messageKey) return;
 
       showBanner({
-        title: t(messageKey, {
-          defaultValue: t('auth.errors.registrationFailed'),
-        }),
+        title: t(messageKey),
         variant: 'error',
       });
     } finally {
@@ -123,15 +120,11 @@ export default function RegisterScreen() {
       setVerificationCode('');
       router.replace('/login');
     } catch (error) {
-      const messageKey =
-        error instanceof Error
-          ? error.message
-          : 'auth.errors.emailVerificationFailed';
+      const messageKey = getAuthErrorMessageKey(error);
+      if (!messageKey) return;
 
       showBanner({
-        title: t(messageKey, {
-          defaultValue: t('auth.errors.emailVerificationFailed'),
-        }),
+        title: t(messageKey),
         variant: 'error',
       });
     } finally {
@@ -156,15 +149,11 @@ export default function RegisterScreen() {
         variant: 'success',
       });
     } catch (error) {
-      const messageKey =
-        error instanceof Error
-          ? error.message
-          : 'auth.errors.resendVerificationCodeFailed';
+      const messageKey = getAuthErrorMessageKey(error);
+      if (!messageKey) return;
 
       showBanner({
-        title: t(messageKey, {
-          defaultValue: t('auth.errors.resendVerificationCodeFailed'),
-        }),
+        title: t(messageKey),
         variant: 'error',
       });
     } finally {

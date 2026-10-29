@@ -23,7 +23,7 @@ export function useWordTranslation({
     enabled: enabled && Boolean(word),
     queryFn: async () => {
       if (!word) {
-        throw new Error('translation.error');
+        throw new Error('Translation request requires a word.');
       }
 
       return translateWord({

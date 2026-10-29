@@ -1,9 +1,5 @@
-import {
-  BadRequestException,
-  ConflictException,
-  Injectable,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { HttpService } from '@nestjs/axios';
+import { Injectable } from '@nestjs/common';
 import {
   pbkdf2Sync,
   randomBytes,
@@ -11,6 +7,11 @@ import {
   timingSafeEqual,
 } from 'node:crypto';
 
+import { ApiException } from '../common/errors/api-exception';
+import { COMMON_ERRORS } from '../common/errors/common-errors';
+import { mapProviderError } from '../http/map-provider-error';
+
+import { AUTH_ERRORS } from './auth-errors';
 import { type LoginUserDto } from './dto/login-user.dto';
 import { type RegisterUserDto } from './dto/register-user.dto';
 import { type GoogleLoginDto } from './dto/google-login.dto';
@@ -48,6 +49,7 @@ const refreshTokenTtlDays = 30;
 @Injectable()
 export class AuthService {
   constructor(
+    private readonly http: HttpService,
     private readonly usersRepository: UsersRepository,
     private readonly pendingRegistrationsRepository: PendingRegistrationsRepository,
     private readonly passwordResetRequestsRepository: PasswordResetRequestsRepository,
@@ -61,13 +63,13 @@ export class AuthService {
     const password = loginUserDto.password ?? '';
 
     if (!emailPattern.test(email) || password.length === 0) {
-      throw new BadRequestException('Email and password are required.');
+      throw new ApiException(COMMON_ERRORS.VALIDATION_FAILED, { fields: [] });
     }
 
     const user = await this.usersRepository.findByEmail(email);
 
     if (!user || !this.isPasswordValid(password, user)) {
-      throw new UnauthorizedException('Email or password is invalid.');
+      throw new ApiException(AUTH_ERRORS.CREDENTIALS_INVALID);
     }
 
     return this.toAuthSession(this.toAuthUser(user));
@@ -81,21 +83,29 @@ export class AuthService {
     const passwordConfirmation = registerUserDto.passwordConfirmation ?? '';
 
     if (!emailPattern.test(email)) {
-      throw new BadRequestException('Email is invalid.');
+      throw new ApiException(COMMON_ERRORS.VALIDATION_FAILED, {
+        fields: [{ path: ['email'], rule: 'EMAIL_INVALID' }],
+      });
     }
 
     if (password.length < minPasswordLength) {
-      throw new BadRequestException('Password must be at least 8 characters.');
+      throw new ApiException(COMMON_ERRORS.VALIDATION_FAILED, {
+        fields: [{ path: ['password'], rule: 'STRING_TOO_SHORT' }],
+      });
     }
 
     if (password !== passwordConfirmation) {
-      throw new BadRequestException('Passwords do not match.');
+      throw new ApiException(COMMON_ERRORS.VALIDATION_FAILED, {
+        fields: [
+          { path: ['passwordConfirmation'], rule: 'FIELDS_DO_NOT_MATCH' },
+        ],
+      });
     }
 
     const existingUser = await this.usersRepository.findByEmail(email);
 
     if (existingUser) {
-      throw new ConflictException('User with this email already exists.');
+      throw new ApiException(AUTH_ERRORS.EMAIL_ALREADY_EXISTS);
     }
 
     await this.pendingRegistrationsRepository.deleteByEmail(email);
@@ -128,20 +138,22 @@ export class AuthService {
     const email = resendVerificationCodeDto.email?.trim().toLowerCase() ?? '';
 
     if (!emailPattern.test(email)) {
-      throw new BadRequestException('Email is invalid.');
+      throw new ApiException(COMMON_ERRORS.VALIDATION_FAILED, {
+        fields: [{ path: ['email'], rule: 'EMAIL_INVALID' }],
+      });
     }
 
     const existingUser = await this.usersRepository.findByEmail(email);
 
     if (existingUser) {
-      throw new ConflictException('User with this email already exists.');
+      throw new ApiException(AUTH_ERRORS.EMAIL_ALREADY_EXISTS);
     }
 
     const registration =
       await this.pendingRegistrationsRepository.findByEmail(email);
 
     if (!registration) {
-      throw new BadRequestException('No pending registration found.');
+      throw new ApiException(AUTH_ERRORS.REGISTRATION_NOT_PENDING);
     }
 
     const verificationCode =
@@ -171,24 +183,24 @@ export class AuthService {
     const code = verifyEmailDto.code?.trim() ?? '';
 
     if (!emailPattern.test(email) || !verificationCodePattern.test(code)) {
-      throw new BadRequestException('Verification code is invalid.');
+      throw new ApiException(AUTH_ERRORS.VERIFICATION_CODE_INVALID);
     }
 
     const existingUser = await this.usersRepository.findByEmail(email);
 
     if (existingUser) {
-      throw new ConflictException('User with this email already exists.');
+      throw new ApiException(AUTH_ERRORS.EMAIL_ALREADY_EXISTS);
     }
 
     const registration =
       await this.pendingRegistrationsRepository.findByEmail(email);
 
     if (!registration) {
-      throw new BadRequestException('No pending registration found.');
+      throw new ApiException(AUTH_ERRORS.REGISTRATION_NOT_PENDING);
     }
 
     if (new Date(registration.verificationExpiresAt).getTime() < Date.now()) {
-      throw new BadRequestException('Verification code has expired.');
+      throw new ApiException(AUTH_ERRORS.VERIFICATION_CODE_EXPIRED);
     }
 
     const isCodeValid = this.emailVerificationService.isCodeValid(
@@ -198,7 +210,7 @@ export class AuthService {
     );
 
     if (!isCodeValid) {
-      throw new BadRequestException('Verification code is invalid.');
+      throw new ApiException(AUTH_ERRORS.VERIFICATION_CODE_INVALID);
     }
 
     const user = this.createStoredUserFromPendingRegistration(registration);
@@ -215,7 +227,9 @@ export class AuthService {
     const idToken = googleLoginDto.idToken?.trim() ?? '';
 
     if (!idToken) {
-      throw new BadRequestException('Google id token is required.');
+      throw new ApiException(COMMON_ERRORS.VALIDATION_FAILED, {
+        fields: [{ path: ['idToken'], rule: 'VALUE_REQUIRED' }],
+      });
     }
 
     const googleUser = await this.verifyGoogleIdToken(idToken);
@@ -237,7 +251,7 @@ export class AuthService {
     const refreshToken = refreshSessionDto.refreshToken?.trim() ?? '';
 
     if (!refreshToken) {
-      throw new UnauthorizedException('Refresh token is required.');
+      throw new ApiException(AUTH_ERRORS.REFRESH_REJECTED);
     }
 
     const activeRefreshTokens =
@@ -249,7 +263,7 @@ export class AuthService {
     );
 
     if (!matchingRefreshToken) {
-      throw new UnauthorizedException('Refresh token is invalid.');
+      throw new ApiException(AUTH_ERRORS.REFRESH_REJECTED);
     }
 
     const user = await this.usersRepository.findById(
@@ -257,7 +271,7 @@ export class AuthService {
     );
 
     if (!user) {
-      throw new UnauthorizedException('Refresh token is invalid.');
+      throw new ApiException(AUTH_ERRORS.REFRESH_REJECTED);
     }
 
     await this.refreshTokensRepository.revoke(matchingRefreshToken.id);
@@ -271,7 +285,9 @@ export class AuthService {
     const email = requestPasswordResetDto.email?.trim().toLowerCase() ?? '';
 
     if (!emailPattern.test(email)) {
-      throw new BadRequestException('Email is invalid.');
+      throw new ApiException(COMMON_ERRORS.VALIDATION_FAILED, {
+        fields: [{ path: ['email'], rule: 'EMAIL_INVALID' }],
+      });
     }
 
     const user = await this.usersRepository.findByEmail(email);
@@ -314,18 +330,18 @@ export class AuthService {
     const code = verifyPasswordResetCodeDto.code?.trim() ?? '';
 
     if (!emailPattern.test(email) || !verificationCodePattern.test(code)) {
-      throw new BadRequestException('Verification code is invalid.');
+      throw new ApiException(AUTH_ERRORS.RESET_CODE_INVALID);
     }
 
     const request =
       await this.passwordResetRequestsRepository.findByEmail(email);
 
     if (!request) {
-      throw new BadRequestException('Verification code is invalid.');
+      throw new ApiException(AUTH_ERRORS.RESET_CODE_INVALID);
     }
 
     if (new Date(request.verificationExpiresAt).getTime() < Date.now()) {
-      throw new BadRequestException('Verification code has expired.');
+      throw new ApiException(AUTH_ERRORS.RESET_CODE_EXPIRED);
     }
 
     const isCodeValid = this.emailVerificationService.isCodeValid(
@@ -335,7 +351,7 @@ export class AuthService {
     );
 
     if (!isCodeValid) {
-      throw new BadRequestException('Verification code is invalid.');
+      throw new ApiException(AUTH_ERRORS.RESET_CODE_INVALID);
     }
 
     const resetToken = randomBytes(32).toString('hex');
@@ -367,15 +383,21 @@ export class AuthService {
     const resetToken = resetPasswordDto.resetToken ?? '';
 
     if (!emailPattern.test(email) || resetToken.length === 0) {
-      throw new BadRequestException('Password reset request is invalid.');
+      throw new ApiException(AUTH_ERRORS.RESET_REQUEST_INVALID);
     }
 
     if (password.length < minPasswordLength) {
-      throw new BadRequestException('Password must be at least 8 characters.');
+      throw new ApiException(COMMON_ERRORS.VALIDATION_FAILED, {
+        fields: [{ path: ['password'], rule: 'STRING_TOO_SHORT' }],
+      });
     }
 
     if (password !== passwordConfirmation) {
-      throw new BadRequestException('Passwords do not match.');
+      throw new ApiException(COMMON_ERRORS.VALIDATION_FAILED, {
+        fields: [
+          { path: ['passwordConfirmation'], rule: 'FIELDS_DO_NOT_MATCH' },
+        ],
+      });
     }
 
     const request =
@@ -386,11 +408,11 @@ export class AuthService {
       !request.resetTokenSalt ||
       !request.resetTokenExpiresAt
     ) {
-      throw new BadRequestException('Password reset request is invalid.');
+      throw new ApiException(AUTH_ERRORS.RESET_REQUEST_INVALID);
     }
 
     if (new Date(request.resetTokenExpiresAt).getTime() < Date.now()) {
-      throw new BadRequestException('Password reset request has expired.');
+      throw new ApiException(AUTH_ERRORS.RESET_REQUEST_EXPIRED);
     }
 
     if (
@@ -400,13 +422,13 @@ export class AuthService {
         request.resetTokenSalt,
       )
     ) {
-      throw new BadRequestException('Password reset request is invalid.');
+      throw new ApiException(AUTH_ERRORS.RESET_REQUEST_INVALID);
     }
 
     const user = await this.usersRepository.findByEmail(email);
 
     if (!user) {
-      throw new BadRequestException('Password reset request is invalid.');
+      throw new ApiException(AUTH_ERRORS.RESET_REQUEST_INVALID);
     }
 
     const passwordCredentials = this.createPasswordCredentials(password);
@@ -517,7 +539,7 @@ export class AuthService {
     const [userId] = refreshToken.split('.');
 
     if (!userId) {
-      throw new UnauthorizedException('Refresh token is invalid.');
+      throw new ApiException(AUTH_ERRORS.REFRESH_REJECTED);
     }
 
     return userId;
@@ -541,30 +563,52 @@ export class AuthService {
     };
   }
 
+  /**
+   * Checks the token with Google and reads a verified email from the response.
+   * Identity rejection is a public 401; null data or a truthy non-string email
+   * retains the existing 500 status with a safe application error.
+   * Network failures propagate to the global filter without exposing their payload.
+   */
   private async verifyGoogleIdToken(
     idToken: string,
   ): Promise<{ email: string }> {
-    const response = await fetch(
-      `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`,
-    );
+    const response = await this.http
+      .axiosRef(
+        `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`,
+      )
+      .catch(
+        mapProviderError(
+          new ApiException(AUTH_ERRORS.GOOGLE_IDENTITY_REJECTED),
+        ),
+      );
 
-    if (!response.ok) {
-      throw new UnauthorizedException('Google id token is invalid.');
+    const payload: unknown = response.data;
+    // Provider data is untrusted; malformed payloads must not leak as raw errors.
+    if (payload === null || payload === undefined) {
+      throw new ApiException(COMMON_ERRORS.INTERNAL_ERROR);
     }
-
-    const payload = (await response.json()) as {
-      aud?: string;
-      email?: string;
-      email_verified?: string;
-    };
+    if (typeof payload !== 'object' || Array.isArray(payload)) {
+      throw new ApiException(AUTH_ERRORS.GOOGLE_IDENTITY_REJECTED);
+    }
     const expectedAudience = process.env.GOOGLE_WEB_CLIENT_ID?.trim();
 
-    if (expectedAudience && payload.aud !== expectedAudience) {
-      throw new UnauthorizedException('Google id token audience is invalid.');
+    if (
+      expectedAudience &&
+      (!('aud' in payload) || payload.aud !== expectedAudience)
+    ) {
+      throw new ApiException(AUTH_ERRORS.GOOGLE_IDENTITY_REJECTED);
     }
 
-    if (payload.email_verified !== 'true' || !payload.email) {
-      throw new UnauthorizedException('Google email is not verified.');
+    if (
+      !('email_verified' in payload) ||
+      payload.email_verified !== 'true' ||
+      !('email' in payload) ||
+      !payload.email
+    ) {
+      throw new ApiException(AUTH_ERRORS.GOOGLE_IDENTITY_REJECTED);
+    }
+    if (typeof payload.email !== 'string') {
+      throw new ApiException(COMMON_ERRORS.INTERNAL_ERROR);
     }
 
     return { email: payload.email };

@@ -1,8 +1,5 @@
-import {
-  BadRequestException,
-  ConflictException,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { ExternalHttpError } from '../http/external-http.error';
+import { HttpService } from '@nestjs/axios';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { pbkdf2Sync } from 'node:crypto';
 
@@ -21,6 +18,7 @@ import { UsersRepository } from './users.repository';
 
 describe('AuthService', () => {
   let service: AuthService;
+  let providerRequest: jest.Mock;
   let emailVerificationService: jest.Mocked<
     Pick<
       EmailVerificationService,
@@ -53,6 +51,9 @@ describe('AuthService', () => {
   >;
 
   beforeEach(async () => {
+    providerRequest = jest
+      .fn()
+      .mockRejectedValue(new Error('Unexpected HTTP request'));
     emailVerificationService = {
       createVerificationCode: jest.fn().mockReturnValue({
         code: '123456',
@@ -90,6 +91,12 @@ describe('AuthService', () => {
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
+        {
+          provide: HttpService,
+          useValue: {
+            axiosRef: providerRequest,
+          },
+        },
         AuthService,
         JwtService,
         {
@@ -116,6 +123,66 @@ describe('AuthService', () => {
     }).compile();
 
     service = module.get(AuthService);
+  });
+
+  describe('Google provider transport contract', () => {
+    let audience: string | undefined;
+    beforeEach(() => {
+      audience = process.env.GOOGLE_WEB_CLIENT_ID;
+      process.env.GOOGLE_WEB_CLIENT_ID = 'expected-client';
+    });
+    afterEach(() => {
+      if (audience === undefined) delete process.env.GOOGLE_WEB_CLIENT_ID;
+      else process.env.GOOGLE_WEB_CLIENT_ID = audience;
+    });
+    it('encodes the ID token and accepts a verified matching audience', async () => {
+      providerRequest.mockResolvedValue({
+        status: 200,
+        data: {
+          aud: 'expected-client',
+          email: 'user@example.com',
+          email_verified: 'true',
+        },
+      });
+      usersRepository.findByEmail.mockResolvedValue(
+        createStoredUser('user@example.com', 'password123'),
+      );
+      await expect(
+        service.loginWithGoogle({ idToken: 'a+b&c' }),
+      ).resolves.toMatchObject({ user: { email: 'user@example.com' } });
+      expect(providerRequest).toHaveBeenCalledWith(
+        'https://oauth2.googleapis.com/tokeninfo?id_token=a%2Bb%26c',
+      );
+    });
+    it.each([
+      { status: 401, data: '<html>Denied</html>' },
+      {
+        status: 200,
+        data: {
+          aud: 'other-client',
+          email: 'user@example.com',
+          email_verified: 'true',
+        },
+      },
+      {
+        status: 200,
+        data: {
+          aud: 'expected-client',
+          email: 'user@example.com',
+          email_verified: 'false',
+        },
+      },
+    ])('rejects invalid provider identity %#', async (response) => {
+      if (response.status === 401)
+        providerRequest.mockRejectedValue(new ExternalHttpError(401));
+      else providerRequest.mockResolvedValue(response);
+      await expect(
+        service.loginWithGoogle({ idToken: 'token' }),
+      ).rejects.toMatchObject({
+        response: { statusCode: 401, code: 'AUTH_GOOGLE_IDENTITY_REJECTED' },
+      });
+      expect(usersRepository.findByEmail).not.toHaveBeenCalled();
+    });
   });
 
   it('creates a pending registration with normalized email and hashed password', async () => {
@@ -264,7 +331,9 @@ describe('AuthService', () => {
         email: 'user@example.com',
         password: 'wrong-password',
       }),
-    ).rejects.toBeInstanceOf(UnauthorizedException);
+    ).rejects.toMatchObject({
+      response: { statusCode: 401, code: 'AUTH_CREDENTIALS_INVALID' },
+    });
   });
 
   it('rejects an already registered email', async () => {
@@ -278,7 +347,9 @@ describe('AuthService', () => {
         password: 'password123',
         passwordConfirmation: 'password123',
       }),
-    ).rejects.toBeInstanceOf(ConflictException);
+    ).rejects.toMatchObject({
+      response: { statusCode: 409, code: 'AUTH_EMAIL_ALREADY_EXISTS' },
+    });
   });
 
   it('rejects passwords shorter than 8 characters', async () => {
@@ -288,7 +359,9 @@ describe('AuthService', () => {
         password: 'short',
         passwordConfirmation: 'short',
       }),
-    ).rejects.toBeInstanceOf(BadRequestException);
+    ).rejects.toMatchObject({
+      response: { statusCode: 400, code: 'VALIDATION_FAILED' },
+    });
   });
 
   it('rejects an expired verification code', async () => {
@@ -303,7 +376,9 @@ describe('AuthService', () => {
         code: '123456',
         email: 'user@example.com',
       }),
-    ).rejects.toBeInstanceOf(BadRequestException);
+    ).rejects.toMatchObject({
+      response: { statusCode: 400, code: 'AUTH_VERIFICATION_CODE_EXPIRED' },
+    });
   });
 
   it('requests password reset without revealing missing accounts', async () => {

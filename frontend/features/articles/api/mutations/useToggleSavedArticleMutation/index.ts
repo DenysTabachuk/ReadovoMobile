@@ -1,4 +1,5 @@
 import { useBanner } from '@/components/banner';
+import { getApiErrorMessageKey } from '@/api/utils/getApiErrorMessageKey';
 import { useAuth } from '@/features/auth';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -52,6 +53,8 @@ export function useToggleSavedArticleMutation() {
       return { saved: !saved, savedArticles };
     },
     onError: (_error, _variables, context) => {
+      const messageKey = getApiErrorMessageKey(_error);
+      if (!messageKey) return;
       if (context?.previousSavedArticles) {
         queryClient.setQueryData(
           [...SAVED_ARTICLES_QUERY_KEY, currentUser?.id],
@@ -60,7 +63,7 @@ export function useToggleSavedArticleMutation() {
       }
 
       showBanner({
-        title: t('article.savedArticles.error'),
+        title: t(messageKey),
         variant: 'error',
       });
     },

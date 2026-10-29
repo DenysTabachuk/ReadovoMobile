@@ -1,3 +1,4 @@
+import { getNotificationErrorMessageKey } from '../../utils/getNotificationErrorMessageKey';
 import * as Notifications from 'expo-notifications';
 import { useState } from 'react';
 import { Platform, ScrollView, View } from 'react-native';
@@ -114,7 +115,7 @@ export default function NotificationTestScreen() {
           console.warn(
             '[NotificationTest] local notification smart-check skipped: no user id',
           );
-          setStatus('No user id found. Please sign in again.');
+          setStatus(t('settings.notificationTest.noUser'));
           return;
         }
 
@@ -182,7 +183,7 @@ export default function NotificationTestScreen() {
 
   const handleSendRemoteTestPush = async () => {
     if (!currentUser?.id) {
-      setStatus('No user id found. Please sign in again.');
+      setStatus(t('settings.notificationTest.noUser'));
       return;
     }
 
@@ -193,33 +194,32 @@ export default function NotificationTestScreen() {
       const response = await sendRemoteTestPush(currentUser.id);
       console.log('[NotificationTest] remote test push response', response);
       if (response.tokenCount === 0) {
-        setStatus(
-          'No active FCM tokens found. Tap "Refresh/Register FCM token" first.',
-        );
+        setStatus(t('settings.notificationTest.noTokens'));
         return;
       }
 
       if (response.sentCount === 0) {
-        const failureDetails =
-          response.failureReasons.length > 0
-            ? ` Reason: ${response.failureReasons.join(' | ')}`
-            : '';
-
         setStatus(
-          `Found ${response.tokenCount} active FCM token(s), but Firebase did not send the push.${failureDetails}`,
+          t('settings.notificationTest.deliveryFailed', {
+            count: response.tokenCount,
+          }),
         );
         return;
       }
 
       setStatus(
-        `Backend FCM push sent to ${response.sentCount}/${response.tokenCount} token(s). Fully close the app and verify delivery.`,
+        t('settings.notificationTest.remoteSent', {
+          sent: response.sentCount,
+          total: response.tokenCount,
+        }),
       );
     } catch (error) {
       console.error(
         '[NotificationTest] Failed to send backend FCM push',
         error,
       );
-      setStatus('Failed to send backend FCM push.');
+      const messageKey = getNotificationErrorMessageKey(error);
+      if (messageKey) setStatus(t(messageKey));
     }
   };
 
@@ -228,7 +228,7 @@ export default function NotificationTestScreen() {
 
     if (!currentUser?.id) {
       console.log('[NotificationTest] Missing currentUser.id');
-      setStatus('No user id found. Please sign in again.');
+      setStatus(t('settings.notificationTest.noUser'));
       return;
     }
 
@@ -241,19 +241,18 @@ export default function NotificationTestScreen() {
         `[NotificationTest] registerCurrentDevicePushToken result=${String(registered)}`,
       );
       if (!registered) {
-        setStatus(
-          'Push permission is disabled. Enable it in OS settings first.',
-        );
+        setStatus(t('settings.notificationTest.pushDisabled'));
         return;
       }
 
-      setStatus('FCM token refreshed and registered for this device.');
+      setStatus(t('settings.notificationTest.tokenRegistered'));
     } catch (error) {
       console.error(
         '[NotificationTest] Failed to refresh/register FCM token',
         error,
       );
-      setStatus('Failed to refresh/register FCM token.');
+      const messageKey = getNotificationErrorMessageKey(error);
+      if (messageKey) setStatus(t(messageKey));
     }
   };
 
@@ -283,20 +282,29 @@ export default function NotificationTestScreen() {
         result,
       );
       setStatus(
-        `Dispatch checked ${result.checkedCount} user(s), sent ${result.sentCount}. Skipped: outside time ${result.skippedOutsideWindowCount}, completed today ${result.skippedCompletedTodayCount}, already sent ${result.skippedAlreadySentCount}, no tokens ${result.skippedNoTokensCount}, send failed ${result.skippedSendFailedCount}.`,
+        t('settings.notificationTest.dispatchResult', {
+          checked: result.checkedCount,
+          sent: result.sentCount,
+          outside: result.skippedOutsideWindowCount,
+          completed: result.skippedCompletedTodayCount,
+          alreadySent: result.skippedAlreadySentCount,
+          noTokens: result.skippedNoTokensCount,
+          failed: result.skippedSendFailedCount,
+        }),
       );
     } catch (error) {
       console.error(
         '[NotificationTest] Failed to run backend reminder dispatch',
         error,
       );
-      setStatus('Failed to run backend reminder dispatch.');
+      const messageKey = getNotificationErrorMessageKey(error);
+      if (messageKey) setStatus(t(messageKey));
     }
   };
 
   const handleClearTodayDispatch = async () => {
     if (!currentUser?.id) {
-      setStatus('No user id found. Please sign in again.');
+      setStatus(t('settings.notificationTest.noUser'));
       return;
     }
 
@@ -307,14 +315,17 @@ export default function NotificationTestScreen() {
       const result = await clearTodayLearningReminderDispatch(currentUser.id);
       console.log('[NotificationTest] clear today dispatch response', result);
       setStatus(
-        `Cleared today's reminder dispatch rows: ${result.deletedCount}.`,
+        t('settings.notificationTest.dispatchCleared', {
+          count: result.deletedCount,
+        }),
       );
     } catch (error) {
       console.error(
         "[NotificationTest] Failed to clear today's reminder dispatch",
         error,
       );
-      setStatus("Failed to clear today's reminder dispatch.");
+      const messageKey = getNotificationErrorMessageKey(error);
+      if (messageKey) setStatus(t(messageKey));
     }
   };
 

@@ -9,6 +9,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { router } from 'expo-router';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { getArticleErrorMessageKey } from '../../utils/getArticleErrorMessageKey';
 import {
   ActivityIndicator,
   FlatList,
@@ -93,7 +94,6 @@ export default function ArticlesScreen() {
     error,
     fetchNextPage,
     hasNextPage,
-    isError,
     isFetching,
     isFetchingNextPage,
     isLoading,
@@ -107,8 +107,16 @@ export default function ArticlesScreen() {
     search: debouncedSearchValue,
     sortBy: sortByFilter,
   });
-  const { data: savedArticles = [] } = useSavedArticlesQuery(userId);
-  const { data: recentArticles = [] } = useRecentArticlesQuery(userId);
+  const {
+    data: savedArticles = [],
+    error: savedArticlesError,
+    refetch: refetchSavedArticles,
+  } = useSavedArticlesQuery(userId);
+  const {
+    data: recentArticles = [],
+    error: recentArticlesError,
+    refetch: refetchRecentArticles,
+  } = useRecentArticlesQuery(userId);
   const personalArticleIds = useMemo(() => {
     const sourceArticles =
       personalFilter === 'saved'
@@ -142,12 +150,19 @@ export default function ArticlesScreen() {
   );
   const shouldShowInitialLoader =
     personalFilter === null && isLoading && articles.length === 0;
+  let activeError = error;
+  if (personalFilter === 'saved') {
+    activeError = savedArticlesError;
+  } else if (personalFilter === 'recent') {
+    activeError = recentArticlesError;
+  }
+  const errorMessageKey = activeError
+    ? getArticleErrorMessageKey(activeError)
+    : null;
   const shouldShowErrorState =
-    personalFilter === null &&
-    isError &&
-    Boolean(error) &&
-    !isFetching &&
-    !data;
+    Boolean(errorMessageKey) &&
+    displayedArticles.length === 0 &&
+    (personalFilter !== null || (!isFetching && !data));
   const isUpdatingResults =
     personalFilter === null &&
     isFetching &&
@@ -326,12 +341,16 @@ export default function ArticlesScreen() {
         }
         ListEmptyComponent={
           <ArticlesEmptyState
+            errorMessageKey={errorMessageKey}
             isError={shouldShowErrorState}
             personalFilter={personalFilter}
             hasActiveContentFilters={hasActiveContentFilters}
             isSearchActive={debouncedSearchValue.length > 0}
             onRetry={() => {
-              void refetch();
+              if (personalFilter === 'saved') void refetchSavedArticles();
+              else if (personalFilter === 'recent')
+                void refetchRecentArticles();
+              else void refetch();
             }}
           />
         }

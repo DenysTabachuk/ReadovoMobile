@@ -8,11 +8,8 @@ import {
 } from '@nestjs/common';
 
 import { UserAuthGuard } from '../auth/user-auth.guard';
-import {
-  UserAndItemIdParamsDto,
-  UserIdParamsDto,
-} from '../common/validation/request.dto';
-import { ClearMascotSlotParamsDto } from './dto';
+import { UserIdParamsDto } from '../common/validation/request.dto';
+import { ClearMascotSlotParamsDto, MascotItemParamsDto } from './dto';
 import { MascotService } from './mascot.service';
 import { type MascotProfileResponse } from './types';
 
@@ -30,14 +27,14 @@ export class MascotController {
 
   @Post('profile/:userId/items/:itemId/buy')
   async buyItem(
-    @Param() { itemId, userId }: UserAndItemIdParamsDto,
+    @Param() { itemId, userId }: MascotItemParamsDto,
   ): Promise<MascotProfileResponse> {
     return this.mascotService.buyItem(userId, itemId);
   }
 
   @Post('profile/:userId/items/:itemId/equip')
   async equipItem(
-    @Param() { itemId, userId }: UserAndItemIdParamsDto,
+    @Param() { itemId, userId }: MascotItemParamsDto,
   ): Promise<MascotProfileResponse> {
     return this.mascotService.equipItem(userId, itemId);
   }

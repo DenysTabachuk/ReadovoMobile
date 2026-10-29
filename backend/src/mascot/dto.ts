@@ -1,3 +1,17 @@
-import { ClearMascotSlotParamsDtoBase } from '../common/validation/request.dto';
+import { IsIn, IsNotEmpty } from 'class-validator';
 
-export class ClearMascotSlotParamsDto extends ClearMascotSlotParamsDtoBase {}
+import { UserIdParamsDto } from '../common/validation/request.dto';
+import { Trim } from '../common/validation/transforms';
+import { type MascotAccessorySlot } from './types';
+
+export class MascotItemParamsDto extends UserIdParamsDto {
+  @IsNotEmpty()
+  @Trim()
+  itemId!: string;
+}
+
+export class ClearMascotSlotParamsDto extends UserIdParamsDto {
+  @IsIn(['eyes', 'head'])
+  @Trim()
+  slot!: MascotAccessorySlot;
+}

@@ -58,3 +58,5 @@ export { StreakFreezeConfirmModal } from './components/streakFreezeConfirmModal'
 export { StreakFreezePurchaseModal } from './components/streakFreezePurchaseModal';
 
 export { StreakRestoreConfirmModal } from './components/streakRestoreConfirmModal';
+
+export { getStreakErrorMessageKey } from './utils/getStreakErrorMessageKey';

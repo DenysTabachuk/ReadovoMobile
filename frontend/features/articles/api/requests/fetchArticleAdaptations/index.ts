@@ -1,3 +1,4 @@
+import { httpClient } from '@/api/httpClient';
 import { API_BASE_URL } from '@/api';
 
 import type { ArticleAdaptationsByArticleId } from '../../types';
@@ -18,13 +19,9 @@ export async function fetchArticleAdaptations(
     searchParams.set('transformationType', transformationType);
   }
 
-  const response = await fetch(
+  const response = await httpClient(
     `${API_BASE_URL}/api/articles/adaptations?${searchParams.toString()}`,
   );
 
-  if (!response.ok) {
-    throw new Error('articles.errorDescription');
-  }
-
-  return response.json() as Promise<ArticleAdaptationsByArticleId>;
+  return response.data as ArticleAdaptationsByArticleId;
 }

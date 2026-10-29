@@ -1,7 +1,11 @@
+import { createHttpResponse, mockHttpAdapter } from '@/api/testing/http';
 import { refreshAuthSession } from '.';
 import { authSessionStore } from '../authTokenStorage/authSessionStore';
 
-jest.mock('@/api', () => ({ API_BASE_URL: 'https://api.example.test' }));
+jest.mock('@/api', () => ({
+  API_BASE_URL: 'https://api.example.test',
+  HTTP_STATUS: { unauthorized: 401 },
+}));
 jest.mock('@react-native-async-storage/async-storage', () => {
   const values = new Map<string, string>();
   return {
@@ -33,9 +37,10 @@ describe('refreshAuthSession', () => {
   afterEach(() => jest.restoreAllMocks());
 
   it('shares concurrent refreshes within one session', async () => {
-    const response = Promise.withResolvers<Response>();
+    const response =
+      Promise.withResolvers<ReturnType<typeof createHttpResponse>>();
     const started = Promise.withResolvers<void>();
-    const fetchMock = jest.spyOn(globalThis, 'fetch').mockImplementation(() => {
+    const fetchMock = mockHttpAdapter().mockImplementation(() => {
       started.resolve();
       return response.promise;
     });
@@ -44,7 +49,7 @@ describe('refreshAuthSession', () => {
     const second = refreshAuthSession();
     expect(second).toBe(first);
     await started.promise;
-    response.resolve(new Response(JSON.stringify(ROTATED_A)));
+    response.resolve(createHttpResponse(JSON.stringify(ROTATED_A)));
     await expect(first).resolves.toEqual(ROTATED_A);
     expect(authSessionStore.version).toBe(version);
     expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -54,9 +59,10 @@ describe('refreshAuthSession', () => {
   it.each([200, 401])(
     'a late refresh response (%s) cannot replace or clear B tokens',
     async (status) => {
-      const response = Promise.withResolvers<Response>();
+      const response =
+        Promise.withResolvers<ReturnType<typeof createHttpResponse>>();
       const started = Promise.withResolvers<void>();
-      jest.spyOn(globalThis, 'fetch').mockImplementation(() => {
+      mockHttpAdapter().mockImplementation(() => {
         started.resolve();
         return response.promise;
       });
@@ -64,23 +70,29 @@ describe('refreshAuthSession', () => {
       await started.promise;
       await authSessionStore.clear();
       await authSessionStore.replace(ACCOUNT_B);
-      response.resolve(new Response(JSON.stringify(ROTATED_A), { status }));
+      response.resolve(
+        createHttpResponse(
+          status === 200 ? ROTATED_A : { code: 'AUTH_REFRESH_REJECTED' },
+          { status },
+        ),
+      );
       await expect(refresh).resolves.toBeNull();
       expect(await authSessionStore.read()).toEqual(ACCOUNT_B);
     },
   );
 
   it('does not restore tokens after logout', async () => {
-    const response = Promise.withResolvers<Response>();
+    const response =
+      Promise.withResolvers<ReturnType<typeof createHttpResponse>>();
     const started = Promise.withResolvers<void>();
-    jest.spyOn(globalThis, 'fetch').mockImplementation(() => {
+    mockHttpAdapter().mockImplementation(() => {
       started.resolve();
       return response.promise;
     });
     const refresh = refreshAuthSession();
     await started.promise;
     await authSessionStore.clear();
-    response.resolve(new Response(JSON.stringify(ROTATED_A)));
+    response.resolve(createHttpResponse(JSON.stringify(ROTATED_A)));
     await expect(refresh).resolves.toBeNull();
     expect(await authSessionStore.read()).toEqual({
       accessToken: null,
@@ -91,12 +103,10 @@ describe('refreshAuthSession', () => {
   it('rechecks the session after asynchronous response parsing', async () => {
     const body = Promise.withResolvers<typeof ROTATED_A>();
     const parsing = Promise.withResolvers<void>();
-    const response = new Response();
-    jest.spyOn(response, 'json').mockImplementation(() => {
+    mockHttpAdapter().mockImplementation(async () => {
       parsing.resolve();
-      return body.promise;
+      return createHttpResponse(await body.promise);
     });
-    jest.spyOn(globalThis, 'fetch').mockResolvedValue(response);
     const refresh = refreshAuthSession();
     await parsing.promise;
     await authSessionStore.replace(ACCOUNT_B);
@@ -106,31 +116,31 @@ describe('refreshAuthSession', () => {
   });
 
   it('refreshes B independently while the previous account refresh is pending', async () => {
-    const oldResponse = Promise.withResolvers<Response>();
+    const oldResponse =
+      Promise.withResolvers<ReturnType<typeof createHttpResponse>>();
     const started = Promise.withResolvers<void>();
-    const fetchMock = jest
-      .spyOn(globalThis, 'fetch')
+    const fetchMock = mockHttpAdapter()
       .mockImplementationOnce(() => {
         started.resolve();
         return oldResponse.promise;
       })
-      .mockResolvedValueOnce(new Response(JSON.stringify(ROTATED_B)));
+      .mockResolvedValueOnce(createHttpResponse(JSON.stringify(ROTATED_B)));
     const oldRefresh = refreshAuthSession();
     await started.promise;
     await authSessionStore.replace(ACCOUNT_B);
     await expect(refreshAuthSession()).resolves.toEqual(ROTATED_B);
-    expect(fetchMock.mock.calls[1][1]?.body).toBe(
+    expect(fetchMock.mock.calls[1][0]?.data).toBe(
       '{"refreshToken":"refresh-B"}',
     );
-    oldResponse.resolve(new Response(JSON.stringify(ROTATED_A)));
+    oldResponse.resolve(createHttpResponse(JSON.stringify(ROTATED_A)));
     await expect(oldRefresh).resolves.toBeNull();
     expect(await authSessionStore.read()).toEqual(ROTATED_B);
   });
 
   it('clears only the initiating session when refresh is denied', async () => {
-    jest
-      .spyOn(globalThis, 'fetch')
-      .mockResolvedValue(new Response('', { status: 401 }));
+    mockHttpAdapter().mockResolvedValue(
+      createHttpResponse({ code: 'AUTH_REFRESH_REJECTED' }, { status: 401 }),
+    );
     await expect(refreshAuthSession()).resolves.toBeNull();
     expect(await authSessionStore.read()).toEqual({
       accessToken: null,
@@ -140,7 +150,7 @@ describe('refreshAuthSession', () => {
 
   it('does not call the server without a refresh token', async () => {
     await authSessionStore.clear();
-    const fetchMock = jest.spyOn(globalThis, 'fetch');
+    const fetchMock = mockHttpAdapter();
     await expect(refreshAuthSession()).resolves.toBeNull();
     expect(fetchMock).not.toHaveBeenCalled();
   });
@@ -148,17 +158,16 @@ describe('refreshAuthSession', () => {
   it('does not refresh a version superseded before execution', async () => {
     const version = authSessionStore.version;
     await authSessionStore.replace(ACCOUNT_B);
-    const fetchMock = jest.spyOn(globalThis, 'fetch');
+    const fetchMock = mockHttpAdapter();
     await expect(refreshAuthSession(version)).resolves.toBeNull();
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it('releases a failed refresh so a later request can try again', async () => {
     const offline = new Error('Offline');
-    jest
-      .spyOn(globalThis, 'fetch')
+    mockHttpAdapter()
       .mockRejectedValueOnce(offline)
-      .mockResolvedValueOnce(new Response(JSON.stringify(ROTATED_A)));
+      .mockResolvedValueOnce(createHttpResponse(JSON.stringify(ROTATED_A)));
     await expect(refreshAuthSession()).rejects.toBe(offline);
     expect(await authSessionStore.read()).toEqual(ACCOUNT_A);
     await expect(refreshAuthSession()).resolves.toEqual(ROTATED_A);

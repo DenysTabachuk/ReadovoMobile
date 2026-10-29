@@ -5,6 +5,7 @@ import { useArticleDetailQuery } from '@/features/articles/api';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
+import { getArticleErrorMessageKey } from '../../utils/getArticleErrorMessageKey';
 import { ActivityIndicator, View } from 'react-native';
 import { ArticleReader } from './components/articleReader';
 import { styles } from './styles';
@@ -21,6 +22,7 @@ export default function ArticleScreen() {
     isLoading,
     refetch,
   } = useArticleDetailQuery(articleId);
+  const errorMessageKey = error ? getArticleErrorMessageKey(error) : null;
   if (articleId === null) {
     return (
       <ScreenContainer>
@@ -58,7 +60,7 @@ export default function ArticleScreen() {
             {t('article.errorTitle')}
           </ThemedText>
           <ThemedText type="description" style={styles.centerDescription}>
-            {t('article.errorDescription')}
+            {t(errorMessageKey ?? 'errors.generic')}
           </ThemedText>
           <Button onPress={() => refetch()}>{t('article.retry')}</Button>
         </View>

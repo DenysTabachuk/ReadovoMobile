@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 import { isMockApiEnabled } from '@/api';
 import { useBanner } from '@/components/banner';
+import { getApiErrorMessageKey } from '@/api/utils/getApiErrorMessageKey';
 import { getAuthSessionSnapshot } from '@/features/auth';
 import {
   getAchievementBadge,
@@ -107,6 +108,11 @@ export function useCompleteArticleQuizMutation({
         shouldShowStreakBanner: didCompleteStreakToday(previousStreak, streak),
         streak,
       };
+    },
+    onError: (error) => {
+      const messageKey = getApiErrorMessageKey(error);
+      if (!messageKey) return;
+      showBanner({ title: t(messageKey), variant: 'error' });
     },
     onSuccess: (response) => {
       if (!currentUserId) {

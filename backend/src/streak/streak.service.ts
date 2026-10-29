@@ -1,17 +1,12 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
-import {
-  dateOnlyToDate,
-  dateToDateOnly,
-  isDateOnly,
-} from '../common/database/date-only';
+import { ApiException } from '../common/errors/api-exception';
+
+import { dateOnlyToDate, dateToDateOnly } from '../common/database/date-only';
 import { Prisma } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { type CompleteStreakActivityDto } from './dto';
+import { STREAK_ERRORS } from './streak-errors';
 import {
   mapStreakHistory,
   mapStreakProfile,
@@ -96,14 +91,6 @@ export class StreakService {
     year: number,
     month: number,
   ): Promise<StreakCalendarMonthResponse> {
-    if (!Number.isInteger(year) || year < 1970 || year > 2100) {
-      throw new BadRequestException('Invalid year.');
-    }
-
-    if (!Number.isInteger(month) || month < 1 || month > 12) {
-      throw new BadRequestException('Invalid month.');
-    }
-
     const profile = await this.ensureProfile(userId);
     const serverNow = new Date();
     const localToday = this.getLocalDateKey(serverNow, profile.timezone);
@@ -111,7 +98,7 @@ export class StreakService {
     const currentMonth = Number.parseInt(localToday.slice(5, 7), 10);
 
     if (year > currentYear || (year === currentYear && month > currentMonth)) {
-      throw new BadRequestException('Future months are not available.');
+      throw new ApiException(STREAK_ERRORS.CALENDAR_MONTH_UNAVAILABLE);
     }
 
     const reconciled = await this.reconcileMissingDays(
@@ -230,7 +217,7 @@ export class StreakService {
 
   async restore(userId: string, price: number): Promise<StreakState> {
     if (price !== RESTORE_PRICE) {
-      throw new BadRequestException('Invalid restore price.');
+      throw new ApiException(STREAK_ERRORS.RESTORE_PRICE_INVALID);
     }
 
     const profile = await this.ensureProfile(userId);
@@ -238,13 +225,13 @@ export class StreakService {
     const localToday = this.getLocalDateKey(new Date(), profile.timezone);
 
     if (!broken?.canRestore) {
-      throw new BadRequestException('Restore is not available.');
+      throw new ApiException(STREAK_ERRORS.RESTORE_UNAVAILABLE);
     }
 
     const balance = await this.getUserBalance(userId);
 
     if (balance.balance < RESTORE_PRICE) {
-      throw new BadRequestException('Not enough coins.');
+      throw new ApiException(STREAK_ERRORS.NOT_ENOUGH_COINS);
     }
 
     await this.prisma.user.update({
@@ -270,10 +257,6 @@ export class StreakService {
   }
 
   async applyFreeze(userId: string, date: string): Promise<StreakState> {
-    if (!isDateOnly(date)) {
-      throw new BadRequestException('Invalid freeze date.');
-    }
-
     const profile = await this.ensureProfile(userId);
     const localToday = this.getLocalDateKey(new Date(), profile.timezone);
 
@@ -282,7 +265,7 @@ export class StreakService {
     const refreshedProfile = await this.ensureProfile(userId);
 
     if (refreshedProfile.freezeTokens <= 0) {
-      throw new BadRequestException('No freeze tokens available.');
+      throw new ApiException(STREAK_ERRORS.NO_FREEZE_TOKENS);
     }
 
     const day = await this.getHistoryDay(userId, date);
@@ -292,17 +275,15 @@ export class StreakService {
       day?.status === 'frozen' ||
       day?.status === 'restored'
     ) {
-      throw new BadRequestException('This day is already protected.');
+      throw new ApiException(STREAK_ERRORS.DAY_ALREADY_PROTECTED);
     }
 
     if (day?.status !== 'missed') {
-      throw new BadRequestException(
-        'Freeze can only be applied to a missed day.',
-      );
+      throw new ApiException(STREAK_ERRORS.FREEZE_ONLY_MISSED_DAY);
     }
 
     if (await this.hasReachedFreezeLimitForBreak(userId, date)) {
-      throw new BadRequestException('Freeze day limit reached.');
+      throw new ApiException(STREAK_ERRORS.FREEZE_DAY_LIMIT_REACHED);
     }
 
     await this.prisma.userStreakHistory.updateMany({
@@ -330,19 +311,19 @@ export class StreakService {
     price: number,
   ): Promise<StreakState> {
     if (price !== FREEZE_TOKEN_PRICE) {
-      throw new BadRequestException('Invalid freeze token price.');
+      throw new ApiException(STREAK_ERRORS.FREEZE_TOKEN_PRICE_INVALID);
     }
 
     const profile = await this.ensureProfile(userId);
 
     if (profile.freezeTokens >= MAX_FREEZE_TOKENS) {
-      throw new BadRequestException('Freeze token limit reached.');
+      throw new ApiException(STREAK_ERRORS.FREEZE_TOKEN_LIMIT_REACHED);
     }
 
     const balance = await this.getUserBalance(userId);
 
     if (balance.balance < FREEZE_TOKEN_PRICE) {
-      throw new BadRequestException('Not enough coins.');
+      throw new ApiException(STREAK_ERRORS.NOT_ENOUGH_COINS);
     }
 
     await this.prisma.user.update({
@@ -371,13 +352,14 @@ export class StreakService {
     });
 
     if (!user) {
-      throw new NotFoundException('User not found.');
+      throw new ApiException(STREAK_ERRORS.USER_NOT_FOUND);
     }
 
-    const resolvedTimezone = this.resolveTimezone(timezone);
+    // The DTO validates supplied zones. Optional null/absence must not overwrite
+    // an existing profile; a new profile starts in UTC.
     const profile = await this.prisma.userStreakProfile.upsert({
-      create: { timezone: resolvedTimezone ?? 'UTC', userId },
-      update: resolvedTimezone ? { timezone: resolvedTimezone } : {},
+      create: { timezone: timezone ?? 'UTC', userId },
+      update: timezone ? { timezone } : {},
       where: { userId },
     });
 
@@ -622,7 +604,7 @@ export class StreakService {
     });
 
     if (!row) {
-      throw new NotFoundException('User not found.');
+      throw new ApiException(STREAK_ERRORS.USER_NOT_FOUND);
     }
 
     return row;
@@ -691,19 +673,6 @@ export class StreakService {
     }
 
     return 'pending';
-  }
-
-  private resolveTimezone(timezone?: string): string | undefined {
-    if (!timezone) {
-      return undefined;
-    }
-
-    try {
-      Intl.DateTimeFormat('en-US', { timeZone: timezone }).format(new Date());
-      return timezone;
-    } catch {
-      return undefined;
-    }
   }
 
   private getLocalDateKey(serverNow: Date, timeZone: string): string {

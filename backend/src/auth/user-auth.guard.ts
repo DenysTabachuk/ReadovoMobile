@@ -1,12 +1,9 @@
-import {
-  CanActivate,
-  ExecutionContext,
-  ForbiddenException,
-  Injectable,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { type Request } from 'express';
 
+import { ApiException } from '../common/errors/api-exception';
+
+import { AUTH_ERRORS } from './auth-errors';
 import { JwtService } from './jwt.service';
 import { type AuthenticatedUser } from './types';
 
@@ -27,17 +24,13 @@ export class UserAuthGuard implements CanActivate {
     const [scheme, token] = authHeader.split(' ');
 
     if (scheme !== 'Bearer' || !token) {
-      throw new UnauthorizedException(
-        'Authorization bearer token is required.',
-      );
+      throw new ApiException(AUTH_ERRORS.AUTHENTICATION_REQUIRED);
     }
 
     const authUser = this.jwtService.verifyAccessToken(token);
 
     if (request.params.userId && request.params.userId !== authUser.id) {
-      throw new ForbiddenException(
-        'Authenticated user does not match route user.',
-      );
+      throw new ApiException(AUTH_ERRORS.OWNERSHIP_DENIED);
     }
 
     request.authUser = authUser;
