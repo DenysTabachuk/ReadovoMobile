@@ -5,6 +5,7 @@ import { HttpError } from '../../httpError';
 import { parseHttpData } from '../parseHttpData';
 
 /** Creates a configured Axios instance, installing feature interceptors before error sanitization.
+ * In development, logs request destinations and outcomes without headers, bodies or queries.
  * @param configure - Optional one-time interceptor registration for the new instance.
  * @returns A standalone Axios instance with strict JSON and safe rejection handling.
  * @example const client = createHttpClient(); await client.get('/articles');
@@ -25,6 +26,28 @@ export function createHttpClient(configure?: (client: AxiosInstance) => void) {
   });
 
   configure?.(client);
+
+  client.interceptors.request.use((config) => {
+    logRequest(config, 'request');
+    return config;
+  });
+  client.interceptors.response.use(
+    (response) => {
+      logRequest(response.config, `response ${response.status}`);
+      return response;
+    },
+    (error: unknown) => {
+      if (axios.isAxiosError(error)) {
+        logRequest(
+          error.config,
+          axios.isCancel(error)
+            ? 'cancelled'
+            : `failed ${error.response?.status ?? 'no response'}`,
+        );
+      }
+      return Promise.reject(error);
+    },
+  );
 
   client.interceptors.response.use(undefined, (error: unknown) => {
     if (axios.isCancel(error)) {
@@ -49,4 +72,20 @@ export function createHttpClient(configure?: (client: AxiosInstance) => void) {
     return Promise.reject(error);
   });
   return client;
+}
+
+// Never log raw Axios config or URLs: they can contain credentials and query tokens.
+function logRequest(config: AxiosRequestConfig | undefined, outcome: string) {
+  if (typeof __DEV__ === 'undefined' || !__DEV__) return;
+
+  let destination = '(unknown destination)';
+  try {
+    const url = new URL(config?.url ?? '', config?.baseURL ?? API_BASE_URL);
+    destination = `${url.origin}${url.pathname}`;
+  } catch {
+    // Keep malformed URLs out of logs as well.
+  }
+  console.info(
+    `[API] ${outcome} ${(config?.method ?? 'get').toUpperCase()} ${destination}`,
+  );
 }

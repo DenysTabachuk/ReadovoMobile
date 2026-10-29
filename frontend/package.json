@@ -11,7 +11,7 @@
     "start:android:render": "node ./scripts/start-dev.js --api=render --android",
     "start:expo": "expo start",
     "reset-project": "node ./scripts/reset-project.js",
-    "android": "expo run:android",
+    "android": "node ./scripts/run-android.js --api=local",
     "android:local": "node ./scripts/run-android.js --api=local",
     "android:render": "node ./scripts/run-android.js --api=render",
     "android:release": "node ./scripts/build-android-release.js",
