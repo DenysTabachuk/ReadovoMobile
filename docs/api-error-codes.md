@@ -4,8 +4,9 @@ Status: in progress; shared backend boundaries, auth, streak, mascot and diction
 codes implemented. Achievements, translations and articles are implemented.
 Notifications non-2xx codes and Firebase delivery diagnostic sanitization are
 implemented. Backend completion audit and AI telemetry redaction are implemented.
-The minimal frontend HttpError.code addition is ready for review; auth/session and
-feature consumer migration remain open. Cross-project generation is deferred to
+The minimal frontend HttpError.code addition is implemented. Code-based auth
+refresh/session handling is ready for review; feature consumers and presentation
+remain open. Cross-project generation is deferred to
 [OpenAPI contract generation](openapi-contract-generation.md).
 This is the single implementation task for API error codes across
 Readovo. It incorporates the previous streak and mascot tasks. Updating this plan
@@ -29,6 +30,8 @@ Pause after each batch for user review before starting the next one.
    dictionary/achievements, articles/translations, notifications/mock outcomes.
 3. Implement and test backend boundaries, then migrate one domain per batch.
 4. Implement frontend decoding/presentation and verify auth session behavior.
+   Minimal `HttpError.code` and code-based refresh/session decisions are
+   implemented; auth forms and other feature consumers still require migration.
 5. Migrate feature consumers/locales/mocks in matching domain batches.
 6. Run compatibility/integration checks, finalize lasting documentation and
    remove completed temporary task documents.

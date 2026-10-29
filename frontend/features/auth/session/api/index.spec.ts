@@ -29,6 +29,10 @@ const ROTATED_A = {
   refreshToken: 'rotated-refresh-A',
 };
 const WORDS_URL = 'https://api.example.test/api/dictionary/me/words';
+const ACCESS_TOKEN_EXPIRED = {
+  code: 'AUTH_ACCESS_TOKEN_EXPIRED',
+  message: 'Access token has expired.',
+};
 
 describe('api session isolation', () => {
   it('adds JWT through an interceptor for relative Axios method calls', async () => {
@@ -56,7 +60,7 @@ describe('api session isolation', () => {
       }
       return config.headers.get('Authorization') === 'Bearer rotated-access-A'
         ? createHttpResponse({ saved: true })
-        : createHttpResponse('', { status: 401 });
+        : createHttpResponse(ACCESS_TOKEN_EXPIRED, { status: 401 });
     });
     const first = api.post('/api/dictionary/me/words', { word: 'sun' });
     const second = api.get('/streak/profile/me');
@@ -118,7 +122,9 @@ describe('api session isolation', () => {
   it('refreshes and retries a write once within the initiating session', async () => {
     const response = createHttpResponse('{"id":"saved-word"}');
     const fetchMock = mockHttpAdapter(api)
-      .mockResolvedValueOnce(createHttpResponse('', { status: 401 }))
+      .mockResolvedValueOnce(
+        createHttpResponse(ACCESS_TOKEN_EXPIRED, { status: 401 }),
+      )
       .mockResolvedValueOnce(createHttpResponse(JSON.stringify(ROTATED_A)))
       .mockResolvedValueOnce(response);
     const init = { method: 'POST', data: '{"word":"sun"}' };
@@ -156,7 +162,9 @@ describe('api session isolation', () => {
       await started.promise;
       await authSessionStore.clear();
       await authSessionStore.replace(ACCOUNT_B);
-      firstResponse.resolve(createHttpResponse('', { status: 401 }));
+      firstResponse.resolve(
+        createHttpResponse(ACCESS_TOKEN_EXPIRED, { status: 401 }),
+      );
       await rejected;
       expect(fetchMock).toHaveBeenCalledTimes(1);
       expect(await authSessionStore.read()).toEqual(ACCOUNT_B);
@@ -205,7 +213,9 @@ describe('api session isolation', () => {
     });
     await started.promise;
     await authSessionStore.clear();
-    firstResponse.resolve(createHttpResponse('', { status: 401 }));
+    firstResponse.resolve(
+      createHttpResponse(ACCESS_TOKEN_EXPIRED, { status: 401 }),
+    );
     await rejected;
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(await authSessionStore.read()).toEqual({
@@ -215,9 +225,11 @@ describe('api session isolation', () => {
   });
 
   it('does not repeat the request if the retried response is also unauthorized', async () => {
-    const denied = createHttpResponse('', { status: 401 });
+    const denied = createHttpResponse(ACCESS_TOKEN_EXPIRED, { status: 401 });
     const fetchMock = mockHttpAdapter(api)
-      .mockResolvedValueOnce(createHttpResponse('', { status: 401 }))
+      .mockResolvedValueOnce(
+        createHttpResponse(ACCESS_TOKEN_EXPIRED, { status: 401 }),
+      )
       .mockResolvedValueOnce(createHttpResponse(JSON.stringify(ROTATED_A)))
       .mockResolvedValueOnce(denied);
     await expect(api(WORDS_URL)).rejects.toMatchObject({
@@ -226,14 +238,16 @@ describe('api session isolation', () => {
     expect(fetchMock).toHaveBeenCalledTimes(3);
   });
 
-  it.each([200, 401])(
+  it.each([200, 401, 500])(
     'never retries after changing accounts during refresh (%s)',
     async (status) => {
       const refreshResponse =
         Promise.withResolvers<ReturnType<typeof createHttpResponse>>();
       const refreshing = Promise.withResolvers<void>();
       const fetchMock = mockHttpAdapter(api)
-        .mockResolvedValueOnce(createHttpResponse('', { status: 401 }))
+        .mockResolvedValueOnce(
+          createHttpResponse(ACCESS_TOKEN_EXPIRED, { status: 401 }),
+        )
         .mockImplementationOnce(() => {
           refreshing.resolve();
           return refreshResponse.promise;
@@ -248,7 +262,15 @@ describe('api session isolation', () => {
       await refreshing.promise;
       await authSessionStore.replace(ACCOUNT_B);
       refreshResponse.resolve(
-        createHttpResponse(JSON.stringify(ROTATED_A), { status }),
+        createHttpResponse(
+          status === 200
+            ? ROTATED_A
+            : {
+                code:
+                  status === 401 ? 'AUTH_REFRESH_REJECTED' : 'INTERNAL_ERROR',
+              },
+          { status },
+        ),
       );
       await rejected;
       expect(fetchMock).toHaveBeenCalledTimes(2);
@@ -261,7 +283,9 @@ describe('api session isolation', () => {
       Promise.withResolvers<ReturnType<typeof createHttpResponse>>();
     const retrying = Promise.withResolvers<void>();
     const fetchMock = mockHttpAdapter(api)
-      .mockResolvedValueOnce(createHttpResponse('', { status: 401 }))
+      .mockResolvedValueOnce(
+        createHttpResponse(ACCESS_TOKEN_EXPIRED, { status: 401 }),
+      )
       .mockResolvedValueOnce(createHttpResponse(JSON.stringify(ROTATED_A)))
       .mockImplementationOnce(() => {
         retrying.resolve();

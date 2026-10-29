@@ -4,6 +4,7 @@ import axios, {
 } from 'axios';
 
 import { API_BASE_URL, HTTP_STATUS } from '@/api';
+import { HttpError } from '@/api/httpError';
 import { createHttpClient } from '@/api/utils/createHttpClient';
 
 import { authSessionStore } from '../authTokenStorage/authSessionStore';
@@ -16,11 +17,17 @@ type SessionConfig = InternalAxiosRequestConfig & {
     // changes this number; refreshing tokens keeps it. Retries retain the original
     // version so a request cannot continue under a different login.
     version: number;
-    // Set before attempting refresh after the first 401. A second 401 must reject
+    // Set before refresh for an eligible auth 401. A second 401 must reject
     // rather than start another refresh/retry cycle.
     retried: boolean;
   };
 };
+
+const REFRESHABLE_AUTH_CODES = [
+  'AUTH_AUTHENTICATION_REQUIRED',
+  'AUTH_ACCESS_TOKEN_INVALID',
+  'AUTH_ACCESS_TOKEN_EXPIRED',
+];
 
 /**
  * Axios client for authenticated API calls. Interceptors are registered once,
@@ -28,8 +35,8 @@ type SessionConfig = InternalAxiosRequestConfig & {
  *
  * Request -> validate destination -> capture session -> read JWT -> send
  * Response -> verify original session -> return data
- * First 401 -> shared refresh -> verify session -> retry with the new JWT
- * Other errors / second 401 -> reject -> shared error normalization
+ * Eligible auth 401 -> shared refresh -> verify session -> retry with the new JWT
+ * Other codes/errors / second 401 -> reject -> shared error normalization
  *
  * A session change after capture rejects with AbortError, including during token
  * reads, response parsing and refresh. It cannot undo work already done by the server.
@@ -111,14 +118,20 @@ export const api = createHttpClient((client) => {
       const session = config?.authSession;
       if (!config || !session) throw error;
       authSessionStore.assertCurrent(session.version);
+      const response = error.response;
       if (
-        error.response?.status !== HTTP_STATUS.unauthorized ||
+        !response ||
+        response.status !== HTTP_STATUS.unauthorized ||
         session.retried
       )
         throw error;
+      // This interceptor runs before shared error normalization. Reuse HttpError's
+      // minimal code extraction without introducing another response parser.
+      const { code } = new HttpError(response);
+      if (!code || !REFRESHABLE_AUTH_CODES.includes(code)) throw error;
       session.retried = true;
       try {
-        // For this session, the first 401 starts refresh; other concurrent 401s
+        // For this session, the first eligible 401 starts refresh; concurrent ones
         // await the same Promise. Each interceptor then retries its own request.
         // See refreshAuthSession for the flow diagram and Promise lifecycle.
         // Refresh uses the public client, so its failure cannot trigger refresh again.

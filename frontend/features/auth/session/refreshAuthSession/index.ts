@@ -1,6 +1,6 @@
 import { httpClient } from '@/api/httpClient';
 import { HttpError } from '@/api/httpError';
-import { API_BASE_URL } from '@/api';
+import { API_BASE_URL, HTTP_STATUS } from '@/api';
 
 import { authSessionStore } from '../authTokenStorage/authSessionStore';
 import { type AuthTokens } from '../types';
@@ -15,7 +15,7 @@ const pendingRefreshes = new Map<number, Promise<AuthTokens | null>>();
  * Captures its refresh token before the HTTP call. Obsolete responses neither
  * replace nor clear a newer session's tokens; new sessions use separate requests.
  *
- * Example: three API requests receive 401 while the same refresh is pending:
+ * Example: three requests receive eligible auth 401s while refresh is pending:
  *   profile    -> 401 --\
  *   dictionary -> 401 ----> one POST /auth/refresh -> new JWT
  *   streak     -> 401 --/
@@ -25,7 +25,9 @@ const pendingRefreshes = new Map<number, Promise<AuthTokens | null>>();
  *
  * @param version - Initiating session version; defaults to the current session.
  * @returns Refreshed tokens, or null for an obsolete/unsuccessful session.
- * Network and storage failures reject without clearing unrelated sessions.
+ * Only HTTP 401/AUTH_REFRESH_REJECTED or a missing local refresh token clears the
+ * initiating session. Other HTTP, network, storage and invalid token-response
+ * failures reject while retaining tokens. Obsolete responses never clear a login.
  * @example
  * const tokens = await refreshAuthSession();
  * // Persists rotated tokens if the same session is still active; otherwise null.
@@ -67,7 +69,12 @@ async function refreshAuthSessionOnce(
     },
     method: 'POST',
   }).catch(async (error: unknown) => {
-    if (!(error instanceof HttpError)) throw error;
+    if (
+      !(error instanceof HttpError) ||
+      error.status !== HTTP_STATUS.unauthorized ||
+      error.code !== 'AUTH_REFRESH_REJECTED'
+    )
+      throw error;
     await authSessionStore.clearIfCurrent(version);
     return null;
   });
@@ -76,7 +83,23 @@ async function refreshAuthSessionOnce(
     return null;
   }
 
-  const tokens = response.data as AuthTokens;
+  const data: unknown = response.data;
+  if (
+    typeof data !== 'object' ||
+    data === null ||
+    !('accessToken' in data) ||
+    typeof data.accessToken !== 'string' ||
+    !data.accessToken ||
+    !('refreshToken' in data) ||
+    typeof data.refreshToken !== 'string' ||
+    !data.refreshToken
+  ) {
+    throw new Error('Invalid refresh response.');
+  }
+  const tokens: AuthTokens = {
+    accessToken: data.accessToken,
+    refreshToken: data.refreshToken,
+  };
   const committed = await authSessionStore.commitRefresh({ version, tokens });
   return committed ? tokens : null;
 }

@@ -2,7 +2,10 @@ import { createHttpResponse, mockHttpAdapter } from '@/api/testing/http';
 import { refreshAuthSession } from '.';
 import { authSessionStore } from '../authTokenStorage/authSessionStore';
 
-jest.mock('@/api', () => ({ API_BASE_URL: 'https://api.example.test' }));
+jest.mock('@/api', () => ({
+  API_BASE_URL: 'https://api.example.test',
+  HTTP_STATUS: { unauthorized: 401 },
+}));
 jest.mock('@react-native-async-storage/async-storage', () => {
   const values = new Map<string, string>();
   return {
@@ -68,7 +71,10 @@ describe('refreshAuthSession', () => {
       await authSessionStore.clear();
       await authSessionStore.replace(ACCOUNT_B);
       response.resolve(
-        createHttpResponse(JSON.stringify(ROTATED_A), { status }),
+        createHttpResponse(
+          status === 200 ? ROTATED_A : { code: 'AUTH_REFRESH_REJECTED' },
+          { status },
+        ),
       );
       await expect(refresh).resolves.toBeNull();
       expect(await authSessionStore.read()).toEqual(ACCOUNT_B);
@@ -133,7 +139,7 @@ describe('refreshAuthSession', () => {
 
   it('clears only the initiating session when refresh is denied', async () => {
     mockHttpAdapter().mockResolvedValue(
-      createHttpResponse('', { status: 401 }),
+      createHttpResponse({ code: 'AUTH_REFRESH_REJECTED' }, { status: 401 }),
     );
     await expect(refreshAuthSession()).resolves.toBeNull();
     expect(await authSessionStore.read()).toEqual({

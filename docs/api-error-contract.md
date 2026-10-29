@@ -691,8 +691,8 @@ decisions, because those interceptors run before final error normalization.
 `api/httpError/index.spec.ts` covers string and unknown codes, malformed/missing
 codes, non-object bodies, immutable input and safe error messages.
 `api/utils/createHttpClient/index.spec.ts` verifies code propagation through Axios
-rejection normalization. This foundation does not change auth or UI behavior;
-legacy feature wrappers that replace `HttpError` remain for later migration.
+rejection normalization. Legacy feature wrappers that replace `HttpError` remain
+for later migration; auth/session handling is implemented as described below.
 
 Request functions return data and propagate errors. Feature presentation at the
 screen/hook feedback boundary resolves code to a known translation key and action;
@@ -700,15 +700,35 @@ then translates once. Shared presentation handles transport failures and generic
 fallbacks. Stop transporting translation keys inside `Error.message`. Native Google
 SDK failures retain their separate SDK-owned handling.
 
-Only A17-A19 on the authenticated client may initiate single-flight refresh and
-one retry, retaining session-version guards. Credential, Google, refresh, ownership
+Only HTTP 401 with A17-A19 (`AUTH_AUTHENTICATION_REQUIRED`,
+`AUTH_ACCESS_TOKEN_INVALID`, `AUTH_ACCESS_TOKEN_EXPIRED`) on the authenticated
+client initiates single-flight refresh and one retry, retaining session-version
+guards. Before shared error normalization, the interceptor reuses `HttpError` to
+read the optional string code. Credential, Google, refresh, ownership
 and domain denials do not trigger refresh. An unknown/malformed/absent code also
-does not trigger refresh. Only explicit `AUTH_REFRESH_REJECTED` clears a session
-after a refresh response; other failures surface safely without deleting tokens.
-This intentionally replaces today's clearing on every refresh HTTP failure;
+does not trigger refresh. Only HTTP 401 with `AUTH_REFRESH_REJECTED` clears the
+initiating session after a refresh response; other failures surface without
+deleting tokens. Missing local refresh tokens retain the existing local session
+cleanup behavior. This replaces clearing on every refresh HTTP failure;
 network failures and stale-session cancellation retain their existing protection.
 Cancellation remains silent. Transport timeout/network errors remain separate
 from backend codes. Preserve query and offline replay retry policies.
+
+Successful refresh bodies must contain two non-empty string tokens before they
+can be committed; malformed success responses reject without replacing tokens.
+This local check replaces an unchecked `as AuthTokens` assertion, without adding
+a general decoder or token-format validation. Pending refresh entries are still
+released after every outcome so a later request can recover from temporary errors.
+
+`features/auth/session/api/errorCodes.spec.ts` covers eligible codes, credential/
+Google/refresh/unknown/missing/non-string codes, wrong HTTP statuses and integrated
+refresh failures. `refreshAuthSession/errorCodes.spec.ts` covers token retention,
+temporary-error recovery and malformed successful bodies. The existing colocated
+`index.spec.ts` suites retain concurrency, one-retry, logout and cross-account
+isolation checks, now with explicit backend codes in their failure fixtures.
+Delayed HTTP 500 refresh failures from an obsolete account also remain AbortError
+on authenticated requests. No feature UI, locale, query retry or offline replay
+behavior is migrated in this batch.
 
 ## Deployment compatibility
 
