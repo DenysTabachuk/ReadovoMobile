@@ -1,3 +1,4 @@
+import { QuizService } from '../../quiz/quiz.service';
 import { HttpService } from '@nestjs/axios';
 import { type INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
@@ -60,6 +61,14 @@ export async function createWikipediaHttpApp() {
     controllers: [ArticlesController],
     providers: [
       JwtService,
+      {
+        provide: QuizService,
+        useValue: {
+          create: jest
+            .fn()
+            .mockResolvedValue('33333333-3333-4333-8333-333333333333'),
+        },
+      },
       ArticlesService,
       WikipediaArticlesService,
       ArticleFormulaRenderer,

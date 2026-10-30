@@ -1,3 +1,4 @@
+import { QuizService } from '../../quiz/quiz.service';
 import { type INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { type Server } from 'node:http';
@@ -55,9 +56,8 @@ export async function createDictionaryHttpApp(
       | 'create'
       | 'findAll'
       | 'findById'
-      | 'deleteById'
       | 'updateProgress'
-      | 'updateReviewResult'
+      | 'deleteById'
       | 'findReviewCandidates'
     >
   > = {
@@ -66,13 +66,20 @@ export async function createDictionaryHttpApp(
     findById: jest.fn().mockResolvedValue(undefined),
     deleteById: jest.fn().mockResolvedValue(undefined),
     updateProgress: jest.fn().mockResolvedValue(undefined),
-    updateReviewResult: jest.fn().mockResolvedValue(undefined),
     findReviewCandidates: jest.fn().mockResolvedValue([]),
   };
   const module = await Test.createTestingModule({
     controllers: [DictionaryController],
     providers: [
       DictionaryService,
+      {
+        provide: QuizService,
+        useValue: {
+          create: jest
+            .fn()
+            .mockResolvedValue('33333333-3333-4333-8333-333333333333'),
+        },
+      },
       JwtService,
       UserAuthGuard,
       { provide: DictionaryRepository, useValue: repository },

@@ -8,7 +8,6 @@ import {
 } from '../../achievements';
 import {
   useApplyStreakFreezeMutation,
-  useCompleteStreakActivityMutation,
   usePurchaseStreakFreezeTokenMutation,
   useRestoreStreakMutation,
   useStreakProfileQuery,
@@ -19,12 +18,12 @@ import type { StreakAchievement } from '../../types';
  * Composes streak operations and presents the first newly unlocked achievement.
  *
  * @param userId - Owner passed to each operation; absent IDs disable profile fetching.
- * @returns The existing profile query and four mutation objects used by consumers.
+ * @returns The existing profile query and three mutation objects used by consumers.
  * Data hooks own requests and cache changes; this hook owns the translated banner.
  * @example
  * const { streakQuery, restoreMutation } = useStreak(userId);
  * // Use streakQuery for rendering and restoreMutation.mutate() to request a restore.
- * // Successful activity, restore, or freeze operations may show an achievement banner.
+ * // Successful restore or freeze operations may show an achievement banner.
  */
 export function useStreak(userId?: string) {
   const { showBanner } = useBanner();
@@ -48,10 +47,6 @@ export function useStreak(userId?: string) {
   };
 
   const streakQuery = useStreakProfileQuery(userId);
-  const completeActivityMutation = useCompleteStreakActivityMutation({
-    userId,
-    onAchievementsUnlocked,
-  });
   const restoreMutation = useRestoreStreakMutation({
     userId,
     onAchievementsUnlocked,
@@ -65,7 +60,6 @@ export function useStreak(userId?: string) {
 
   return {
     applyFreezeMutation,
-    completeActivityMutation,
     purchaseFreezeTokenMutation,
     restoreMutation,
     streakQuery,

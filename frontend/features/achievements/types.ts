@@ -30,5 +30,3 @@ export type AchievementsProfileResponse = {
   progress: AchievementProgress;
   userId: string;
 };
-
-export type UpdateAchievementProgressDto = Partial<AchievementProgress>;

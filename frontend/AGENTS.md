@@ -49,8 +49,8 @@ full requirements, examples, documentation template, and edge cases.
 - One or two simple positional parameters are fine; more than three require a
   named parameter object. With exactly three, choose readability, preferring an
   object for callbacks/options. Do not alias individual primitives just for style.
-- Name non-obvious behavioral/design values and prefer existing theme tokens.
-  Do not extract self-explanatory literals or obvious, single-use StyleSheet values.
+- Follow the shared [constants and magic values rule](../AGENTS.md#constants-and-magic-values-frontend-and-backend).
+  Prefer existing theme tokens; keep obvious, single-use StyleSheet values inline.
 
 ## Localization
 

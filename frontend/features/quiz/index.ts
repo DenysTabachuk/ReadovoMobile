@@ -1,7 +1,8 @@
 export { QuizRunner } from './components/quizRunner';
 export { QuizResult } from './components/quizResult';
-export { calculateQuizReward } from './utils/calculateQuizReward';
-export type { QuizRewardContext } from './utils/calculateQuizReward/types';
+export { useCompleteQuizMutation } from './api/mutations/useCompleteQuizMutation';
+export { useSubmitQuizAnswerMutation } from './api/mutations/useSubmitQuizAnswerMutation';
+export { useRetakeQuizMutation } from './api/mutations/useRetakeQuizMutation';
 export type {
   QuizOption,
   QuizQuestion,

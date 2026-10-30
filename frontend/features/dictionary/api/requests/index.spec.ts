@@ -6,7 +6,6 @@ import {
   deleteDictionaryWord,
   fetchDictionaryTest,
   fetchDictionaryWords,
-  submitDictionaryTestAnswer,
   updateDictionaryWordProgress,
 } from '.';
 
@@ -32,7 +31,6 @@ jest.mock('@/features/auth', () => {
 
 const mockFetch = jest.mocked(api);
 const word = { word: 'sun', translation: 'сонце', context: 'The sun rises.' };
-const answer = { wordId: 'word-7', selectedOptionId: 'option-1' };
 
 describe('authenticated dictionary request contract', () => {
   beforeEach(() => jest.resetAllMocks());
@@ -74,13 +72,6 @@ describe('authenticated dictionary request contract', () => {
       method: 'GET',
       body: undefined,
     },
-    {
-      name: 'submit answer',
-      run: () => submitDictionaryTestAnswer(answer),
-      path: '/test/answer',
-      method: 'POST',
-      body: answer,
-    },
   ])(
     '$name uses the authenticated /me endpoint',
     async ({ run, path, method, body }) => {
@@ -107,9 +98,6 @@ describe('authenticated dictionary request contract', () => {
         updateDictionaryWordProgress('word-7', { progress: 'in_progress' }),
     },
     { run: fetchDictionaryTest, error: 'dictionary.test.error' },
-    {
-      run: () => submitDictionaryTestAnswer(answer),
-    },
     { run: () => createDictionaryWord(word), error: 'dictionary.saveError' },
   ])('preserves HTTP failures for presentation', async ({ run }) => {
     mockFetch.mockRejectedValue(

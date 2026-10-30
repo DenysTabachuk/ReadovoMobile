@@ -1,3 +1,4 @@
+import { QuizService } from '../../quiz/quiz.service';
 import { type INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { type Server } from 'node:http';
@@ -71,6 +72,14 @@ export async function createArticleLibraryHttpApp() {
   const module = await Test.createTestingModule({
     controllers: [ArticlesController],
     providers: [
+      {
+        provide: QuizService,
+        useValue: {
+          create: jest
+            .fn()
+            .mockResolvedValue('33333333-3333-4333-8333-333333333333'),
+        },
+      },
       ArticlesService,
       ArticleLibraryService,
       JwtService,

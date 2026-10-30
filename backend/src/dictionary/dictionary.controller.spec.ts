@@ -32,7 +32,6 @@ describe('DictionaryController authenticated routes', () => {
     deleteWord: jest.fn().mockResolvedValue({ id: WORD_ID }),
     updateWordProgress: jest.fn().mockResolvedValue({ id: WORD_ID }),
     createTest: jest.fn().mockResolvedValue({ questions: [] }),
-    submitTestAnswer: jest.fn().mockResolvedValue({ isCorrect: true }),
   };
 
   beforeAll(async () => {
@@ -60,7 +59,6 @@ describe('DictionaryController authenticated routes', () => {
     ['delete', `/words/${WORD_ID}`],
     ['patch', `/words/${WORD_ID}/progress`],
     ['get', '/test'],
-    ['post', '/test/answer'],
   ] as const)('rejects unauthenticated %s %s', async (method, path) => {
     await request(app.getHttpServer())
       [method](`/api/dictionary/me${path}`)
@@ -128,19 +126,12 @@ describe('DictionaryController authenticated routes', () => {
     });
   });
 
-  it('creates tests and submits answers for the token owner', async () => {
+  it('creates tests for the token owner', async () => {
     await request(app.getHttpServer())
       .get('/api/dictionary/me/test?limit=3')
       .set('Authorization', `Bearer ${accessToken}`)
       .expect(200);
     expect(service.createTest).toHaveBeenCalledWith(USER_ID, 3);
-    const answer = { wordId: WORD_ID, selectedOptionId: 'option-1' };
-    await request(app.getHttpServer())
-      .post('/api/dictionary/me/test/answer')
-      .set('Authorization', `Bearer ${accessToken}`)
-      .send(answer)
-      .expect(201);
-    expect(service.submitTestAnswer).toHaveBeenCalledWith(USER_ID, answer);
   });
 
   it('rejects body user IDs, ignores query user IDs, and validates word IDs', async () => {

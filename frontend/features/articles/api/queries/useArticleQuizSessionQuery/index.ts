@@ -1,3 +1,4 @@
+import { useAuth } from '@/features/auth';
 import { skipToken, useQuery } from '@tanstack/react-query';
 import {
   getArticleQuizSessionKey,
@@ -22,9 +23,16 @@ export function useArticleQuizSessionQuery({
   level,
   targetLength,
 }: ArticleQuizSessionQueryParams) {
+  const { currentUser } = useAuth();
   // Observe the generated session without starting a second generation request.
   return useQuery<ArticleQuizSessionResponse>({
-    queryKey: getArticleQuizSessionKey(articleId, mode, level, targetLength),
+    queryKey: getArticleQuizSessionKey({
+      userId: currentUser?.id ?? undefined,
+      articleId,
+      mode,
+      level,
+      targetLength,
+    }),
     queryFn: skipToken,
   });
 }

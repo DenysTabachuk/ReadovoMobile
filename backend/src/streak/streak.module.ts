@@ -8,5 +8,6 @@ import { StreakService } from './streak.service';
   imports: [AuthModule],
   controllers: [StreakController],
   providers: [StreakService],
+  exports: [StreakService],
 })
 export class StreakModule {}

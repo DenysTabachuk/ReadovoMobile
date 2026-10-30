@@ -2,6 +2,7 @@ import { OutboundHttpModule } from '../http/outbound-http.module';
 import { Module } from '@nestjs/common';
 
 import { AuthModule } from '../auth/auth.module';
+import { QuizModule } from '../quiz/quiz.module';
 import { ArticleFormulaRenderer } from './discovery/article-formula-renderer';
 import { WikipediaArticlesService } from './discovery/wikipedia-articles.service';
 import { AiStructuredOutputRunner } from './infrastructure/ai-structured-output.runner';
@@ -25,7 +26,7 @@ import { ArticlesController } from './articles.controller';
 import { ArticlesService } from './articles.service';
 
 @Module({
-  imports: [OutboundHttpModule, AuthModule],
+  imports: [OutboundHttpModule, AuthModule, QuizModule],
   controllers: [ArticlesController],
   providers: [
     ArticleAdaptationService,

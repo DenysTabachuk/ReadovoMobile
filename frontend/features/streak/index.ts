@@ -20,23 +20,16 @@ export {
 export {
   applyFreezeToMissedDay,
   buyStreakFreezeToken,
-  didCompleteStreakToday,
   getStreakReminderState,
-  queuePendingStreakEvent,
   restoreStreakForCoins,
-  syncPendingStreakEvents,
-  trackLearningActivity,
 } from './utils';
 export type {
   ApplyStreakFreezeRequest,
   BrokenStreakInfo,
   CalendarDayStatus,
-  CompleteActivityRequest,
-  CompleteActivityResponse,
   PurchaseStreakFreezeRequest,
   StreakAchievement,
   StreakAchievementMilestone,
-  StreakActivityType,
   StreakCalendarDay,
   StreakCalendarMonthResponse,
   StreakDayStatus,

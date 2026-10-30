@@ -20,8 +20,6 @@ import {
   type GenerateArticleVocabularyQuizResponse,
 } from '../contracts/types';
 
-const DEFAULT_LEVEL: ArticleSimplificationLevel = 'A2';
-const DEFAULT_TARGET_LENGTH: ArticleSimplificationTargetLength = 'short';
 const MAX_READING_QUIZ_COMPLETION_TOKENS = 1_400;
 const MAX_VOCABULARY_COMPLETION_TOKENS = 5000;
 const READING_QUIZ_SYSTEM_MESSAGE =
@@ -42,15 +40,13 @@ export class ArticleQuizService {
   ) {}
 
   async generateReadingQuiz(params: {
-    level?: ArticleSimplificationLevel;
-    targetLength?: ArticleSimplificationTargetLength;
+    level: ArticleSimplificationLevel;
+    targetLength: ArticleSimplificationTargetLength;
     text: string;
     title?: string;
   }): Promise<ArticleQuizQuestion[]> {
     const title = params.title?.trim() || 'Untitled article';
     const text = params.text.trim();
-    const level = params.level ?? DEFAULT_LEVEL;
-    const targetLength = params.targetLength ?? DEFAULT_TARGET_LENGTH;
     const apiKey = process.env.GROQ_API_KEY;
 
     if (!apiKey) {
@@ -64,9 +60,9 @@ export class ArticleQuizService {
       const promptPlan = this.promptPlanner.createTokenSafePrompt({
         createPrompt: ({ sourceCoverage, text: sourceText }) =>
           this.promptFactory.createQuizPrompt({
-            level,
+            level: params.level,
             sourceCoverage,
-            targetLength,
+            targetLength: params.targetLength,
             text: sourceText,
             title,
           }),

@@ -31,12 +31,6 @@ export type DictionaryTestQuestion = {
 };
 
 export type DictionaryTest = {
+  sessionId: string;
   questions: DictionaryTestQuestion[];
-};
-
-export type DictionaryTestAnswerResult = {
-  correctOptionId: string;
-  correctTranslation: string;
-  isCorrect: boolean;
-  word: DictionaryWord;
 };

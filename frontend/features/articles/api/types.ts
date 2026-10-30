@@ -133,7 +133,7 @@ export type ArticleQuizQuestionOption = {
 };
 
 export type ArticleQuizQuestion = {
-  correctOptionIds: string[];
+  correctOptionIds?: string[];
   explanation?: string;
   id: string;
   options: ArticleQuizQuestionOption[];
@@ -163,13 +163,14 @@ export type SimplifyArticleRequest = {
 };
 
 export type GenerateArticleQuizRequest = {
-  level?: SimplifyArticleLevel;
-  targetLength?: SimplifyArticleTargetLength;
+  level: SimplifyArticleLevel;
+  targetLength: SimplifyArticleTargetLength;
   text: string;
   title: string;
 };
 
 export type GenerateArticleQuizResponse = {
+  sessionId: string;
   questions: ArticleQuizQuestion[];
 };
 
@@ -180,6 +181,7 @@ export type GenerateArticleVocabularyQuizRequest = {
 };
 
 export type GenerateArticleVocabularyQuizResponse = {
+  sessionId: string;
   questions: ArticleVocabularyQuizQuestion[];
   resolvedLevel: VocabularyQuizResolvedLevel;
 };

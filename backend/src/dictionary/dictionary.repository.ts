@@ -78,28 +78,6 @@ export class DictionaryRepository {
     return rows.map((row) => this.toDictionaryWord(row));
   }
 
-  async updateReviewResult(
-    id: string,
-    userId: string,
-    progress: DictionaryWordProgress,
-    correctAnswersCount: number,
-    reviewedAt: string,
-  ): Promise<DictionaryWord | undefined> {
-    const updated = await this.prisma.dictionaryWord.updateMany({
-      data: {
-        correctAnswersCount,
-        lastReviewedAt: new Date(reviewedAt),
-        progress,
-      },
-      where: { id, userId },
-    });
-    const row = updated.count
-      ? await this.prisma.dictionaryWord.findUnique({ where: { id } })
-      : null;
-
-    return row ? this.toDictionaryWord(row) : undefined;
-  }
-
   async updateProgress(
     id: string,
     userId: string,

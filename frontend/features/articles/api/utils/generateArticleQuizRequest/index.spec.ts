@@ -1,8 +1,14 @@
+import { api } from '@/features/auth';
 import { type GenericAbortSignal } from 'axios';
 import { createHttpResponse, mockHttpAdapter } from '@/api/testing/http';
 import { generateArticleQuizRequest } from '.';
 
+jest.mock('@/api/config', () => ({ API_BASE_URL: 'https://api.example.test' }));
 jest.mock('@/api', () => ({ API_BASE_URL: 'https://api.example.test' }));
+jest.mock('@/features/auth', () => ({
+  api: jest.requireActual<typeof import('@/api/httpClient')>('@/api/httpClient')
+    .httpClient,
+}));
 const request = {
   title: 'Space',
   text: 'The Moon orbits Earth.',
@@ -16,8 +22,8 @@ describe('generateArticleQuizRequest', () => {
     jest.restoreAllMocks();
   });
   it('POSTs a quiz request and clears its timeout after parsing the response', async () => {
-    const payload = { questions: [] };
-    const fetchMock = mockHttpAdapter().mockResolvedValue(
+    const payload = { sessionId: 'session-1', questions: [] };
+    const fetchMock = mockHttpAdapter(api).mockResolvedValue(
       createHttpResponse(payload),
     );
     await expect(
@@ -37,7 +43,7 @@ describe('generateArticleQuizRequest', () => {
     expect(jest.getTimerCount()).toBe(0);
   });
   it('preserves HTTP and network failures and clears timers', async () => {
-    const fetchMock = mockHttpAdapter().mockResolvedValue(
+    const fetchMock = mockHttpAdapter(api).mockResolvedValue(
       createHttpResponse('Unavailable', { status: 503 }),
     );
     await expect(
@@ -52,7 +58,7 @@ describe('generateArticleQuizRequest', () => {
   });
   it('aborts a hanging request at 60 seconds and rejects with TimeoutError', async () => {
     let signal: GenericAbortSignal | undefined;
-    mockHttpAdapter().mockImplementation(
+    mockHttpAdapter(api).mockImplementation(
       (init) =>
         new Promise((_resolve, reject) => {
           signal = init.signal;
@@ -73,7 +79,7 @@ describe('generateArticleQuizRequest', () => {
     expect(jest.getTimerCount()).toBe(0);
   });
   it('propagates invalid JSON without leaking a timer', async () => {
-    mockHttpAdapter().mockResolvedValue(createHttpResponse('invalid JSON'));
+    mockHttpAdapter(api).mockResolvedValue(createHttpResponse('invalid JSON'));
     await expect(
       generateArticleQuizRequest('/api/articles/quiz', request),
     ).rejects.toThrow();

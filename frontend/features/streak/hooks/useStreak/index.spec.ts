@@ -9,8 +9,6 @@ import { getStreakProfile } from '../../api/requests/getStreakProfile';
 import { applyFreezeToMissedDay } from '../../utils/applyFreezeToMissedDay';
 import { buyStreakFreezeToken } from '../../utils/buyStreakFreezeToken';
 import { restoreStreakForCoins } from '../../utils/restoreStreakForCoins';
-import { syncPendingStreakEvents } from '../../utils/syncPendingStreakEvents';
-import { trackLearningActivity } from '../../utils/trackLearningActivity';
 import type { StreakState } from '../../types';
 import { useStreak } from '.';
 import { getAuthSessionSnapshot } from '@/features/auth';
@@ -41,12 +39,6 @@ jest.mock('../../utils/buyStreakFreezeToken', () => ({
 }));
 jest.mock('../../utils/restoreStreakForCoins', () => ({
   restoreStreakForCoins: jest.fn(),
-}));
-jest.mock('../../utils/syncPendingStreakEvents', () => ({
-  syncPendingStreakEvents: jest.fn(),
-}));
-jest.mock('../../utils/trackLearningActivity', () => ({
-  trackLearningActivity: jest.fn(),
 }));
 jest.mock('../../api/requests/getStreakProfile', () => ({
   getStreakProfile: jest.fn(),
@@ -121,8 +113,6 @@ beforeEach(() => {
     }
   }
   jest.mocked(getStreakProfile).mockResolvedValue(INITIAL);
-  jest.mocked(syncPendingStreakEvents).mockResolvedValue();
-  jest.mocked(trackLearningActivity).mockResolvedValue(UPDATED);
   jest.mocked(restoreStreakForCoins).mockResolvedValue(UPDATED);
   jest.mocked(applyFreezeToMissedDay).mockResolvedValue(UPDATED);
   jest.mocked(buyStreakFreezeToken).mockResolvedValue(UPDATED);
@@ -131,20 +121,9 @@ beforeEach(() => {
 afterEach(() => mockClient.clear());
 
 describe('streak profile query', () => {
-  it('waits for offline synchronization before fetching and caching the profile', async () => {
-    let finishSync!: () => void;
-    jest.mocked(syncPendingStreakEvents).mockReturnValue(
-      new Promise<void>((resolve) => {
-        finishSync = resolve;
-      }),
-    );
+  it('fetches the profile without submitting offline activity writes', async () => {
     const { streakQuery } = useStreak('reader-a');
-    const pending = streakQuery.refetch();
-    await Promise.resolve();
-    expect(syncPendingStreakEvents).toHaveBeenCalledWith('reader-a');
-    expect(getStreakProfile).not.toHaveBeenCalled();
-    finishSync();
-    expect((await pending).data).toEqual(INITIAL);
+    expect((await streakQuery.refetch()).data).toEqual(INITIAL);
     expect(getStreakProfile).toHaveBeenCalledWith();
     expect(mockShowBanner).not.toHaveBeenCalled();
   });
@@ -156,17 +135,15 @@ describe('streak profile query', () => {
     expect((await streakQuery.refetch()).error?.message).toBe(
       'Missing user id',
     );
-    expect(syncPendingStreakEvents).not.toHaveBeenCalled();
     expect(getStreakProfile).not.toHaveBeenCalled();
     unsubscribe();
   });
 
-  it('preserves sync failures and skips the profile request', async () => {
-    const error = new Error('Storage failed');
-    jest.mocked(syncPendingStreakEvents).mockRejectedValue(error);
+  it('preserves profile failures without replacing cached data', async () => {
+    const error = new Error('Request failed');
+    jest.mocked(getStreakProfile).mockRejectedValue(error);
     const { streakQuery } = useStreak('reader-a');
     expect((await streakQuery.refetch()).error).toBe(error);
-    expect(getStreakProfile).not.toHaveBeenCalled();
     expect(mockClient.getQueryData(['streak-profile', 'reader-a'])).toBe(
       INITIAL,
     );
@@ -174,18 +151,14 @@ describe('streak profile query', () => {
 });
 
 describe('streak mutation cache and notification contracts', () => {
-  it.each(['activity', 'restore', 'freeze'] as const)(
+  it.each(['restore', 'freeze'] as const)(
     '%s updates only its owner and notifies the first new milestone once',
     async (operation) => {
       const streak = useStreak('reader-a');
       const run = () =>
-        operation === 'activity'
-          ? streak.completeActivityMutation.mutateAsync(
-              'article_quiz_completed',
-            )
-          : operation === 'restore'
-            ? streak.restoreMutation.mutateAsync()
-            : streak.applyFreezeMutation.mutateAsync('2026-07-08');
+        operation === 'restore'
+          ? streak.restoreMutation.mutateAsync()
+          : streak.applyFreezeMutation.mutateAsync('2026-07-08');
       await run();
       expect(mockClient.getQueryData(['streak-profile', 'reader-a'])).toEqual(
         UPDATED,
@@ -225,15 +198,10 @@ describe('streak mutation cache and notification contracts', () => {
     },
   );
 
-  it('passes activity type and freeze date to their existing services', async () => {
+  it('passes freeze dates to the owning service', async () => {
     const streak = useStreak('reader-a');
-    await streak.completeActivityMutation.mutateAsync('lexical_test_completed');
     await streak.restoreMutation.mutateAsync();
     await streak.applyFreezeMutation.mutateAsync('2026-07-08');
-    expect(trackLearningActivity).toHaveBeenCalledWith(
-      'reader-a',
-      'lexical_test_completed',
-    );
     expect(restoreStreakForCoins).toHaveBeenCalledWith('reader-a');
     expect(applyFreezeToMissedDay).toHaveBeenCalledWith(
       'reader-a',
@@ -295,14 +263,10 @@ describe('streak mutation cache and notification contracts', () => {
 
   it('leaves all caches intact when services reject', async () => {
     const error = new Error('Request failed');
-    jest.mocked(trackLearningActivity).mockRejectedValue(error);
     jest.mocked(restoreStreakForCoins).mockRejectedValue(error);
     jest.mocked(applyFreezeToMissedDay).mockRejectedValue(error);
     jest.mocked(buyStreakFreezeToken).mockRejectedValue(error);
     const streak = useStreak('reader-a');
-    await expect(
-      streak.completeActivityMutation.mutateAsync('article_quiz_completed'),
-    ).rejects.toBe(error);
     await expect(streak.restoreMutation.mutateAsync()).rejects.toBe(error);
     await expect(
       streak.applyFreezeMutation.mutateAsync('2026-07-08'),
@@ -326,9 +290,6 @@ describe('streak mutation cache and notification contracts', () => {
 
   it('rejects every mutation without an owner before calling services', async () => {
     const streak = useStreak();
-    await expect(
-      streak.completeActivityMutation.mutateAsync('article_quiz_completed'),
-    ).rejects.toThrow('Missing user id');
     await expect(streak.restoreMutation.mutateAsync()).rejects.toThrow(
       'Missing user id',
     );
@@ -338,7 +299,6 @@ describe('streak mutation cache and notification contracts', () => {
     await expect(
       streak.purchaseFreezeTokenMutation.mutateAsync(),
     ).rejects.toThrow('Missing user id');
-    expect(trackLearningActivity).not.toHaveBeenCalled();
     expect(restoreStreakForCoins).not.toHaveBeenCalled();
     expect(applyFreezeToMissedDay).not.toHaveBeenCalled();
     expect(buyStreakFreezeToken).not.toHaveBeenCalled();

@@ -43,12 +43,42 @@ model User {
   pushTokens          UserPushToken[]
   recentArticles      UserRecentArticle[]
   refreshTokens       UserRefreshToken[]
+  quizSessions        QuizSession[]
   savedArticles       UserSavedArticle[]
   streakAchievements  UserStreakAchievement[]
   streakHistory       UserStreakHistory[]
   streakProfile       UserStreakProfile?
 
   @@map("users")
+}
+
+model QuizSession {
+  id           String       @id @db.Uuid
+  userId       String       @map("user_id") @db.Uuid
+  kind         String
+  level        String?
+  targetLength String?      @map("target_length")
+  questions    Json
+  completion   Json?
+  createdAt    DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  completedAt  DateTime?    @map("completed_at") @db.Timestamptz(6)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  answers      QuizAnswer[]
+
+  @@index([userId, createdAt], map: "quiz_sessions_user_created_idx")
+  @@map("quiz_sessions")
+}
+
+model QuizAnswer {
+  sessionId              String      @map("session_id") @db.Uuid
+  questionId             String      @map("question_id")
+  selectedOptionIds      String[]    @map("selected_option_ids")
+  isCorrect              Boolean     @map("is_correct")
+  unlockedAchievementIds String[]    @default([]) @map("unlocked_achievement_ids")
+  session                QuizSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@id([sessionId, questionId])
+  @@map("quiz_answers")
 }
 
 model PendingUserRegistration {

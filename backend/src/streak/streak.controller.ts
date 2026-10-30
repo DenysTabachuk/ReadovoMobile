@@ -5,17 +5,12 @@ import { CurrentUser } from '../auth/current-user.decorator';
 import { type AuthenticatedUser } from '../auth/types';
 import {
   ApplyStreakFreezeDto,
-  CompleteStreakActivityDto,
   PurchaseStreakFreezeDto,
   RestoreStreakDto,
   StreakCalendarQueryDto,
 } from './dto';
 import { StreakService } from './streak.service';
-import {
-  type CompleteStreakActivityResponse,
-  type StreakCalendarMonthResponse,
-  type StreakState,
-} from './types';
+import { type StreakCalendarMonthResponse, type StreakState } from './types';
 
 @Controller('streak')
 @UseGuards(UserAuthGuard)
@@ -35,14 +30,6 @@ export class StreakController {
     @Query() { month, year }: StreakCalendarQueryDto,
   ): Promise<StreakCalendarMonthResponse> {
     return this.streakService.getCalendarMonth(user.id, year, month);
-  }
-
-  @Post('profile/me/activity-completed')
-  async completeActivity(
-    @CurrentUser() user: AuthenticatedUser,
-    @Body() payload: CompleteStreakActivityDto,
-  ): Promise<CompleteStreakActivityResponse> {
-    return this.streakService.completeActivity(user.id, payload);
   }
 
   @Post('profile/me/restore')

@@ -1,18 +1,16 @@
 import { useQuery } from '@tanstack/react-query';
 
 import { getAuthSessionSnapshot } from '@/features/auth';
-import { syncPendingStreakEvents } from '../../../utils/syncPendingStreakEvents';
 import { getStreakProfile } from '../../requests/getStreakProfile';
 
 /**
- * Synchronizes pending activity events before each profile fetch.
+ * Reads the authenticated owner's streak without replaying unverifiable activity events.
  *
  * @param userId - Cache/request owner; automatic fetching is disabled without it.
- * @returns Profile query controls. Sync/storage errors prevent the profile fetch.
- * React Query cancellation discards the final read; replay guards its own writes.
+ * @returns Profile query controls. React Query cancellation discards a stale final read.
  * @example
  * const profile = useStreakProfileQuery(userId);
- * // Each fetch attempts pending events first, then caches the server profile.
+ * // Fetches and caches the server profile without activity writes.
  */
 export function useStreakProfileQuery(userId?: string) {
   return useQuery({
@@ -23,8 +21,6 @@ export function useStreakProfileQuery(userId?: string) {
       }
 
       const session = await getAuthSessionSnapshot(userId);
-      session.assertCurrent();
-      await syncPendingStreakEvents(userId);
       session.assertCurrent();
       return getStreakProfile();
     },

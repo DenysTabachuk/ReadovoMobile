@@ -29,6 +29,33 @@
   If nothing is staged, run the relevant working-tree checks and report that the
   staged check could not validate a commit snapshot; an empty run is not a pass.
 
+## Conditional readability (frontend and backend)
+
+- Do not nest ternary expressions. Use a ternary only for a short, straightforward
+  choice between two values; use `if`/`else` for multiple branches or business
+  calculations. Name intermediate results when that makes the decision clearer.
+- Do not compress several business decisions into dense expressions or replace
+  nested ternaries with equally obscure boolean/fallback chains. Keep meaningful
+  defaults explicit and preserve required missing-data handling.
+- Apply this rule to new and touched implementation within the task scope;
+  do not rewrite unrelated conditionals.
+
+## Constants and magic values (frontend and backend)
+
+- Replace non-obvious literals that encode business rules or design decisions,
+  such as rewards, thresholds, limits, durations and repeated identifiers, with
+  semantically named constants. Name their meaning and units where useful, not
+  their raw value: `FIRST_TEST_BONUS_COINS`, not `BONUS_10`.
+- Keep values at their narrowest owner. Keep single-owner constants local;
+  introduce shared constants only when multiple owners use the same concept.
+  Do not duplicate a shared rule across frontend and backend.
+- Do not extract self-explanatory literals such as `0`, `1`, `true` or `false`
+  when their meaning is clear. Named policy tables may contain literal values
+  when their keys and fields already explain each value's role.
+- Apply this rule to new and touched implementation within the task scope;
+  do not perform unrelated constant-extraction sweeps. Frontend theme/token and
+  StyleSheet guidance remains in the frontend convention guide.
+
 ## Backend module ownership and validation
 
 - Keep feature-specific DTOs, domain types, constants, error definitions and
@@ -52,6 +79,34 @@
   in services. Do not duplicate DTO validation for hypothetical internal callers;
   verify actual call sites before adding or retaining another validation boundary.
   Persisted data and external provider responses require their own runtime checks.
+
+## Backend naming
+
+- Name variables after the domain data they contain. Include the relevant state
+  or transformation when several representations coexist: `generatedQuestions`
+  and `questionsWithAnswerKeys`, rather than `generated` and `snapshots`.
+- Use generic names such as `data`, `result`, `items` or `snapshot` only when the
+  local context makes their meaning unambiguous. Reserve `snapshot` for a captured
+  state, not any mapped intermediate value.
+- Prefer meaningful distinctions over longer names or type prefixes. Keep concise
+  names when their meaning is clear. Apply naming improvements within the current
+  scope; do not rename unrelated code.
+
+## Backend utility organization
+
+- Give each independent backend utility a named directory with a camelCase name:
+  `utils/<utilityName>/index.ts`, with its unit tests in `index.spec.ts` beside it.
+  Keep feature utilities in their owning NestJS module; use `common/utils` only
+  for domain-independent utilities with actual reuse across modules.
+- Keep exclusive implementation helpers private inside their owning utility.
+  Extract meaningful standalone behavior, not trivial expressions or methods
+  that belong to a service. Keep services, controllers, DTOs and schemas in the
+  existing NestJS structure.
+- Keep private types and constants with the utility. Introduce `types.ts` or
+  `constants.ts` only when separate ownership or real reuse makes them useful.
+- Apply this structure to utilities created, moved, or substantially reworked
+  within the task scope. Do not reorganize unrelated utilities or create an
+  import-only migration to enforce the convention.
 
 ## Backend utility documentation
 

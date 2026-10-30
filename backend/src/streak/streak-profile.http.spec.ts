@@ -25,11 +25,6 @@ describe('Streak profile and calendar errors (HTTP)', () => {
   it.each([
     { method: 'get', path: '', body: {} },
     { method: 'get', path: '/calendar/month?year=2026&month=10', body: {} },
-    {
-      method: 'post',
-      path: '/activity-completed',
-      body: { activityType: 'article_quiz_completed' },
-    },
     { method: 'post', path: '/restore', body: { price: 100 } },
     { method: 'post', path: '/freeze', body: { date: '2026-10-27' } },
     { method: 'post', path: '/freeze-token/purchase', body: { price: 100 } },

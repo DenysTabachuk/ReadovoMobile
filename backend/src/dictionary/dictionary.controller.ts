@@ -20,15 +20,10 @@ import {
   GenerateEmbeddingDto,
   QuizOptionsDto,
   SimilarWordsDto,
-  SubmitDictionaryTestAnswerDto,
   UpdateDictionaryWordProgressDto,
 } from './dto';
 import { DictionaryService } from './dictionary.service';
-import {
-  type DictionaryTest,
-  type DictionaryTestAnswerResult,
-  type DictionaryWord,
-} from './types';
+import { type DictionaryTest, type DictionaryWord } from './types';
 
 @Controller('api/dictionary')
 export class DictionaryController {
@@ -90,14 +85,5 @@ export class DictionaryController {
     @Query() { limit }: DictionaryTestQueryDto,
   ): Promise<DictionaryTest> {
     return this.dictionaryService.createTest(user.id, limit);
-  }
-
-  @Post('me/test/answer')
-  @UseGuards(UserAuthGuard)
-  submitTestAnswer(
-    @CurrentUser() user: AuthenticatedUser,
-    @Body() body: SubmitDictionaryTestAnswerDto,
-  ): Promise<DictionaryTestAnswerResult> {
-    return this.dictionaryService.submitTestAnswer(user.id, body);
   }
 }

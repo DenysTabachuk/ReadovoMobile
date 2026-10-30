@@ -49,13 +49,15 @@ describe('Article vocabulary quiz contract (HTTP)', () => {
     jest.restoreAllMocks();
   });
 
-  it('keeps public generation and vocabulary metadata', async () => {
+  it('creates an authenticated vocabulary session without exposing its answer key', async () => {
     testApp.provider.completeStructured.mockResolvedValueOnce(validOutput);
     const response = await request(testApp.server)
       .post(path)
+      .set('Authorization', testApp.authorization)
       .send(body)
       .expect(201);
     expect(response.body).toMatchObject({
+      sessionId: '33333333-3333-4333-8333-333333333333',
       resolvedLevel: 'A2',
       questions: [
         {
@@ -65,7 +67,6 @@ describe('Article vocabulary quiz contract (HTTP)', () => {
           translation: 'ліс',
           type: 'single_choice',
           format: 'translation',
-          correctOptionIds: ['vq1:correct'],
         },
       ],
     });
@@ -76,6 +77,7 @@ describe('Article vocabulary quiz contract (HTTP)', () => {
     testApp.provider.completeStructured.mockResolvedValueOnce(validOutput);
     const response = await request(testApp.server)
       .post(path)
+      .set('Authorization', testApp.authorization)
       .send({ ...body, level: ' b1 ' })
       .expect(201);
     expect(response.body).toHaveProperty('resolvedLevel', 'B1');
@@ -85,17 +87,25 @@ describe('Article vocabulary quiz contract (HTTP)', () => {
     testApp.provider.completeStructured
       .mockResolvedValueOnce({ resolvedLevel: 'A2', questions: [] })
       .mockResolvedValueOnce(validOutput);
-    await request(testApp.server).post(path).send(body).expect(201);
+    await request(testApp.server)
+      .post(path)
+      .set('Authorization', testApp.authorization)
+      .send(body)
+      .expect(201);
     expect(testApp.provider.completeStructured).toHaveBeenCalledTimes(2);
   });
 
   it('returns a generic configuration failure', async () => {
     delete process.env.GROQ_API_KEY;
-    await request(testApp.server).post(path).send(body).expect(500, {
-      statusCode: 500,
-      code: 'INTERNAL_ERROR',
-      message: 'Internal server error.',
-    });
+    await request(testApp.server)
+      .post(path)
+      .set('Authorization', testApp.authorization)
+      .send(body)
+      .expect(500, {
+        statusCode: 500,
+        code: 'INTERNAL_ERROR',
+        message: 'Internal server error.',
+      });
     expect(testApp.provider.completeStructured).not.toHaveBeenCalled();
   });
 
@@ -107,11 +117,15 @@ describe('Article vocabulary quiz contract (HTTP)', () => {
     async (error) => {
       const log = jest.spyOn(Logger.prototype, 'error');
       testApp.provider.completeStructured.mockRejectedValueOnce(error);
-      await request(testApp.server).post(path).send(body).expect(502, {
-        statusCode: 502,
-        code: 'ARTICLES_VOCABULARY_QUIZ_GENERATION_FAILED',
-        message: 'Failed to generate article vocabulary quiz.',
-      });
+      await request(testApp.server)
+        .post(path)
+        .set('Authorization', testApp.authorization)
+        .send(body)
+        .expect(502, {
+          statusCode: 502,
+          code: 'ARTICLES_VOCABULARY_QUIZ_GENERATION_FAILED',
+          message: 'Failed to generate article vocabulary quiz.',
+        });
       expect(log).toHaveBeenCalledWith(
         'Article vocabulary quiz generation failed.',
       );
@@ -126,11 +140,15 @@ describe('Article vocabulary quiz contract (HTTP)', () => {
       resolvedLevel: 'A2',
       questions: [],
     });
-    await request(testApp.server).post(path).send(body).expect(502, {
-      statusCode: 502,
-      code: 'ARTICLES_VOCABULARY_QUIZ_GENERATION_FAILED',
-      message: 'Failed to generate article vocabulary quiz.',
-    });
+    await request(testApp.server)
+      .post(path)
+      .set('Authorization', testApp.authorization)
+      .send(body)
+      .expect(502, {
+        statusCode: 502,
+        code: 'ARTICLES_VOCABULARY_QUIZ_GENERATION_FAILED',
+        message: 'Failed to generate article vocabulary quiz.',
+      });
     expect(testApp.provider.completeStructured).toHaveBeenCalledTimes(2);
   });
 
@@ -139,6 +157,7 @@ describe('Article vocabulary quiz contract (HTTP)', () => {
     async (input) => {
       const response = await request(testApp.server)
         .post(path)
+        .set('Authorization', testApp.authorization)
         .send(input)
         .expect(400);
       expect(response.body).toMatchObject({

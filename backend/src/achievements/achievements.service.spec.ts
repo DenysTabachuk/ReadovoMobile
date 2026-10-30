@@ -5,6 +5,7 @@ import { AchievementsService } from './achievements.service';
 
 describe('AchievementsService', () => {
   let service: AchievementsService;
+  let database: PrismaService;
   let balance: number;
   let achievements: Array<{
     achievementId: string;
@@ -69,9 +70,11 @@ describe('AchievementsService', () => {
     }).compile();
 
     service = module.get(AchievementsService);
+    database = module.get(PrismaService);
   });
 
   it('awards coins and marks the reward as claimed when unlocked', async () => {
+    await service.awardUnlocked('user-1', database);
     const profile = await service.getProfile('user-1');
 
     expect(profile.progress.balance).toBe(50);
@@ -93,10 +96,35 @@ describe('AchievementsService', () => {
   });
 
   it('does not award the same achievement coins more than once', async () => {
-    await service.getProfile('user-1');
+    await service.awardUnlocked('user-1', database);
+    await service.awardUnlocked('user-1', database);
     const profile = await service.getProfile('user-1');
 
     expect(profile.progress.balance).toBe(50);
     expect(prisma.user.updateMany).toHaveBeenCalledTimes(1);
+  });
+
+  it('returns both achievements when one reward unlocks the next coin threshold', async () => {
+    balance = 960;
+
+    const granted = await service.awardUnlocked('user-1', database);
+
+    expect(granted.map((achievement) => achievement.id)).toEqual([
+      'first_test_completed',
+      'first_thousand_coins',
+    ]);
+    expect(balance).toBe(1210);
+    expect(granted.every((achievement) => achievement.isClaimed)).toBe(true);
+
+    expect(await service.awardUnlocked('user-1', database)).toEqual([]);
+    expect(balance).toBe(1210);
+  });
+
+  it('does not grant coins when all attempted inserts are skipped', async () => {
+    prisma.userAchievement.createManyAndReturn.mockResolvedValueOnce([]);
+
+    expect(await service.awardUnlocked('user-1', database)).toEqual([]);
+    expect(balance).toBe(0);
+    expect(prisma.user.updateMany).not.toHaveBeenCalled();
   });
 });

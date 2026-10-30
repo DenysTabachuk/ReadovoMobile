@@ -10,6 +10,9 @@ import {
 } from '@nestjs/common';
 
 import { UserAuthGuard } from '../auth/user-auth.guard';
+import { CurrentUser } from '../auth/current-user.decorator';
+import type { AuthenticatedUser } from '../auth/types';
+import { QuizService } from '../quiz/quiz.service';
 import { UserIdParamsDto } from '../common/validation/request.dto';
 import {
   ArticleAdaptationsQueryDto,
@@ -25,21 +28,20 @@ import {
 } from './contracts/dto';
 import { ArticlesService } from './articles.service';
 import {
-  type ArticleSimplificationTargetLength,
   type ArticleAdaptationsByArticleId,
-  type GenerateArticleVocabularyQuizResponse,
   type UserRecentArticle,
   type UserSavedArticle,
-  type ArticleQuizQuestion,
   type SimplifyArticleResponse,
   type WikipediaArticle,
   type WikipediaArticleDetail,
 } from './contracts/types';
 
-const DEFAULT_TARGET_LENGTH: ArticleSimplificationTargetLength = 'short';
 @Controller()
 export class ArticlesController {
-  constructor(private readonly articlesService: ArticlesService) {}
+  constructor(
+    private readonly articlesService: ArticlesService,
+    private readonly quiz: QuizService,
+  ) {}
 
   @Get('articles/random')
   async getRandomArticles(
@@ -123,21 +125,70 @@ export class ArticlesController {
   }
 
   @Post('api/articles/quiz')
+  @UseGuards(UserAuthGuard)
   async generateArticleQuiz(
+    @CurrentUser() user: AuthenticatedUser,
     @Body() body: GenerateArticleQuizDto,
-  ): Promise<{ questions: ArticleQuizQuestion[] }> {
-    const questions = await this.articlesService.generateArticleQuiz({
-      ...body,
-      targetLength: body.targetLength ?? DEFAULT_TARGET_LENGTH,
-    });
+  ) {
+    const questions = await this.articlesService.generateArticleQuiz(body);
 
-    return { questions };
+    const sessionId = await this.quiz.create(user.id, {
+      kind: 'article',
+      level: body.level,
+      targetLength: body.targetLength,
+      questions: questions.map((question) => ({
+        id: question.id,
+        type: question.type,
+        optionIds: question.options.map((option) => option.id),
+        correctOptionIds: question.correctOptionIds,
+        explanation: question.explanation,
+      })),
+    });
+    return {
+      sessionId,
+      questions: questions.map((question) => ({
+        id: question.id,
+        type: question.type,
+        prompt: question.prompt,
+        options: question.options,
+      })),
+    };
   }
 
   @Post('api/articles/vocabulary-quiz')
+  @UseGuards(UserAuthGuard)
   async generateArticleVocabularyQuiz(
+    @CurrentUser() user: AuthenticatedUser,
     @Body() body: GenerateArticleVocabularyQuizDto,
-  ): Promise<GenerateArticleVocabularyQuizResponse> {
-    return this.articlesService.generateArticleVocabularyQuiz(body);
+  ) {
+    const result =
+      await this.articlesService.generateArticleVocabularyQuiz(body);
+    const sessionId = await this.quiz.create(user.id, {
+      kind: 'vocabulary',
+      level: result.resolvedLevel,
+      targetLength: 'medium',
+      questions: result.questions.map((question) => ({
+        id: question.id,
+        type: question.type,
+        optionIds: question.options.map((option) => option.id),
+        correctOptionIds: question.correctOptionIds,
+        explanation: question.explanation,
+      })),
+    });
+    return {
+      sessionId,
+      resolvedLevel: result.resolvedLevel,
+      questions: result.questions.map((question) => ({
+        id: question.id,
+        type: question.type,
+        prompt: question.prompt,
+        options: question.options,
+        format: question.format,
+        term: question.term,
+        termKind: question.termKind,
+        translation: question.translation,
+        sourceExcerpt: question.sourceExcerpt,
+      })),
+    };
   }
 }

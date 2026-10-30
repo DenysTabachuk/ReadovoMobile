@@ -1,5 +1,6 @@
 import { Logger } from '@nestjs/common';
 import request from 'supertest';
+import { QuizService } from '../../quiz/quiz.service';
 
 import { type ReadingQuizOutput } from '../contracts/ai-output.schemas';
 import { AiResponseContractError } from '../infrastructure/ai.errors';
@@ -40,13 +41,16 @@ describe('Article reading quiz contract (HTTP)', () => {
     jest.restoreAllMocks();
   });
 
-  it('keeps public generation and the questions wrapper', async () => {
+  it('creates an authenticated session without exposing its answer key', async () => {
     testApp.provider.completeStructured.mockResolvedValueOnce(validOutput);
+    const createSession = jest.spyOn(testApp.app.get(QuizService), 'create');
     const response = await request(testApp.server)
       .post(path)
-      .send({ text: ' Space is vast. ' })
+      .set('Authorization', testApp.authorization)
+      .send({ text: ' Space is vast. ', level: ' b1 ', targetLength: ' LONG ' })
       .expect(201);
     expect(response.body).toEqual({
+      sessionId: '33333333-3333-4333-8333-333333333333',
       questions: [
         {
           id: 'q1',
@@ -56,13 +60,28 @@ describe('Article reading quiz contract (HTTP)', () => {
             { id: 'true', text: 'True' },
             { id: 'false', text: 'False' },
           ],
-          correctOptionIds: ['true'],
         },
       ],
     });
     expect(testApp.provider.completeStructured).toHaveBeenCalledWith(
       expect.objectContaining({
         operation: 'reading_quiz',
+      }),
+    );
+    expect(testApp.provider.completeStructured.mock.calls[0][0]).toHaveProperty(
+      'prompt',
+      expect.stringContaining('Learner level: B1'),
+    );
+    expect(testApp.provider.completeStructured.mock.calls[0][0]).toHaveProperty(
+      'prompt',
+      expect.stringContaining('Question count: at least 6 questions'),
+    );
+    expect(createSession).toHaveBeenCalledWith(
+      '11111111-1111-4111-8111-111111111111',
+      expect.objectContaining({
+        kind: 'article',
+        level: 'B1',
+        targetLength: 'long',
       }),
     );
   });
@@ -73,7 +92,8 @@ describe('Article reading quiz contract (HTTP)', () => {
       .mockResolvedValueOnce(validOutput);
     await request(testApp.server)
       .post(path)
-      .send({ text: 'Space is vast.' })
+      .set('Authorization', testApp.authorization)
+      .send({ text: 'Space is vast.', level: 'A2', targetLength: 'short' })
       .expect(201);
     expect(testApp.provider.completeStructured).toHaveBeenCalledTimes(2);
   });
@@ -82,7 +102,8 @@ describe('Article reading quiz contract (HTTP)', () => {
     delete process.env.GROQ_API_KEY;
     await request(testApp.server)
       .post(path)
-      .send({ text: 'Space is vast.' })
+      .set('Authorization', testApp.authorization)
+      .send({ text: 'Space is vast.', level: 'A2', targetLength: 'short' })
       .expect(500, {
         statusCode: 500,
         code: 'INTERNAL_ERROR',
@@ -101,7 +122,8 @@ describe('Article reading quiz contract (HTTP)', () => {
       testApp.provider.completeStructured.mockRejectedValueOnce(error);
       await request(testApp.server)
         .post(path)
-        .send({ text: 'Space is vast.' })
+        .set('Authorization', testApp.authorization)
+        .send({ text: 'Space is vast.', level: 'A2', targetLength: 'short' })
         .expect(502, {
           statusCode: 502,
           code: 'ARTICLES_QUIZ_GENERATION_FAILED',
@@ -118,7 +140,8 @@ describe('Article reading quiz contract (HTTP)', () => {
     testApp.provider.completeStructured.mockResolvedValue({ questions: [] });
     await request(testApp.server)
       .post(path)
-      .send({ text: 'Space is vast.' })
+      .set('Authorization', testApp.authorization)
+      .send({ text: 'Space is vast.', level: 'A2', targetLength: 'short' })
       .expect(502, {
         statusCode: 502,
         code: 'ARTICLES_QUIZ_GENERATION_FAILED',
@@ -128,12 +151,19 @@ describe('Article reading quiz contract (HTTP)', () => {
   });
 
   it.each([
-    { text: ' ' },
-    { text: 'Space', level: 'invalid' },
-    { text: 'Space', targetLength: 'invalid' },
+    { text: 'Space', targetLength: 'short' },
+    { text: 'Space', level: null, targetLength: 'short' },
+    { text: 'Space', level: '', targetLength: 'short' },
+    { text: ' ', level: 'A2', targetLength: 'short' },
+    { text: 'Space', level: 'invalid', targetLength: 'short' },
+    { text: 'Space', level: 'A2' },
+    { text: 'Space', level: 'A2', targetLength: null },
+    { text: 'Space', level: 'A2', targetLength: '' },
+    { text: 'Space', level: 'A2', targetLength: 'invalid' },
   ])('validates request %# before provider access', async (body) => {
     const response = await request(testApp.server)
       .post(path)
+      .set('Authorization', testApp.authorization)
       .send(body)
       .expect(400);
     expect(response.body).toMatchObject({

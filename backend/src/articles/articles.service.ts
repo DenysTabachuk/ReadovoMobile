@@ -126,8 +126,8 @@ export class ArticlesService {
   }
 
   generateArticleQuiz(params: {
-    level?: ArticleSimplificationLevel;
-    targetLength?: ArticleSimplificationTargetLength;
+    level: ArticleSimplificationLevel;
+    targetLength: ArticleSimplificationTargetLength;
     text: string;
     title?: string;
   }): Promise<ArticleQuizQuestion[]> {

@@ -4,7 +4,6 @@ import { api } from '@/features/auth';
 
 import {
   applyStreakFreeze,
-  completeStreakActivity,
   getStreakProfile,
   purchaseStreakFreezeToken,
   restoreBrokenStreak,
@@ -46,15 +45,6 @@ it('preserves the current-user profile URL and response', async () => {
 
 it.each([
   {
-    path: 'activity-completed',
-    payload: { activityType: 'article_quiz_completed' as const },
-    request: () =>
-      completeStreakActivity({
-        activityType: 'article_quiz_completed',
-      }),
-    result: { streak: { currentStreak: 3 }, pendingSync: false },
-  },
-  {
     path: 'restore',
     payload: { price: 10 },
     request: () => restoreBrokenStreak({ price: 10 }),
@@ -86,10 +76,6 @@ it.each([
 
 it.each([
   () => getStreakProfile(),
-  () =>
-    completeStreakActivity({
-      activityType: 'article_quiz_completed',
-    }),
   () => purchaseStreakFreezeToken({ price: 5 }),
 ])('preserves generic request failures', async (request) => {
   mockFetch.mockRejectedValue(

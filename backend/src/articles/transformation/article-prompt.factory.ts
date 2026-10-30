@@ -13,7 +13,6 @@ import {
   type ArticleVocabularyQuizQuestionFormat,
 } from '../contracts/types';
 
-const DEFAULT_TARGET_LENGTH: ArticleSimplificationTargetLength = 'short';
 const VOCABULARY_QUIZ_FORMAT_SEQUENCE: ArticleVocabularyQuizQuestionFormat[] = [
   'translation',
   'reverse_translation',
@@ -183,13 +182,11 @@ ${this.formatSource(params.sourceBlocks, params.text)}`;
   createQuizPrompt(params: {
     level: ArticleSimplificationLevel;
     sourceCoverage?: ArticleQuizSourceCoverage;
-    targetLength?: ArticleSimplificationTargetLength;
+    targetLength: ArticleSimplificationTargetLength;
     text: string;
     title: string;
   }): string {
-    const questionRule = this.getQuestionCountRule(
-      params.targetLength ?? DEFAULT_TARGET_LENGTH,
-    );
+    const questionRule = this.getQuestionCountRule(params.targetLength);
     const coverageRule =
       params.sourceCoverage === 'representative_excerpts'
         ? '- The source contains representative excerpts from a longer article. Cover different excerpts where possible, and use only facts explicitly present in them.'

@@ -1,3 +1,4 @@
+import { useAuth } from '@/features/auth';
 import { useBanner } from '@/components/banner';
 import { getArticleErrorMessageKey } from '../../../utils/getArticleErrorMessageKey';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -44,6 +45,7 @@ export function useGenerateArticleQuizMutation({
   onSuccess,
 }: UseGenerateArticleQuizMutationParams) {
   const articleId = article.id;
+  const { currentUser } = useAuth();
   const { t } = useTranslation();
   const { showBanner } = useBanner();
   const queryClient = useQueryClient();
@@ -86,12 +88,13 @@ export function useGenerateArticleQuizMutation({
     },
     onSuccess: ({ mode, response, resolvedLevel }) => {
       queryClient.setQueryData(
-        getArticleQuizSessionKey(
+        getArticleQuizSessionKey({
+          userId: currentUser?.id ?? undefined,
           articleId,
           mode,
-          resolvedLevel,
-          ARTICLE_QUIZ_TARGET_LENGTH,
-        ),
+          level: resolvedLevel,
+          targetLength: ARTICLE_QUIZ_TARGET_LENGTH,
+        }),
         response,
       );
       onSuccess(mode, resolvedLevel);

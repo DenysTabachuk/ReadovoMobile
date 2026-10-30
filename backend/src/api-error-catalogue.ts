@@ -7,6 +7,7 @@ import { MASCOT_ERRORS } from './mascot/mascot-errors';
 import { NOTIFICATIONS_ERRORS } from './notifications/notifications-errors';
 import { STREAK_ERRORS } from './streak/streak-errors';
 import { TRANSLATIONS_ERRORS } from './translations/translations-errors';
+import { QUIZ_ERRORS } from './quiz/quiz-errors';
 
 /**
  * Application-level catalogue for contract tooling. Definitions stay in their
@@ -15,6 +16,7 @@ import { TRANSLATIONS_ERRORS } from './translations/translations-errors';
  * one another during a merge. The catalogue test checks their uniqueness.
  */
 export const API_ERROR_CATALOGUE = [
+  ...Object.values(QUIZ_ERRORS),
   ...Object.values(ACHIEVEMENTS_ERRORS),
   ...Object.values(ARTICLES_ERRORS),
   ...Object.values(COMMON_ERRORS),

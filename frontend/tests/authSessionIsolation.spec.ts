@@ -11,7 +11,6 @@ import { useStreakCalendarMonthQuery } from '@/features/streak/api/queries/useSt
 import { useStreakProfileQuery } from '@/features/streak/api/queries/useStreakProfileQuery';
 import * as streakProfileRequest from '@/features/streak/api/requests/getStreakProfile';
 import { buyStreakFreezeToken } from '@/features/streak/utils/buyStreakFreezeToken';
-import { syncPendingStreakEvents } from '@/features/streak/utils/syncPendingStreakEvents';
 import { shouldRetryQuery } from '@/providers/queryProvider/utils/shouldRetryQuery';
 
 // Keep the actual services, Axios interceptors, token store, and query observers.
@@ -61,11 +60,6 @@ const ACCOUNT_B = {
   accessToken: `header.${btoa(JSON.stringify({ sub: 'reader-b' }))}.sig`,
   refreshToken: 'refresh-b',
 };
-const QUEUE_KEY = 'readovo.streak.pendingActivityEvents:reader-a';
-const EVENTS = [
-  { activityType: 'article_quiz_completed', createdAt: '2026-07-09T12:00:00Z' },
-  { activityType: 'lexical_test_completed', createdAt: '2026-07-09T12:01:00Z' },
-];
 
 beforeEach(async () => {
   jest.useFakeTimers();
@@ -81,7 +75,6 @@ beforeEach(async () => {
   });
   await authSessionStore.replace(ACCOUNT_A);
   unsubscribeSession = cancelQueriesOnSessionChange(mockClient);
-  values.set(QUEUE_KEY, JSON.stringify(EVENTS));
 });
 
 afterEach(() => {
@@ -90,75 +83,6 @@ afterEach(() => {
   jest.restoreAllMocks();
   jest.clearAllMocks();
   jest.useRealTimers();
-});
-
-describe('real streak replay across auth transitions', () => {
-  it('submits both queued events as A when the session stays active', async () => {
-    const adapter = mockHttpAdapter(api).mockImplementation(async () =>
-      createHttpResponse({}),
-    );
-
-    await syncPendingStreakEvents('reader-a');
-
-    expect(adapter).toHaveBeenCalledTimes(2);
-    for (const [config] of adapter.mock.calls) {
-      expect(config.headers.get('Authorization')).toBe(
-        `Bearer ${ACCOUNT_A.accessToken}`,
-      );
-    }
-    expect(values.get(QUEUE_KEY)).toBe('[]');
-  });
-
-  it('does not send queued events if the account changes during the queue read', async () => {
-    const reading = Promise.withResolvers<void>();
-    const queue = Promise.withResolvers<string>();
-    jest.mocked(AsyncStorage.getItem).mockImplementation(async (key) => {
-      if (key === QUEUE_KEY) {
-        reading.resolve();
-        return queue.promise;
-      }
-      return values.get(key) ?? null;
-    });
-    const adapter = mockHttpAdapter(api);
-    const rejected = expect(
-      syncPendingStreakEvents('reader-a'),
-    ).rejects.toMatchObject({ name: 'AbortError' });
-
-    await reading.promise;
-    await authSessionStore.replace(ACCOUNT_B);
-    queue.resolve(JSON.stringify(EVENTS));
-
-    await rejected;
-    expect(adapter).not.toHaveBeenCalled();
-    expect(values.get(QUEUE_KEY)).toBe(JSON.stringify(EVENTS));
-  });
-
-  it.each([ACCOUNT_B, ACCOUNT_A])(
-    'stops after the first event when a login replaces the session ($refreshToken)',
-    async (replacement) => {
-      const started = Promise.withResolvers<void>();
-      const response =
-        Promise.withResolvers<ReturnType<typeof createHttpResponse>>();
-      const adapter = mockHttpAdapter(api).mockImplementation(() => {
-        started.resolve();
-        return response.promise;
-      });
-      const rejected = expect(
-        syncPendingStreakEvents('reader-a'),
-      ).rejects.toMatchObject({ name: 'AbortError' });
-
-      await started.promise;
-      await authSessionStore.replace(replacement);
-      response.resolve(createHttpResponse({}));
-
-      await rejected;
-      expect(adapter).toHaveBeenCalledTimes(1);
-      expect(adapter.mock.calls[0][0].headers.get('Authorization')).toBe(
-        `Bearer ${ACCOUNT_A.accessToken}`,
-      );
-      expect(values.get(QUEUE_KEY)).toBe(JSON.stringify(EVENTS));
-    },
-  );
 });
 
 it('rejects a stale service before sending a purchase after snapshot capture', async () => {
@@ -199,7 +123,7 @@ it('discards a canceled profile query even if its final request has already succ
 
   await expect(pending).rejects.toMatchObject({ revert: true });
 
-  expect(adapter).toHaveBeenCalledTimes(3);
+  expect(adapter).toHaveBeenCalledTimes(1);
   expect(
     mockClient.getQueryData(['streak-profile', 'reader-a']),
   ).toBeUndefined();

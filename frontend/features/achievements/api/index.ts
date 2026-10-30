@@ -1,1 +1,1 @@
-export { getAchievementsProfile, updateAchievementsProgress } from './requests';
+export { getAchievementsProfile } from './requests';
