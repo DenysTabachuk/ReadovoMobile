@@ -85,7 +85,7 @@ function RootLayoutContent() {
       return;
     }
 
-    void loadLearningReminderPreferences(currentUser.id)
+    void loadLearningReminderPreferences()
       .then((preferences) => {
         hydrateLearningReminderPreferences(preferences);
       })

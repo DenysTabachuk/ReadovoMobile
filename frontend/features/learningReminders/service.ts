@@ -1,5 +1,4 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-// eslint-disable-next-line import/no-unresolved
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import type { LearningReminderTime } from '@/providers/preferencesProvider';
@@ -114,7 +113,7 @@ export async function registerCurrentDevicePushToken(
     `[LearningReminders] got FCM token and device id. deviceId=${deviceId}, tokenPrefix=${pushTokenResponse.data.slice(0, 24)}`,
   );
 
-  await registerPushToken(userId, {
+  await registerPushToken({
     deviceId,
     platform: 'android',
     provider: 'fcm',
@@ -135,7 +134,7 @@ export async function syncLearningReminder(
   }
 
   try {
-    await updateLearningReminderPreferences(userId, {
+    await updateLearningReminderPreferences({
       learningReminderTime: reminderTime,
       learningRemindersEnabled: isReminderEnabled,
     });
@@ -157,9 +156,9 @@ export async function syncLearningReminder(
   }
 }
 
-export async function loadLearningReminderPreferences(userId: string): Promise<{
+export async function loadLearningReminderPreferences(): Promise<{
   learningReminderTime: LearningReminderTime;
   learningRemindersEnabled: boolean;
 }> {
-  return getLearningReminderPreferences(userId);
+  return getLearningReminderPreferences();
 }

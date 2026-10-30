@@ -26,7 +26,7 @@ describe('Mascot profile and request boundaries (HTTP)', () => {
     async ({ method, suffix }) => {
       testApp.prisma.user.findUnique.mockResolvedValue(null);
       await request(testApp.server)
-        [method](`/mascot/profile/${MASCOT_TEST_USER_ID}${suffix}`)
+        [method](`/mascot/profile/me${suffix}`)
         .set('Authorization', testApp.authorization)
         .expect(404, {
           statusCode: 404,
@@ -39,7 +39,7 @@ describe('Mascot profile and request boundaries (HTTP)', () => {
 
   it('keeps an empty profile response unchanged', async () => {
     await request(testApp.server)
-      .get(`/mascot/profile/${MASCOT_TEST_USER_ID}`)
+      .get(`/mascot/profile/me`)
       .set('Authorization', testApp.authorization)
       .expect(200, {
         userId: MASCOT_TEST_USER_ID,
@@ -56,7 +56,7 @@ describe('Mascot profile and request boundaries (HTTP)', () => {
       ownedItemIds: ['pirate-hat', 'glasses'],
     });
     await request(testApp.server)
-      .get(`/mascot/profile/${MASCOT_TEST_USER_ID}`)
+      .get(`/mascot/profile/me`)
       .set('Authorization', testApp.authorization)
       .expect(200, {
         userId: MASCOT_TEST_USER_ID,
@@ -66,25 +66,11 @@ describe('Mascot profile and request boundaries (HTTP)', () => {
   });
 
   it('rejects a missing JWT before persistence', async () => {
-    await request(testApp.server)
-      .get(`/mascot/profile/${MASCOT_TEST_USER_ID}`)
-      .expect(401, {
-        statusCode: 401,
-        code: 'AUTH_AUTHENTICATION_REQUIRED',
-        message: 'Authentication is required.',
-      });
-    expect(testApp.prisma.user.findUnique).not.toHaveBeenCalled();
-  });
-
-  it('rejects another route owner before querying persistence', async () => {
-    await request(testApp.server)
-      .get('/mascot/profile/22222222-2222-4222-8222-222222222222')
-      .set('Authorization', testApp.authorization)
-      .expect(403, {
-        statusCode: 403,
-        code: 'AUTH_OWNERSHIP_DENIED',
-        message: 'Authenticated user does not match route user.',
-      });
+    await request(testApp.server).get(`/mascot/profile/me`).expect(401, {
+      statusCode: 401,
+      code: 'AUTH_AUTHENTICATION_REQUIRED',
+      message: 'Authentication is required.',
+    });
     expect(testApp.prisma.user.findUnique).not.toHaveBeenCalled();
   });
 
@@ -92,7 +78,7 @@ describe('Mascot profile and request boundaries (HTTP)', () => {
     'rejects a blank item ID through DTO validation on %s',
     async (operation) => {
       const response = await request(testApp.server)
-        .post(`/mascot/profile/${MASCOT_TEST_USER_ID}/items/%20/${operation}`)
+        .post(`/mascot/profile/me/items/%20/${operation}`)
         .set('Authorization', testApp.authorization)
         .expect(400);
       expect(response.body).toMatchObject({
@@ -109,7 +95,7 @@ describe('Mascot profile and request boundaries (HTTP)', () => {
       new Error('secret database credentials'),
     );
     await request(testApp.server)
-      .get(`/mascot/profile/${MASCOT_TEST_USER_ID}`)
+      .get(`/mascot/profile/me`)
       .set('Authorization', testApp.authorization)
       .expect(500, {
         statusCode: 500,

@@ -13,7 +13,6 @@ import { UserAuthGuard } from '../auth/user-auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/types';
 import { QuizService } from '../quiz/quiz.service';
-import { UserIdParamsDto } from '../common/validation/request.dto';
 import {
   ArticleAdaptationsQueryDto,
   ArticleDetailQueryDto,
@@ -23,7 +22,7 @@ import {
   GenerateArticleVocabularyQuizDto,
   RandomArticlesQueryDto,
   SimplifyArticleDto,
-  UserArticleIdParamsDto,
+  SavedArticleIdParamsDto,
   WikipediaArticleDto,
 } from './contracts/dto';
 import { ArticlesService } from './articles.service';
@@ -68,46 +67,47 @@ export class ArticlesController {
     );
   }
 
-  @Get('api/users/:userId/articles/saved')
+  @Get('api/users/me/articles/saved')
   @UseGuards(UserAuthGuard)
   async getSavedArticles(
-    @Param() { userId }: UserIdParamsDto,
+    @CurrentUser() user: AuthenticatedUser,
   ): Promise<UserSavedArticle[]> {
-    return this.articlesService.getSavedArticles(userId);
+    return this.articlesService.getSavedArticles(user.id);
   }
 
-  @Post('api/users/:userId/articles/saved')
+  @Post('api/users/me/articles/saved')
   @UseGuards(UserAuthGuard)
   async saveArticle(
-    @Param() { userId }: UserIdParamsDto,
+    @CurrentUser() user: AuthenticatedUser,
     @Body() body: WikipediaArticleDto,
   ): Promise<UserSavedArticle[]> {
-    return this.articlesService.saveArticleForUser(userId, body);
+    return this.articlesService.saveArticleForUser(user.id, body);
   }
 
-  @Delete('api/users/:userId/articles/saved/:articleId')
+  @Delete('api/users/me/articles/saved/:articleId')
   @UseGuards(UserAuthGuard)
   async removeSavedArticle(
-    @Param() { articleId, userId }: UserArticleIdParamsDto,
+    @CurrentUser() user: AuthenticatedUser,
+    @Param() { articleId }: SavedArticleIdParamsDto,
   ): Promise<UserSavedArticle[]> {
-    return this.articlesService.removeSavedArticleForUser(userId, articleId);
+    return this.articlesService.removeSavedArticleForUser(user.id, articleId);
   }
 
-  @Get('api/users/:userId/articles/recent')
+  @Get('api/users/me/articles/recent')
   @UseGuards(UserAuthGuard)
   async getRecentArticles(
-    @Param() { userId }: UserIdParamsDto,
+    @CurrentUser() user: AuthenticatedUser,
   ): Promise<UserRecentArticle[]> {
-    return this.articlesService.getRecentArticles(userId);
+    return this.articlesService.getRecentArticles(user.id);
   }
 
-  @Post('api/users/:userId/articles/recent')
+  @Post('api/users/me/articles/recent')
   @UseGuards(UserAuthGuard)
   async recordRecentArticle(
-    @Param() { userId }: UserIdParamsDto,
+    @CurrentUser() user: AuthenticatedUser,
     @Body() body: WikipediaArticleDto,
   ): Promise<UserRecentArticle[]> {
-    return this.articlesService.recordRecentArticleForUser(userId, body);
+    return this.articlesService.recordRecentArticleForUser(user.id, body);
   }
 
   @Get('articles/:id')

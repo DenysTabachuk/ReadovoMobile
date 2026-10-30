@@ -34,7 +34,7 @@ export function useArticleLibrary(article: WikipediaArticleDetail) {
   const articleId = article.id;
   const { currentUser } = useAuth();
   const queryClient = useQueryClient();
-  const { data: savedArticles } = useSavedArticlesQuery(currentUser?.id);
+  const { data: savedArticles } = useSavedArticlesQuery();
   const isCurrentArticleSaved = isArticleSaved(articleId, savedArticles);
   const savedArticleMutation = useToggleSavedArticleMutation();
   const handleToggleSavedArticle = useCallback(() => {
@@ -54,7 +54,7 @@ export function useArticleLibrary(article: WikipediaArticleDetail) {
 
     const recentArticle = createRecentArticleFromDetail(article);
 
-    void recordRecentArticle(currentUser.id, recentArticle).then(
+    void recordRecentArticle(recentArticle).then(
       (recentArticles) => {
         queryClient.setQueryData(
           [...RECENT_ARTICLES_QUERY_KEY, currentUser.id],

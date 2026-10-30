@@ -34,7 +34,6 @@ import {
   isArticleSaved,
 } from '@/features/articles';
 import { type WikipediaArticle } from '@/features/articles/api';
-import { useAuth } from '@/features/auth';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 
@@ -45,13 +44,11 @@ const SCROLL_TO_TOP_BOTTOM_OFFSET = 72;
 
 export default function ArticlesScreen() {
   const { t } = useTranslation();
-  const { currentUser } = useAuth();
   const colorScheme = useColorScheme();
   const iconColor = useThemeColor({}, 'icon');
   const tintColor = Colors[colorScheme ?? 'light'].tint;
   const savedAccentColor = colorScheme === 'dark' ? '#c4a7ff' : tintColor;
   const borderColor = colorScheme === 'dark' ? '#2d3336' : '#d0d7de';
-  const userId = currentUser?.id;
   const {
     searchValue,
     debouncedSearchValue,
@@ -111,12 +108,12 @@ export default function ArticlesScreen() {
     data: savedArticles = [],
     error: savedArticlesError,
     refetch: refetchSavedArticles,
-  } = useSavedArticlesQuery(userId);
+  } = useSavedArticlesQuery();
   const {
     data: recentArticles = [],
     error: recentArticlesError,
     refetch: refetchRecentArticles,
-  } = useRecentArticlesQuery(userId);
+  } = useRecentArticlesQuery();
   const personalArticleIds = useMemo(() => {
     const sourceArticles =
       personalFilter === 'saved'

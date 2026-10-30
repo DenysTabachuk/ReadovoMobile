@@ -10,12 +10,14 @@ import {
   ArticleListQueryDto,
 } from '../../articles/contracts/dto';
 import { RegisterUserDto } from '../../auth/dto/register-user.dto';
-import { CreateDictionaryWordDto } from '../../dictionary/dto';
+import {
+  CreateDictionaryWordDto,
+  DictionaryWordParamsDto,
+} from '../../dictionary/dto';
 import { ClearMascotSlotParamsDto } from '../../mascot/dto';
 import { RegisterPushTokenDto } from '../../notifications/dto';
 import { ApplyStreakFreezeDto } from '../../streak/dto';
 import { TranslateWordDto } from '../../translations/dto';
-import { UserIdParamsDto } from './request.dto';
 
 describe('HTTP request DTO validation', () => {
   it('normalizes a valid registration request', async () => {
@@ -40,8 +42,8 @@ describe('HTTP request DTO validation', () => {
   });
 
   it('rejects malformed UUID route parameters', async () => {
-    const { errors } = await validateDto(UserIdParamsDto, {
-      userId: 'not-a-uuid',
+    const { errors } = await validateDto(DictionaryWordParamsDto, {
+      wordId: 'not-a-uuid',
     });
 
     expect(errors).not.toHaveLength(0);

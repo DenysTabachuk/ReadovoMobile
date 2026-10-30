@@ -6,7 +6,7 @@ import {
   type NotificationsHttpTestApp,
 } from './testing/create-notifications-http-app';
 
-const path = `/notifications/preferences/${NOTIFICATIONS_TEST_USER_ID}`;
+const path = `/notifications/preferences/me`;
 
 describe('Notification preferences (HTTP)', () => {
   let testApp: NotificationsHttpTestApp;

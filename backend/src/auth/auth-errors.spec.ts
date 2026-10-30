@@ -31,7 +31,7 @@ import { UsersRepository } from './users.repository';
 
 @Controller('auth-contract-test')
 class IdentityController {
-  @Get('users/:userId')
+  @Get('users/me')
   @UseGuards(UserAuthGuard)
   identity(@CurrentUser() user: AuthenticatedUser) {
     return user;
@@ -537,7 +537,7 @@ describe('Auth error contract (HTTP)', () => {
     expect(response.body).not.toHaveProperty('user.passwordHash');
     const token = jwt.issueAccessToken(user).accessToken;
     await request(app.getHttpServer())
-      .get(`/auth-contract-test/users/${user.id}`)
+      .get('/auth-contract-test/users/me')
       .set('Authorization', `Bearer ${token}`)
       .expect(200, { email, id: user.id });
   });
@@ -546,7 +546,7 @@ describe('Auth error contract (HTTP)', () => {
     'codes %s authorization',
     async (reason) => {
       const call = request(app.getHttpServer()).get(
-        `/auth-contract-test/users/${user.id}`,
+        '/auth-contract-test/users/me',
       );
       if (reason === 'wrong scheme') call.set('Authorization', 'Basic secret');
       await call.expect(401, {
@@ -567,24 +567,12 @@ describe('Auth error contract (HTTP)', () => {
       });
   });
 
-  it('codes ownership denial without treating it as a token failure', async () => {
-    const token = jwt.issueAccessToken(user).accessToken;
-    await request(app.getHttpServer())
-      .get('/auth-contract-test/users/another-user')
-      .set('Authorization', `Bearer ${token}`)
-      .expect(403, {
-        statusCode: 403,
-        code: 'AUTH_OWNERSHIP_DENIED',
-        message: 'Authenticated user does not match route user.',
-      });
-  });
-
   it('codes an expired signed access token', async () => {
     jest.spyOn(Date, 'now').mockReturnValue(now - 16 * 60 * 1000);
     const token = jwt.issueAccessToken(user).accessToken;
     jest.spyOn(Date, 'now').mockReturnValue(now);
     await request(app.getHttpServer())
-      .get(`/auth-contract-test/users/${user.id}`)
+      .get('/auth-contract-test/users/me')
       .set('Authorization', `Bearer ${token}`)
       .expect(401, {
         statusCode: 401,
@@ -622,7 +610,7 @@ describe('Auth error contract (HTTP)', () => {
       token = `${header}.${payload}.${signature}`;
     }
     await request(app.getHttpServer())
-      .get(`/auth-contract-test/users/${user.id}`)
+      .get('/auth-contract-test/users/me')
       .set('Authorization', `Bearer ${token}`)
       .expect(401, {
         statusCode: 401,

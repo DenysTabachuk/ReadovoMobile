@@ -7,7 +7,7 @@ import {
   type ArticleLibraryHttpTestApp,
 } from '../testing/create-article-library-http-app';
 
-const basePath = `/api/users/${LIBRARY_TEST_USER_ID}/articles`;
+const basePath = `/api/users/me/articles`;
 
 describe('Article library request and success contracts (HTTP)', () => {
   let testApp: ArticleLibraryHttpTestApp;

@@ -19,12 +19,8 @@ it('keeps registration void while consuming the backend JSON acknowledgement', a
   const adapter = mockHttpAdapter().mockResolvedValue(
     createHttpResponse('{"ok":true}', { status: 201 }),
   );
-  await expect(
-    registerPushToken('reader-id', payload),
-  ).resolves.toBeUndefined();
-  expect(adapter.mock.calls[0][0].url).toBe(
-    '/notifications/push-token/reader-id',
-  );
+  await expect(registerPushToken(payload)).resolves.toBeUndefined();
+  expect(adapter.mock.calls[0][0].url).toBe('/notifications/push-token/me');
   expect(adapter.mock.calls[0][0].data).toBe(JSON.stringify(payload));
 });
 
@@ -35,7 +31,7 @@ it('retains the code in a JSON registration failure instead of treating the body
       { status: 401 },
     ),
   );
-  await expect(registerPushToken('reader-id', payload)).rejects.toMatchObject({
+  await expect(registerPushToken(payload)).rejects.toMatchObject({
     status: 401,
     code: 'AUTH_ACCESS_TOKEN_EXPIRED',
   });

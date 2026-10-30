@@ -6,3 +6,4 @@ export type {
   AchievementStatus,
   AchievementsProfileResponse,
 } from './types';
+export { useAchievementsProfileQuery } from './api';

@@ -6,7 +6,7 @@ import {
   type AchievementsHttpTestApp,
 } from './testing/create-achievements-http-app';
 
-const path = `/achievements/profile/${ACHIEVEMENTS_TEST_USER_ID}`;
+const path = '/achievements/profile/me';
 
 describe('Achievements profile errors and authorization (HTTP)', () => {
   let testApp: AchievementsHttpTestApp;
@@ -57,25 +57,6 @@ describe('Achievements profile errors and authorization (HTTP)', () => {
     });
     expect(testApp.prisma.$transaction).not.toHaveBeenCalled();
   });
-
-  it.each([{ method: 'get', suffix: '', body: {} }] as const)(
-    'rejects another route owner on $method $suffix before persistence',
-    async ({ method, suffix, body }) => {
-      await request(testApp.server)
-        [method](
-          `/achievements/profile/22222222-2222-4222-8222-222222222222${suffix}`,
-        )
-        .set('Authorization', testApp.authorization)
-        .send(body)
-        .expect(403, {
-          statusCode: 403,
-          code: 'AUTH_OWNERSHIP_DENIED',
-          message: 'Authenticated user does not match route user.',
-        });
-      expect(testApp.prisma.user.findUnique).not.toHaveBeenCalled();
-      expect(testApp.prisma.user.updateMany).not.toHaveBeenCalled();
-    },
-  );
 
   it('rejects missing authentication before persistence', async () => {
     await request(testApp.server).get(path).expect(401, {

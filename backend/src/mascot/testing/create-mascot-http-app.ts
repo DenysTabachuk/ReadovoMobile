@@ -20,7 +20,7 @@ export const MASCOT_TEST_USER_ID = '11111111-1111-4111-8111-111111111111';
  * @example
  * const testApp = await createMascotHttpApp();
  * testApp.prisma.user.findUnique.mockResolvedValue(null);
- * // GET /mascot/profile/:userId now exercises the real missing-user branch.
+ * // GET /mascot/profile/me now exercises the real missing-user branch.
  * await testApp.app.close();
  */
 export async function createMascotHttpApp() {

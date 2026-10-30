@@ -4,16 +4,16 @@ import {
   Delete,
   Get,
   Logger,
-  Param,
   Post,
   Put,
   Query,
   UseGuards,
 } from '@nestjs/common';
 
+import { CurrentUser } from '../auth/current-user.decorator';
+import type { AuthenticatedUser } from '../auth/types';
 import { UserAuthGuard } from '../auth/user-auth.guard';
 import { ApiException } from '../common/errors/api-exception';
-import { UserIdParamsDto } from '../common/validation/request.dto';
 import {
   DeviceIdQueryDto,
   RegisterPushTokenDto,
@@ -35,21 +35,21 @@ export class NotificationsController {
 
   constructor(private readonly notificationsService: NotificationsService) {}
 
-  @Get('preferences/:userId')
+  @Get('preferences/me')
   async getLearningReminderPreferences(
-    @Param() { userId }: UserIdParamsDto,
+    @CurrentUser() user: AuthenticatedUser,
   ): Promise<LearningReminderPreferences> {
-    return this.notificationsService.getLearningReminderPreferences(userId);
+    return this.notificationsService.getLearningReminderPreferences(user.id);
   }
 
-  @Put('preferences/:userId')
+  @Put('preferences/me')
   async upsertLearningReminderPreferences(
-    @Param() { userId }: UserIdParamsDto,
+    @CurrentUser() user: AuthenticatedUser,
     @Body() payload: UpsertLearningReminderPreferencesDto,
   ): Promise<LearningReminderPreferences> {
     try {
       return await this.notificationsService.upsertLearningReminderPreferences(
-        userId,
+        user.id,
         payload,
       );
     } catch (error) {
@@ -58,18 +58,18 @@ export class NotificationsController {
     }
   }
 
-  @Post('push-token/:userId')
+  @Post('push-token/me')
   async registerPushToken(
-    @Param() { userId }: UserIdParamsDto,
+    @CurrentUser() user: AuthenticatedUser,
     @Body() payload: RegisterPushTokenDto,
   ): Promise<{ ok: true }> {
     this.logger.log(
-      `registerPushToken request userId=${userId} deviceId=${payload.deviceId} platform=${payload.platform}`,
+      `registerPushToken request userId=${user.id} deviceId=${payload.deviceId} platform=${payload.platform}`,
     );
     try {
-      await this.notificationsService.registerPushToken(userId, payload);
+      await this.notificationsService.registerPushToken(user.id, payload);
       this.logger.log(
-        `registerPushToken success userId=${userId} deviceId=${payload.deviceId}`,
+        `registerPushToken success userId=${user.id} deviceId=${payload.deviceId}`,
       );
       return { ok: true };
     } catch (error) {
@@ -79,28 +79,28 @@ export class NotificationsController {
     }
   }
 
-  @Delete('push-token/:userId')
+  @Delete('push-token/me')
   async deactivatePushToken(
-    @Param() { userId }: UserIdParamsDto,
+    @CurrentUser() user: AuthenticatedUser,
     @Query() { deviceId }: DeviceIdQueryDto,
   ): Promise<{ ok: true }> {
-    await this.notificationsService.deactivatePushToken(userId, deviceId);
+    await this.notificationsService.deactivatePushToken(user.id, deviceId);
     return { ok: true };
   }
 
-  @Post('test-push/:userId')
+  @Post('test-push/me')
   async sendTestPush(
-    @Param() { userId }: UserIdParamsDto,
+    @CurrentUser() user: AuthenticatedUser,
     @Body() payload: SendTestPushDto,
   ): Promise<SendTestPushResult> {
-    this.logger.log(`sendTestPush request userId=${userId}`);
+    this.logger.log(`sendTestPush request userId=${user.id}`);
     try {
       const result = await this.notificationsService.sendTestPush(
-        userId,
+        user.id,
         payload,
       );
       this.logger.log(
-        `sendTestPush result userId=${userId} tokenCount=${result.tokenCount} sentCount=${result.sentCount} failedCount=${result.failedCount}`,
+        `sendTestPush result userId=${user.id} tokenCount=${result.tokenCount} sentCount=${result.sentCount} failedCount=${result.failedCount}`,
       );
       return result;
     } catch (error) {
@@ -109,21 +109,23 @@ export class NotificationsController {
     }
   }
 
-  @Delete('learning-reminders/dispatch/today/:userId')
+  @Delete('learning-reminders/dispatch/today/me')
   async clearTodayLearningReminderDispatchForDevelopment(
-    @Param() { userId }: UserIdParamsDto,
+    @CurrentUser() user: AuthenticatedUser,
   ): Promise<{ deletedCount: number }> {
     if (process.env.NODE_ENV === 'production') {
       throw new ApiException(NOTIFICATIONS_ERRORS.DISPATCH_CLEAR_DISABLED);
     }
 
-    this.logger.log(`clear today reminder dispatch requested userId=${userId}`);
+    this.logger.log(
+      `clear today reminder dispatch requested userId=${user.id}`,
+    );
     const result =
       await this.notificationsService.clearTodayLearningReminderDispatch(
-        userId,
+        user.id,
       );
     this.logger.log(
-      `clear today reminder dispatch completed userId=${userId} deletedCount=${result.deletedCount}`,
+      `clear today reminder dispatch completed userId=${user.id} deletedCount=${result.deletedCount}`,
     );
 
     return result;

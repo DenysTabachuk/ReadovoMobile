@@ -1,6 +1,5 @@
 import { getMascotErrorMessageKey } from '@/features/mascot';
 import { Image } from 'expo-image';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -19,47 +18,36 @@ import { ModalSheet } from '@/components/modalSheet';
 import { ScreenContainer } from '@/components/screenContainer';
 import { ThemedText } from '@/components/themedText';
 import { Colors } from '@/constants/theme';
-import { getAchievementsProfile } from '@/features/achievements';
+import { useAchievementsProfileQuery } from '@/features/achievements';
 import {
-  buyMascotItem,
-  clearMascotSlot,
-  equipMascotItem,
   getMascotCatalogItem,
   getMascotItemsBySlot,
-  getMascotProfile,
+  useMascotProfileQuery,
+  useBuyMascotMutation,
+  useEquipMascotMutation,
+  useClearMascotMutation,
+  useClearAllMascotSlotsMutation,
   Mascot,
   mascotAccessorySlots,
   type MascotAccessorySlot,
   type MascotCatalogItem,
 } from '@/features/mascot';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { useAuth } from '@/features/auth';
 
 import { styles } from './styles';
 
 export default function WardrobeScreen() {
   const { t } = useTranslation();
   const { showBanner } = useBanner();
-  const { currentUser } = useAuth();
-  const queryClient = useQueryClient();
   const colorScheme = useColorScheme();
   const palette = Colors[colorScheme ?? 'light'];
   const [selectedSlot, setSelectedSlot] = useState<MascotAccessorySlot>('head');
   const [purchaseItem, setPurchaseItem] = useState<MascotCatalogItem | null>(
     null,
   );
-  const userId = currentUser?.id;
 
-  const mascotQuery = useQuery({
-    enabled: Boolean(userId),
-    queryFn: () => getMascotProfile(userId ?? ''),
-    queryKey: ['mascot-profile', userId],
-  });
-  const achievementsQuery = useQuery({
-    enabled: Boolean(userId),
-    queryFn: () => getAchievementsProfile(userId ?? ''),
-    queryKey: ['achievements-profile', userId],
-  });
+  const mascotQuery = useMascotProfileQuery();
+  const achievementsQuery = useAchievementsProfileQuery();
 
   const selectedItems = useMemo(
     () => getMascotItemsBySlot(selectedSlot),
@@ -76,21 +64,7 @@ export default function WardrobeScreen() {
     ? balance >= purchaseItem.price
     : false;
 
-  const invalidateMascotState = () => {
-    if (!userId) {
-      return;
-    }
-
-    void queryClient.invalidateQueries({
-      queryKey: ['mascot-profile', userId],
-    });
-    void queryClient.invalidateQueries({
-      queryKey: ['achievements-profile', userId],
-    });
-  };
-
-  const buyMutation = useMutation({
-    mutationFn: (itemId: string) => buyMascotItem(userId ?? '', itemId),
+  const buyMutation = useBuyMascotMutation({
     onError: (error) => {
       const messageKey = getMascotErrorMessageKey(error);
       if (!messageKey) return;
@@ -104,7 +78,6 @@ export default function WardrobeScreen() {
       const item = getMascotCatalogItem(itemId);
 
       setPurchaseItem(null);
-      invalidateMascotState();
       showBanner({
         description: item
           ? t('mascot.purchaseSuccessDescription', {
@@ -117,19 +90,14 @@ export default function WardrobeScreen() {
       });
     },
   });
-  const equipMutation = useMutation({
-    mutationFn: (itemId: string) => equipMascotItem(userId ?? '', itemId),
-    onSuccess: invalidateMascotState,
+  const equipMutation = useEquipMascotMutation({
     onError: (error) => {
       const messageKey = getMascotErrorMessageKey(error);
       if (!messageKey) return;
       showBanner({ title: t(messageKey), variant: 'error' });
     },
   });
-  const clearMutation = useMutation({
-    mutationFn: (slot: MascotAccessorySlot) =>
-      clearMascotSlot(userId ?? '', slot),
-    onSuccess: invalidateMascotState,
+  const clearMutation = useClearMascotMutation({
     onError: (error) => {
       const messageKey = getMascotErrorMessageKey(error);
       if (!messageKey) return;
@@ -140,13 +108,8 @@ export default function WardrobeScreen() {
       });
     },
   });
-  const clearAllMutation = useMutation({
-    mutationFn: async () => {
-      for (const slot of equippedSlots) {
-        await clearMascotSlot(userId ?? '', slot);
-      }
-    },
-    onSuccess: invalidateMascotState,
+  const clearAllMutation = useClearAllMascotSlotsMutation({
+    slots: equippedSlots,
     onError: (error) => {
       const messageKey = getMascotErrorMessageKey(error);
       if (!messageKey) return;

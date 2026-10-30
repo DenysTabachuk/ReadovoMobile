@@ -1,7 +1,8 @@
-import { Controller, Get, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, UseGuards } from '@nestjs/common';
 
 import { UserAuthGuard } from '../auth/user-auth.guard';
-import { UserIdParamsDto } from '../common/validation/request.dto';
+import { CurrentUser } from '../auth/current-user.decorator';
+import type { AuthenticatedUser } from '../auth/types';
 import { AchievementsService } from './achievements.service';
 import { type AchievementsProfileResponse } from './types';
 
@@ -10,10 +11,10 @@ import { type AchievementsProfileResponse } from './types';
 export class AchievementsController {
   constructor(private readonly achievementsService: AchievementsService) {}
 
-  @Get('profile/:userId')
+  @Get('profile/me')
   async getProfile(
-    @Param() { userId }: UserIdParamsDto,
+    @CurrentUser() user: AuthenticatedUser,
   ): Promise<AchievementsProfileResponse> {
-    return this.achievementsService.getProfile(userId);
+    return this.achievementsService.getProfile(user.id);
   }
 }

@@ -8,7 +8,7 @@ import {
   type NotificationsHttpTestApp,
 } from './testing/create-notifications-http-app';
 
-const path = `/notifications/push-token/${NOTIFICATIONS_TEST_USER_ID}`;
+const path = `/notifications/push-token/me`;
 
 describe('Notification push-token requests (HTTP)', () => {
   let testApp: NotificationsHttpTestApp;

@@ -24,7 +24,7 @@ type ProgressUpdate = { data: UserProgress; where: { id: string } };
  * @example
  * const testApp = await createAchievementsHttpApp();
  * testApp.prisma.user.findUnique.mockResolvedValue(null);
- * // GET /achievements/profile/:userId now returns ACHIEVEMENTS_USER_NOT_FOUND.
+ * // GET /achievements/profile/me now returns ACHIEVEMENTS_USER_NOT_FOUND.
  * await testApp.app.close();
  */
 export async function createAchievementsHttpApp() {
