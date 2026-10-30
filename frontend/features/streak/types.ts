@@ -1,9 +1,6 @@
 export type StreakTodayStatus =
   'completed' | 'pending' | 'missed' | 'frozen' | 'restored' | 'broken';
 
-export type StreakActivityType =
-  'lexical_test_completed' | 'article_quiz_completed';
-
 export type StreakDayStatus = 'completed' | 'missed' | 'frozen' | 'restored';
 export type CalendarDayStatus =
   | 'completed'
@@ -63,12 +60,6 @@ export type StreakState = {
   todayStatus: StreakTodayStatus;
 };
 
-export type CompleteActivityRequest = {
-  activityType: StreakActivityType;
-  occurredAtClient?: string;
-  timezone?: string;
-};
-
 export type RestoreStreakRequest = {
   price: number;
 };
@@ -79,11 +70,6 @@ export type ApplyStreakFreezeRequest = {
 
 export type PurchaseStreakFreezeRequest = {
   price: number;
-};
-
-export type CompleteActivityResponse = {
-  pendingSync?: boolean;
-  streak: StreakState;
 };
 
 export type StreakCalendarDay = {

@@ -1,10 +1,10 @@
+import { getApiErrorMessageKey } from '@/api/utils/getApiErrorMessageKey';
+import { useBanner } from '@/components/banner';
 import { Button } from '@/components/button';
 import { ScreenContainer } from '@/components/screenContainer';
 import { ThemedText } from '@/components/themedText';
 import {
   useArticleQuizSessionQuery,
-  useCompleteArticleQuizMutation,
-  type ArticleQuizLengthParam,
   type SimplifyArticleLevel,
   type SimplifyArticleTargetLength,
   type WikipediaArticleDetail,
@@ -13,7 +13,12 @@ import { useAuth } from '@/features/auth';
 import {
   QuizResult,
   QuizRunner,
+  useCompleteQuizMutation,
+  useSubmitQuizAnswerMutation,
+  useRetakeQuizMutation,
   type QuizSessionResult,
+  type QuizQuestion,
+  type QuizSubmitResult,
 } from '@/features/quiz';
 import { Stack, useRouter } from 'expo-router';
 import { useState } from 'react';
@@ -30,7 +35,6 @@ type ArticleQuizSessionProps = {
   article: WikipediaArticleDetail;
   quizLevel: SimplifyArticleLevel;
   quizMode: ArticleQuizMode;
-  quizTargetLength: ArticleQuizLengthParam;
   quizSessionTargetLength: SimplifyArticleTargetLength;
 };
 
@@ -38,7 +42,6 @@ export function ArticleQuizSession({
   article,
   quizLevel,
   quizMode,
-  quizTargetLength,
   quizSessionTargetLength,
 }: ArticleQuizSessionProps) {
   const { t } = useTranslation();
@@ -52,29 +55,45 @@ export function ArticleQuizSession({
     level: quizLevel,
     targetLength: quizSessionTargetLength,
   });
-  const progressMutation = useCompleteArticleQuizMutation({
-    article,
-    currentUserId: currentUser?.id ?? undefined,
-    quizLevel,
-    quizTargetLength,
+  const [retakeSessionId, setRetakeSessionId] = useState<string>();
+  const sessionId = retakeSessionId ?? session?.sessionId;
+  const progressMutation = useCompleteQuizMutation({
+    sessionId,
+    onCompleted: setResult,
   });
+  const answerMutation = useSubmitQuizAnswerMutation();
+  const retakeMutation = useRetakeQuizMutation((nextSessionId) => {
+    setRetakeSessionId(nextSessionId);
+    setResult(null);
+    setAttempt((current) => current + 1);
+  });
+  const { showBanner } = useBanner();
+  const showError = (error: unknown) => {
+    const key = getApiErrorMessageKey(error);
+    if (key) showBanner({ title: t(key), variant: 'error' });
+  };
   const vocabulary = useQuizVocabulary(article.title);
   const title =
     quizMode === 'vocabulary'
       ? t('article.quiz.vocabularyKnowledge')
       : t('article.quiz.articleKnowledge');
-  const renderVocabularySaveAction = (question: unknown) => {
+  const renderVocabularySaveAction = (
+    question: QuizQuestion,
+    answer: QuizSubmitResult,
+  ) => {
+    // Word details arrive with feedback, after this question's first graded attempt.
+    const vocabularyQuestion = { ...question, ...answer.vocabularyWord };
     if (
       quizMode !== 'vocabulary' ||
       !currentUser?.id ||
-      !isVocabularyWordQuestion(question)
+      !isVocabularyWordQuestion(vocabularyQuestion)
     )
       return null;
     return (
       <SaveVocabularyWordButton
-        saved={vocabulary.savedQuestionIds.has(question.id)}
-        saving={vocabulary.savingQuestionId === question.id}
-        onSave={() => vocabulary.saveWord(question)}
+        saved={vocabulary.savedQuestionIds.has(vocabularyQuestion.id)}
+        saving={vocabulary.savingQuestionId === vocabularyQuestion.id}
+        onSave={() => vocabulary.saveWord(vocabularyQuestion)}
       />
     );
   };
@@ -89,17 +108,26 @@ export function ArticleQuizSession({
           shouldShowTitle={false}
           onDone={() => router.back()}
           onRetry={() => {
-            setResult(null);
-            setAttempt((current) => current + 1);
+            if (sessionId && !retakeMutation.isPending)
+              retakeMutation.mutate(sessionId, { onError: showError });
           }}
         />
       ) : session?.questions.length ? (
         <QuizRunner
           key={`article-quiz-${attempt}`}
           questions={session.questions}
+          isFinishing={progressMutation.isPending}
+          onSubmitAnswer={(question, selectedOptionIds) => {
+            if (!sessionId) throw new Error('Missing quiz session.');
+            return answerMutation.mutateAsync({
+              sessionId,
+              questionId: question.id,
+              selectedOptionIds,
+            });
+          }}
+          onSubmitError={showError}
           renderSubmittedQuestionAction={renderVocabularySaveAction}
           onFinish={(completed) => {
-            setResult(completed);
             progressMutation.mutate(completed);
           }}
         />

@@ -233,14 +233,12 @@ export class SimplifyArticleDto {
 
 export class GenerateArticleQuizDto {
   @IsIn(SIMPLIFICATION_LEVELS)
-  @IsOptional()
   @TrimToUpperCase()
-  level?: ArticleSimplificationLevel;
+  level!: ArticleSimplificationLevel;
 
   @IsIn(['short', 'medium', 'long'])
-  @IsOptional()
   @TrimToLowerCase()
-  targetLength?: ArticleSimplificationTargetLength;
+  targetLength!: ArticleSimplificationTargetLength;
 
   @IsNotEmpty()
   @IsString()

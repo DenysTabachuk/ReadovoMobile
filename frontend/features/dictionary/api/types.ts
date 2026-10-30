@@ -37,21 +37,10 @@ export type DictionaryTestQuestion = {
 };
 
 export type DictionaryTest = {
+  sessionId: string;
   questions: DictionaryTestQuestion[];
-};
-
-export type SubmitDictionaryTestAnswerRequest = {
-  selectedOptionId: string;
-  wordId: string;
 };
 
 export type UpdateDictionaryWordProgressRequest = {
   progress: DictionaryWordProgress;
-};
-
-export type DictionaryTestAnswerResult = {
-  correctOptionId: string;
-  correctTranslation: string;
-  isCorrect: boolean;
-  word: DictionaryWord;
 };

@@ -18,10 +18,7 @@ describe('Achievements profile errors and authorization (HTTP)', () => {
     await testApp.app.close();
   });
 
-  it.each([
-    { method: 'get', suffix: '', body: {} },
-    { method: 'patch', suffix: '/progress', body: { lessonsCompleted: 0 } },
-  ] as const)(
+  it.each([{ method: 'get', suffix: '', body: {} }] as const)(
     'returns a domain 404 for a missing user on $method $suffix',
     async ({ method, suffix, body }) => {
       testApp.prisma.user.findUnique.mockResolvedValue(null);
@@ -61,10 +58,7 @@ describe('Achievements profile errors and authorization (HTTP)', () => {
     expect(testApp.prisma.$transaction).not.toHaveBeenCalled();
   });
 
-  it.each([
-    { method: 'get', suffix: '', body: {} },
-    { method: 'patch', suffix: '/progress', body: { lessonsCompleted: 0 } },
-  ] as const)(
+  it.each([{ method: 'get', suffix: '', body: {} }] as const)(
     'rejects another route owner on $method $suffix before persistence',
     async ({ method, suffix, body }) => {
       await request(testApp.server)

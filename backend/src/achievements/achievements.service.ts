@@ -1,36 +1,50 @@
 import { Injectable } from '@nestjs/common';
 
 import { ApiException } from '../common/errors/api-exception';
-import { type UserAchievement } from '../generated/prisma/client';
+import { type Prisma } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { achievementDefinitions } from './definitions';
 import { ACHIEVEMENTS_ERRORS } from './achievements-errors';
-import { type UpdateProgressDto } from './dto';
 import {
   type AchievementStatus,
   type AchievementsProfileResponse,
-  type UserProgress,
 } from './types';
 
 @Injectable()
 export class AchievementsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getProfile(userId: string): Promise<AchievementsProfileResponse> {
-    let progress = await this.getUserProgress(userId);
-    let unlockedRows = await this.getUnlockedRows(userId);
-
-    while (await this.persistNewUnlocks(userId, progress, unlockedRows)) {
-      progress = await this.getUserProgress(userId);
-      unlockedRows = await this.getUnlockedRows(userId);
-    }
-
+  /**
+   * Reads progress without granting rewards. Ordinary reads use this.prisma.
+   * Quiz completion passes its transaction client so this read sees that
+   * transaction's uncommitted rewards/counters instead of the old committed state.
+   * This method joins the caller's transaction; it does not start a new one.
+   */
+  async getProfile(
+    userId: string,
+    client: Prisma.TransactionClient = this.prisma,
+  ): Promise<AchievementsProfileResponse> {
+    const [user, learnedWordsCount] = await Promise.all([
+      client.user.findUnique({ where: { id: userId } }),
+      client.dictionaryWord.count({ where: { progress: 'learned', userId } }),
+    ]);
+    if (!user) throw new ApiException(ACHIEVEMENTS_ERRORS.USER_NOT_FOUND);
+    const unlockedRows = await client.userAchievement.findMany({
+      where: { userId },
+    });
+    const progress = {
+      balance: user.balance,
+      lessonsCompleted: user.lessonsCompleted,
+      testsCompleted: user.testsCompleted,
+      wordsLearned: learnedWordsCount,
+    };
     const unlockedMap = new Map(
       unlockedRows.map((row) => [row.achievementId, row]),
     );
-
-    const achievements: AchievementStatus[] = achievementDefinitions.map(
-      (definition) => {
+    return {
+      userId,
+      progress,
+      achievements: achievementDefinitions.map((definition) => {
         const unlocked = unlockedMap.get(definition.id);
         return {
           badgeKey: definition.badgeKey,
@@ -45,116 +59,71 @@ export class AchievementsService {
           titleKey: definition.titleKey,
           unlockedAt: unlocked?.unlockedAt?.toISOString() ?? null,
         };
-      },
-    );
-
-    return {
-      achievements,
-      progress,
-      userId,
-    };
-  }
-
-  // TODO: Stop accepting client-owned balance and quiz counters. See docs/tasks/server-side-quiz-rewards.md.
-  async updateProgress(
-    userId: string,
-    update: UpdateProgressDto,
-  ): Promise<AchievementsProfileResponse> {
-    const current = await this.getUserProgress(userId);
-
-    const next: UserProgress = {
-      // DTOs validate supplied numbers. Optional null/absence retains stored values.
-      balance: update.balance ?? current.balance,
-      lessonsCompleted: update.lessonsCompleted ?? current.lessonsCompleted,
-      testsCompleted: update.testsCompleted ?? current.testsCompleted,
-      wordsLearned: update.wordsLearned ?? current.wordsLearned,
-    };
-
-    await this.prisma.user.updateMany({
-      data: {
-        balance: next.balance,
-        lessonsCompleted: next.lessonsCompleted,
-        testsCompleted: next.testsCompleted,
-        wordsLearned: next.wordsLearned,
-      },
-      where: { id: userId },
-    });
-
-    return this.getProfile(userId);
-  }
-
-  private async getUserProgress(userId: string): Promise<UserProgress> {
-    const [row, learnedWordsCount] = await Promise.all([
-      this.prisma.user.findUnique({ where: { id: userId } }),
-      this.prisma.dictionaryWord.count({
-        where: { progress: 'learned', userId },
       }),
-    ]);
-
-    if (!row) {
-      throw new ApiException(ACHIEVEMENTS_ERRORS.USER_NOT_FOUND);
-    }
-
-    return {
-      balance: row.balance,
-      lessonsCompleted: row.lessonsCompleted,
-      testsCompleted: row.testsCompleted,
-      wordsLearned: learnedWordsCount,
     };
   }
 
-  private getUnlockedRows(userId: string): Promise<UserAchievement[]> {
-    return this.prisma.userAchievement.findMany({ where: { userId } });
-  }
-
-  private async persistNewUnlocks(
+  /** Awards eligible achievements inside the caller's progress transaction.
+   * The caller locks the user's row before changing progress. Uniqueness protects
+   * grants and the loop includes achievements unlocked by other achievement coins.
+   * Profile reads never call this method and never grant coins.
+   */
+  async awardUnlocked(
     userId: string,
-    progress: UserProgress,
-    unlockedRows: UserAchievement[],
-  ): Promise<boolean> {
-    const unlockedIds = new Set(unlockedRows.map((row) => row.achievementId));
-    const newUnlockDefinitions = achievementDefinitions.filter(
-      (definition) =>
-        definition.isUnlocked(progress) && !unlockedIds.has(definition.id),
-    );
+    transaction: Prisma.TransactionClient,
+  ): Promise<AchievementStatus[]> {
+    const grantedIds = new Set<string>();
+    let profile = await this.getProfile(userId, transaction);
+    let eligible = this.getEligibleAchievements(profile);
 
-    if (newUnlockDefinitions.length === 0) {
-      return false;
-    }
-
-    const rewardByAchievementId = new Map<string, number>(
-      achievementDefinitions.map((definition) => [
-        definition.id,
-        definition.coinsReward,
-      ]),
-    );
-    const now = new Date();
-
-    return this.prisma.$transaction(async (transaction) => {
+    while (eligible.length > 0) {
+      const now = new Date();
       const inserted = await transaction.userAchievement.createManyAndReturn({
-        data: newUnlockDefinitions.map((definition) => ({
-          achievementId: definition.id,
-          claimedAt: now,
-          unlockedAt: now,
+        data: eligible.map((definition) => ({
           userId,
+          achievementId: definition.id,
+          unlockedAt: now,
+          claimedAt: now,
         })),
         select: { achievementId: true },
         skipDuplicates: true,
       });
-      const totalCoinsReward = inserted.reduce(
-        (sum, achievement) =>
-          sum + (rewardByAchievementId.get(achievement.achievementId) ?? 0),
-        0,
-      );
+      if (inserted.length === 0) break;
+      for (const row of inserted) grantedIds.add(row.achievementId);
+      const reward = eligible
+        .filter((definition) =>
+          inserted.some((row) => row.achievementId === definition.id),
+        )
+        .reduce((total, definition) => total + definition.coinsReward, 0);
+      await transaction.user.updateMany({
+        where: { id: userId },
+        data: { balance: { increment: reward } },
+      });
 
-      if (totalCoinsReward > 0) {
-        await transaction.user.updateMany({
-          data: { balance: { increment: totalCoinsReward } },
-          where: { id: userId },
-        });
-      }
+      // Achievement coins can make another achievement eligible.
+      profile = await this.getProfile(userId, transaction);
+      eligible = this.getEligibleAchievements(profile);
+    }
 
-      return inserted.length > 0;
-    });
+    return profile.achievements.filter((achievement) =>
+      grantedIds.has(achievement.id),
+    );
+  }
+
+  /**
+   * Returns achievements whose rules are satisfied but which have not been granted.
+   * definition.isEligible evaluates current progress (for example, balance >= 1000).
+   * achievement.isUnlocked reflects an existing grant in the database; excluding
+   * it prevents paying again, even if its rule is still satisfied.
+   */
+  private getEligibleAchievements(profile: AchievementsProfileResponse) {
+    return achievementDefinitions.filter(
+      (definition) =>
+        definition.isEligible(profile.progress) &&
+        !profile.achievements.some(
+          (achievement) =>
+            achievement.id === definition.id && achievement.isUnlocked,
+        ),
+    );
   }
 }

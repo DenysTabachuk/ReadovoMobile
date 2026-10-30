@@ -197,22 +197,22 @@ to `/streak/profile/me`. Domain errors allow no details. Existing HTTP statuses
 and safe diagnostic messages are retained; only the stable codes are added.
 Frontend behavior in this table is the intended mapping for its later migration.
 
-| Route / branch                                                                                                 | Status | Code                                | Intended UI                                   | Contract test                                                        |
-| -------------------------------------------------------------------------------------------------------------- | ------ | ----------------------------------- | --------------------------------------------- | -------------------------------------------------------------------- |
-| GET profile, GET calendar/month, POST activity-completed, restore, freeze, freeze-token/purchase: missing user | 404    | `STREAK_USER_NOT_FOUND`             | Feature fallback; no token refresh            | `streak-profile.http.spec.ts`, missing-user cases for all six routes |
-| Profile balance lookup after the user disappears                                                               | 404    | `STREAK_USER_NOT_FOUND`             | Feature fallback                              | `streak-profile.http.spec.ts`, disappearing user                     |
-| Calendar: future month                                                                                         | 400    | `STREAK_CALENDAR_MONTH_UNAVAILABLE` | Calendar fallback                             | `streak-profile.http.spec.ts`, future month                          |
-| Calendar: invalid year/month; freeze: invalid date                                                             | 400    | `VALIDATION_FAILED`                 | Known field feedback or feature fallback      | DTO cases in profile/freeze HTTP suites                              |
-| POST restore: price differs from 100                                                                           | 400    | `STREAK_RESTORE_PRICE_INVALID`      | `streak.errors.restoreFailed`                 | `streak-balance.http.spec.ts`, stale/manipulated restore price       |
-| POST restore: no restorable break                                                                              | 400    | `STREAK_RESTORE_UNAVAILABLE`        | `streak.errors.restoreFailed`                 | `streak-balance.http.spec.ts`, no restorable break                   |
-| POST restore or freeze-token/purchase: insufficient balance                                                    | 400    | `STREAK_NOT_ENOUGH_COINS`           | `streak.errors.notEnoughCoins`                | `streak-balance.http.spec.ts`, both operations; no charge            |
-| POST freeze: no tokens                                                                                         | 400    | `STREAK_NO_FREEZE_TOKENS`           | `streak.errors.noFreezeTokens`                | `streak-freeze.http.spec.ts`, empty token balance                    |
-| POST freeze: completed/frozen/restored date                                                                    | 400    | `STREAK_DAY_ALREADY_PROTECTED`      | `streak.errors.dayAlreadyProtected`           | `streak-freeze.http.spec.ts`, all three statuses                     |
-| POST freeze: date has no missed history                                                                        | 400    | `STREAK_FREEZE_ONLY_MISSED_DAY`     | `streak.errors.freezeOnlyMissed`              | `streak-freeze.http.spec.ts`, no missed-day history                  |
-| POST freeze: three freezes already used in the break                                                           | 400    | `STREAK_FREEZE_DAY_LIMIT_REACHED`   | `streak.errors.freezeDayLimitReached`         | `streak-freeze.http.spec.ts`, fourth frozen day                      |
-| POST freeze-token/purchase: price differs from 100                                                             | 400    | `STREAK_FREEZE_TOKEN_PRICE_INVALID` | `streak.errors.purchaseFreezeFailed`          | `streak-balance.http.spec.ts`, stale/manipulated purchase price      |
-| POST freeze-token/purchase: three tokens already owned                                                         | 400    | `STREAK_FREEZE_TOKEN_LIMIT_REACHED` | `streak.errors.freezeLimitReached`            | `streak-balance.http.spec.ts`, full inventory                        |
-| Persistence failure or invalid stored broken-streak data                                                       | 500    | `INTERNAL_ERROR`                    | Feature fallback; no raw internal diagnostics | `streak-profile.http.spec.ts`, database and malformed-state cases    |
+| Route / branch                                                                             | Status | Code                                | Intended UI                                   | Contract test                                                         |
+| ------------------------------------------------------------------------------------------ | ------ | ----------------------------------- | --------------------------------------------- | --------------------------------------------------------------------- |
+| GET profile, GET calendar/month, POST restore, freeze, freeze-token/purchase: missing user | 404    | `STREAK_USER_NOT_FOUND`             | Feature fallback; no token refresh            | `streak-profile.http.spec.ts`, missing-user cases for all five routes |
+| Profile balance lookup after the user disappears                                           | 404    | `STREAK_USER_NOT_FOUND`             | Feature fallback                              | `streak-profile.http.spec.ts`, disappearing user                      |
+| Calendar: future month                                                                     | 400    | `STREAK_CALENDAR_MONTH_UNAVAILABLE` | Calendar fallback                             | `streak-profile.http.spec.ts`, future month                           |
+| Calendar: invalid year/month; freeze: invalid date                                         | 400    | `VALIDATION_FAILED`                 | Known field feedback or feature fallback      | DTO cases in profile/freeze HTTP suites                               |
+| POST restore: price differs from 100                                                       | 400    | `STREAK_RESTORE_PRICE_INVALID`      | `streak.errors.restoreFailed`                 | `streak-balance.http.spec.ts`, stale/manipulated restore price        |
+| POST restore: no restorable break                                                          | 400    | `STREAK_RESTORE_UNAVAILABLE`        | `streak.errors.restoreFailed`                 | `streak-balance.http.spec.ts`, no restorable break                    |
+| POST restore or freeze-token/purchase: insufficient balance                                | 400    | `STREAK_NOT_ENOUGH_COINS`           | `streak.errors.notEnoughCoins`                | `streak-balance.http.spec.ts`, both operations; no charge             |
+| POST freeze: no tokens                                                                     | 400    | `STREAK_NO_FREEZE_TOKENS`           | `streak.errors.noFreezeTokens`                | `streak-freeze.http.spec.ts`, empty token balance                     |
+| POST freeze: completed/frozen/restored date                                                | 400    | `STREAK_DAY_ALREADY_PROTECTED`      | `streak.errors.dayAlreadyProtected`           | `streak-freeze.http.spec.ts`, all three statuses                      |
+| POST freeze: date has no missed history                                                    | 400    | `STREAK_FREEZE_ONLY_MISSED_DAY`     | `streak.errors.freezeOnlyMissed`              | `streak-freeze.http.spec.ts`, no missed-day history                   |
+| POST freeze: three freezes already used in the break                                       | 400    | `STREAK_FREEZE_DAY_LIMIT_REACHED`   | `streak.errors.freezeDayLimitReached`         | `streak-freeze.http.spec.ts`, fourth frozen day                       |
+| POST freeze-token/purchase: price differs from 100                                         | 400    | `STREAK_FREEZE_TOKEN_PRICE_INVALID` | `streak.errors.purchaseFreezeFailed`          | `streak-balance.http.spec.ts`, stale/manipulated purchase price       |
+| POST freeze-token/purchase: three tokens already owned                                     | 400    | `STREAK_FREEZE_TOKEN_LIMIT_REACHED` | `streak.errors.freezeLimitReached`            | `streak-balance.http.spec.ts`, full inventory                         |
+| Persistence failure or invalid stored broken-streak data                                   | 500    | `INTERNAL_ERROR`                    | Feature fallback; no raw internal diagnostics | `streak-profile.http.spec.ts`, database and malformed-state cases     |
 
 `streak.controller.spec.ts` retains existing endpoint authentication, ownership and
 DTO coverage. New HTTP suites exercise real controllers, services, JWT guards and
@@ -221,17 +221,17 @@ small shared setup is local to streak; the broader test-infrastructure migration
 remains a separate task.
 
 Calendar year/month and freeze-date structure are validated once in the request
-DTOs. The controller is their only production service caller; the service is not
-exported from `StreakModule`. Business constraints such as future months, prices,
+DTOs. `StreakModule` exports its service for verified quiz completion within the
+completion transaction. Business constraints such as future months, prices,
 balance and freeze limits remain in the service. HTTP tests cover invalid ranges,
 non-integer and missing calendar values and invalid dates before persistence.
 
-Activity timezone is validated and trimmed in its DTO; the service does not
+Completion timezone is validated and trimmed in its quiz DTO; the service does not
 repeat the timezone check. Omitted or optional null timezone preserves the stored
-zone, while profile creation defaults to UTC. `streak-timezone.http.spec.ts` covers
-these cases and rejects malformed timezone values before persistence.
+zone, while profile creation defaults to UTC. `quiz-rewards.e2e-spec.ts` covers
+stored/omitted timezone and rejects malformed timezone values before persistence.
 No provider calls or partial-success delivery payloads belong to this module.
-`completeActivity` returns the existing `{ streak }` success shape.
+Streak activity is internal to verified quiz completion.
 
 The earlier `STREAK_FREEZE_WINDOW_EXPIRED` proposal has no corresponding branch
 in the current service: freezing an old missed day is not explicitly rejected by
@@ -360,30 +360,94 @@ change its lifecycle or add recovery/retry policy.
 
 ## Achievements inventory
 
-Both routes are guarded and check the JWT against the route owner. Domain errors
-allow no details. The only deliberate service error is a missing user; no reward,
-balance, permission or success-payload behavior is changed by this migration.
+`GET /achievements/profile/:userId` remains guarded by JWT ownership. A missing
+user returns 404 `ACHIEVEMENTS_USER_NOT_FOUND`; persistence failures return 500
+`INTERNAL_ERROR`. Reads calculate current learned-word counts but never unlock
+achievements or grant coins. Arbitrary progress PATCH requests now return 404.
 
-| Route / branch                                                       | Status    | Code                                                     | Intended UI                                           | Contract test                                              |
-| -------------------------------------------------------------------- | --------- | -------------------------------------------------------- | ----------------------------------------------------- | ---------------------------------------------------------- |
-| GET profile/:userId: user absent while reading progress              | 404       | `ACHIEVEMENTS_USER_NOT_FOUND`                            | Feature fallback; no token refresh                    | `achievements-profile.http.spec.ts`, missing user          |
-| PATCH profile/:userId/progress: user absent before the update        | 404       | `ACHIEVEMENTS_USER_NOT_FOUND`                            | Feature fallback; no token refresh                    | `achievements-profile.http.spec.ts`, missing user on PATCH |
-| PATCH progress: user disappears before the refreshed profile is read | 404       | `ACHIEVEMENTS_USER_NOT_FOUND`                            | Feature fallback                                      | `achievements-progress.http.spec.ts`, disappearing user    |
-| Invalid/empty progress update                                        | 400       | `VALIDATION_FAILED`                                      | Known field feedback or form fallback                 | Progress HTTP suite, field constraints and empty body      |
-| Missing JWT / different route owner                                  | 401 / 403 | `AUTH_AUTHENTICATION_REQUIRED` / `AUTH_OWNERSHIP_DENIED` | Shared auth behavior; no refresh for ownership denial | Profile HTTP suite, guard cases                            |
-| Unexpected persistence/transaction error                             | 500       | `INTERNAL_ERROR`                                         | Feature fallback; no raw database diagnostics         | Profile HTTP suite, failed progress query                  |
+## Verified quiz sessions and rewards
 
-`UpdateProgressDto` owns integer/range checks. Its only production service caller
-is the controller; the service no longer repeats truncation/clamping. Omitted or
-optional null fields retain current values, while a supplied zero remains zero.
-The HTTP tests cover both cases through real DTO/controller/service/filter paths.
-Profile reads still calculate learned words from dictionary persistence, and the
-existing reward unit tests retain automatic-claim and no-double-award coverage.
+Reading, vocabulary and dictionary generation return an authenticated, owned
+`sessionId`. The database saves question/option IDs, answer keys and reward
+settings. Generation responses omit answer keys and explanations; dictionary
+options use opaque IDs rather than identifying the correct word.
+Article option IDs are remapped and their order randomized before the session is
+saved. Vocabulary term/translation/source details are private session data and
+returned as `vocabularyWord` only after an answer is recorded, so saving a word
+remains available after grading without exposing its answer in advance.
+Reading quiz requests require an explicit valid CEFR level and a target length
+(`short`, `medium` or `long`); missing or null values return validation errors.
+The same normalized settings control generation and rewards.
 
-The existing endpoint still accepts client-supplied balance and quiz counters.
-That known issue is tracked in [Server-side quiz rewards](tasks/server-side-quiz-rewards.md)
-and remains separate from API error codes; do not silently change permissions or
-reward rules in this migration.
+| Operation                                 | Request                           | Result                                                                       |
+| ----------------------------------------- | --------------------------------- | ---------------------------------------------------------------------------- |
+| `POST /quiz-sessions/:sessionId/answers`  | `questionId`, `selectedOptionIds` | Persisted correctness, answer key, optional explanation and achievement IDs  |
+| `POST /quiz-sessions/:sessionId/complete` | Optional IANA `timezone`          | Immutable completion, `replayed`, fresh full achievement and streak profiles |
+| `POST /quiz-sessions/:sessionId/retake`   | No body                           | New owned session ID with the same saved questions and settings              |
+
+All three operations require authentication and derive the owner from the JWT.
+Unknown and foreign sessions both return 404 `QUIZ_SESSION_NOT_FOUND`.
+DTO failures return 400 `VALIDATION_FAILED`. Invalid question/option membership
+or single-answer cardinality returns 400 `QUIZ_ANSWER_INVALID`. Multiple choice
+requires an exact set match for correctness. Duplicate selections are invalid.
+An identical answer retry returns feedback without another review update;
+changing the first graded answer returns 409 `QUIZ_ANSWER_ALREADY_SUBMITTED`.
+Incomplete completion returns 409 `QUIZ_SESSION_INCOMPLETE`; a new answer to a
+completed session returns 409 `QUIZ_SESSION_COMPLETED`.
+
+Completion requires every question to have a persisted answer. Low scores still
+qualify; abandoned sessions grant no completion reward. Sessions have no automatic
+expiry. Saved grading remains valid after source content changes; deleted
+dictionary words receive no further review updates. A retake is a new graded
+session, while a completion retry always reuses the original result.
+
+One transaction locks the owner's user row, calculates rewards from saved answers
+and settings, increments balance/test counters, records streak activity, grants
+eligible achievements and saves completion. Different sessions share the owner
+lock, so only one receives the first-test bonus. Atomic increments preserve
+concurrent spending. A failed effect rolls back the entire completion.
+The session completion record and unique achievement/answer constraints prevent
+duplicate awards. Replays return historical reward amounts with fresh account
+state, never an old balance to reinstall.
+
+The existing formula remains: base 20, accuracy multipliers 0.5/0.8/1/1.3/1.6 at
+40/60/75/90 percent, level multipliers A1=1, A2=1.2, B1=1.5, B2=1.9, length
+multipliers 1/1.2/1.5, plus 10 for the first test and 10 for a perfect score,
+rounded once. C1 uses the highest existing B2 reward tier. Dictionary tests omit
+difficulty/length; vocabulary uses the existing medium length.
+
+Dictionary review commits with each first verified answer and cannot run again
+on retries or completion. Its achievement grants are recorded with that answer
+and included in the eventual completion breakdown. Achievement eligibility still
+uses current balance and current learned entries; unlocks remain permanent even
+if displayed progress later falls. Achievement rewards can unlock another coin
+achievement within the same transaction. Existing eligible but ungranted records
+are evaluated on the next verified answer/completion; there is no read-time grant
+or automatic historical backfill. General spending/restore workflow redesign
+remains outside this quiz change.
+
+Completion separates `quizCoins`, `achievementCoins`, `streakCoins` and
+`totalCoins`, and persists unlocked IDs/milestones. The frontend uses server scores,
+invalidates owner-specific achievement/streak/calendar/dictionary caches and
+queues all returned unlock banners. Replayed completions suppress reward banners.
+Pending or failed completion retains the final question for retry; rewards are
+only presented after confirmation. Session guards suppress stale account effects.
+
+The arbitrary achievement progress setter, direct dictionary answer endpoint and
+public streak activity endpoint are removed. Unverified legacy offline events
+are left unread and cannot earn rewards. Retrying saved sessions is supported;
+a durable offline completion queue is separate work.
+
+In local mock mode, quiz generation/completion, dictionary, achievements and streak
+requests proxy to the local backend (`MOCK_PROXY_TARGET`, default
+`http://localhost:3000`). Start PostgreSQL and the migrated backend alongside
+`npm run mock:api`; there is no second mock reward policy.
+
+`backend/test/quiz-rewards.e2e-spec.ts` verifies real PostgreSQL concurrency,
+rollback, replay, ownership, grading, review deduplication, cascades and retakes.
+Run it with `QUIZ_TEST_DATABASE_URL` pointing to a migrated dedicated database named
+`readovo_quiz_test`; it creates and removes only its own user fixtures.
+The default e2e run skips this opt-in suite without that variable.
 
 ## Translations inventory
 
@@ -573,7 +637,7 @@ connect to persistence nor call live providers.
 Success stays HTTP 201: reading returns `{ questions }`, vocabulary returns
 `{ questions, resolvedLevel }` with the existing term, translation and option-ID
 normalization. Requested vocabulary level still takes precedence over the model
-level. Reading defaults remain A2/short. Both flows still retry once for semantic
+level. Reading requires an explicit level and target length. Both flows still retry once for semantic
 violations and may succeed with the corrected result. No SDK retry, token-budget,
 representative-excerpt or question-count policy is changed.
 

@@ -1,11 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 
 import { ApiException } from '../common/errors/api-exception';
 
 import { dateOnlyToDate, dateToDateOnly } from '../common/database/date-only';
 import { Prisma } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { type CompleteStreakActivityDto } from './dto';
 import { STREAK_ERRORS } from './streak-errors';
 import {
   mapStreakHistory,
@@ -47,10 +46,32 @@ type UserBalanceRow = { balance: number };
 
 @Injectable()
 export class StreakService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject(PrismaService)
+    private readonly prisma: PrismaService | Prisma.TransactionClient,
+  ) {}
 
-  async getProfile(userId: string): Promise<StreakState> {
-    const profile = await this.ensureProfile(userId);
+  /** Records verified quiz activity using the quiz completion's locked transaction. */
+  async recordQuizCompletion(
+    transaction: Prisma.TransactionClient,
+    userId: string,
+    timezone?: string,
+  ) {
+    return new StreakService(transaction).completeActivity(userId, timezone);
+  }
+
+  /** Reads streak state in the completion transaction, applying its timezone before missing-day reconciliation. */
+  async getQuizCompletionProfile(
+    transaction: Prisma.TransactionClient,
+    userId: string,
+    timezone?: string,
+  ) {
+    return new StreakService(transaction).getProfile(userId, timezone);
+  }
+
+  async getProfile(userId: string, timezone?: string): Promise<StreakState> {
+    // Completion may supply a new zone. Apply it before deciding which local days were missed.
+    const profile = await this.ensureProfile(userId, timezone);
     const serverNow = new Date();
     const localToday = this.getLocalDateKey(serverNow, profile.timezone);
 
@@ -166,11 +187,11 @@ export class StreakService {
     };
   }
 
-  async completeActivity(
+  private async completeActivity(
     userId: string,
-    payload: CompleteStreakActivityDto,
+    timezone?: string,
   ): Promise<CompleteStreakActivityResponse> {
-    const profile = await this.ensureProfile(userId, payload.timezone);
+    const profile = await this.ensureProfile(userId, timezone);
     const serverNow = new Date();
     const localToday = this.getLocalDateKey(serverNow, profile.timezone);
 
@@ -546,7 +567,7 @@ export class StreakService {
       return;
     }
 
-    await this.prisma.$transaction(async (transaction) => {
+    const award = async (transaction: Prisma.TransactionClient) => {
       const inserted =
         await transaction.userStreakAchievement.createManyAndReturn({
           data: eligibleMilestones.map((milestone) => ({
@@ -568,7 +589,9 @@ export class StreakService {
           where: { id: userId },
         });
       }
-    });
+    };
+    if ('$transaction' in this.prisma) await this.prisma.$transaction(award);
+    else await award(this.prisma);
   }
 
   private async getRecentHistory(

@@ -63,8 +63,8 @@ screen.
 - [ ] Complete the dictionary review: six endpoints, no owner `userId` in
       requests, cache isolation, authentication, resource validation, and release
       compatibility.
-- [ ] Migrate achievements profile reads and updates. Preserve current progress
-      behavior; moving reward calculation to the backend is outside this step.
+- [ ] Migrate achievements profile reads. Arbitrary progress writes were removed
+      by verified quiz completion; preserve the server-owned reward rules.
 - [ ] Migrate mascot profile, purchases, equipment changes, and slot clearing.
       Remove duplicate profile queries only within the affected consumers.
 - [ ] Migrate personal saved/recent articles. Leave public search, reading,
@@ -73,12 +73,12 @@ screen.
       the offline queue, establish ownership of stored events and behavior when
       switching accounts. Never send one account's events using another account's
       token.
-      All six endpoints now use `/streak/profile/me` and derive the owner from
+      All five endpoints now use `/streak/profile/me` and derive the owner from
       `@CurrentUser()`. HTTP functions take no owner ID. Local IDs remain in cache
-      keys and service calls to validate the expected session and select the queue.
-      Pending events are stored under per-user keys; legacy unowned events remain
-      untouched and are not replayed. Session snapshots stop multi-step operations
-      after login/logout. Retry ordering and existing business rules are unchanged.
+      keys and service calls to validate the expected session. Quiz completion now
+      records streak activity transactionally; the public activity endpoint and
+      unverified offline replay were removed. Legacy stored events remain unread.
+      Session snapshots stop stale mutation effects after login/logout.
       Implementation and regression tests are complete; review remains pending.
 - [ ] Migrate personal notifications: preferences, push tokens, test pushes, and
       clearing today's dispatch. Preserve production restrictions on development
@@ -131,24 +131,25 @@ Review each step before continuing to the next:
 - [x] Extract dictionary test generation and answer submission into separate API
       mutation hooks, retaining screen state callbacks in the screen.
       Implemented with mutation lifecycle and cache regression tests; awaiting review.
-- [ ] Inspect the mock dictionary and make deletion survive a refetch, with
-      per-user state and not-found responses. Keep this a local fix if feasible;
-      agree on any broader mock API replacement or removal separately.
+- [x] Mock dictionary requests now proxy to the authenticated local backend,
+      preserving deletion, ownership and not-found behavior without duplicate state.
 
 Changing how ownership is determined does not change business rules for rewards,
-prices, streaks, quizzes, or administrator permissions. Related separate task:
-[move quiz rewards to the backend](server-side-quiz-rewards.md).
+prices, streaks, quizzes, or administrator permissions. The completed reward
+migration is documented in [verified quiz sessions](../api-error-contract.md#verified-quiz-sessions-and-rewards).
 
 Session changes centrally cancel pending queries and scheduled retries; existing
 request, token, and multi-step workflow guards remain necessary. A repository-wide
 session-parameter or client-hook migration is not required by the verified retry fix.
 
-Offline follow-up, separate from endpoint migration: move streak replay out of
-profile reads and serialize per-owner queue updates. Current read/replace writes
-can lose an intervening append. Cover replay concurrency and event retention before
-expanding synchronization; preserve owned pending events and never replay legacy
-unowned queues. Client cancellation cannot undo accepted server writes or provide
-server-side idempotency. Coordinate with the server-side rewards task above.
+Centralizing mutation callback guards is tracked separately in
+[session-safe mutation callbacks](session-safe-mutation-callbacks.md).
+
+Offline follow-up, separate from endpoint migration: a durable completion queue
+must retain verifiable server session IDs and account ownership. The old bare
+streak-event queue and replay from profile reads were removed. Client cancellation
+cannot undo accepted server writes; persisted quiz completion provides server-side
+idempotency for retries. Never convert legacy unverified events into new rewards.
 
 Done when all agreed personal endpoints use verified identity, their consumers
 are updated, account caches remain isolated, resource authorization is preserved,

@@ -1,5 +1,5 @@
 import { type AxiosResponse } from 'axios';
-import { httpClient } from '@/api/httpClient';
+import { api } from '@/features/auth';
 import { API_BASE_URL } from '@/api';
 
 import type {
@@ -37,10 +37,10 @@ export async function generateArticleQuizRequest<
     ARTICLE_QUIZ_GENERATION_TIMEOUT_MS,
   );
 
-  let response: AxiosResponse<unknown>;
+  let response: AxiosResponse<TResponse>;
 
   try {
-    response = await httpClient(`${API_BASE_URL}${path}`, {
+    response = await api<TResponse>(`${API_BASE_URL}${path}`, {
       data: request,
       headers: {
         'Content-Type': 'application/json',
@@ -59,5 +59,12 @@ export async function generateArticleQuizRequest<
     clearTimeout(timeoutId);
   }
 
-  return response.data as TResponse;
+  if (
+    typeof response.data.sessionId !== 'string' ||
+    !response.data.sessionId ||
+    !Array.isArray(response.data.questions)
+  ) {
+    throw new Error('Invalid quiz session response.');
+  }
+  return response.data;
 }

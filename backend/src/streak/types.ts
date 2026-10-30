@@ -12,9 +12,6 @@ export type CalendarDayStatus =
   | 'future'
   | 'neutral';
 
-export type StreakActivityType =
-  'lexical_test_completed' | 'article_quiz_completed';
-
 export type StreakHistoryDay = {
   date: string;
   status: StreakDayStatus;
@@ -52,7 +49,6 @@ export type StreakState = {
 };
 
 export type CompleteStreakActivityResponse = {
-  pendingSync?: boolean;
   streak: StreakState;
 };
 

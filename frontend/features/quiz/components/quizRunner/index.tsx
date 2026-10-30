@@ -19,9 +19,13 @@ import { createQuizSessionResult } from './utils/createQuizSessionResult';
 import { isAnswerSelectionCorrect } from './utils/isAnswerSelectionCorrect';
 
 type QuizRunnerProps = {
+  isFinishing?: boolean;
   onSubmitError?: (error: unknown) => void;
   onFinish: (result: QuizSessionResult) => void;
-  renderSubmittedQuestionAction?: (question: QuizQuestion) => ReactNode;
+  renderSubmittedQuestionAction?: (
+    question: QuizQuestion,
+    result: QuizSubmitResult,
+  ) => ReactNode;
   onSubmitAnswer?: (
     question: QuizQuestion,
     selectedOptionIds: string[],
@@ -30,6 +34,7 @@ type QuizRunnerProps = {
 };
 
 export function QuizRunner({
+  isFinishing = false,
   onFinish,
   renderSubmittedQuestionAction,
   onSubmitAnswer,
@@ -179,12 +184,14 @@ export function QuizRunner({
       </View>
       <QuizRunnerFooter
         action={
-          isSubmitted && renderSubmittedQuestionAction
-            ? renderSubmittedQuestionAction(currentQuestion)
+          isSubmitted && submitResult && renderSubmittedQuestionAction
+            ? renderSubmittedQuestionAction(currentQuestion, submitResult)
             : undefined
         }
         isDisabled={
-          isSubmitting || (!isSubmitted && selectedOptionIds.length === 0)
+          isFinishing ||
+          isSubmitting ||
+          (!isSubmitted && selectedOptionIds.length === 0)
         }
         isLastQuestion={isLastQuestion}
         isSubmitted={isSubmitted}

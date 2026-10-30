@@ -1,3 +1,4 @@
+import { QuizService } from '../../quiz/quiz.service';
 import { type INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { type Server } from 'node:http';
@@ -47,6 +48,14 @@ export async function createArticleQuizHttpApp<TOutput extends QuizOutput>() {
   const module = await Test.createTestingModule({
     controllers: [ArticlesController],
     providers: [
+      {
+        provide: QuizService,
+        useValue: {
+          create: jest
+            .fn()
+            .mockResolvedValue('33333333-3333-4333-8333-333333333333'),
+        },
+      },
       ArticlesService,
       ArticleQuizService,
       ArticleQuizPromptPlanner,
@@ -76,7 +85,8 @@ export async function createArticleQuizHttpApp<TOutput extends QuizOutput>() {
     await app.close();
     throw error;
   }
-  return { app, server: app.getHttpServer(), provider };
+  const authorization = `Bearer ${module.get(JwtService).issueAccessToken({ id: '11111111-1111-4111-8111-111111111111', email: 'reader@example.test', createdAt: new Date().toISOString(), balance: 0, lessonsCompleted: 0, testsCompleted: 0, wordsLearned: 0 }).accessToken}`;
+  return { app, server: app.getHttpServer(), provider, authorization };
 }
 
 export type ArticleQuizHttpTestApp<TOutput extends QuizOutput> = Awaited<

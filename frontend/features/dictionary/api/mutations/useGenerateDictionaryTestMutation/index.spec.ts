@@ -52,6 +52,7 @@ describe('useGenerateDictionaryTestMutation', () => {
     await started.promise;
     expect(onSuccess).not.toHaveBeenCalled();
     const test: DictionaryTest = {
+      sessionId: 'session-1',
       questions: [
         {
           format: 'translation',

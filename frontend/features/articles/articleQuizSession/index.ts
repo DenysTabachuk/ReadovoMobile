@@ -1,27 +1,38 @@
-import {
-  type SimplifyArticleLevel,
-  type SimplifyArticleTargetLength,
+import type {
+  SimplifyArticleLevel,
+  SimplifyArticleTargetLength,
 } from '../api/types';
 
 export type ArticleQuizMode = 'article' | 'vocabulary';
+type ArticleQuizSessionKeyParams = {
+  articleId: number | null;
+  mode: ArticleQuizMode;
+  level: SimplifyArticleLevel;
+  targetLength: SimplifyArticleTargetLength;
+  userId?: string;
+};
 
 /**
- * Build a query key that separates quiz sessions by article and generation settings.
- *
- * @param articleId - Source article ID, or null before it is resolved.
- * @param mode - Article-knowledge or vocabulary quiz mode.
- * @param level - Requested language level.
- * @param targetLength - Concrete target article length.
- * @returns A readonly query-key tuple including every setting that identifies the session.
+ * Builds an account-owned key for a saved server quiz and its generation settings.
+ * @param params - Local owner, article, quiz mode, difficulty and requested length.
+ * @returns A stable readonly tuple; no account shares another account's quiz session.
  * @example
- * getArticleQuizSessionKey(42, 'vocabulary', 'A2', 'short');
- * // => ['articleQuizSession', 42, 'vocabulary', 'A2', 'short']
+ * getArticleQuizSessionKey({ userId: 'reader-a', articleId: 42, mode: 'article', level: 'A2', targetLength: 'short' });
+ * // => ['articleQuizSession', 'reader-a', 42, 'article', 'A2', 'short']
  */
-export function getArticleQuizSessionKey(
-  articleId: number | null,
-  mode: ArticleQuizMode,
-  level: SimplifyArticleLevel,
-  targetLength: SimplifyArticleTargetLength,
-) {
-  return ['articleQuizSession', articleId, mode, level, targetLength] as const;
+export function getArticleQuizSessionKey({
+  userId,
+  articleId,
+  mode,
+  level,
+  targetLength,
+}: ArticleQuizSessionKeyParams) {
+  return [
+    'articleQuizSession',
+    userId,
+    articleId,
+    mode,
+    level,
+    targetLength,
+  ] as const;
 }

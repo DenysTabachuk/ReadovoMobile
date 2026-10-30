@@ -8,5 +8,6 @@ import { AchievementsService } from './achievements.service';
   imports: [AuthModule],
   controllers: [AchievementsController],
   providers: [AchievementsService],
+  exports: [AchievementsService],
 })
 export class AchievementsModule {}

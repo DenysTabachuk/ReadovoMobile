@@ -1,3 +1,4 @@
+import { QuizService } from '../quiz/quiz.service';
 import { Test, type TestingModule } from '@nestjs/testing';
 
 import { DictionaryRepository } from './dictionary.repository';
@@ -14,6 +15,7 @@ describe('DictionaryService', () => {
     module = await Test.createTestingModule({
       providers: [
         DictionaryService,
+        { provide: QuizService, useValue: {} },
         { provide: DictionaryEmbeddingService, useValue: {} },
         { provide: DictionaryRepository, useValue: repository },
       ],

@@ -38,13 +38,6 @@ const OPERATIONS = [
     args: [],
   },
   {
-    path: '/streak/profile/me/activity-completed',
-    method: 'post',
-    service: 'completeActivity',
-    body: { activityType: 'article_quiz_completed' },
-    args: [{ activityType: 'article_quiz_completed' }],
-  },
-  {
     path: '/streak/profile/me/restore',
     method: 'post',
     service: 'restore',
@@ -231,11 +224,6 @@ describe('StreakController current-user routes', () => {
   );
 
   it.each([
-    {
-      path: 'activity-completed',
-      body: { activityType: 'invalid' },
-      service: 'completeActivity',
-    },
     { path: 'restore', body: { price: -1 }, service: 'restore' },
     { path: 'freeze', body: { date: '2026-02-30' }, service: 'applyFreeze' },
     {

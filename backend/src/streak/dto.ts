@@ -1,30 +1,7 @@
-import {
-  IsISO8601,
-  IsIn,
-  IsInt,
-  IsOptional,
-  IsTimeZone,
-  Max,
-  Min,
-} from 'class-validator';
+import { IsInt, Max, Min } from 'class-validator';
 
 import { ToNumber, Trim } from '../common/validation/transforms';
 import { IsDateOnly } from '../common/validation/date-only.decorator';
-import { type StreakActivityType } from './types';
-
-export class CompleteStreakActivityDto {
-  @IsIn(['lexical_test_completed', 'article_quiz_completed'])
-  activityType!: StreakActivityType;
-
-  @IsISO8601({ strict: true })
-  @IsOptional()
-  occurredAtClient?: string;
-
-  @IsOptional()
-  @IsTimeZone()
-  @Trim()
-  timezone?: string;
-}
 
 export class RestoreStreakDto {
   @IsInt()

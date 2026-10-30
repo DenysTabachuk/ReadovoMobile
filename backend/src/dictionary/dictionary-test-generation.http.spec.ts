@@ -267,7 +267,27 @@ describe('Dictionary test generation (HTTP)', () => {
         .set('Authorization', testApp.authorization)
         .expect(200);
       expect(response.body).not.toHaveProperty('code');
+      expect(response.body).toHaveProperty(
+        'sessionId',
+        '33333333-3333-4333-8333-333333333333',
+      );
       expect(response.body).toHaveProperty('questions.length', 1);
+      expect(response.body).not.toHaveProperty(
+        'questions.0.options.0.id',
+        DICTIONARY_TEST_WORD_ID,
+      );
+      expect(response.body).not.toHaveProperty(
+        'questions.0.options.1.id',
+        DICTIONARY_TEST_WORD_ID,
+      );
+      expect(response.body).not.toHaveProperty(
+        'questions.0.options.2.id',
+        DICTIONARY_TEST_WORD_ID,
+      );
+      expect(response.body).not.toHaveProperty(
+        'questions.0.options.3.id',
+        DICTIONARY_TEST_WORD_ID,
+      );
       expect(response.body).toHaveProperty(
         'questions.0.wordId',
         DICTIONARY_TEST_WORD_ID,
@@ -277,11 +297,10 @@ describe('Dictionary test generation (HTTP)', () => {
       expect(response.body).toHaveProperty(
         'questions.0.options',
         expect.arrayContaining([
-          {
-            id: DICTIONARY_TEST_WORD_ID,
+          expect.objectContaining({
             text: 'Translation',
             translation: 'Translation',
-          },
+          }),
         ]),
       );
       expect(testApp.repository.findReviewCandidates).toHaveBeenCalledWith(
@@ -337,7 +356,7 @@ describe('Dictionary test generation (HTTP)', () => {
     expect(response.body).toHaveProperty(
       'questions.1.options',
       expect.arrayContaining([
-        { id: reverseId, text: 'lesson', translation: 'lesson' },
+        expect.objectContaining({ text: 'lesson', translation: 'lesson' }),
       ]),
     );
     expect(response.body).toHaveProperty('questions.2.format', 'cloze');
@@ -348,7 +367,7 @@ describe('Dictionary test generation (HTTP)', () => {
     expect(response.body).toHaveProperty(
       'questions.2.options',
       expect.arrayContaining([
-        { id: clozeId, text: 'practice', translation: 'practice' },
+        expect.objectContaining({ text: 'practice', translation: 'practice' }),
       ]),
     );
   });

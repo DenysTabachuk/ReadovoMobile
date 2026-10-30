@@ -90,18 +90,6 @@ export class QuizOptionsDto {
   wordList?: string[];
 }
 
-export class SubmitDictionaryTestAnswerDto {
-  @IsNotEmpty()
-  @IsString()
-  @MaxLength(256)
-  @Trim()
-  selectedOptionId!: string;
-
-  @IsUUID()
-  @Trim()
-  wordId!: string;
-}
-
 export class DictionaryTestQueryDto {
   @IsInt()
   @Max(DEFAULT_DICTIONARY_TEST_LIMIT)

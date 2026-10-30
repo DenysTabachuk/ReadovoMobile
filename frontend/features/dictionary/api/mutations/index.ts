@@ -2,4 +2,3 @@ export { useCreateDictionaryWordMutation } from './useCreateDictionaryWordMutati
 export { useDeleteDictionaryWordMutation } from './useDeleteDictionaryWordMutation';
 export { useUpdateDictionaryWordProgressMutation } from './useUpdateDictionaryWordProgressMutation';
 export { useGenerateDictionaryTestMutation } from './useGenerateDictionaryTestMutation';
-export { useSubmitDictionaryTestAnswerMutation } from './useSubmitDictionaryTestAnswerMutation';

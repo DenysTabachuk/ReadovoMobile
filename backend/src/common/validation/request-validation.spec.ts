@@ -4,19 +4,15 @@ import { type Type } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 
-import { UpdateProgressDto } from '../../achievements/dto';
+import { CompleteQuizDto, SubmitQuizAnswerDto } from '../../quiz/dto';
 import {
   ArticleDetailQueryDto,
   ArticleListQueryDto,
 } from '../../articles/contracts/dto';
 import { RegisterUserDto } from '../../auth/dto/register-user.dto';
-import {
-  CreateDictionaryWordDto,
-  SubmitDictionaryTestAnswerDto,
-} from '../../dictionary/dto';
+import { CreateDictionaryWordDto } from '../../dictionary/dto';
 import { ClearMascotSlotParamsDto } from '../../mascot/dto';
 import { RegisterPushTokenDto } from '../../notifications/dto';
-import { CompleteStreakActivityDto } from '../../streak/dto';
 import { ApplyStreakFreezeDto } from '../../streak/dto';
 import { TranslateWordDto } from '../../translations/dto';
 import { UserIdParamsDto } from './request.dto';
@@ -103,24 +99,12 @@ describe('HTTP request DTO validation', () => {
     expect(invalid.errors).not.toHaveLength(0);
   });
 
-  it('accepts generated dictionary distractor option identifiers', async () => {
-    const wordId = 'efbda94b-8972-4f41-9f30-f93faa10bb9f';
-    const { errors } = await validateDto(SubmitDictionaryTestAnswerDto, {
-      selectedOptionId: `${wordId}:distractor:1`,
-      wordId,
+  it('accepts opaque option identifiers for a saved quiz question', async () => {
+    const { errors } = await validateDto(SubmitQuizAnswerDto, {
+      questionId: 'q-1',
+      selectedOptionIds: ['option-1'],
     });
-
     expect(errors).toHaveLength(0);
-  });
-
-  it('requires at least one valid achievement progress field', async () => {
-    const empty = await validateDto(UpdateProgressDto, {});
-    const negative = await validateDto(UpdateProgressDto, { balance: -1 });
-    const valid = await validateDto(UpdateProgressDto, { testsCompleted: 2 });
-
-    expect(empty.errors).not.toHaveLength(0);
-    expect(negative.errors).not.toHaveLength(0);
-    expect(valid.errors).toHaveLength(0);
   });
 
   it('validates notification token contracts', async () => {
@@ -134,10 +118,8 @@ describe('HTTP request DTO validation', () => {
     expect(errors).not.toHaveLength(0);
   });
 
-  it('validates streak activity contracts', async () => {
-    const { errors } = await validateDto(CompleteStreakActivityDto, {
-      activityType: 'unknown_activity',
-      occurredAtClient: 'not-a-date',
+  it('validates quiz completion timezones', async () => {
+    const { errors } = await validateDto(CompleteQuizDto, {
       timezone: 'Not/A_Timezone',
     });
 

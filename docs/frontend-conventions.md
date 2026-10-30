@@ -176,11 +176,10 @@ Use this template, adapting the parameters and example to the actual utility:
 
 ## Constants and magic values
 
-- Replace non-obvious literals that encode behavior or design decisions—such as thresholds, limits, durations, dimensions, opacity levels, and repeated identifiers—with semantically named constants.
+The shared [constants and magic values rule](../AGENTS.md#constants-and-magic-values-frontend-and-backend)
+applies to both frontend and backend. Frontend-specific guidance:
+
 - Prefer an existing theme or design token for shared colors, spacing, typography, and sizing before introducing a new constant.
-- Keep a value used by only one component local to that component; promote it to feature or shared constants only when multiple owners genuinely use the same concept.
-- Do not introduce constants for self-explanatory values such as `0`, `1`, `true`, or `false` when the surrounding expression already makes their meaning clear.
-- Name constants after their meaning rather than their raw value, for example `READY_VIDEO_OPACITY` instead of `OPACITY_094`.
 - Values inside a `StyleSheet` are not automatically magic values when the style name and property already explain their purpose; extract them only when they are reused, encode a non-obvious invariant, or belong in a design token.
 
 ## Data layer example

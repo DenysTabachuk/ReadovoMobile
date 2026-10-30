@@ -4,6 +4,7 @@ import Groq from 'groq-sdk';
 
 import { ApiException } from '../common/errors/api-exception';
 import { COMMON_ERRORS } from '../common/errors/common-errors';
+import { QuizService } from '../quiz/quiz.service';
 import { MAX_DICTIONARY_FRAGMENT_WORDS } from './constants';
 import { DICTIONARY_ERRORS } from './dictionary-errors';
 import { DictionaryRepository } from './dictionary.repository';
@@ -11,12 +12,10 @@ import {
   type CreateDictionaryWordDto,
   type QuizOptionsDto,
   type SimilarWordsDto,
-  type SubmitDictionaryTestAnswerDto,
   type UpdateDictionaryWordProgressDto,
 } from './dto';
 import {
   type DictionaryTest,
-  type DictionaryTestAnswerResult,
   type DictionaryTestQuestionFormat,
   type DictionaryTestQuestion,
   type DictionaryWord,
@@ -47,6 +46,7 @@ export class DictionaryService {
   constructor(
     private readonly dictionaryEmbeddingService: DictionaryEmbeddingService,
     private readonly dictionaryRepository: DictionaryRepository,
+    private readonly quiz: QuizService,
   ) {}
 
   async createWord(
@@ -133,46 +133,37 @@ export class DictionaryService {
       throw new ApiException(DICTIONARY_ERRORS.TEST_NO_REVIEW_CANDIDATES);
     }
 
-    const questions = await this.createTestQuestionsWithAi(reviewCandidates);
-
-    return { questions };
-  }
-
-  async submitTestAnswer(
-    userId: string,
-    request: SubmitDictionaryTestAnswerDto,
-  ): Promise<DictionaryTestAnswerResult> {
-    const { selectedOptionId, wordId } = request;
-
-    const word = await this.dictionaryRepository.findById(wordId, userId);
-
-    if (!word) {
-      throw new ApiException(DICTIONARY_ERRORS.WORD_NOT_FOUND);
-    }
-
-    const isCorrect = selectedOptionId === word.id;
-    const nextReviewProgress = this.getNextReviewProgress(
-      word.correctAnswersCount,
-      word.progress,
-      isCorrect,
-    );
-    const reviewedWord = await this.dictionaryRepository.updateReviewResult(
-      word.id,
-      userId,
-      nextReviewProgress.progress,
-      nextReviewProgress.correctAnswersCount,
-      new Date().toISOString(),
-    );
-
-    if (!reviewedWord) {
-      throw new ApiException(DICTIONARY_ERRORS.WORD_NOT_FOUND);
-    }
-
+    const generatedQuestions =
+      await this.createTestQuestionsWithAi(reviewCandidates);
+    const questionsWithAnswerKeys = generatedQuestions.map((question) => {
+      const correctOptionIndex = question.options.findIndex(
+        (option) => option.id === question.wordId,
+      );
+      // Public option IDs must not reveal the answer by matching the dictionary word ID.
+      const options = question.options.map((option) => ({
+        ...option,
+        id: randomUUID(),
+      }));
+      const correctOptionId = options[correctOptionIndex]?.id;
+      if (!correctOptionId)
+        throw new ApiException(DICTIONARY_ERRORS.TEST_GENERATION_INCOMPLETE);
+      return { question: { ...question, options }, correctOptionId };
+    });
+    const sessionId = await this.quiz.create(userId, {
+      kind: 'dictionary',
+      questions: questionsWithAnswerKeys.map(
+        ({ question, correctOptionId }) => ({
+          id: question.wordId,
+          type: 'single_choice',
+          wordId: question.wordId,
+          optionIds: question.options.map((option) => option.id),
+          correctOptionIds: [correctOptionId],
+        }),
+      ),
+    });
     return {
-      correctOptionId: word.id,
-      correctTranslation: word.translation,
-      isCorrect,
-      word: reviewedWord,
+      sessionId,
+      questions: questionsWithAnswerKeys.map(({ question }) => question),
     };
   }
 
@@ -450,37 +441,6 @@ Rules:
     }
 
     return generatedQuestionsByWordId;
-  }
-
-  private getNextReviewProgress(
-    currentCorrectAnswersCount: number,
-    currentProgress: DictionaryWord['progress'],
-    isCorrect: boolean,
-  ): Pick<DictionaryWord, 'correctAnswersCount' | 'progress'> {
-    if (!isCorrect) {
-      const correctAnswersCount =
-        currentProgress === 'learned'
-          ? REQUIRED_CORRECT_ANSWERS_TO_LEARN - 1
-          : currentCorrectAnswersCount;
-
-      return {
-        correctAnswersCount,
-        progress: 'in_progress',
-      };
-    }
-
-    const correctAnswersCount = Math.min(
-      currentCorrectAnswersCount + 1,
-      REQUIRED_CORRECT_ANSWERS_TO_LEARN,
-    );
-
-    return {
-      correctAnswersCount,
-      progress:
-        correctAnswersCount >= REQUIRED_CORRECT_ANSWERS_TO_LEARN
-          ? 'learned'
-          : 'in_progress',
-    };
   }
 
   private normalizeDictionaryQuestionFormat(
