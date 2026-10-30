@@ -11,14 +11,25 @@ jest.mock('@/features/auth', () => ({
 }));
 
 it('sends only selected answer identifiers for the saved session', async () => {
+  const feedback = {
+    isCorrect: true,
+    correctOptionIds: ['a'],
+    vocabularyWord: {
+      term: 'forest',
+      translation: 'ліс',
+      sourceExcerpt: 'The forest protects animals.',
+    },
+  };
   const adapter = mockHttpAdapter(api).mockResolvedValue(
-    createHttpResponse({ isCorrect: true, correctOptionIds: ['a'] }),
+    createHttpResponse(feedback),
   );
-  await submitQuizAnswer({
-    sessionId: 'session-1',
-    questionId: 'q-1',
-    selectedOptionIds: ['a'],
-  });
+  await expect(
+    submitQuizAnswer({
+      sessionId: 'session-1',
+      questionId: 'q-1',
+      selectedOptionIds: ['a'],
+    }),
+  ).resolves.toEqual(feedback);
   expect(adapter.mock.calls[0][0]).toMatchObject({
     url: '/quiz-sessions/session-1/answers',
     method: 'post',

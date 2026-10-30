@@ -17,6 +17,8 @@ import {
   useSubmitQuizAnswerMutation,
   useRetakeQuizMutation,
   type QuizSessionResult,
+  type QuizQuestion,
+  type QuizSubmitResult,
 } from '@/features/quiz';
 import { Stack, useRouter } from 'expo-router';
 import { useState } from 'react';
@@ -75,18 +77,23 @@ export function ArticleQuizSession({
     quizMode === 'vocabulary'
       ? t('article.quiz.vocabularyKnowledge')
       : t('article.quiz.articleKnowledge');
-  const renderVocabularySaveAction = (question: unknown) => {
+  const renderVocabularySaveAction = (
+    question: QuizQuestion,
+    answer: QuizSubmitResult,
+  ) => {
+    // Word details arrive with feedback, after this question's first graded attempt.
+    const vocabularyQuestion = { ...question, ...answer.vocabularyWord };
     if (
       quizMode !== 'vocabulary' ||
       !currentUser?.id ||
-      !isVocabularyWordQuestion(question)
+      !isVocabularyWordQuestion(vocabularyQuestion)
     )
       return null;
     return (
       <SaveVocabularyWordButton
-        saved={vocabulary.savedQuestionIds.has(question.id)}
-        saving={vocabulary.savingQuestionId === question.id}
-        onSave={() => vocabulary.saveWord(question)}
+        saved={vocabulary.savedQuestionIds.has(vocabularyQuestion.id)}
+        saving={vocabulary.savingQuestionId === vocabularyQuestion.id}
+        onSave={() => vocabulary.saveWord(vocabularyQuestion)}
       />
     );
   };

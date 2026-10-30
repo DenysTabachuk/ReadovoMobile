@@ -22,7 +22,10 @@ type QuizRunnerProps = {
   isFinishing?: boolean;
   onSubmitError?: (error: unknown) => void;
   onFinish: (result: QuizSessionResult) => void;
-  renderSubmittedQuestionAction?: (question: QuizQuestion) => ReactNode;
+  renderSubmittedQuestionAction?: (
+    question: QuizQuestion,
+    result: QuizSubmitResult,
+  ) => ReactNode;
   onSubmitAnswer?: (
     question: QuizQuestion,
     selectedOptionIds: string[],
@@ -181,8 +184,8 @@ export function QuizRunner({
       </View>
       <QuizRunnerFooter
         action={
-          isSubmitted && renderSubmittedQuestionAction
-            ? renderSubmittedQuestionAction(currentQuestion)
+          isSubmitted && submitResult && renderSubmittedQuestionAction
+            ? renderSubmittedQuestionAction(currentQuestion, submitResult)
             : undefined
         }
         isDisabled={

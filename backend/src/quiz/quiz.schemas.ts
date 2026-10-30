@@ -10,6 +10,14 @@ export const quizQuestionsSchema = z
       explanation: z.string().optional(),
       // Dictionary entry to update after grading; article questions have no linked word.
       wordId: z.string().uuid().optional(),
+      // Answer-bearing vocabulary details are revealed only after a graded answer is stored.
+      vocabularyWord: z
+        .object({
+          term: z.string().min(1),
+          translation: z.string().min(1),
+          sourceExcerpt: z.string().optional(),
+        })
+        .optional(),
     }),
   )
   .min(1)

@@ -27,6 +27,7 @@ import {
   WikipediaArticleDto,
 } from './contracts/dto';
 import { ArticlesService } from './articles.service';
+import { randomizeQuizOptions } from './quiz/utils/randomizeQuizOptions';
 import {
   type ArticleAdaptationsByArticleId,
   type UserRecentArticle,
@@ -130,7 +131,9 @@ export class ArticlesController {
     @CurrentUser() user: AuthenticatedUser,
     @Body() body: GenerateArticleQuizDto,
   ) {
-    const questions = await this.articlesService.generateArticleQuiz(body);
+    const generatedQuestions =
+      await this.articlesService.generateArticleQuiz(body);
+    const questions = generatedQuestions.map(randomizeQuizOptions);
 
     const sessionId = await this.quiz.create(user.id, {
       kind: 'article',
@@ -163,31 +166,34 @@ export class ArticlesController {
   ) {
     const result =
       await this.articlesService.generateArticleVocabularyQuiz(body);
+    const questions = result.questions.map(randomizeQuizOptions);
     const sessionId = await this.quiz.create(user.id, {
       kind: 'vocabulary',
       level: result.resolvedLevel,
       targetLength: 'medium',
-      questions: result.questions.map((question) => ({
+      questions: questions.map((question) => ({
         id: question.id,
         type: question.type,
         optionIds: question.options.map((option) => option.id),
         correctOptionIds: question.correctOptionIds,
         explanation: question.explanation,
+        vocabularyWord: {
+          term: question.term,
+          translation: question.translation,
+          sourceExcerpt: question.sourceExcerpt,
+        },
       })),
     });
     return {
       sessionId,
       resolvedLevel: result.resolvedLevel,
-      questions: result.questions.map((question) => ({
+      questions: questions.map((question) => ({
         id: question.id,
         type: question.type,
         prompt: question.prompt,
         options: question.options,
         format: question.format,
-        term: question.term,
         termKind: question.termKind,
-        translation: question.translation,
-        sourceExcerpt: question.sourceExcerpt,
       })),
     };
   }

@@ -371,6 +371,10 @@ Reading, vocabulary and dictionary generation return an authenticated, owned
 `sessionId`. The database saves question/option IDs, answer keys and reward
 settings. Generation responses omit answer keys and explanations; dictionary
 options use opaque IDs rather than identifying the correct word.
+Article option IDs are remapped and their order randomized before the session is
+saved. Vocabulary term/translation/source details are private session data and
+returned as `vocabularyWord` only after an answer is recorded, so saving a word
+remains available after grading without exposing its answer in advance.
 Reading quiz requests require an explicit valid CEFR level and a target length
 (`short`, `medium` or `long`); missing or null values return validation errors.
 The same normalized settings control generation and rewards.

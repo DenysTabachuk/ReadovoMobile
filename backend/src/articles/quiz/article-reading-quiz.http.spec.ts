@@ -1,5 +1,6 @@
 import { Logger } from '@nestjs/common';
 import request from 'supertest';
+import { z } from 'zod';
 import { QuizService } from '../../quiz/quiz.service';
 
 import { type ReadingQuizOutput } from '../contracts/ai-output.schemas';
@@ -49,6 +50,17 @@ describe('Article reading quiz contract (HTTP)', () => {
       .set('Authorization', testApp.authorization)
       .send({ text: ' Space is vast. ', level: ' b1 ', targetLength: ' LONG ' })
       .expect(201);
+    const { questions } = z
+      .object({
+        questions: z.array(
+          z.object({
+            options: z.array(
+              z.object({ id: z.string().uuid(), text: z.string() }),
+            ),
+          }),
+        ),
+      })
+      .parse(response.body);
     expect(response.body).toEqual({
       sessionId: '33333333-3333-4333-8333-333333333333',
       questions: [
@@ -56,16 +68,26 @@ describe('Article reading quiz contract (HTTP)', () => {
           id: 'q1',
           prompt: 'Space is vast.',
           type: 'true_false',
-          options: [
-            { id: 'true', text: 'True' },
-            { id: 'false', text: 'False' },
-          ],
+          options: questions[0].options,
         },
       ],
     });
     expect(testApp.provider.completeStructured).toHaveBeenCalledWith(
       expect.objectContaining({
         operation: 'reading_quiz',
+      }),
+    );
+    const correctOption = questions[0].options.find(
+      (option) => option.text === 'True',
+    );
+    expect(correctOption).toBeDefined();
+    if (!correctOption) throw new Error('Expected the true option.');
+    expect(createSession).toHaveBeenCalledWith(
+      '11111111-1111-4111-8111-111111111111',
+      expect.objectContaining({
+        questions: [
+          expect.objectContaining({ correctOptionIds: [correctOption.id] }),
+        ],
       }),
     );
     expect(testApp.provider.completeStructured.mock.calls[0][0]).toHaveProperty(

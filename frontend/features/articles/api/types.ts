@@ -182,7 +182,10 @@ export type GenerateArticleVocabularyQuizRequest = {
 
 export type GenerateArticleVocabularyQuizResponse = {
   sessionId: string;
-  questions: ArticleVocabularyQuizQuestion[];
+  questions: Omit<
+    ArticleVocabularyQuizQuestion,
+    'term' | 'translation' | 'sourceExcerpt'
+  >[];
   resolvedLevel: VocabularyQuizResolvedLevel;
 };
 

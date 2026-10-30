@@ -1,5 +1,7 @@
 import { Logger } from '@nestjs/common';
 import request from 'supertest';
+import { z } from 'zod';
+import { QuizService } from '../../quiz/quiz.service';
 
 import { type VocabularyQuizOutput } from '../contracts/ai-output.schemas';
 import { AiResponseContractError } from '../infrastructure/ai.errors';
@@ -51,6 +53,7 @@ describe('Article vocabulary quiz contract (HTTP)', () => {
 
   it('creates an authenticated vocabulary session without exposing its answer key', async () => {
     testApp.provider.completeStructured.mockResolvedValueOnce(validOutput);
+    const createSession = jest.spyOn(testApp.app.get(QuizService), 'create');
     const response = await request(testApp.server)
       .post(path)
       .set('Authorization', testApp.authorization)
@@ -62,15 +65,59 @@ describe('Article vocabulary quiz contract (HTTP)', () => {
       questions: [
         {
           id: 'vq1',
-          term: 'forest',
           termKind: 'word',
-          translation: 'ліс',
           type: 'single_choice',
           format: 'translation',
         },
       ],
     });
     expect(response.body).not.toHaveProperty('code');
+    const { questions } = z
+      .object({
+        questions: z.array(
+          z.object({
+            id: z.string(),
+            options: z.array(
+              z.object({ id: z.string().uuid(), text: z.string() }),
+            ),
+          }),
+        ),
+      })
+      .parse(response.body);
+    const question = questions[0];
+    expect(new Set(question.options.map((option) => option.id)).size).toBe(4);
+    const correctOption = question.options.find(
+      (option) => option.text === 'ліс',
+    );
+    expect(correctOption).toBeDefined();
+    if (!correctOption) throw new Error('Expected the translation option.');
+    expect(createSession).toHaveBeenCalledWith(
+      '11111111-1111-4111-8111-111111111111',
+      expect.objectContaining({
+        questions: [
+          expect.objectContaining({
+            id: 'vq1',
+            optionIds: question.options.map((option) => option.id),
+            correctOptionIds: [correctOption.id],
+            vocabularyWord: {
+              term: 'forest',
+              translation: 'ліс',
+              sourceExcerpt: undefined,
+            },
+          }),
+        ],
+      }),
+    );
+    for (const field of [
+      'correctOptionIds',
+      'explanation',
+      'term',
+      'translation',
+      'sourceExcerpt',
+    ]) {
+      expect(response.body).not.toHaveProperty(`questions.0.${field}`);
+    }
+    expect(JSON.stringify(response.body)).not.toMatch(/:correct|:distractor/);
   });
 
   it('retains the explicitly requested level over the provider level', async () => {

@@ -16,6 +16,11 @@ export type QuizQuestion = {
 };
 
 export type QuizSubmitResult = {
+  vocabularyWord?: {
+    term: string;
+    translation: string;
+    sourceExcerpt?: string;
+  };
   correctOptionIds?: string[];
   explanation?: string;
   feedbackText?: string;

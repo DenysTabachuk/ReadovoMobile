@@ -11,6 +11,7 @@ import { PrismaService } from '../src/prisma/prisma.service';
 import { QuizModule } from '../src/quiz/quiz.module';
 import { QuizService } from '../src/quiz/quiz.service';
 import { StreakService } from '../src/streak/streak.service';
+import { randomizeQuizOptions } from '../src/articles/quiz/utils/randomizeQuizOptions';
 
 // Opt in with a dedicated database; never run destructive fixture cleanup on the app DB.
 const databaseUrl = process.env.QUIZ_TEST_DATABASE_URL;
@@ -460,6 +461,74 @@ databaseDescribe('Quiz rewards with real PostgreSQL transactions', () => {
     expect(result.profile.progress).toMatchObject({
       balance: 144,
       testsCompleted: 2,
+    });
+  });
+
+  it('grades opaque vocabulary IDs and reveals word details only after the first attempt is locked', async () => {
+    const question = randomizeQuizOptions({
+      id: 'vq-1',
+      type: 'single_choice' as const,
+      prompt: 'Translate forest.',
+      options: [
+        { id: 'vq-1:correct', text: 'ліс' },
+        { id: 'vq-1:distractor:1', text: 'гора' },
+      ],
+      correctOptionIds: ['vq-1:correct'],
+    });
+    const vocabularyWord = {
+      term: 'forest',
+      translation: 'ліс',
+      sourceExcerpt: 'The forest protects animals.',
+    };
+    const sessionId = await quiz.create(userId, {
+      kind: 'vocabulary',
+      level: 'A2',
+      targetLength: 'medium',
+      questions: [
+        {
+          id: question.id,
+          type: question.type,
+          optionIds: question.options.map((option) => option.id),
+          correctOptionIds: question.correctOptionIds,
+          vocabularyWord,
+        },
+      ],
+    });
+    const answerPath = `/quiz-sessions/${sessionId}/answers`;
+    const invalid = await request(app.getHttpServer())
+      .post(answerPath)
+      .set('Authorization', authorization)
+      .send({ questionId: question.id, selectedOptionIds: ['vq-1:correct'] })
+      .expect(400);
+    expect(invalid.body).not.toHaveProperty('vocabularyWord');
+
+    const wrongOption = question.options.find(
+      (option) => option.text === 'гора',
+    );
+    if (!wrongOption) throw new Error('Expected a distractor.');
+    const answer = await request(app.getHttpServer())
+      .post(answerPath)
+      .set('Authorization', authorization)
+      .send({ questionId: question.id, selectedOptionIds: [wrongOption.id] })
+      .expect(201);
+    expect(answer.body).toMatchObject({
+      isCorrect: false,
+      correctOptionIds: question.correctOptionIds,
+      vocabularyWord,
+    });
+    await request(app.getHttpServer())
+      .post(answerPath)
+      .set('Authorization', authorization)
+      .send({
+        questionId: question.id,
+        selectedOptionIds: question.correctOptionIds,
+      })
+      .expect(409);
+
+    const completion = await quiz.complete(userId, sessionId);
+    expect(completion.completion).toMatchObject({
+      correctAnswers: 0,
+      percentage: 0,
     });
   });
 

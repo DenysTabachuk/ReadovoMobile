@@ -113,6 +113,7 @@ export class QuizService {
         isCorrect,
         correctOptionIds: question.correctOptionIds,
         explanation: question.explanation,
+        vocabularyWord: question.vocabularyWord,
       };
     });
   }
