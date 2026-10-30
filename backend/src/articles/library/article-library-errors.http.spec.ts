@@ -14,7 +14,7 @@ const routes = [
   { method: 'get', suffix: 'recent' },
   { method: 'post', suffix: 'recent' },
 ] as const;
-const basePath = `/api/users/${LIBRARY_TEST_USER_ID}/articles`;
+const basePath = `/api/users/me/articles`;
 
 describe('Article library errors and access (HTTP)', () => {
   let testApp: ArticleLibraryHttpTestApp;
@@ -59,24 +59,6 @@ describe('Article library errors and access (HTTP)', () => {
           statusCode: 401,
           code: 'AUTH_AUTHENTICATION_REQUIRED',
           message: 'Authentication is required.',
-        });
-      expect(testApp.prisma.user.findUnique).not.toHaveBeenCalled();
-    },
-  );
-
-  it.each(routes)(
-    'rejects a different owner on $method $suffix',
-    async ({ method, suffix }) => {
-      await request(testApp.server)
-        [method](
-          `/api/users/22222222-2222-4222-8222-222222222222/articles/${suffix}`,
-        )
-        .set('Authorization', testApp.authorization)
-        .send(method === 'post' ? LIBRARY_TEST_ARTICLE : {})
-        .expect(403, {
-          statusCode: 403,
-          code: 'AUTH_OWNERSHIP_DENIED',
-          message: 'Authenticated user does not match route user.',
         });
       expect(testApp.prisma.user.findUnique).not.toHaveBeenCalled();
     },

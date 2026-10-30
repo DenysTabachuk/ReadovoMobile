@@ -19,3 +19,8 @@ export type {
 } from './types';
 
 export { getMascotErrorMessageKey } from './utils/getMascotErrorMessageKey';
+export { useMascotProfileQuery } from './api';
+export { useBuyMascotMutation } from './api';
+export { useEquipMascotMutation } from './api';
+export { useClearMascotMutation } from './api';
+export { useClearAllMascotSlotsMutation } from './api';

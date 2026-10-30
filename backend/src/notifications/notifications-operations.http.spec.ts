@@ -3,13 +3,12 @@ import request from 'supertest';
 import {
   createNotificationsHttpApp,
   NOTIFICATIONS_TEST_TOKEN,
-  NOTIFICATIONS_TEST_USER_ID,
   type NotificationsHttpTestApp,
 } from './testing/create-notifications-http-app';
 
 const dispatchPath = '/notifications/learning-reminders/dispatch';
-const clearPath = `${dispatchPath}/today/${NOTIFICATIONS_TEST_USER_ID}`;
-const testPushPath = `/notifications/test-push/${NOTIFICATIONS_TEST_USER_ID}`;
+const clearPath = `${dispatchPath}/today/me`;
+const testPushPath = `/notifications/test-push/me`;
 
 describe('Notification restricted operations and delivery outcomes (HTTP)', () => {
   let testApp: NotificationsHttpTestApp;

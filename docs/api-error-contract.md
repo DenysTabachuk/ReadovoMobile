@@ -173,7 +173,7 @@ each branch, including equivalent public outcomes.
 | A17     | Guard: missing or malformed Bearer header; CurrentUser: absent verified identity                     | 401 / Authorization bearer token is required. / Authenticated user is required.                          | `AUTH_AUTHENTICATION_REQUIRED`   | Session recovery once on authenticated client            |
 | A18     | JWT: missing segments / bad signature / invalid payload                                              | 401 / Access token is invalid.                                                                           | `AUTH_ACCESS_TOKEN_INVALID`      | Session recovery once on authenticated client            |
 | A19     | JWT: expired token                                                                                   | 401 / Access token has expired.                                                                          | `AUTH_ACCESS_TOKEN_EXPIRED`      | Session recovery once on authenticated client            |
-| A20     | Guard: route user differs from authenticated user                                                    | 403 / Authenticated user does not match route user.                                                      | `AUTH_OWNERSHIP_DENIED`          | Feature denial fallback; no refresh                      |
+| A20     | Retired guard route-owner comparison (no active endpoint)                                            | 403 / Authenticated user does not match route user.                                                      | `AUTH_OWNERSHIP_DENIED`          | Feature denial fallback; no refresh                      |
 | A21     | Any auth repository failure, SMTP failure, Google transport failure or unexpected provider data      | 500 / Internal server error                                                                              | `INTERNAL_ERROR`                 | Operation fallback; no public infrastructure reason      |
 
 Service validation safeguards may omit details when field attribution is ambiguous.
@@ -238,32 +238,76 @@ in the current service: freezing an old missed day is not explicitly rejected by
 age. Do not publish this code or add a time-window business rule during this
 migration. Resolve the intended policy separately before implementing that code.
 
+## Authenticated personal routes
+
+All personal controllers use `UserAuthGuard` and obtain the owner from the verified
+JWT through `@CurrentUser()`. The decorator only reads the identity established by
+the guard. Services and persistence still receive an explicit trusted owner ID.
+The guard no longer compares `request.params.userId`; unused owner DTOs were removed.
+`AUTH_OWNERSHIP_DENIED` remains a reserved error code, not an active guard branch.
+
+| Owner           | Current routes                                                                                                                                                                                                              |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Achievements    | `GET /achievements/profile/me`                                                                                                                                                                                              |
+| Mascot          | `GET /mascot/profile/me`, `POST /mascot/profile/me/items/:itemId/buy`, `POST /mascot/profile/me/items/:itemId/equip`, `DELETE /mascot/profile/me/slots/:slot`                                                               |
+| Article library | `GET/POST /api/users/me/articles/saved`, `DELETE /api/users/me/articles/saved/:articleId`, `GET/POST /api/users/me/articles/recent`                                                                                         |
+| Notifications   | `GET/PUT /notifications/preferences/me`, `POST/DELETE /notifications/push-token/me` (DELETE retains the `deviceId` query), `POST /notifications/test-push/me`, `DELETE /notifications/learning-reminders/dispatch/today/me` |
+| Dictionary      | `GET/POST /api/dictionary/me/words`, `DELETE /api/dictionary/me/words/:wordId`, `PATCH /api/dictionary/me/words/:wordId/progress`, `GET /api/dictionary/me/test`                                                            |
+| Streak          | `GET /streak/profile/me`, `GET /streak/profile/me/calendar/month`, `POST /streak/profile/me/restore`, `POST /streak/profile/me/freeze`, `POST /streak/profile/me/freeze-token/purchase`                                     |
+
+There are no released clients or production deployments requiring aliases. Legacy
+owner-ID routes return 404. Resource IDs and their owner checks remain: mascot
+operations check the authenticated owner's inventory, article deletion filters by
+both owner and article ID, and push-token deactivation filters by owner and device.
+Unknown DTO fields, including body-supplied `userId`, are rejected by validation.
+Query parameters without a DTO cannot override identity; the device query DTO
+rejects an extra owner field. Static `/me` routes have no remaining competing
+`:userId` routes. Public article discovery/detail/adaptation routes are unchanged.
+
+Frontend HTTP functions take resource data only. Personal query hooks derive their
+account from `useAuth()`, disable automatic requests while signed out, and retain
+account IDs in React Query keys and invalidations. Existing session guards and
+transport cancellation remain. Centralizing session guards remains a [separate task](tasks/session-safe-mutation-callbacks.md). Requests accepted by the server cannot be undone
+by client cancellation. Rewards, streak rules, prices and response shapes are unchanged.
+
+Mock routes proxy these personal operations to the authenticated local backend;
+they do not decode tokens or maintain a second authorization/reward implementation.
+Global `POST /notifications/learning-reminders/dispatch` remains global and guarded,
+available to authenticated users in development and forbidden in production.
+Clearing today's personal dispatch retains its production restriction. No other
+development-action policy or administrator permission changes are included.
+
+The four `*-current-user.http.spec.ts` suites cover token-derived owners across
+accounts, invalid/expired tokens and owner injection at DTO boundaries. Existing
+module HTTP suites cover business behavior, missing authentication, resource
+validation and ownership filters. Frontend request/query
+suites cover URLs, resource payloads, signed-out queries and account keys;
+shared session suites cover in-flight transport and retry isolation.
+
 ## Mascot inventory
 
-Routes below are relative to `/mascot/profile/:userId`. The JWT guard enforces
-route ownership before DTO validation. Domain errors allow no details and retain
+Routes below are relative to `/mascot/profile/me`. The JWT guard verifies identity; controllers receive the owner through
+`@CurrentUser()` before resource DTO validation. Domain errors allow no details and retain
 their existing HTTP statuses and safe messages. UI mappings are intended for the
 later frontend migration; no frontend text comparison is migrated in this batch.
 
-| Route / branch                                                | Status    | Code                                                     | Intended UI                                                     | Contract test                                                          |
-| ------------------------------------------------------------- | --------- | -------------------------------------------------------- | --------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| POST items/:itemId/buy or equip: unknown catalog item         | 400       | `MASCOT_ITEM_UNKNOWN`                                    | Buy/equip fallback                                              | Purchase and equipment HTTP suites, unknown-item cases                 |
-| POST items/:itemId/buy: insufficient coins                    | 400       | `MASCOT_NOT_ENOUGH_COINS`                                | `mascot.errors.notEnoughCoins`                                  | `mascot-purchase.http.spec.ts`, insufficient coins without mutations   |
-| POST items/:itemId/equip: known item not owned                | 400       | `MASCOT_ITEM_NOT_OWNED`                                  | `mascot.errors.itemNotOwned`                                    | `mascot-equipment.http.spec.ts`, unowned item                          |
-| GET profile, POST buy/equip, DELETE slots/:slot: missing user | 404       | `MASCOT_USER_NOT_FOUND`                                  | Feature fallback; no token refresh                              | `mascot-profile.http.spec.ts`, all four routes                         |
-| DELETE slots/:slot: unknown slot                              | 400       | `VALIDATION_FAILED`                                      | `mascot.errors.clearFailed`                                     | `mascot-equipment.http.spec.ts`, slot DTO rejection before persistence |
-| POST buy/equip: blank item ID                                 | 400       | `VALIDATION_FAILED`                                      | Known field feedback or operation fallback                      | `mascot-profile.http.spec.ts`, both routes                             |
-| Missing JWT or another route owner                            | 401 / 403 | `AUTH_AUTHENTICATION_REQUIRED` / `AUTH_OWNERSHIP_DENIED` | Shared auth handling; ownership denial must not trigger refresh | `mascot-profile.http.spec.ts`, guard cases                             |
-| Unexpected persistence exception                              | 500       | `INTERNAL_ERROR`                                         | Feature fallback; no raw database diagnostics                   | `mascot-profile.http.spec.ts`, persistence failure                     |
+| Route / branch                                                | Status | Code                           | Intended UI                                                     | Contract test                                                          |
+| ------------------------------------------------------------- | ------ | ------------------------------ | --------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| POST items/:itemId/buy or equip: unknown catalog item         | 400    | `MASCOT_ITEM_UNKNOWN`          | Buy/equip fallback                                              | Purchase and equipment HTTP suites, unknown-item cases                 |
+| POST items/:itemId/buy: insufficient coins                    | 400    | `MASCOT_NOT_ENOUGH_COINS`      | `mascot.errors.notEnoughCoins`                                  | `mascot-purchase.http.spec.ts`, insufficient coins without mutations   |
+| POST items/:itemId/equip: known item not owned                | 400    | `MASCOT_ITEM_NOT_OWNED`        | `mascot.errors.itemNotOwned`                                    | `mascot-equipment.http.spec.ts`, unowned item                          |
+| GET profile, POST buy/equip, DELETE slots/:slot: missing user | 404    | `MASCOT_USER_NOT_FOUND`        | Feature fallback; no token refresh                              | `mascot-profile.http.spec.ts`, all four routes                         |
+| DELETE slots/:slot: unknown slot                              | 400    | `VALIDATION_FAILED`            | `mascot.errors.clearFailed`                                     | `mascot-equipment.http.spec.ts`, slot DTO rejection before persistence |
+| POST buy/equip: blank item ID                                 | 400    | `VALIDATION_FAILED`            | Known field feedback or operation fallback                      | `mascot-profile.http.spec.ts`, both routes                             |
+| Missing JWT                                                   | 401    | `AUTH_AUTHENTICATION_REQUIRED` | Shared auth handling; ownership denial must not trigger refresh | `mascot-profile.http.spec.ts`, guard cases                             |
+| Unexpected persistence exception                              | 500    | `INTERNAL_ERROR`               | Feature fallback; no raw database diagnostics                   | `mascot-profile.http.spec.ts`, persistence failure                     |
 
 `MascotItemParamsDto` and `ClearMascotSlotParamsDto` are defined in
-`mascot/dto.ts`, sharing only the domain-independent `UserIdParamsDto` base.
+`mascot/dto.ts`; these DTOs validate resources without an owner field.
 Slot membership is validated once by `ClearMascotSlotParamsDto`; `clearSlot` has
 only a controller caller and `MascotModule` does not export the service. The
 redundant service slot assertion is removed. Catalog existence and ownership are
-business checks and remain in the service. A malformed route owner normally
-fails the guard's ownership comparison before the UUID DTO check; this ordering
-is unchanged.
+business checks and remain in the service. Legacy owner-ID routes return 404.
 
 Purchasing an already-owned item stays a successful response without another
 charge. Equip and clear keep their response bodies and existing stored-profile
@@ -360,7 +404,7 @@ change its lifecycle or add recovery/retry policy.
 
 ## Achievements inventory
 
-`GET /achievements/profile/:userId` remains guarded by JWT ownership. A missing
+`GET /achievements/profile/me` derives its owner from the verified JWT. A missing
 user returns 404 `ACHIEVEMENTS_USER_NOT_FOUND`; persistence failures return 500
 `INTERNAL_ERROR`. Reads calculate current learned-word counts but never unlock
 achievements or grant coins. Arbitrary progress PATCH requests now return 404.
@@ -489,17 +533,17 @@ covered below, along with AI adaptations/summaries and quizzes.
 Article-owned definitions live in `articles/articles-errors.ts`; the library's
 missing-user error allows no details.
 
-| Route / branch                                                  | Status    | Code                                                     | Contract test                                 |
-| --------------------------------------------------------------- | --------- | -------------------------------------------------------- | --------------------------------------------- |
-| GET api/users/:userId/articles/saved: user absent               | 404       | `ARTICLES_USER_NOT_FOUND`                                | Library errors suite, missing user            |
-| POST api/users/:userId/articles/saved: user absent              | 404       | `ARTICLES_USER_NOT_FOUND`                                | Library errors suite, missing user            |
-| DELETE api/users/:userId/articles/saved/:articleId: user absent | 404       | `ARTICLES_USER_NOT_FOUND`                                | Library errors suite, missing user            |
-| GET api/users/:userId/articles/recent: user absent              | 404       | `ARTICLES_USER_NOT_FOUND`                                | Library errors suite, missing user            |
-| POST api/users/:userId/articles/recent: user absent             | 404       | `ARTICLES_USER_NOT_FOUND`                                | Library errors suite, missing user            |
-| User disappears before a mutation's refreshed list is read      | 404       | `ARTICLES_USER_NOT_FOUND`                                | Library errors suite, refreshed response      |
-| Missing JWT / different route owner, on every library route     | 401 / 403 | `AUTH_AUTHENTICATION_REQUIRED` / `AUTH_OWNERSHIP_DENIED` | Library errors suite, access cases            |
-| Invalid article payload or numeric article route parameter      | 400       | `VALIDATION_FAILED`                                      | Library requests suite, DTO cases             |
-| Unexpected persistence failure                                  | 500       | `INTERNAL_ERROR`                                         | Library errors suite, failed saved-list query |
+| Route / branch                                             | Status | Code                           | Contract test                                 |
+| ---------------------------------------------------------- | ------ | ------------------------------ | --------------------------------------------- |
+| GET api/users/me/articles/saved: user absent               | 404    | `ARTICLES_USER_NOT_FOUND`      | Library errors suite, missing user            |
+| POST api/users/me/articles/saved: user absent              | 404    | `ARTICLES_USER_NOT_FOUND`      | Library errors suite, missing user            |
+| DELETE api/users/me/articles/saved/:articleId: user absent | 404    | `ARTICLES_USER_NOT_FOUND`      | Library errors suite, missing user            |
+| GET api/users/me/articles/recent: user absent              | 404    | `ARTICLES_USER_NOT_FOUND`      | Library errors suite, missing user            |
+| POST api/users/me/articles/recent: user absent             | 404    | `ARTICLES_USER_NOT_FOUND`      | Library errors suite, missing user            |
+| User disappears before a mutation's refreshed list is read | 404    | `ARTICLES_USER_NOT_FOUND`      | Library errors suite, refreshed response      |
+| Missing JWT on every library route                         | 401    | `AUTH_AUTHENTICATION_REQUIRED` | Library errors suite, access cases            |
+| Invalid article payload or numeric article route parameter | 400    | `VALIDATION_FAILED`            | Library requests suite, DTO cases             |
+| Unexpected persistence failure                             | 500    | `INTERNAL_ERROR`               | Library errors suite, failed saved-list query |
 
 Missing users receive a feature fallback, without auth refresh. Ownership denials
 use shared auth presentation; validation uses known field feedback or an operation
@@ -643,17 +687,16 @@ representative-excerpt or question-count policy is changed.
 
 ## Notifications inventory
 
-All seven `/notifications` routes retain `UserAuthGuard`. Six user-ID routes also
-check route ownership. Manual dispatch has no route user ID; in non-production it
-remains available to any authenticated user. This migration adds no permissions.
+All seven `/notifications` routes retain `UserAuthGuard`. Six personal routes
+derive their owner through `@CurrentUser()` and use the `me` segment. Manual dispatch has no route user ID; in
+non-production it remains available to any authenticated user. This migration adds no permissions.
 Definitions live in `notifications/notifications-errors.ts` and allow no details.
 
 | Route / branch                                                            | Status | Code                                     | Contract coverage                                  |
 | ------------------------------------------------------------------------- | ------ | ---------------------------------------- | -------------------------------------------------- |
 | POST learning-reminders/dispatch: production restriction                  | 403    | `NOTIFICATIONS_MANUAL_DISPATCH_DISABLED` | Operations HTTP suite, production dispatch         |
-| DELETE learning-reminders/dispatch/today/:userId: production restriction  | 403    | `NOTIFICATIONS_DISPATCH_CLEAR_DISABLED`  | Operations HTTP suite, production clearing         |
+| DELETE learning-reminders/dispatch/today/me: production restriction       | 403    | `NOTIFICATIONS_DISPATCH_CLEAR_DISABLED`  | Operations HTTP suite, production clearing         |
 | Missing JWT on any route                                                  | 401    | `AUTH_AUTHENTICATION_REQUIRED`           | Access HTTP suite, all seven routes                |
-| Different owner on any user-ID route                                      | 403    | `AUTH_OWNERSHIP_DENIED`                  | Access HTTP suite, all six owner routes            |
 | Invalid preferences, push-token fields, device-ID query or test-push body | 400    | `VALIDATION_FAILED`                      | Preferences, push-token and operations HTTP suites |
 | Unexpected persistence failure                                            | 500    | `INTERNAL_ERROR`                         | Preferences, push-token and operations HTTP suites |
 

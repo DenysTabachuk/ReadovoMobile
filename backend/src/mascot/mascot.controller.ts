@@ -7,8 +7,9 @@ import {
   UseGuards,
 } from '@nestjs/common';
 
+import { CurrentUser } from '../auth/current-user.decorator';
+import type { AuthenticatedUser } from '../auth/types';
 import { UserAuthGuard } from '../auth/user-auth.guard';
-import { UserIdParamsDto } from '../common/validation/request.dto';
 import { ClearMascotSlotParamsDto, MascotItemParamsDto } from './dto';
 import { MascotService } from './mascot.service';
 import { type MascotProfileResponse } from './types';
@@ -18,31 +19,34 @@ import { type MascotProfileResponse } from './types';
 export class MascotController {
   constructor(private readonly mascotService: MascotService) {}
 
-  @Get('profile/:userId')
+  @Get('profile/me')
   async getProfile(
-    @Param() { userId }: UserIdParamsDto,
+    @CurrentUser() user: AuthenticatedUser,
   ): Promise<MascotProfileResponse> {
-    return this.mascotService.getProfile(userId);
+    return this.mascotService.getProfile(user.id);
   }
 
-  @Post('profile/:userId/items/:itemId/buy')
+  @Post('profile/me/items/:itemId/buy')
   async buyItem(
-    @Param() { itemId, userId }: MascotItemParamsDto,
+    @CurrentUser() user: AuthenticatedUser,
+    @Param() { itemId }: MascotItemParamsDto,
   ): Promise<MascotProfileResponse> {
-    return this.mascotService.buyItem(userId, itemId);
+    return this.mascotService.buyItem(user.id, itemId);
   }
 
-  @Post('profile/:userId/items/:itemId/equip')
+  @Post('profile/me/items/:itemId/equip')
   async equipItem(
-    @Param() { itemId, userId }: MascotItemParamsDto,
+    @CurrentUser() user: AuthenticatedUser,
+    @Param() { itemId }: MascotItemParamsDto,
   ): Promise<MascotProfileResponse> {
-    return this.mascotService.equipItem(userId, itemId);
+    return this.mascotService.equipItem(user.id, itemId);
   }
 
-  @Delete('profile/:userId/slots/:slot')
+  @Delete('profile/me/slots/:slot')
   async clearSlot(
-    @Param() { slot, userId }: ClearMascotSlotParamsDto,
+    @CurrentUser() user: AuthenticatedUser,
+    @Param() { slot }: ClearMascotSlotParamsDto,
   ): Promise<MascotProfileResponse> {
-    return this.mascotService.clearSlot(userId, slot);
+    return this.mascotService.clearSlot(user.id, slot);
   }
 }

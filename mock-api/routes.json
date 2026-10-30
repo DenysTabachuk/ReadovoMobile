@@ -1,5 +1,5 @@
 {
-  "/achievements/profile/:userId": "/achievements/profile/:userId",
+  "/achievements/profile/me": "/achievements/profile/me",
   "/api/articles/adaptations": "/api/articles/adaptations",
   "/api/articles/quiz": "/api/articles/quiz",
   "/api/articles/simplify": "/api/articles/simplify",
@@ -7,9 +7,20 @@
   "/api/dictionary/me/test": "/api/dictionary/me/test",
   "/api/dictionary/me/words": "/api/dictionary/me/words",
   "/api/dictionary/me/words/:wordId/progress": "/api/dictionary/me/words/:wordId/progress",
+  "/api/users/me/articles/recent": "/api/users/me/articles/recent",
+  "/api/users/me/articles/saved": "/api/users/me/articles/saved",
+  "/api/users/me/articles/saved/:articleId": "/api/users/me/articles/saved/:articleId",
   "/articles": "/articles",
   "/articles/:articleId": "/articles/:articleId",
+  "/mascot/profile/me": "/mascot/profile/me",
+  "/mascot/profile/me/items/:itemId/buy": "/mascot/profile/me/items/:itemId/buy",
+  "/mascot/profile/me/items/:itemId/equip": "/mascot/profile/me/items/:itemId/equip",
+  "/mascot/profile/me/slots/:slot": "/mascot/profile/me/slots/:slot",
+  "/notifications/learning-reminders/dispatch/today/me": "/notifications/learning-reminders/dispatch/today/me",
+  "/notifications/preferences/me": "/notifications/preferences/me",
+  "/notifications/push-token/me": "/notifications/push-token/me",
+  "/notifications/test-push/me": "/notifications/test-push/me",
   "/streak/profile/me": "/streak/profile/me",
-  "/streak/profile/me/restore": "/streak/profile/me/restore",
-  "/streak/profile/me/calendar/month": "/streak/profile/me/calendar/month"
+  "/streak/profile/me/calendar/month": "/streak/profile/me/calendar/month",
+  "/streak/profile/me/restore": "/streak/profile/me/restore"
 }

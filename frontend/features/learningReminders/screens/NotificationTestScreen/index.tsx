@@ -191,7 +191,7 @@ export default function NotificationTestScreen() {
       console.log(
         `[NotificationTest] sending remote test push userId=${currentUser.id}`,
       );
-      const response = await sendRemoteTestPush(currentUser.id);
+      const response = await sendRemoteTestPush();
       console.log('[NotificationTest] remote test push response', response);
       if (response.tokenCount === 0) {
         setStatus(t('settings.notificationTest.noTokens'));
@@ -312,7 +312,7 @@ export default function NotificationTestScreen() {
       console.log(
         `[NotificationTest] clearing today dispatch userId=${currentUser.id}`,
       );
-      const result = await clearTodayLearningReminderDispatch(currentUser.id);
+      const result = await clearTodayLearningReminderDispatch();
       console.log('[NotificationTest] clear today dispatch response', result);
       setStatus(
         t('settings.notificationTest.dispatchCleared', {

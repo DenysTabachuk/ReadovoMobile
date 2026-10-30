@@ -295,7 +295,7 @@ databaseDescribe('Quiz rewards with real PostgreSQL transactions', () => {
       data: { testsCompleted: 1, balance: 1000 },
     });
     await request(app.getHttpServer())
-      .get(`/achievements/profile/${userId}`)
+      .get('/achievements/profile/me')
       .set('Authorization', authorization)
       .expect(200);
     await request(app.getHttpServer())

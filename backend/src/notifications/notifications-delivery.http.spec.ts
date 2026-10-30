@@ -16,7 +16,7 @@ import {
 } from 'firebase-admin/app';
 import { getMessaging, type Messaging } from 'firebase-admin/messaging';
 
-const path = `/notifications/test-push/${NOTIFICATIONS_TEST_USER_ID}`;
+const path = `/notifications/test-push/me`;
 const privateDetails = 'PRIVATE_PROVIDER_DIAGNOSTICS';
 
 describe('Notification delivery diagnostics (HTTP)', () => {

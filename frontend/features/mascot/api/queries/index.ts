@@ -1,0 +1,1 @@
+export { useMascotProfileQuery } from './useMascotProfileQuery';

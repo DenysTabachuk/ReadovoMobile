@@ -6,7 +6,7 @@ import {
   type MascotHttpTestApp,
 } from './testing/create-mascot-http-app';
 
-const path = `/mascot/profile/${MASCOT_TEST_USER_ID}/items/pirate-hat/buy`;
+const path = `/mascot/profile/me/items/pirate-hat/buy`;
 
 describe('Mascot purchase (HTTP)', () => {
   let testApp: MascotHttpTestApp;
@@ -20,7 +20,7 @@ describe('Mascot purchase (HTTP)', () => {
 
   it('rejects an unknown catalog item before persistence', async () => {
     await request(testApp.server)
-      .post(`/mascot/profile/${MASCOT_TEST_USER_ID}/items/unknown-item/buy`)
+      .post(`/mascot/profile/me/items/unknown-item/buy`)
       .set('Authorization', testApp.authorization)
       .expect(400, {
         statusCode: 400,

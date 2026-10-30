@@ -24,7 +24,6 @@ import {
   TrimToLowerCase,
   TrimToUpperCase,
 } from '../../common/validation/transforms';
-import { UserIdParamsDto } from '../../common/validation/request.dto';
 import {
   type ArticleBlock,
   type ArticleReadyLevelFilter,
@@ -150,7 +149,7 @@ export class ArticleDetailQueryDto {
   languageCode = 'en';
 }
 
-export class UserArticleIdParamsDto extends UserIdParamsDto {
+export class SavedArticleIdParamsDto {
   @IsInt()
   @Min(1)
   @ToNumber()

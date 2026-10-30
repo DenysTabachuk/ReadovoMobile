@@ -2,11 +2,9 @@ import { api } from '@/features/auth';
 
 import type { LearningReminderPreferencesResponse } from '../../types';
 
-export async function getLearningReminderPreferences(
-  userId: string,
-): Promise<LearningReminderPreferencesResponse> {
+export async function getLearningReminderPreferences(): Promise<LearningReminderPreferencesResponse> {
   const response = await api.get<LearningReminderPreferencesResponse>(
-    `/notifications/preferences/${userId}`,
+    `/notifications/preferences/me`,
   );
 
   return response.data;

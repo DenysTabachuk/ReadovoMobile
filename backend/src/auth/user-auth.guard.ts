@@ -9,9 +9,6 @@ import { type AuthenticatedUser } from './types';
 
 type AuthenticatedRequest = Request & {
   authUser?: AuthenticatedUser;
-  params: {
-    userId?: string;
-  };
 };
 
 @Injectable()
@@ -28,10 +25,6 @@ export class UserAuthGuard implements CanActivate {
     }
 
     const authUser = this.jwtService.verifyAccessToken(token);
-
-    if (request.params.userId && request.params.userId !== authUser.id) {
-      throw new ApiException(AUTH_ERRORS.OWNERSHIP_DENIED);
-    }
 
     request.authUser = authUser;
 

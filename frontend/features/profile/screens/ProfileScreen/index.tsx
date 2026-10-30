@@ -14,7 +14,7 @@ import { useState } from 'react';
 import { useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 
 import { isMockApiEnabled } from '@/api';
@@ -22,8 +22,8 @@ import { ScreenContainer } from '@/components/screenContainer';
 import { useBanner } from '@/components/banner';
 import { FullScreenLoader } from '@/components/fullScreenLoader';
 import { ThemedText } from '@/components/themedText';
-import { getAchievementsProfile } from '@/features/achievements';
-import { getMascotProfile, Mascot } from '@/features/mascot';
+import { useAchievementsProfileQuery } from '@/features/achievements';
+import { useMascotProfileQuery, Mascot } from '@/features/mascot';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useAuth } from '@/features/auth';
 
@@ -64,16 +64,8 @@ export default function ProfileScreen() {
   const shouldUseTwoRows = width < 390;
   const isDarkTheme = colorScheme === 'dark';
 
-  const achievementsQuery = useQuery({
-    enabled: Boolean(currentUser?.id),
-    queryFn: () => getAchievementsProfile(currentUser?.id ?? ''),
-    queryKey: ['achievements-profile', currentUser?.id],
-  });
-  const mascotQuery = useQuery({
-    enabled: Boolean(currentUser?.id),
-    queryFn: () => getMascotProfile(currentUser?.id ?? ''),
-    queryKey: ['mascot-profile', currentUser?.id],
-  });
+  const achievementsQuery = useAchievementsProfileQuery();
+  const mascotQuery = useMascotProfileQuery();
   const {
     applyFreezeMutation,
     purchaseFreezeTokenMutation,

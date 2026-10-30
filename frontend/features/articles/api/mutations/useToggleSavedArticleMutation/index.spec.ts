@@ -77,7 +77,7 @@ describe('useToggleSavedArticleMutation', () => {
       saved: true,
       savedArticles: [previouslySaved],
     });
-    expect(saveArticleForLater).toHaveBeenCalledWith('user-42', article);
+    expect(saveArticleForLater).toHaveBeenCalledWith(article);
     expect(removeSavedArticle).not.toHaveBeenCalled();
   });
   it('removes the requested article and can roll back the exact previous list', async () => {
@@ -90,7 +90,7 @@ describe('useToggleSavedArticleMutation', () => {
       [],
     );
     await mockOptions.mutationFn(variables);
-    expect(removeSavedArticle).toHaveBeenCalledWith('user-42', 42);
+    expect(removeSavedArticle).toHaveBeenCalledWith(42);
     mockOptions.onError(new Error('offline'), variables, context);
     expect(mockSetQueryData).toHaveBeenLastCalledWith(
       ['savedArticles', 'user-42'],

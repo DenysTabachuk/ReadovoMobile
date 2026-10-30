@@ -48,8 +48,8 @@ export function useToggleSavedArticleMutation() {
     mutationFn: async ({ article, saved }: ToggleSavedArticleVariables) => {
       if (!currentUser?.id) throw new Error('auth.required');
       const savedArticles = saved
-        ? await removeSavedArticle(currentUser.id, article.id)
-        : await saveArticleForLater(currentUser.id, article);
+        ? await removeSavedArticle(article.id)
+        : await saveArticleForLater(article);
       return { saved: !saved, savedArticles };
     },
     onError: (_error, _variables, context) => {
