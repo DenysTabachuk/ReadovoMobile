@@ -139,9 +139,11 @@ export class QuizService {
       // Grade from persisted answers and saved settings, never client-reported scores.
       const settings = quizSettingsSchema.parse(session);
       const before = await this.achievements.getProfile(userId, transaction);
+      // This read reconciles missing days, so it must already use the completion's timezone.
       const previousStreak = await this.streak.getQuizCompletionProfile(
         transaction,
         userId,
+        timezone,
       );
       const correctAnswers = answers.filter(
         (answer) => answer.isCorrect,

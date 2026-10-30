@@ -69,6 +69,7 @@ databaseDescribe('Quiz rewards with real PostgreSQL transactions', () => {
   });
 
   afterEach(async () => {
+    jest.useRealTimers();
     jest.restoreAllMocks();
     await prisma.user.deleteMany({ where: { id: userId } });
   });
@@ -488,6 +489,91 @@ databaseDescribe('Quiz rewards with real PostgreSQL transactions', () => {
     expect(
       await prisma.userStreakProfile.findUnique({ where: { userId } }),
     ).toMatchObject({ timezone: 'Europe/Kyiv' });
+  });
+
+  it('uses the completion timezone before reconciling missing days at the UTC date boundary', async () => {
+    await prisma.userStreakProfile.create({
+      data: {
+        userId,
+        timezone: 'UTC',
+        currentStreak: 2,
+        longestStreak: 2,
+        lastActivityDate: new Date('2026-10-28T00:00:00.000Z'),
+      },
+    });
+    await prisma.userStreakHistory.createMany({
+      data: ['2026-10-27', '2026-10-28'].map((date) => ({
+        userId,
+        activityDate: new Date(`${date}T00:00:00.000Z`),
+        status: 'completed',
+      })),
+    });
+    const sessionId = await createAnsweredSession();
+    // Freeze calendar time while leaving PostgreSQL/network timers running normally.
+    jest.useFakeTimers({
+      now: new Date('2026-10-30T01:00:00.000Z'),
+      doNotFake: [
+        'nextTick',
+        'setImmediate',
+        'clearImmediate',
+        'setTimeout',
+        'clearTimeout',
+        'setInterval',
+        'clearInterval',
+        'performance',
+        'hrtime',
+        'queueMicrotask',
+      ],
+    });
+    const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
+    authorization = `Bearer ${app.get(JwtService).issueAccessToken({ ...user, createdAt: user.createdAt.toISOString() }).accessToken}`;
+
+    const response = await request(app.getHttpServer())
+      .post(`/quiz-sessions/${sessionId}/complete`)
+      .set('Authorization', authorization)
+      .send({ timezone: 'America/Los_Angeles' })
+      .expect(201);
+
+    expect(response.body).toMatchObject({
+      replayed: false,
+      streak: {
+        currentStreak: 3,
+        lastActivityDate: '2026-10-29',
+        brokenStreakInfo: null,
+      },
+      completion: {
+        newlyUnlockedStreakMilestones: [3],
+        rewards: { streakCoins: 30 },
+      },
+    });
+    expect(
+      await prisma.userStreakProfile.findUnique({ where: { userId } }),
+    ).toMatchObject({ timezone: 'America/Los_Angeles', currentStreak: 3 });
+    expect(
+      await prisma.userStreakHistory.count({
+        where: { userId, status: 'missed' },
+      }),
+    ).toBe(0);
+
+    // A replay with another timezone must neither reapply activity nor change the stored zone.
+    const replay = await request(app.getHttpServer())
+      .post(`/quiz-sessions/${sessionId}/complete`)
+      .set('Authorization', authorization)
+      .send({ timezone: 'UTC' })
+      .expect(201);
+    expect(replay.body).toMatchObject({
+      replayed: true,
+      streak: { currentStreak: 3 },
+    });
+    expect(
+      await prisma.userStreakProfile.findUnique({ where: { userId } }),
+    ).toMatchObject({ timezone: 'America/Los_Angeles', currentStreak: 3 });
+    expect(
+      await prisma.user.findUnique({ where: { id: userId } }),
+    ).toMatchObject({ balance: 132, testsCompleted: 1 });
+    expect(
+      await prisma.userStreakAchievement.count({ where: { userId } }),
+    ).toBe(1);
   });
 
   it('commits a streak milestone and quiz reward together without paying either again on replay', async () => {

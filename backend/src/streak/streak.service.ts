@@ -60,16 +60,18 @@ export class StreakService {
     return new StreakService(transaction).completeActivity(userId, timezone);
   }
 
-  /** Reads the streak through the completion transaction, including its new balance. */
+  /** Reads streak state in the completion transaction, applying its timezone before missing-day reconciliation. */
   async getQuizCompletionProfile(
     transaction: Prisma.TransactionClient,
     userId: string,
+    timezone?: string,
   ) {
-    return new StreakService(transaction).getProfile(userId);
+    return new StreakService(transaction).getProfile(userId, timezone);
   }
 
-  async getProfile(userId: string): Promise<StreakState> {
-    const profile = await this.ensureProfile(userId);
+  async getProfile(userId: string, timezone?: string): Promise<StreakState> {
+    // Completion may supply a new zone. Apply it before deciding which local days were missed.
+    const profile = await this.ensureProfile(userId, timezone);
     const serverNow = new Date();
     const localToday = this.getLocalDateKey(serverNow, profile.timezone);
 
