@@ -9,6 +9,10 @@ const PROFILE: StreakState = {
   claimedStreakAchievements: [],
   coinBalance: 100,
   currentStreak: 1,
+  restorePrice: 100,
+
+  freezeTokenPrice: 100,
+
   freezeTokens: 1,
   lastActivityDate: null,
   longestStreak: 1,

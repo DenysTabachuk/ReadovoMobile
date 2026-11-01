@@ -21,26 +21,26 @@ describe('Streak restore and token-purchase errors (HTTP)', () => {
     jest.useRealTimers();
   });
 
-  it.each([
-    {
-      operation: 'restore',
-      code: 'STREAK_RESTORE_PRICE_INVALID',
-      message: 'Invalid restore price.',
-    },
-    {
-      operation: 'freeze-token/purchase',
-      code: 'STREAK_FREEZE_TOKEN_PRICE_INVALID',
-      message: 'Invalid freeze token price.',
-    },
-  ])(
-    'rejects a stale or manipulated price on $operation',
-    async ({ operation, code, message }) => {
+  it.each(['restore', 'freeze-token/purchase'])(
+    'does not allow a zero client price to bypass the balance check on %s',
+    async (operation) => {
+      testApp.prisma.userStreakProfile.upsert.mockResolvedValue({
+        ...testApp.profile,
+        brokenStreakInfo: {
+          brokenAt: '2026-10-27',
+          canRestore: true,
+          previousStreak: 3,
+        },
+      });
       await request(testApp.server)
         .post(`/streak/profile/me/${operation}`)
         .set('Authorization', testApp.authorization)
-        .send({ price: 99 })
-        .expect(400, { statusCode: 400, code, message });
-      expect(testApp.prisma.user.findUnique).not.toHaveBeenCalled();
+        .send({ price: 0 })
+        .expect(400, {
+          statusCode: 400,
+          code: 'STREAK_NOT_ENOUGH_COINS',
+          message: 'Not enough coins.',
+        });
       expect(testApp.prisma.user.update).not.toHaveBeenCalled();
     },
   );
@@ -49,7 +49,6 @@ describe('Streak restore and token-purchase errors (HTTP)', () => {
     await request(testApp.server)
       .post('/streak/profile/me/restore')
       .set('Authorization', testApp.authorization)
-      .send({ price: 100 })
       .expect(400, {
         statusCode: 400,
         code: 'STREAK_RESTORE_UNAVAILABLE',
@@ -67,13 +66,11 @@ describe('Streak restore and token-purchase errors (HTTP)', () => {
           brokenAt: '2026-10-27',
           canRestore: true,
           previousStreak: 3,
-          restorePrice: 100,
         },
       });
       await request(testApp.server)
         .post(`/streak/profile/me/${operation}`)
         .set('Authorization', testApp.authorization)
-        .send({ price: 100 })
         .expect(400, {
           statusCode: 400,
           code: 'STREAK_NOT_ENOUGH_COINS',
@@ -92,7 +89,6 @@ describe('Streak restore and token-purchase errors (HTTP)', () => {
     await request(testApp.server)
       .post('/streak/profile/me/freeze-token/purchase')
       .set('Authorization', testApp.authorization)
-      .send({ price: 100 })
       .expect(400, {
         statusCode: 400,
         code: 'STREAK_FREEZE_TOKEN_LIMIT_REACHED',

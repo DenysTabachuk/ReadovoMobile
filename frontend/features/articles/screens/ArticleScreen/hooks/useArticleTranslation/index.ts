@@ -1,6 +1,9 @@
 import { TRANSLATION_SHEET_OPEN_DELAY_MS } from '../../constants';
 import { useAuth } from '@/features/auth';
-import { useCreateDictionaryWordMutation } from '@/features/dictionary';
+import {
+  useDictionaryMutationFeedback,
+  useCreateDictionaryWordMutation,
+} from '@/features/dictionary';
 import { useWordTranslation } from '@/features/translations';
 import { useCallback, useEffect, useMemo, useReducer } from 'react';
 import type { SelectedTextToken } from '../../types';
@@ -48,6 +51,8 @@ export function useArticleTranslation() {
     word: selectedFragment?.text,
   });
   const dictionaryMutation = useCreateDictionaryWordMutation();
+  const { onSaved: showWordSavedBanner, onError: showDictionaryErrorBanner } =
+    useDictionaryMutationFeedback();
   const handleWordPress = useCallback((selection: SelectedTextToken) => {
     dispatch({ type: 'wordPressed', token: selection });
   }, []);
@@ -73,14 +78,19 @@ export function useArticleTranslation() {
       return;
     }
 
-    dictionaryMutation.mutate({
-      context: selectedFragment.context,
-      translation: dictionaryTranslation,
-      word: selectedFragment.text,
-    });
+    dictionaryMutation.mutate(
+      {
+        context: selectedFragment.context,
+        translation: dictionaryTranslation,
+        word: selectedFragment.text,
+      },
+      { onSuccess: showWordSavedBanner, onError: showDictionaryErrorBanner },
+    );
   }, [
     currentUser?.id,
     dictionaryMutation,
+    showWordSavedBanner,
+    showDictionaryErrorBanner,
     selectedFragment,
     translation?.baseTranslation,
     translation?.translation,

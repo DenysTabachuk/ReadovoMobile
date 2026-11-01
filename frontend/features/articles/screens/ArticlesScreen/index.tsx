@@ -1,3 +1,4 @@
+import { useArticleMutationFeedback } from '@/features/articles/hooks/useArticleMutationFeedback';
 import {
   useArticleAdaptationsQuery,
   useRecentArticlesQuery,
@@ -127,6 +128,8 @@ export default function ArticlesScreen() {
   const { data: personalArticleAdaptations = {} } =
     useArticleAdaptationsQuery(personalArticleIds);
   const savedArticleMutation = useToggleSavedArticleMutation();
+  const { onSaved: showArticleSavedBanner, onError: showArticleErrorBanner } =
+    useArticleMutationFeedback();
   const articles = useMemo(() => mergeArticlePages(data?.pages), [data?.pages]);
   const displayedArticles = useMemo(
     () =>
@@ -221,12 +224,20 @@ export default function ArticlesScreen() {
 
   const toggleSavedArticle = useCallback(
     (article: WikipediaArticle) => {
-      savedArticleMutation.mutate({
-        article,
-        saved: isArticleSaved(article.id, savedArticles),
-      });
+      savedArticleMutation.mutate(
+        {
+          article,
+          saved: isArticleSaved(article.id, savedArticles),
+        },
+        { onSuccess: showArticleSavedBanner, onError: showArticleErrorBanner },
+      );
     },
-    [savedArticleMutation, savedArticles],
+    [
+      savedArticleMutation,
+      savedArticles,
+      showArticleSavedBanner,
+      showArticleErrorBanner,
+    ],
   );
 
   const renderArticle = useCallback<ListRenderItem<WikipediaArticle>>(

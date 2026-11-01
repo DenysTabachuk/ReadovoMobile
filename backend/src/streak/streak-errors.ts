@@ -7,11 +7,6 @@ export const STREAK_ERRORS = {
     statusCode: 400,
     message: 'Future months are not available.',
   },
-  RESTORE_PRICE_INVALID: {
-    code: 'STREAK_RESTORE_PRICE_INVALID',
-    statusCode: 400,
-    message: 'Invalid restore price.',
-  },
   RESTORE_UNAVAILABLE: {
     code: 'STREAK_RESTORE_UNAVAILABLE',
     statusCode: 400,
@@ -41,11 +36,6 @@ export const STREAK_ERRORS = {
     code: 'STREAK_FREEZE_DAY_LIMIT_REACHED',
     statusCode: 400,
     message: 'Freeze day limit reached.',
-  },
-  FREEZE_TOKEN_PRICE_INVALID: {
-    code: 'STREAK_FREEZE_TOKEN_PRICE_INVALID',
-    statusCode: 400,
-    message: 'Invalid freeze token price.',
   },
   FREEZE_TOKEN_LIMIT_REACHED: {
     code: 'STREAK_FREEZE_TOKEN_LIMIT_REACHED',

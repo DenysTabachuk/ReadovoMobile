@@ -11,23 +11,15 @@ export {
   restoreBrokenStreak,
 } from './api';
 export {
-  STREAK_FREEZE_TOKEN_PRICE,
   STREAK_MAX_FREEZE_TOKENS,
-  STREAK_RESTORE_PRICE,
   streakMilestones,
   weekDayLabels,
 } from './constants';
-export {
-  applyFreezeToMissedDay,
-  buyStreakFreezeToken,
-  getStreakReminderState,
-  restoreStreakForCoins,
-} from './utils';
+export { getStreakReminderState } from './utils';
 export type {
   ApplyStreakFreezeRequest,
   BrokenStreakInfo,
   CalendarDayStatus,
-  PurchaseStreakFreezeRequest,
   StreakAchievement,
   StreakAchievementMilestone,
   StreakCalendarDay,
@@ -38,7 +30,7 @@ export type {
   StreakState,
   StreakTodayStatus,
 } from './types';
-export { useStreak } from './hooks';
+export { useStreak, useStreakAchievementFeedback } from './hooks';
 
 export { ActivityCalendar } from './components/activityCalendar';
 

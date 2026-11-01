@@ -49,4 +49,11 @@ export class MascotController {
   ): Promise<MascotProfileResponse> {
     return this.mascotService.clearSlot(user.id, slot);
   }
+
+  @Delete('profile/me/slots')
+  async clearAllSlots(
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<MascotProfileResponse> {
+    return this.mascotService.clearAllSlots(user.id);
+  }
 }

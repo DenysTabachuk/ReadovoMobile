@@ -121,6 +121,26 @@ export class MascotService {
     return this.mapProfileRow(userId, updatedProfile);
   }
 
+  async clearAllSlots(userId: string): Promise<MascotProfileResponse> {
+    await this.ensureUserExists(userId);
+    await this.ensureMascotProfile(userId);
+
+    const updatedProfile = await this.prisma.userMascotProfile.update({
+      data: {
+        equippedHeadItemId: null,
+        equippedEyesItemId: null,
+        equippedGlassesId: null,
+        equippedHatId: null,
+        equippedBandanaId: null,
+        equippedEyePatchId: null,
+        updatedAt: new Date(),
+      },
+      where: { userId },
+    });
+
+    return this.mapProfileRow(userId, updatedProfile);
+  }
+
   private async ensureUserExists(userId: string): Promise<void> {
     const user = await this.prisma.user.findUnique({
       select: { id: true },

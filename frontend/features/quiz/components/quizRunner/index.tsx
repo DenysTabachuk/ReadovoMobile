@@ -18,6 +18,12 @@ import { styles } from './styles';
 import { createQuizSessionResult } from './utils/createQuizSessionResult';
 import { isAnswerSelectionCorrect } from './utils/isAnswerSelectionCorrect';
 
+type QuizAnswerCallbacks = {
+  onSuccess: (result: QuizSubmitResult) => void;
+  onError: (error: unknown) => void;
+  onSettled: () => void;
+};
+
 type QuizRunnerProps = {
   isFinishing?: boolean;
   onSubmitError?: (error: unknown) => void;
@@ -29,7 +35,9 @@ type QuizRunnerProps = {
   onSubmitAnswer?: (
     question: QuizQuestion,
     selectedOptionIds: string[],
-  ) => Promise<QuizSubmitResult> | QuizSubmitResult;
+    // The caller passes these to mutate, binding feedback to its screen observer.
+    callbacks: QuizAnswerCallbacks,
+  ) => void;
   questions: QuizQuestion[];
 };
 
@@ -93,7 +101,7 @@ export function QuizRunner({
     setSelectedOptionIds([optionId]);
   };
 
-  const handlePrimaryPress = async () => {
+  const handlePrimaryPress = () => {
     if (!isSubmitted) {
       if (selectedOptionIds.length === 0) {
         return;
@@ -101,34 +109,39 @@ export function QuizRunner({
 
       setIsSubmitting(true);
 
-      try {
-        let result: QuizSubmitResult;
-        if (onSubmitAnswer) {
-          result = await onSubmitAnswer(currentQuestion, selectedOptionIds);
-        } else {
-          result = {
-            explanation: currentQuestion.explanation,
-            isCorrect: isAnswerSelectionCorrect(
-              selectedOptionIds,
-              currentQuestion.correctOptionIds ?? [],
-            ),
-          };
-        }
-
-        if (result.isCorrect) {
-          setCorrectAnswers((current) => current + 1);
-        }
-
+      const onSuccess = (result: QuizSubmitResult) => {
+        if (result.isCorrect) setCorrectAnswers((current) => current + 1);
         setSubmitResult(result);
-      } catch (error) {
-        if (!onSubmitError) throw error;
-        onSubmitError(error);
-        return;
-      } finally {
+        setIsSubmitted(true);
+      };
+      if (onSubmitAnswer) {
+        const callbacks: QuizAnswerCallbacks = {
+          onSuccess,
+          onError: (error) => {
+            if (!onSubmitError) throw error;
+            onSubmitError(error);
+          },
+          onSettled: () => setIsSubmitting(false),
+        };
+        try {
+          onSubmitAnswer(currentQuestion, selectedOptionIds, callbacks);
+        } catch (error) {
+          try {
+            callbacks.onError(error);
+          } finally {
+            callbacks.onSettled();
+          }
+        }
+      } else {
+        onSuccess({
+          explanation: currentQuestion.explanation,
+          isCorrect: isAnswerSelectionCorrect(
+            selectedOptionIds,
+            currentQuestion.correctOptionIds ?? [],
+          ),
+        });
         setIsSubmitting(false);
       }
-
-      setIsSubmitted(true);
       return;
     }
 

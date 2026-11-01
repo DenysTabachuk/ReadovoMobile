@@ -629,8 +629,7 @@
       "purchaseFreezeFailed": "Could not buy a freeze.",
       "restoreFailed": "Could not restore the streak.",
       "restoreUnavailable": "This streak can no longer be restored.",
-      "calendarUnavailable": "This calendar month is not available yet.",
-      "priceChanged": "The price has changed. Refresh and try again."
+      "calendarUnavailable": "This calendar month is not available yet."
     },
     "restore": {
       "balance": "Your balance",

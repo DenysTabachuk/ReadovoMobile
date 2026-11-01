@@ -1,8 +1,5 @@
-import { useBanner } from '@/components/banner';
-import { getApiErrorMessageKey } from '@/api/utils/getApiErrorMessageKey';
 import { useAuth } from '@/features/auth';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useTranslation } from 'react-i18next';
 import { SAVED_ARTICLES_QUERY_KEY } from '../../../savedArticles/constants';
 import type { SavedArticle } from '../../../savedArticles/types';
 import { createSavedArticlesWithArticle } from '../../../savedArticles/utils/createSavedArticlesWithArticle';
@@ -24,7 +21,7 @@ type ToggleSavedArticleResult = {
  * Adds or removes an article with an optimistic saved-list cache update.
  * Before the request, cancels the saved-list query and snapshots its data; failure
  * restores that snapshot, while success replaces it with the server response.
- * Unauthenticated requests fail without changing the cache. Outcomes show banners.
+ * Unauthenticated requests fail without changing the cache. Callers own outcome banners.
  *
  * @returns Mutation controls accepting an article and its saved state at click time:
  * saved=true removes it, saved=false adds it. Mounting the hook makes no request.
@@ -36,8 +33,6 @@ type ToggleSavedArticleResult = {
  */
 export function useToggleSavedArticleMutation() {
   const { currentUser } = useAuth();
-  const { t } = useTranslation();
-  const { showBanner } = useBanner();
   const queryClient = useQueryClient();
   return useMutation<
     ToggleSavedArticleResult,
@@ -52,20 +47,14 @@ export function useToggleSavedArticleMutation() {
         : await saveArticleForLater(article);
       return { saved: !saved, savedArticles };
     },
-    onError: (_error, _variables, context) => {
-      const messageKey = getApiErrorMessageKey(_error);
-      if (!messageKey) return;
+    onError: (error, _variables, context) => {
+      if (error instanceof Error && error.name === 'AbortError') return;
       if (context?.previousSavedArticles) {
         queryClient.setQueryData(
           [...SAVED_ARTICLES_QUERY_KEY, currentUser?.id],
           context.previousSavedArticles,
         );
       }
-
-      showBanner({
-        title: t(messageKey),
-        variant: 'error',
-      });
     },
     onMutate: async ({ article, saved }) => {
       if (!currentUser?.id) {
@@ -99,12 +88,6 @@ export function useToggleSavedArticleMutation() {
         [...SAVED_ARTICLES_QUERY_KEY, currentUser?.id],
         response.savedArticles,
       );
-      showBanner({
-        title: response.saved
-          ? t('article.savedArticles.saved')
-          : t('article.savedArticles.removed'),
-        variant: 'success',
-      });
     },
   });
 }

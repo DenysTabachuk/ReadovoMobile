@@ -1,3 +1,4 @@
+import { useQuizCompletionFeedback } from '../../../hooks/useQuizCompletionFeedback';
 import {
   MutationCache,
   type MutationObserverOptions,
@@ -8,23 +9,14 @@ import type { QuizCompletionResponse } from '../../types';
 import { useCompleteQuizMutation } from '.';
 
 let mockClient = new QueryClient();
-let mockVersion = 1;
+let mockUnsubscribe = () => {};
 const mockBanner = jest.fn();
 const onCompleted = jest.fn();
 
 jest.mock('@/features/auth', () => ({
-  useAuth: () => ({ currentUser: { id: 'reader-a' } }),
-  getAuthSessionSnapshot: async () => {
-    const version = mockVersion;
-    return {
-      assertCurrent: () => {
-        if (version !== mockVersion)
-          throw Object.assign(new Error('Session changed.'), {
-            name: 'AbortError',
-          });
-      },
-    };
-  },
+  useAuth: () => ({
+    currentUser: { id: 'reader-a' },
+  }),
 }));
 jest.mock('@/features/achievements', () => ({
   getAchievementBadge: jest.fn(() => 1),
@@ -51,6 +43,7 @@ jest.mock('@tanstack/react-query', () => {
       options: MutationObserverOptions<TData, TError, TVariables, TContext>,
     ) => {
       const observer = new actual.MutationObserver(mockClient, options);
+      mockUnsubscribe = observer.subscribe(() => undefined);
       return { mutateAsync: observer.mutate.bind(observer) };
     },
   };
@@ -96,6 +89,10 @@ const RESPONSE: QuizCompletionResponse = {
     claimedStreakAchievements: [],
     coinBalance: 20,
     currentStreak: 1,
+    restorePrice: 100,
+
+    freezeTokenPrice: 100,
+
     freezeTokens: 1,
     lastActivityDate: '2026-10-29',
     longestStreak: 1,
@@ -108,7 +105,6 @@ const RESPONSE: QuizCompletionResponse = {
 
 beforeEach(() => {
   jest.clearAllMocks();
-  mockVersion = 1;
   mockClient = new QueryClient({
     defaultOptions: { mutations: { retry: false } },
   });
@@ -123,10 +119,10 @@ beforeEach(() => {
 afterEach(() => mockClient.clear());
 
 it('uses the server score and refetches owned state instead of overwriting newer cache data', async () => {
-  await useCompleteQuizMutation({
-    sessionId: 'session-1',
-    onCompleted,
-  }).mutateAsync(LOCAL_SCORE);
+  await useCompleteQuizMutation('session-1').mutateAsync(
+    LOCAL_SCORE,
+    useQuizCompletionFeedback(onCompleted),
+  );
 
   expect(completeQuiz).toHaveBeenCalledWith('session-1');
   expect(onCompleted).toHaveBeenCalledWith({
@@ -151,13 +147,16 @@ it('uses the server score and refetches owned state instead of overwriting newer
 });
 
 it('does not repeat reward banners for a replayed completion', async () => {
-  const mutation = useCompleteQuizMutation({
-    sessionId: 'session-1',
-    onCompleted,
-  });
-  await mutation.mutateAsync(LOCAL_SCORE);
+  const mutation = useCompleteQuizMutation('session-1');
+  await mutation.mutateAsync(
+    LOCAL_SCORE,
+    useQuizCompletionFeedback(onCompleted),
+  );
   jest.mocked(completeQuiz).mockResolvedValue({ ...RESPONSE, replayed: true });
-  await mutation.mutateAsync(LOCAL_SCORE);
+  await mutation.mutateAsync(
+    LOCAL_SCORE,
+    useQuizCompletionFeedback(onCompleted),
+  );
 
   expect(onCompleted).toHaveBeenCalledTimes(2);
   expect(mockBanner).toHaveBeenCalledTimes(1);
@@ -214,10 +213,10 @@ it('queues every returned achievement and streak milestone with its own coin rew
     },
   };
   jest.mocked(completeQuiz).mockResolvedValue(response);
-  await useCompleteQuizMutation({
-    sessionId: 'session-1',
-    onCompleted,
-  }).mutateAsync(LOCAL_SCORE);
+  await useCompleteQuizMutation('session-1').mutateAsync(
+    LOCAL_SCORE,
+    useQuizCompletionFeedback(onCompleted),
+  );
   expect(mockBanner.mock.calls.map(([banner]) => banner.title)).toEqual([
     'profile.reward',
     'streak.banner.title',
@@ -236,40 +235,39 @@ it('queues every returned achievement and streak milestone with its own coin rew
 it('leaves results and caches intact when completion fails and permits retrying the same session', async () => {
   const failure = new Error('Offline');
   jest.mocked(completeQuiz).mockRejectedValueOnce(failure);
-  const mutation = useCompleteQuizMutation({
-    sessionId: 'session-1',
-    onCompleted,
-  });
-  await expect(mutation.mutateAsync(LOCAL_SCORE)).rejects.toBe(failure);
+  const mutation = useCompleteQuizMutation('session-1');
+  await expect(
+    mutation.mutateAsync(LOCAL_SCORE, useQuizCompletionFeedback(onCompleted)),
+  ).rejects.toBe(failure);
   expect(onCompleted).not.toHaveBeenCalled();
   expect(
     mockClient.getQueryState(['achievements-profile', 'reader-a'])
       ?.isInvalidated,
   ).toBe(false);
-  await mutation.mutateAsync(LOCAL_SCORE);
+  await mutation.mutateAsync(
+    LOCAL_SCORE,
+    useQuizCompletionFeedback(onCompleted),
+  );
   expect(jest.mocked(completeQuiz).mock.calls).toEqual([
     ['session-1'],
     ['session-1'],
   ]);
 });
 
-it('silently rejects a result completed in a replacement auth session', async () => {
+it('discards pending screen feedback when the observer unmounts', async () => {
   jest.mocked(completeQuiz).mockImplementationOnce(async () => {
-    mockVersion += 1;
+    mockUnsubscribe();
     return RESPONSE;
   });
+  // Raw mutateAsync still resolves. UI work must be passed as per-call callbacks.
   await expect(
-    useCompleteQuizMutation({
-      sessionId: 'session-1',
-      onCompleted,
-    }).mutateAsync(LOCAL_SCORE),
-  ).rejects.toMatchObject({ name: 'AbortError' });
+    useCompleteQuizMutation('session-1').mutateAsync(
+      LOCAL_SCORE,
+      useQuizCompletionFeedback(onCompleted),
+    ),
+  ).resolves.toMatchObject({ response: RESPONSE });
   expect(onCompleted).not.toHaveBeenCalled();
   expect(mockBanner).not.toHaveBeenCalled();
-  expect(
-    mockClient.getQueryState(['achievements-profile', 'reader-a'])
-      ?.isInvalidated,
-  ).toBe(false);
 });
 
 it('suppresses a late success callback after the request has already resolved', async () => {
@@ -283,12 +281,12 @@ it('suppresses a late success callback after the request has already resolved', 
       },
     }),
   });
-  const pending = useCompleteQuizMutation({
-    sessionId: 'session-1',
-    onCompleted,
-  }).mutateAsync(LOCAL_SCORE);
+  const pending = useCompleteQuizMutation('session-1').mutateAsync(
+    LOCAL_SCORE,
+    useQuizCompletionFeedback(onCompleted),
+  );
   await callbacksStarted.promise;
-  mockVersion += 1;
+  mockUnsubscribe();
   releaseCallbacks.resolve();
   await pending;
   expect(onCompleted).not.toHaveBeenCalled();

@@ -3,12 +3,7 @@ import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
 import { UserAuthGuard } from '../auth/user-auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { type AuthenticatedUser } from '../auth/types';
-import {
-  ApplyStreakFreezeDto,
-  PurchaseStreakFreezeDto,
-  RestoreStreakDto,
-  StreakCalendarQueryDto,
-} from './dto';
+import { ApplyStreakFreezeDto, StreakCalendarQueryDto } from './dto';
 import { StreakService } from './streak.service';
 import { type StreakCalendarMonthResponse, type StreakState } from './types';
 
@@ -35,9 +30,8 @@ export class StreakController {
   @Post('profile/me/restore')
   async restoreStreak(
     @CurrentUser() user: AuthenticatedUser,
-    @Body() payload: RestoreStreakDto,
   ): Promise<StreakState> {
-    return this.streakService.restore(user.id, payload.price);
+    return this.streakService.restore(user.id);
   }
 
   @Post('profile/me/freeze')
@@ -51,8 +45,7 @@ export class StreakController {
   @Post('profile/me/freeze-token/purchase')
   async purchaseFreezeToken(
     @CurrentUser() user: AuthenticatedUser,
-    @Body() payload: PurchaseStreakFreezeDto,
   ): Promise<StreakState> {
-    return this.streakService.purchaseFreezeToken(user.id, payload.price);
+    return this.streakService.purchaseFreezeToken(user.id);
   }
 }

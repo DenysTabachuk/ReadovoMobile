@@ -21,7 +21,9 @@ const mockCancelQueries = jest.fn();
 const mockGetQueryData = jest.fn();
 
 jest.mock('@/features/auth', () => ({
-  useAuth: () => ({ currentUser: mockCurrentUser }),
+  useAuth: () => ({
+    currentUser: mockCurrentUser,
+  }),
 }));
 jest.mock('@/components/banner', () => ({
   useBanner: () => ({ showBanner: mockShowBanner }),
@@ -109,16 +111,13 @@ describe('useToggleSavedArticleMutation', () => {
     expect(mockSetQueryData).not.toHaveBeenCalled();
     expect(saveArticleForLater).not.toHaveBeenCalled();
   });
-  it('stores the confirmed list and shows the corresponding banner', () => {
+  it('stores the confirmed list without showing screen feedback', () => {
     mockOptions.onSuccess({ saved: false, savedArticles: [] });
     expect(mockSetQueryData).toHaveBeenCalledWith(
       ['savedArticles', 'user-42'],
       [],
     );
-    expect(mockShowBanner).toHaveBeenCalledWith({
-      title: 'article.savedArticles.removed',
-      variant: 'success',
-    });
+    expect(mockShowBanner).not.toHaveBeenCalled();
   });
   it('does not restore stale cache data or show a banner for a cancelled session', () => {
     mockOptions.onError(

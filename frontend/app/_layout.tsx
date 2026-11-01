@@ -56,7 +56,7 @@ export default function RootLayout() {
 }
 
 function RootLayoutContent() {
-  const { isAuthenticated, currentUser } = useAuth();
+  const { isAuthenticated, currentUser, sessionVersion } = useAuth();
   const colorScheme = useColorScheme() ?? 'light';
   const {
     hydrateLearningReminderPreferences,
@@ -139,6 +139,7 @@ function RootLayoutContent() {
           >
             <BannerProvider>
               <Stack
+                key={sessionVersion}
                 screenOptions={{
                   contentStyle: {
                     backgroundColor,

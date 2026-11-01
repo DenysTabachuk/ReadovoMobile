@@ -10,13 +10,11 @@ describe('streak persistence boundary', () => {
         brokenAt: '2026-10-12',
         canRestore: true,
         previousStreak: 6,
-        restorePrice: 100,
       }),
     ).toEqual({
       brokenAt: '2026-10-12',
       canRestore: true,
       previousStreak: 6,
-      restorePrice: 100,
     });
   });
 
@@ -30,19 +28,16 @@ describe('streak persistence boundary', () => {
       brokenAt: 'not-a-date',
       canRestore: true,
       previousStreak: 6,
-      restorePrice: 100,
     },
     {
       brokenAt: '2026-10-12',
       canRestore: 'yes',
       previousStreak: 6,
-      restorePrice: 100,
     },
     {
       brokenAt: '2026-10-12',
       canRestore: true,
       previousStreak: -1,
-      restorePrice: 100,
     },
   ])('rejects malformed persisted state', (value) => {
     expect(() => parseBrokenStreakInfo(value)).toThrow(
@@ -56,13 +51,43 @@ describe('streak persistence boundary', () => {
         brokenAt: '2026-10-12',
         canRestore: false,
         previousStreak: 3,
-        restorePrice: 100,
       }),
     ).toEqual({
       brokenAt: '2026-10-12',
       canRestore: false,
       previousStreak: 3,
-      restorePrice: 100,
     });
+  });
+
+  it('reads legacy records without keeping the obsolete price', () => {
+    const legacyInfo = {
+      brokenAt: '2026-10-12',
+      canRestore: true,
+      previousStreak: 6,
+      restorePrice: 1,
+    };
+
+    expect(parseBrokenStreakInfo(legacyInfo)).toEqual({
+      brokenAt: '2026-10-12',
+      canRestore: true,
+      previousStreak: 6,
+    });
+    expect(legacyInfo.restorePrice).toBe(1);
+  });
+
+  it('omits response-only pricing when serializing an object with extra fields', () => {
+    const responseInfo = {
+      brokenAt: '2026-10-12',
+      canRestore: true,
+      previousStreak: 6,
+      restorePrice: 100,
+    };
+
+    expect(serializeBrokenStreakInfo(responseInfo)).toEqual({
+      brokenAt: '2026-10-12',
+      canRestore: true,
+      previousStreak: 6,
+    });
+    expect(responseInfo.restorePrice).toBe(100);
   });
 });

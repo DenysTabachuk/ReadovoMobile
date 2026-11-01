@@ -3,22 +3,10 @@ import { IsInt, Max, Min } from 'class-validator';
 import { ToNumber, Trim } from '../common/validation/transforms';
 import { IsDateOnly } from '../common/validation/date-only.decorator';
 
-export class RestoreStreakDto {
-  @IsInt()
-  @Min(0)
-  price!: number;
-}
-
 export class ApplyStreakFreezeDto {
   @IsDateOnly()
   @Trim()
   date!: string;
-}
-
-export class PurchaseStreakFreezeDto {
-  @IsInt()
-  @Min(0)
-  price!: number;
 }
 
 export class StreakCalendarQueryDto {

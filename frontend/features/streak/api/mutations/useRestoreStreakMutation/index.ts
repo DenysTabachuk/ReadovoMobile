@@ -1,32 +1,28 @@
-import { useMutation } from '@tanstack/react-query';
+import type { StreakState } from '../../../types';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
-import { restoreStreakForCoins } from '../../../utils/restoreStreakForCoins';
+import { restoreBrokenStreak } from '../../requests/restoreBrokenStreak';
 import { useStreakCacheUpdate } from '../hooks/useStreakCacheUpdate';
-import type { StreakUpdateMutationParams } from '../types';
 
 /**
- * Restores a streak using the existing coin price and service.
+ * Restores a streak using the configured coin price.
  *
- * @param params - Profile owner and optional callback for newly unlocked milestones.
+ * @param userId - Profile owner.
  * @returns Mutation controls; success replaces the profile and invalidates newly
  * unlocked achievements. Errors leave caches intact; calendars are not invalidated.
  * @example
- * const restore = useRestoreStreakMutation({ userId });
+ * const restore = useRestoreStreakMutation(userId);
  * await restore.mutateAsync();
  * // The returned profile has been cached for this user.
  */
-export function useRestoreStreakMutation(params: StreakUpdateMutationParams) {
-  const { userId } = params;
-  const updateStreak = useStreakCacheUpdate(params);
+export function useRestoreStreakMutation(userId: string) {
+  const queryClient = useQueryClient();
+  const updateStreak = useStreakCacheUpdate(userId);
 
   return useMutation({
-    mutationFn: async () => {
-      if (!userId) {
-        throw new Error('Missing user id');
-      }
-
-      return restoreStreakForCoins(userId);
-    },
+    onMutate: () =>
+      queryClient.getQueryData<StreakState>(['streak-profile', userId]),
+    mutationFn: restoreBrokenStreak,
     onSuccess: updateStreak,
   });
 }

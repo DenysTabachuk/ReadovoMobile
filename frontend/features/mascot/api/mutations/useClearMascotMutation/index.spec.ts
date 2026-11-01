@@ -9,7 +9,9 @@ type Options = {
 let mockOptions: Options;
 const mockInvalidate = jest.fn();
 jest.mock('@/features/auth', () => ({
-  useAuth: () => ({ currentUser: { id: 'account-a' } }),
+  useAuth: () => ({
+    currentUser: { id: 'account-a' },
+  }),
 }));
 jest.mock('@tanstack/react-query', () => ({
   useQueryClient: () => ({ invalidateQueries: mockInvalidate }),
@@ -25,7 +27,7 @@ beforeEach(() => {
 });
 
 it('sends resource data only and invalidates the captured account after completion', async () => {
-  useClearMascotMutation({});
+  useClearMascotMutation();
   await mockOptions.mutationFn('head');
   expect(clearMascotSlot).toHaveBeenCalledWith('head');
   mockOptions.onSuccess(undefined, 'head');

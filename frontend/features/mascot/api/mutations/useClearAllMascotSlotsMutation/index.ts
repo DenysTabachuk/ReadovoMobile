@@ -1,36 +1,19 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/features/auth';
-import { clearMascotSlot } from '../../requests';
-import type { MascotAccessorySlot } from '../../../types';
-
-type UseClearAllMascotSlotsMutationParams = {
-  slots: MascotAccessorySlot[];
-  onSuccess?: () => void;
-  onError?: (error: Error) => void;
-};
+import { clearAllMascotSlots } from '../../requests/clearAllMascotSlots';
 
 /**
- * Applies an authenticated mascot change and refreshes this account's profile and balance.
- * @param params - Screen callbacks and equipped slots to clear.
- * @returns Mutation controls that refresh the account data after success.
+ * Clears every equipped mascot slot in one request and refreshes the owner's caches.
+ * @returns Mutation controls requiring no slot list; owned items remain available.
  * @example
- * const change = useClearAllMascotSlotsMutation({ slots: ['head'] });
- * change.mutate(); // Refreshes account data after completion.
+ * const change = useClearAllMascotSlotsMutation();
+ * change.mutate(); // Removes equipped accessories and refreshes account data.
  */
-export function useClearAllMascotSlotsMutation({
-  slots,
-  onSuccess,
-  onError,
-}: UseClearAllMascotSlotsMutationParams) {
+export function useClearAllMascotSlotsMutation() {
   const { currentUser } = useAuth();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async () => {
-      for (const slot of slots) {
-        await clearMascotSlot(slot);
-      }
-    },
-    onError,
+    mutationFn: clearAllMascotSlots,
     onSuccess: () => {
       void queryClient.invalidateQueries({
         queryKey: ['mascot-profile', currentUser?.id],
@@ -38,7 +21,6 @@ export function useClearAllMascotSlotsMutation({
       void queryClient.invalidateQueries({
         queryKey: ['achievements-profile', currentUser?.id],
       });
-      onSuccess?.();
     },
   });
 }

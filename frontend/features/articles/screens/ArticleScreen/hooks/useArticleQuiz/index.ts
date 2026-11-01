@@ -1,3 +1,4 @@
+import { useArticleMutationFeedback } from '@/features/articles/hooks/useArticleMutationFeedback';
 import {
   useGenerateArticleQuizMutation,
   type SimplifyArticleLevel,
@@ -5,6 +6,10 @@ import {
 } from '@/features/articles/api';
 import { useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
+
+type GeneratedQuiz = Awaited<
+  ReturnType<ReturnType<typeof useGenerateArticleQuizMutation>['mutateAsync']>
+>;
 
 const ARTICLE_QUIZ_TARGET_LENGTH = 'medium';
 
@@ -34,7 +39,11 @@ export function useArticleQuiz(
   const quizMutation = useGenerateArticleQuizMutation({
     article,
     selectedLevel,
-    onSuccess: (mode, resolvedLevel) => {
+  });
+  const { onError: showArticleErrorBanner } = useArticleMutationFeedback();
+  const callbacks = {
+    onError: showArticleErrorBanner,
+    onSuccess: ({ mode, resolvedLevel }: GeneratedQuiz) => {
       setIsQuizModePickerOpen(false);
       router.push({
         params: {
@@ -46,7 +55,8 @@ export function useArticleQuiz(
         pathname: '/article-quiz/[id]',
       });
     },
-  });
+  };
+
   const handleOpenQuizModePicker = useCallback(() => {
     quizMutation.reset();
     setIsQuizModePickerOpen(true);
@@ -60,13 +70,13 @@ export function useArticleQuiz(
     setIsQuizModePickerOpen(false);
   }, [quizMutation.isPending]);
 
-  const handleGenerateArticleQuiz = useCallback(() => {
-    quizMutation.mutate('article');
-  }, [quizMutation]);
+  const handleGenerateArticleQuiz = () => {
+    quizMutation.mutate('article', callbacks);
+  };
 
-  const handleGenerateVocabularyQuiz = useCallback(() => {
-    quizMutation.mutate('vocabulary');
-  }, [quizMutation]);
+  const handleGenerateVocabularyQuiz = () => {
+    quizMutation.mutate('vocabulary', callbacks);
+  };
 
   return {
     quizMutation,

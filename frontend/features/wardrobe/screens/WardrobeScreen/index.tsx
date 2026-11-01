@@ -64,62 +64,14 @@ export default function WardrobeScreen() {
     ? balance >= purchaseItem.price
     : false;
 
-  const buyMutation = useBuyMascotMutation({
-    onError: (error) => {
-      const messageKey = getMascotErrorMessageKey(error);
-      if (!messageKey) return;
-
-      showBanner({
-        title: t(messageKey),
-        variant: 'error',
-      });
-    },
-    onSuccess: (_, itemId) => {
-      const item = getMascotCatalogItem(itemId);
-
-      setPurchaseItem(null);
-      showBanner({
-        description: item
-          ? t('mascot.purchaseSuccessDescription', {
-              itemName: t(item.labelKey),
-              price: item.price,
-            })
-          : undefined,
-        title: t('mascot.purchaseSuccessTitle'),
-        variant: 'success',
-      });
-    },
-  });
-  const equipMutation = useEquipMascotMutation({
-    onError: (error) => {
-      const messageKey = getMascotErrorMessageKey(error);
-      if (!messageKey) return;
-      showBanner({ title: t(messageKey), variant: 'error' });
-    },
-  });
-  const clearMutation = useClearMascotMutation({
-    onError: (error) => {
-      const messageKey = getMascotErrorMessageKey(error);
-      if (!messageKey) return;
-
-      showBanner({
-        title: t(messageKey),
-        variant: 'error',
-      });
-    },
-  });
-  const clearAllMutation = useClearAllMascotSlotsMutation({
-    slots: equippedSlots,
-    onError: (error) => {
-      const messageKey = getMascotErrorMessageKey(error);
-      if (!messageKey) return;
-
-      showBanner({
-        title: t(messageKey),
-        variant: 'error',
-      });
-    },
-  });
+  const buyMutation = useBuyMascotMutation();
+  const equipMutation = useEquipMascotMutation();
+  const clearMutation = useClearMascotMutation();
+  const clearAllMutation = useClearAllMascotSlotsMutation();
+  const onMutationError = (error: unknown) => {
+    const key = getMascotErrorMessageKey(error);
+    if (key) showBanner({ title: t(key), variant: 'error' });
+  };
 
   const handleRefresh = () => {
     void mascotQuery.refetch();
@@ -134,7 +86,7 @@ export default function WardrobeScreen() {
       return;
     }
 
-    equipMutation.mutate(item.id);
+    equipMutation.mutate(item.id, { onError: onMutationError });
   };
 
   const handleConfirmPurchase = () => {
@@ -142,7 +94,23 @@ export default function WardrobeScreen() {
       return;
     }
 
-    buyMutation.mutate(purchaseItem.id);
+    buyMutation.mutate(purchaseItem.id, {
+      onError: onMutationError,
+      onSuccess: (_, itemId) => {
+        const item = getMascotCatalogItem(itemId);
+        setPurchaseItem(null);
+        showBanner({
+          description: item
+            ? t('mascot.purchaseSuccessDescription', {
+                itemName: t(item.labelKey),
+                price: item.price,
+              })
+            : undefined,
+          title: t('mascot.purchaseSuccessTitle'),
+          variant: 'success',
+        });
+      },
+    });
   };
 
   const renderItem: ListRenderItem<MascotCatalogItem> = ({ item }) => {
@@ -236,7 +204,11 @@ export default function WardrobeScreen() {
                     disabled={
                       clearMutation.isPending || clearAllMutation.isPending
                     }
-                    onPress={() => clearMutation.mutate(selectedSlot)}
+                    onPress={() =>
+                      clearMutation.mutate(selectedSlot, {
+                        onError: onMutationError,
+                      })
+                    }
                     style={styles.footerButton}
                     variant="secondary"
                   >
@@ -247,7 +219,11 @@ export default function WardrobeScreen() {
                   disabled={
                     clearMutation.isPending || clearAllMutation.isPending
                   }
-                  onPress={() => clearAllMutation.mutate()}
+                  onPress={() =>
+                    clearAllMutation.mutate(undefined, {
+                      onError: onMutationError,
+                    })
+                  }
                   style={styles.footerButton}
                   variant="secondary"
                 >

@@ -14,6 +14,7 @@ import {
   QuizResult,
   QuizRunner,
   useCompleteQuizMutation,
+  useQuizCompletionFeedback,
   useSubmitQuizAnswerMutation,
   useRetakeQuizMutation,
   type QuizSessionResult,
@@ -57,16 +58,15 @@ export function ArticleQuizSession({
   });
   const [retakeSessionId, setRetakeSessionId] = useState<string>();
   const sessionId = retakeSessionId ?? session?.sessionId;
-  const progressMutation = useCompleteQuizMutation({
-    sessionId,
-    onCompleted: setResult,
-  });
+  const progressMutation = useCompleteQuizMutation(sessionId);
+  const completionFeedback = useQuizCompletionFeedback(setResult);
   const answerMutation = useSubmitQuizAnswerMutation();
-  const retakeMutation = useRetakeQuizMutation((nextSessionId) => {
+  const retakeMutation = useRetakeQuizMutation();
+  const onRetaken = (nextSessionId: string) => {
     setRetakeSessionId(nextSessionId);
     setResult(null);
     setAttempt((current) => current + 1);
-  });
+  };
   const { showBanner } = useBanner();
   const showError = (error: unknown) => {
     const key = getApiErrorMessageKey(error);
@@ -109,7 +109,10 @@ export function ArticleQuizSession({
           onDone={() => router.back()}
           onRetry={() => {
             if (sessionId && !retakeMutation.isPending)
-              retakeMutation.mutate(sessionId, { onError: showError });
+              retakeMutation.mutate(sessionId, {
+                onSuccess: onRetaken,
+                onError: showError,
+              });
           }}
         />
       ) : session?.questions.length ? (
@@ -117,18 +120,21 @@ export function ArticleQuizSession({
           key={`article-quiz-${attempt}`}
           questions={session.questions}
           isFinishing={progressMutation.isPending}
-          onSubmitAnswer={(question, selectedOptionIds) => {
+          onSubmitAnswer={(question, selectedOptionIds, callbacks) => {
             if (!sessionId) throw new Error('Missing quiz session.');
-            return answerMutation.mutateAsync({
-              sessionId,
-              questionId: question.id,
-              selectedOptionIds,
-            });
+            answerMutation.mutate(
+              {
+                sessionId,
+                questionId: question.id,
+                selectedOptionIds,
+              },
+              callbacks,
+            );
           }}
           onSubmitError={showError}
           renderSubmittedQuestionAction={renderVocabularySaveAction}
           onFinish={(completed) => {
-            progressMutation.mutate(completed);
+            progressMutation.mutate(completed, completionFeedback);
           }}
         />
       ) : (
