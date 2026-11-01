@@ -1,5 +1,4 @@
 export { api } from './api';
-export { getAuthSessionSnapshot } from './getAuthSessionSnapshot';
 export {
   AUTH_ACCESS_TOKEN_STORAGE_KEY,
   AUTH_REFRESH_TOKEN_STORAGE_KEY,
