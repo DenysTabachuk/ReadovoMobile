@@ -1,4 +1,8 @@
-export { AuthProvider, useAuth } from './providers/authProvider';
+export {
+  AuthProvider,
+  useAuth,
+  useAuthenticatedUser,
+} from './providers/authProvider';
 export { api } from './session';
 export type { AuthUserProfile } from './types';
 

@@ -1,5 +1,4 @@
 import { TRANSLATION_SHEET_OPEN_DELAY_MS } from '../../constants';
-import { useAuth } from '@/features/auth';
 import {
   useDictionaryMutationFeedback,
   useCreateDictionaryWordMutation,
@@ -20,7 +19,7 @@ const INITIAL_STATE: ArticleTranslationState = {
  * Coordinates word selection, translation fetching, and the translation sheet.
  * Selecting words enables the query immediately and schedules the sheet to open;
  * selection changes or unmount clear the pending timer. Saving to the dictionary
- * requires an explicit action, an authenticated user, and an available translation.
+ * requires an explicit action and an available translation inside a private route.
  *
  * @returns Selection, translation/loading/error state, sheet visibility, the
  * dictionary mutation, and actions to select, close, or save. Closing clears selection.
@@ -31,7 +30,6 @@ const INITIAL_STATE: ArticleTranslationState = {
  * // Closes the sheet and clears the highlighted words.
  */
 export function useArticleTranslation() {
-  const { currentUser } = useAuth();
   const [{ selectedTokens, isTranslationSheetOpen }, dispatch] = useReducer(
     articleTranslationReducer,
     INITIAL_STATE,
@@ -74,7 +72,7 @@ export function useArticleTranslation() {
     const dictionaryTranslation =
       translation?.baseTranslation ?? translation?.translation;
 
-    if (!currentUser?.id || !selectedFragment || !dictionaryTranslation) {
+    if (!selectedFragment || !dictionaryTranslation) {
       return;
     }
 
@@ -87,7 +85,6 @@ export function useArticleTranslation() {
       { onSuccess: showWordSavedBanner, onError: showDictionaryErrorBanner },
     );
   }, [
-    currentUser?.id,
     dictionaryMutation,
     showWordSavedBanner,
     showDictionaryErrorBanner,

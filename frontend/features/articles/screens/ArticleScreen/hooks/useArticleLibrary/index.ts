@@ -11,20 +11,20 @@ import {
   useSavedArticlesQuery,
   useToggleSavedArticleMutation,
 } from '@/features/articles/api';
-import { useAuth } from '@/features/auth';
+import { useAuthenticatedUser } from '@/features/auth';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect } from 'react';
 
 /**
  * Provides saved-article state/actions and automatically records the current article
- * as recently read for an authenticated user. The effect reruns when the article
+ * as recently read for the root-protected user. The effect reruns when the article
  * reference or user changes, updates the recent-list cache on success, and logs
  * failures; in-flight recording is not cancelled on unmount.
  *
  * @param article - Loaded article to record and optionally save/remove.
  * @returns Saved status, pending-save status, and an explicit toggle action that
  * ignores calls while saving. The owning mutation handles optimistic cache updates; this hook supplies
- * component-bound outcome banners. Unauthenticated saves are rejected by the mutation.
+ * component-bound outcome banners. The root navigation owns session access.
  * @example
  * // Inside a component or another hook:
  * const library = useArticleLibrary(article);
@@ -33,7 +33,7 @@ import { useCallback, useEffect } from 'react';
  */
 export function useArticleLibrary(article: WikipediaArticleDetail) {
   const articleId = article.id;
-  const { currentUser } = useAuth();
+  const currentUser = useAuthenticatedUser();
   const queryClient = useQueryClient();
   const { data: savedArticles } = useSavedArticlesQuery();
   const isCurrentArticleSaved = isArticleSaved(articleId, savedArticles);
@@ -60,10 +60,6 @@ export function useArticleLibrary(article: WikipediaArticleDetail) {
     showArticleErrorBanner,
   ]);
   useEffect(() => {
-    if (!article || !currentUser?.id) {
-      return;
-    }
-
     const recentArticle = createRecentArticleFromDetail(article);
 
     void recordRecentArticle(recentArticle).then(
@@ -77,7 +73,7 @@ export function useArticleLibrary(article: WikipediaArticleDetail) {
         console.error('[ArticleScreen] Failed to record recent article', error);
       },
     );
-  }, [article, currentUser?.id, queryClient]);
+  }, [article, currentUser.id, queryClient]);
 
   return {
     isCurrentArticleSaved,

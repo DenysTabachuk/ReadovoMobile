@@ -1,4 +1,8 @@
 {
+  "navigation": {
+    "modalTitle": "Modal",
+    "notificationTestTitle": "Notification Test"
+  },
   "language": {
     "title": "Choose your language",
     "description": "Select the language you want to use in Readovo."

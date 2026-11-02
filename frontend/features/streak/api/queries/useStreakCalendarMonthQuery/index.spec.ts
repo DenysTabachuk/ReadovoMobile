@@ -1,16 +1,11 @@
-import {
-  QueryClient,
-  type QueryObserver,
-  type QueryObserverOptions,
-} from '@tanstack/react-query';
+import { QueryClient, type QueryObserverOptions } from '@tanstack/react-query';
 import { getStreakCalendarMonth } from '../../requests/getStreakCalendarMonth';
 import type { StreakCalendarMonthResponse } from '../../../types';
 import { useStreakCalendarMonthQuery } from '.';
 
 const mockClient = new QueryClient();
 const mockRequest = jest.mocked(getStreakCalendarMonth);
-let mockUserId: string | undefined = 'reader-1';
-let mockObserver: QueryObserver<StreakCalendarMonthResponse>;
+let mockUserId = 'reader-1';
 const JULY: StreakCalendarMonthResponse = {
   days: [],
   month: 7,
@@ -21,7 +16,7 @@ const JULY: StreakCalendarMonthResponse = {
 };
 
 jest.mock('@/features/auth', () => ({
-  useAuth: () => ({ currentUser: mockUserId ? { id: mockUserId } : null }),
+  useAuthenticatedUser: () => ({ id: mockUserId }),
 }));
 jest.mock('../../requests/getStreakCalendarMonth', () => ({
   getStreakCalendarMonth: jest.fn(),
@@ -33,10 +28,10 @@ jest.mock('@tanstack/react-query', () => {
   return {
     ...actual,
     useQuery: (options: QueryObserverOptions<StreakCalendarMonthResponse>) => {
-      mockObserver = new actual.QueryObserver(mockClient, options);
+      const observer = new actual.QueryObserver(mockClient, options);
       return {
-        ...mockObserver.getCurrentResult(),
-        refetch: mockObserver.refetch.bind(mockObserver),
+        ...observer.getCurrentResult(),
+        refetch: observer.refetch.bind(observer),
       };
     },
   };
@@ -63,15 +58,6 @@ describe('useStreakCalendarMonthQuery', () => {
     expect(
       mockClient.getQueryData(['streak-calendar-month', 'reader-1', 2026, 7]),
     ).toBe(JULY);
-  });
-
-  it('does not automatically fetch without a user', () => {
-    mockUserId = undefined;
-    useStreakCalendarMonthQuery({ year: 2026, month: 7 });
-    const unsubscribe = mockObserver.subscribe(() => undefined);
-    expect(mockRequest).not.toHaveBeenCalled();
-    expect(mockObserver.getCurrentResult().fetchStatus).toBe('idle');
-    unsubscribe();
   });
 
   it('isolates months and owners while retaining owner-wide invalidation', async () => {

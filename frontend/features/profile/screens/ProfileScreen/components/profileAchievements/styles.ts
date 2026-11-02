@@ -6,10 +6,4 @@ export const styles = StyleSheet.create({
   achievementsBlock: {
     gap: Spacing.md,
   },
-  achievementsNoticeText: {
-    color: '#5b5f76',
-  },
-  achievementsNoticeTextDark: {
-    color: '#cbc7df',
-  },
 });

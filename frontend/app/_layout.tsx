@@ -9,6 +9,7 @@ import * as SystemUI from 'expo-system-ui';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AppState, Platform, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -16,6 +17,7 @@ import '@/localization';
 import '@/devtools/reactotron';
 import 'react-native-reanimated';
 
+import { FullScreenLoader } from '@/components/fullScreenLoader';
 import { BannerProvider } from '@/components/banner';
 import { Colors } from '@/constants/theme';
 import { AuthProvider, useAuth } from '@/features/auth';
@@ -56,9 +58,12 @@ export default function RootLayout() {
 }
 
 function RootLayoutContent() {
-  const { isAuthenticated, currentUser, sessionVersion } = useAuth();
+  const { t } = useTranslation();
+  const { isAuthenticated, currentUser, sessionVersion, isHydratingAuth } =
+    useAuth();
   const colorScheme = useColorScheme() ?? 'light';
   const {
+    isLoadingPreferences,
     hydrateLearningReminderPreferences,
     learningReminderEnabled,
     learningReminderTime,
@@ -85,12 +90,21 @@ function RootLayoutContent() {
       return;
     }
 
+    let isCurrentSession = true;
     void loadLearningReminderPreferences()
       .then((preferences) => {
-        hydrateLearningReminderPreferences(preferences);
+        if (isCurrentSession) hydrateLearningReminderPreferences(preferences);
       })
       .catch(() => undefined);
-  }, [currentUser?.id, hydrateLearningReminderPreferences, isAuthenticated]);
+    return () => {
+      isCurrentSession = false;
+    };
+  }, [
+    currentUser?.id,
+    hydrateLearningReminderPreferences,
+    isAuthenticated,
+    sessionVersion,
+  ]);
 
   useEffect(() => {
     void syncLearningReminder({
@@ -138,42 +152,62 @@ function RootLayoutContent() {
             value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}
           >
             <BannerProvider>
-              <Stack
-                key={sessionVersion}
-                screenOptions={{
-                  contentStyle: {
-                    backgroundColor,
-                  },
-                }}
-              >
-                <Stack.Screen name="index" options={{ headerShown: false }} />
-                <Stack.Screen name="about" options={{ headerShown: false }} />
-                <Stack.Screen name="login" options={{ headerShown: false }} />
-                <Stack.Screen
-                  name="register"
-                  options={{ headerShown: false }}
-                />
-                <Stack.Screen
-                  name="forgot-password"
-                  options={{ headerShown: false }}
-                />
-                <Stack.Screen
-                  name="reset-password"
-                  options={{ headerShown: false }}
-                />
-                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                <Stack.Screen name="dictionary-test" />
-                <Stack.Screen name="article/[id]" />
-                <Stack.Screen name="article-quiz/[id]" />
-                <Stack.Screen
-                  name="notification-test"
-                  options={{ title: 'Notification Test' }}
-                />
-                <Stack.Screen
-                  name="modal"
-                  options={{ presentation: 'modal', title: 'Modal' }}
-                />
-              </Stack>
+              {isHydratingAuth || isLoadingPreferences ? (
+                <FullScreenLoader />
+              ) : (
+                <Stack
+                  key={sessionVersion}
+                  screenOptions={{ contentStyle: { backgroundColor } }}
+                >
+                  <Stack.Protected guard={!isAuthenticated}>
+                    <Stack.Screen
+                      name="index"
+                      options={{ headerShown: false }}
+                    />
+                    <Stack.Screen
+                      name="about"
+                      options={{ headerShown: false }}
+                    />
+                    <Stack.Screen
+                      name="login"
+                      options={{ headerShown: false }}
+                    />
+                    <Stack.Screen
+                      name="register"
+                      options={{ headerShown: false }}
+                    />
+                    <Stack.Screen
+                      name="forgot-password"
+                      options={{ headerShown: false }}
+                    />
+                    <Stack.Screen
+                      name="reset-password"
+                      options={{ headerShown: false }}
+                    />
+                  </Stack.Protected>
+                  <Stack.Protected guard={isAuthenticated}>
+                    <Stack.Screen
+                      name="(tabs)"
+                      options={{ headerShown: false }}
+                    />
+                    <Stack.Screen name="wardrobe" />
+                    <Stack.Screen name="dictionary-test" />
+                    <Stack.Screen name="article/[id]" />
+                    <Stack.Screen name="article-quiz/[id]" />
+                    <Stack.Screen
+                      name="notification-test"
+                      options={{ title: t('navigation.notificationTestTitle') }}
+                    />
+                    <Stack.Screen
+                      name="modal"
+                      options={{
+                        presentation: 'modal',
+                        title: t('navigation.modalTitle'),
+                      }}
+                    />
+                  </Stack.Protected>
+                </Stack>
+              )}
               <StatusBar
                 backgroundColor={backgroundColor}
                 style={colorScheme === 'dark' ? 'light' : 'dark'}

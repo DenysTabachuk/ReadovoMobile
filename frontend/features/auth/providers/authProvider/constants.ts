@@ -1,7 +1,7 @@
 import {
   AUTH_ACCESS_TOKEN_STORAGE_KEY,
   AUTH_REFRESH_TOKEN_STORAGE_KEY,
-} from '../../session';
+} from '../../session/authTokenStorage/constants';
 
 export const AUTH_STORAGE_KEYS = {
   accessToken: AUTH_ACCESS_TOKEN_STORAGE_KEY,
