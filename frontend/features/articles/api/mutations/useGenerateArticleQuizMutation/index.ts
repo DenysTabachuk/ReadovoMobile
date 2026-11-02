@@ -1,8 +1,5 @@
 import { useAuth } from '@/features/auth';
-import { useBanner } from '@/components/banner';
-import { getArticleErrorMessageKey } from '../../../utils/getArticleErrorMessageKey';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useTranslation } from 'react-i18next';
 import {
   getArticleQuizSessionKey,
   type ArticleQuizMode,
@@ -16,38 +13,30 @@ import type { SimplifyArticleLevel, WikipediaArticleDetail } from '../../types';
 type UseGenerateArticleQuizMutationParams = {
   article: WikipediaArticleDetail;
   selectedLevel: SimplifyArticleLevel;
-  onSuccess: (
-    mode: ArticleQuizMode,
-    resolvedLevel: SimplifyArticleLevel,
-  ) => void;
 };
 
 const ARTICLE_QUIZ_TARGET_LENGTH = 'medium';
 
 /**
  * Generates the requested quiz mode from original article content on mutate.
- * Caches a successful session by article, mode, level, and target length before
- * invoking the caller's success callback. Failures show an error banner.
+ * Caches a successful session by owner, article, mode, level, and target length.
+ * Screen feedback and navigation belong in per-call mutate callbacks.
  *
- * @param params - Source article, generation level, and callback receiving the
- * completed mode/level so the caller can handle navigation or other UI effects.
+ * @param params - Source article and generation level.
  * @returns Mutation controls accepting 'article' or 'vocabulary'; mounting the
  * hook does not generate a quiz. Article quizzes use the medium target length.
  * @example
  * // Inside a component or another hook:
- * const quiz = useGenerateArticleQuizMutation({ article, selectedLevel: 'A2', onSuccess: openQuiz });
- * quiz.mutate('vocabulary');
- * // Generates vocabulary questions, caches the session, then calls openQuiz on success.
+ * const quiz = useGenerateArticleQuizMutation({ article, selectedLevel: 'A2' });
+ * quiz.mutate('vocabulary', { onSuccess: openQuiz });
+ * // Generates vocabulary questions, caches the session, then calls openQuiz while the screen remains mounted.
  */
 export function useGenerateArticleQuizMutation({
   article,
   selectedLevel,
-  onSuccess,
 }: UseGenerateArticleQuizMutationParams) {
   const articleId = article.id;
   const { currentUser } = useAuth();
-  const { t } = useTranslation();
-  const { showBanner } = useBanner();
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (mode: ArticleQuizMode) => {
@@ -78,14 +67,6 @@ export function useGenerateArticleQuizMutation({
         resolvedLevel: selectedLevel,
       };
     },
-    onError: (error) => {
-      const messageKey = getArticleErrorMessageKey(error);
-      if (!messageKey) return;
-      showBanner({
-        title: t(messageKey),
-        variant: 'error',
-      });
-    },
     onSuccess: ({ mode, response, resolvedLevel }) => {
       queryClient.setQueryData(
         getArticleQuizSessionKey({
@@ -97,7 +78,6 @@ export function useGenerateArticleQuizMutation({
         }),
         response,
       );
-      onSuccess(mode, resolvedLevel);
     },
   });
 }

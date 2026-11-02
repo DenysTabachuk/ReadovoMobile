@@ -1,7 +1,5 @@
-﻿import type { StreakAchievementMilestone } from './types';
+import type { StreakAchievementMilestone } from './types';
 
-export const STREAK_RESTORE_PRICE = 100;
-export const STREAK_FREEZE_TOKEN_PRICE = 100;
 export const STREAK_MAX_FREEZE_TOKENS = 3;
 
 export const streakMilestones: readonly {

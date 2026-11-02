@@ -41,8 +41,8 @@ const OPERATIONS = [
     path: '/streak/profile/me/restore',
     method: 'post',
     service: 'restore',
-    body: { price: 10 },
-    args: [10],
+    body: undefined,
+    args: [],
   },
   {
     path: '/streak/profile/me/freeze',
@@ -55,8 +55,8 @@ const OPERATIONS = [
     path: '/streak/profile/me/freeze-token/purchase',
     method: 'post',
     service: 'purchaseFreezeToken',
-    body: { price: 5 },
-    args: [5],
+    body: undefined,
+    args: [],
   },
 ] as const;
 
@@ -211,26 +211,35 @@ describe('StreakController current-user routes', () => {
     },
   );
 
-  it.each(OPERATIONS.filter((operation) => operation.method === 'post'))(
-    '$path rejects a client-supplied body owner',
-    async (operation) => {
+  it.each(
+    OPERATIONS.filter((operation) => operation.service === 'applyFreeze'),
+  )('$path rejects a client-supplied body owner', async (operation) => {
+    await request(app.getHttpServer())
+      .post(operation.path)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ ...operation.body, userId: OTHER_ID })
+      .expect(400);
+    expect(service[operation.service]).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { path: 'restore', service: 'restore' },
+    { path: 'freeze-token/purchase', service: 'purchaseFreezeToken' },
+  ] as const)(
+    '$path does not forward client prices or body owners',
+    async ({ path, service: method }) => {
       await request(app.getHttpServer())
-        .post(operation.path)
+        .post(`/streak/profile/me/${path}`)
         .set('Authorization', `Bearer ${token}`)
-        .send({ ...operation.body, userId: OTHER_ID })
-        .expect(400);
-      expect(service[operation.service]).not.toHaveBeenCalled();
+        .send({ price: 0, userId: OTHER_ID })
+        .expect(201);
+
+      expect(service[method]).toHaveBeenCalledWith(USER_ID);
     },
   );
 
   it.each([
-    { path: 'restore', body: { price: -1 }, service: 'restore' },
     { path: 'freeze', body: { date: '2026-02-30' }, service: 'applyFreeze' },
-    {
-      path: 'freeze-token/purchase',
-      body: { price: '5' },
-      service: 'purchaseFreezeToken',
-    },
   ] as const)(
     'keeps payload validation for $path',
     async ({ path, body, service: method }) => {

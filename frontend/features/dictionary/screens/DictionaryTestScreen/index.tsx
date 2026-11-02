@@ -3,7 +3,13 @@ import {
   type NavigationAction,
 } from '@react-navigation/native';
 import { Stack, useNavigation, useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  type ComponentProps,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { getDictionaryErrorMessageKey } from '../../utils/getDictionaryErrorMessageKey';
@@ -19,11 +25,13 @@ import { ThemedText } from '@/components/themedText';
 import { Colors } from '@/constants/theme';
 import {
   useCompleteQuizMutation,
+  useQuizCompletionFeedback,
   useSubmitQuizAnswerMutation,
   QuizResult,
   QuizRunner,
   type QuizQuestion,
   type QuizSessionResult,
+  type QuizSubmitResult,
 } from '@/features/quiz';
 import { useBanner } from '@/components/banner';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -60,20 +68,14 @@ export default function DictionaryTestScreen() {
     }));
   }, [t, test]);
 
-  const testMutation = useGenerateDictionaryTestMutation({
-    onSuccess: (nextTest) => {
-      setTest(nextTest);
-    },
-  });
+  const testMutation = useGenerateDictionaryTestMutation();
   const { mutate: generateTest } = testMutation;
 
   const answerMutation = useSubmitQuizAnswerMutation();
-  const progressMutation = useCompleteQuizMutation({
-    sessionId: test?.sessionId,
-    onCompleted: (completed) => {
-      setTestResult(completed);
-      setTest(undefined);
-    },
+  const progressMutation = useCompleteQuizMutation(test?.sessionId);
+  const completionFeedback = useQuizCompletionFeedback((completed) => {
+    setTestResult(completed);
+    setTest(undefined);
   });
 
   const shouldConfirmExit = quizQuestions.length > 0 && testResult === null;
@@ -84,7 +86,7 @@ export default function DictionaryTestScreen() {
   });
 
   useEffect(() => {
-    generateTest();
+    generateTest(undefined, { onSuccess: setTest });
   }, [generateTest]);
 
   const handleConfirmExitTest = useCallback(() => {
@@ -102,36 +104,45 @@ export default function DictionaryTestScreen() {
 
   const handleFinishTest = useCallback(
     (result: QuizSessionResult) => {
-      progressMutation.mutate(result);
+      progressMutation.mutate(result, completionFeedback);
     },
-    [progressMutation],
+    [progressMutation, completionFeedback],
   );
 
   const handleRetryTest = useCallback(() => {
     setTestResult(null);
-    testMutation.mutate();
+    testMutation.mutate(undefined, { onSuccess: setTest });
   }, [testMutation]);
 
-  const handleSubmitQuizAnswer = useCallback(
-    async (question: QuizQuestion, selectedOptionIds: string[]) => {
-      if (!test?.sessionId) throw new Error('Missing quiz session.');
-      const result = await answerMutation.mutateAsync({
+  const handleSubmitAnswer: NonNullable<
+    ComponentProps<typeof QuizRunner>['onSubmitAnswer']
+  > = (question, selectedOptionIds, { onSuccess, onError, onSettled }) => {
+    if (!test?.sessionId) throw new Error('Missing quiz session.');
+
+    const handleAnswerSuccess = (result: QuizSubmitResult) => {
+      let feedbackText = t('dictionary.test.correct');
+
+      if (!result.isCorrect) {
+        const correctOptionText = question.options.find((option) =>
+          result.correctOptionIds?.includes(option.id),
+        )?.text;
+        feedbackText = t('dictionary.test.incorrect', {
+          translation: correctOptionText,
+        });
+      }
+
+      onSuccess({ ...result, feedbackText });
+    };
+
+    answerMutation.mutate(
+      {
         sessionId: test.sessionId,
         questionId: question.id,
         selectedOptionIds,
-      });
-      const correctOptionText = question.options.find((option) =>
-        result.correctOptionIds?.includes(option.id),
-      )?.text;
-      return {
-        ...result,
-        feedbackText: result.isCorrect
-          ? t('dictionary.test.correct')
-          : t('dictionary.test.incorrect', { translation: correctOptionText }),
-      };
-    },
-    [answerMutation, t, test?.sessionId],
-  );
+      },
+      { onSuccess: handleAnswerSuccess, onError, onSettled },
+    );
+  };
 
   const testErrorMessageKey = testMutation.error
     ? getDictionaryErrorMessageKey(testMutation.error)
@@ -155,9 +166,7 @@ export default function DictionaryTestScreen() {
           <ThemedText type="description" style={styles.centerDescription}>
             {t(testErrorMessageKey)}
           </ThemedText>
-          <Button onPress={() => testMutation.mutate()}>
-            {t('dictionary.retry')}
-          </Button>
+          <Button onPress={handleRetryTest}>{t('dictionary.retry')}</Button>
         </View>
       ) : testResult ? (
         <QuizResult
@@ -171,7 +180,7 @@ export default function DictionaryTestScreen() {
         <QuizRunner
           isFinishing={progressMutation.isPending}
           onFinish={handleFinishTest}
-          onSubmitAnswer={handleSubmitQuizAnswer}
+          onSubmitAnswer={handleSubmitAnswer}
           onSubmitError={(error) => {
             const messageKey = getDictionaryErrorMessageKey(error);
             if (messageKey)

@@ -5,13 +5,13 @@ import { useTranslation } from 'react-i18next';
 
 import { ModalSheet } from '@/components/modalSheet';
 import { ThemedText } from '@/components/themedText';
-import { STREAK_FREEZE_TOKEN_PRICE } from '../../constants';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
 import { styles } from './styles';
 
 type StreakFreezePurchaseModalProps = {
   coinBalance: number;
+  freezeTokenPrice: number;
   isBuying?: boolean;
   onClose: () => void;
   onConfirm: () => void;
@@ -20,6 +20,7 @@ type StreakFreezePurchaseModalProps = {
 
 export function StreakFreezePurchaseModal({
   coinBalance,
+  freezeTokenPrice,
   isBuying = false,
   onClose,
   onConfirm,
@@ -28,7 +29,7 @@ export function StreakFreezePurchaseModal({
   const { t } = useTranslation();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
-  const canConfirm = coinBalance >= STREAK_FREEZE_TOKEN_PRICE && !isBuying;
+  const canConfirm = coinBalance >= freezeTokenPrice && !isBuying;
 
   return (
     <ModalSheet
@@ -60,7 +61,7 @@ export function StreakFreezePurchaseModal({
             source={require('../../../../assets/images/money.png')}
             style={styles.moneyIcon}
           />
-          <ThemedText type="bodyStrong">{STREAK_FREEZE_TOKEN_PRICE}</ThemedText>
+          <ThemedText type="bodyStrong">{freezeTokenPrice}</ThemedText>
         </View>
 
         <View style={styles.actionsRow}>

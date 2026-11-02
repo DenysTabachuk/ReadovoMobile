@@ -21,7 +21,6 @@ export type BrokenStreakInfo = {
   brokenAt: string;
   canRestore: boolean;
   previousStreak: number;
-  restorePrice: number;
 };
 
 export type StreakAchievementMilestone = 3 | 7 | 14 | 30 | 100;
@@ -39,11 +38,13 @@ export type StreakState = {
   claimedStreakAchievements: StreakAchievement[];
   coinBalance: number;
   currentStreak: number;
+  freezeTokenPrice: number;
   freezeTokens: number;
   lastActivityDate: string | null;
   longestStreak: number;
   nextBonusInDays: number;
   nextMilestone: StreakAchievementMilestone;
+  restorePrice: number;
   serverNow: string;
   todayStatus: StreakTodayStatus;
 };

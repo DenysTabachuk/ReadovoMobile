@@ -24,11 +24,27 @@ full requirements, examples, documentation template, and edge cases.
 - Keep transport independent of React/React Query. Data hooks own request
   execution, query keys, cache updates, invalidation, and optimistic rollback.
   UI state, modal visibility, and navigation belong in components or UI hooks.
+- Put mutation-driven UI effects (banners, navigation, modal/screen state) in the
+  callbacks passed to `mutate(variables, callbacks)`, not in `useMutation` options
+  or promise continuations after `mutateAsync`. React Query drops per-call callbacks
+  after the owning observer unmounts; hook callbacks and promises keep running.
+  Keep cache updates/rollback in data hooks, use owner-specific keys, and retain
+  session guards between requests or before storage writes in multi-step work.
+  Do not add manual session assertions around a single HTTP request; the shared
+  authenticated client handles request session changes.
+  This relies on the auth-session screen boundary remounting on login/logout;
+  unmounting does not cancel a server write. See the convention guide for details.
 - API modules must not import screen internals or their own aggregate API barrel.
   Keep single-request helpers private; shared request helpers belong in `api/utils`.
 
 ## Components and utilities
 
+- Prefer destructuring hook results when a consumer uses individual actions and
+  the object name does not clarify their purpose. Give generic callbacks local
+  names describing their effect, such as `onError: showArticleErrorBanner`.
+  Keep the object when passing it as a whole or when it represents a clear,
+  cohesive concept, such as mutation state and controls. Apply within touched code;
+  do not mechanically destructure every hook result.
 - Keep component entry files focused on state, effects, event wiring, and rendering.
   Extract meaningful calculations and cohesive UI blocks, not trivial callbacks
   or wrappers merely to reduce line count.

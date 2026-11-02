@@ -46,8 +46,8 @@ it('preserves the current-user profile URL and response', async () => {
 it.each([
   {
     path: 'restore',
-    payload: { price: 10 },
-    request: () => restoreBrokenStreak({ price: 10 }),
+    payload: undefined,
+    request: () => restoreBrokenStreak(),
     result: { currentStreak: 3 },
   },
   {
@@ -58,12 +58,12 @@ it.each([
   },
   {
     path: 'freeze-token/purchase',
-    payload: { price: 5 },
-    request: () => purchaseStreakFreezeToken({ price: 5 }),
+    payload: undefined,
+    request: () => purchaseStreakFreezeToken(),
     result: { freezeTokens: 1 },
   },
 ])(
-  'preserves the $path request and response after relocation',
+  'sends the $path request with only the required resource data',
   async ({ path, payload, request, result }) => {
     mockFetch.mockResolvedValue(createHttpResponse(JSON.stringify(result)));
     await expect(request()).resolves.toEqual(result);
@@ -74,18 +74,18 @@ it.each([
   },
 );
 
-it.each([
-  () => getStreakProfile(),
-  () => purchaseStreakFreezeToken({ price: 5 }),
-])('preserves generic request failures', async (request) => {
-  mockFetch.mockRejectedValue(
-    new HttpError(createHttpResponse('', { status: 500 })),
-  );
-  await expect(request()).rejects.toMatchObject({ status: 500 });
-});
+it.each([() => getStreakProfile(), () => purchaseStreakFreezeToken()])(
+  'preserves generic request failures',
+  async (request) => {
+    mockFetch.mockRejectedValue(
+      new HttpError(createHttpResponse('', { status: 500 })),
+    );
+    await expect(request()).rejects.toMatchObject({ status: 500 });
+  },
+);
 
 it.each([
-  () => restoreBrokenStreak({ price: 10 }),
+  () => restoreBrokenStreak(),
   () => applyStreakFreeze({ date: '2026-07-08' }),
 ])(
   'preserves domain codes without translating them in requests',

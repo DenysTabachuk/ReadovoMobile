@@ -3,6 +3,7 @@ import { getMascotProfile } from './getMascotProfile';
 import { buyMascotItem } from './buyMascotItem';
 import { equipMascotItem } from './equipMascotItem';
 import { clearMascotSlot } from './clearMascotSlot';
+import { clearAllMascotSlots } from './clearAllMascotSlots';
 
 jest.mock('@/features/auth', () => ({
   api: jest.requireActual('@/api/httpClient').httpClient,
@@ -42,4 +43,24 @@ it('clearMascotSlot sends only resource data to the current-user route', async (
     url: '/mascot/profile/me/slots/head',
     method: 'delete',
   });
+});
+
+it('clearAllMascotSlots clears all slots through one current-user request', async () => {
+  const profile = {
+    userId: 'reader-a',
+    ownedItemIds: ['glasses'],
+    equippedItems: {},
+  };
+  const adapter = mockHttpAdapter().mockResolvedValue(
+    createHttpResponse(profile),
+  );
+
+  await expect(clearAllMascotSlots()).resolves.toEqual(profile);
+
+  expect(adapter).toHaveBeenCalledTimes(1);
+  expect(adapter.mock.calls[0][0]).toMatchObject({
+    url: '/mascot/profile/me/slots',
+    method: 'delete',
+  });
+  expect(adapter.mock.calls[0][0].data).toBeUndefined();
 });

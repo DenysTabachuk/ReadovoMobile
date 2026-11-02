@@ -1,8 +1,5 @@
-import { useBanner } from '@/components/banner';
-import { getArticleErrorMessageKey } from '../../../utils/getArticleErrorMessageKey';
 import { useAuth } from '@/features/auth';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useTranslation } from 'react-i18next';
 import { RECENT_ARTICLES_QUERY_KEY } from '../../../recentArticles/constants';
 import { SAVED_ARTICLES_QUERY_KEY } from '../../../savedArticles/constants';
 import { stripDuplicateTitleHeading } from '../../../utils/stripDuplicateTitleHeading';
@@ -10,7 +7,6 @@ import { simplifyWikipediaArticle } from '../../requests';
 import type {
   ArticleTextTransformationType,
   SimplifyArticleLevel,
-  SimplifyArticleResponse,
   WikipediaArticleDetail,
 } from '../../types';
 import { createSimplificationRequestBlocks } from './utils/createSimplificationRequestBlocks';
@@ -18,33 +14,28 @@ import { createSimplificationRequestBlocks } from './utils/createSimplificationR
 type UseSimplifyArticleMutationParams = {
   article: WikipediaArticleDetail;
   selectedLevel: SimplifyArticleLevel;
-  onSuccess: (response: SimplifyArticleResponse) => void;
 };
 
 /**
  * Requests an adaptation or summary at the selected level when explicitly mutated.
  * Prepares article blocks for transport, then invalidates article lists, adaptation
- * availability, and the user's recent/saved lists on success before notifying the
- * caller. Failures are logged and show a banner specific to the requested mode.
+ * availability, and the user's recent/saved lists on success. Callers own UI
+ * feedback through component-bound mutate callbacks.
  *
- * @param params - Source article, generation level, and success callback responsible
- * for applying the generated response to the reader's local state.
+ * @param params - Source article and generation level.
  * @returns Mutation controls accepting 'adaptation' or 'summary', with pending/error
  * state. Invalidation schedules refreshes; the callback does not await those refreshes.
  * @example
  * // Inside a component or another hook:
- * const simplify = useSimplifyArticleMutation({ article, selectedLevel: 'B1', onSuccess: applyVersion });
- * simplify.mutate('summary');
+ * const simplify = useSimplifyArticleMutation({ article, selectedLevel: 'B1' });
+ * simplify.mutate('summary', { onSuccess: applyVersion });
  * // Requests a B1 summary and passes its response to applyVersion on success.
  */
 export function useSimplifyArticleMutation({
   article,
   selectedLevel,
-  onSuccess,
 }: UseSimplifyArticleMutationParams) {
   const { currentUser } = useAuth();
-  const { t } = useTranslation();
-  const { showBanner } = useBanner();
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (transformationType: ArticleTextTransformationType) => {
@@ -59,16 +50,7 @@ export function useSimplifyArticleMutation({
         transformationType,
       });
     },
-    onError: (mutationError) => {
-      const messageKey = getArticleErrorMessageKey(mutationError);
-      if (!messageKey) return;
-      console.error('[ArticleScreen] Failed to transform article.');
-      showBanner({
-        title: t(messageKey),
-        variant: 'error',
-      });
-    },
-    onSuccess: (response) => {
+    onSuccess: () => {
       void queryClient.invalidateQueries({
         queryKey: [...RECENT_ARTICLES_QUERY_KEY, currentUser?.id],
       });
@@ -81,7 +63,6 @@ export function useSimplifyArticleMutation({
       void queryClient.invalidateQueries({
         queryKey: ['wikipedia', 'articles'],
       });
-      onSuccess(response);
     },
   });
 }

@@ -629,8 +629,7 @@
       "purchaseFreezeFailed": "Не вдалося купити заморозку.",
       "restoreFailed": "Не вдалося відновити серію.",
       "restoreUnavailable": "Цю серію більше неможливо відновити.",
-      "calendarUnavailable": "Цей місяць календаря ще недоступний.",
-      "priceChanged": "Ціна змінилася. Оновіть дані та спробуйте ще раз."
+      "calendarUnavailable": "Цей місяць календаря ще недоступний."
     },
     "restore": {
       "balance": "Ваш баланс",
@@ -659,6 +658,9 @@
         "default": "Продовжити"
       },
       "daysInRow": "днів поспіль"
+    },
+    "debug": {
+      "previewAchievement": "Показати досягнення серії"
     }
   },
   "errors": {

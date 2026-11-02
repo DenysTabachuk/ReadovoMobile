@@ -236,11 +236,7 @@ export class StreakService {
     };
   }
 
-  async restore(userId: string, price: number): Promise<StreakState> {
-    if (price !== RESTORE_PRICE) {
-      throw new ApiException(STREAK_ERRORS.RESTORE_PRICE_INVALID);
-    }
-
+  async restore(userId: string): Promise<StreakState> {
     const profile = await this.ensureProfile(userId);
     const broken = profile.brokenStreakInfo;
     const localToday = this.getLocalDateKey(new Date(), profile.timezone);
@@ -327,14 +323,7 @@ export class StreakService {
     return this.getProfile(userId);
   }
 
-  async purchaseFreezeToken(
-    userId: string,
-    price: number,
-  ): Promise<StreakState> {
-    if (price !== FREEZE_TOKEN_PRICE) {
-      throw new ApiException(STREAK_ERRORS.FREEZE_TOKEN_PRICE_INVALID);
-    }
-
+  async purchaseFreezeToken(userId: string): Promise<StreakState> {
     const profile = await this.ensureProfile(userId);
 
     if (profile.freezeTokens >= MAX_FREEZE_TOKENS) {
@@ -437,7 +426,6 @@ export class StreakService {
           brokenAt: day,
           canRestore: true,
           previousStreak: profile.currentStreak,
-          restorePrice: RESTORE_PRICE,
         };
         continue;
       }
@@ -457,7 +445,6 @@ export class StreakService {
         brokenAt: day,
         canRestore: true,
         previousStreak: currentStreak,
-        restorePrice: RESTORE_PRICE,
       };
       currentStreak = 0;
     }
@@ -519,7 +506,6 @@ export class StreakService {
           brokenAt: day.activityDate,
           canRestore: true,
           previousStreak: currentStreak,
-          restorePrice: RESTORE_PRICE,
         };
         currentStreak = 0;
       }
@@ -674,10 +660,12 @@ export class StreakService {
       coinBalance,
       currentStreak: profile.currentStreak,
       freezeTokens: profile.freezeTokens,
+      freezeTokenPrice: FREEZE_TOKEN_PRICE,
       lastActivityDate: profile.lastActivityDate,
       longestStreak: profile.longestStreak,
       nextBonusInDays,
       nextMilestone,
+      restorePrice: RESTORE_PRICE,
       serverNow: serverNow.toISOString(),
       todayStatus,
     };

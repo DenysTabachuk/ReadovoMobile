@@ -21,6 +21,7 @@ import { cancelQueriesOnSessionChange } from './utils/cancelQueriesOnSessionChan
 
 type AuthContextValue = {
   currentUser: AuthUserProfile | null;
+  sessionVersion: number;
   isAuthenticated: boolean;
   isHydratingAuth: boolean;
   rememberMePreference: boolean;
@@ -40,8 +41,21 @@ type AuthProviderProps = {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
+/**
+ * Owns auth state and advances the screen-tree session key after sign-in/logout.
+ * Token refresh keeps the screen tree mounted. Login/logout replaces the key
+ * so React Query disposes the old screens' per-call mutation subscriptions.
+ * @param props - Application subtree receiving auth state and transition actions.
+ * @returns Auth context; consumers must key the screen boundary by sessionVersion.
+ * @example
+ * <AuthProvider><App /></AuthProvider>
+ * // Inside App: <Stack key={sessionVersion}>...</Stack>
+ */
 export function AuthProvider({ children }: AuthProviderProps) {
   const queryClient = useQueryClient();
+  const [sessionVersion, setSessionVersion] = useState(
+    authSessionStore.version,
+  );
   const [isHydratingAuth, setIsHydratingAuth] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentUser, setCurrentUser] = useState<AuthUserProfile | null>(null);
@@ -128,6 +142,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         ]);
       }
 
+      setSessionVersion(authSessionStore.version);
       setCurrentUser(userProfile);
       setIsAuthenticated(true);
     },
@@ -146,12 +161,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
       AsyncStorage.removeItem(AUTH_STORAGE_KEYS.userProfile),
       googleSignOutPromise,
     ]);
+    setSessionVersion(authSessionStore.version);
     setCurrentUser(null);
     setIsAuthenticated(false);
   }, []);
 
   const value = useMemo<AuthContextValue>(
     () => ({
+      sessionVersion,
       isAuthenticated,
       isHydratingAuth,
       currentUser,
@@ -161,6 +178,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       signOut,
     }),
     [
+      sessionVersion,
       isAuthenticated,
       isHydratingAuth,
       currentUser,

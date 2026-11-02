@@ -4,13 +4,12 @@ import { AxiosError } from 'axios';
 
 import { createHttpResponse, mockHttpAdapter } from '@/api/testing/http';
 import { api } from '@/features/auth/session/api';
-import * as auth from '@/features/auth';
 import { cancelQueriesOnSessionChange } from '@/features/auth/providers/authProvider/utils/cancelQueriesOnSessionChange';
 import { authSessionStore } from '@/features/auth/session/authTokenStorage/authSessionStore';
 import { useStreakCalendarMonthQuery } from '@/features/streak/api/queries/useStreakCalendarMonthQuery';
 import { useStreakProfileQuery } from '@/features/streak/api/queries/useStreakProfileQuery';
 import * as streakProfileRequest from '@/features/streak/api/requests/getStreakProfile';
-import { buyStreakFreezeToken } from '@/features/streak/utils/buyStreakFreezeToken';
+import { purchaseStreakFreezeToken } from '@/features/streak/api/requests/purchaseStreakFreezeToken';
 import { shouldRetryQuery } from '@/providers/queryProvider/utils/shouldRetryQuery';
 
 // Keep the actual services, Axios interceptors, token store, and query observers.
@@ -85,24 +84,17 @@ afterEach(() => {
   jest.useRealTimers();
 });
 
-it('rejects a stale service before sending a purchase after snapshot capture', async () => {
-  const capture = auth.getAuthSessionSnapshot;
-  jest
-    .spyOn(auth, 'getAuthSessionSnapshot')
-    .mockImplementationOnce(async (userId) => {
-      const session = await capture(userId);
-      await authSessionStore.replace(ACCOUNT_B);
-      return session;
-    });
-  const adapter = mockHttpAdapter(api).mockResolvedValue(
-    createHttpResponse({}),
-  );
+it('rejects a purchase response after a session change through the shared HTTP client', async () => {
+  const adapter = mockHttpAdapter(api).mockImplementationOnce(async () => {
+    await authSessionStore.replace(ACCOUNT_B);
+    return createHttpResponse({});
+  });
 
-  await expect(buyStreakFreezeToken('reader-a')).rejects.toMatchObject({
+  await expect(purchaseStreakFreezeToken()).rejects.toMatchObject({
     name: 'AbortError',
   });
 
-  expect(adapter).not.toHaveBeenCalled();
+  expect(adapter).toHaveBeenCalledTimes(1);
 });
 
 it('discards a canceled profile query even if its final request has already succeeded', async () => {

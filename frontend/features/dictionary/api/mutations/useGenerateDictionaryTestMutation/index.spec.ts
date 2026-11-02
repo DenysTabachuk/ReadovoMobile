@@ -23,6 +23,7 @@ jest.mock('@tanstack/react-query', () => {
       options: MutationObserverOptions<DictionaryTest, Error, void>,
     ) => {
       const observer = new actual.MutationObserver(mockQueryClient, options);
+      observer.subscribe(() => undefined);
       return { mutateAsync: observer.mutate.bind(observer) };
     },
   };
@@ -34,7 +35,7 @@ describe('useGenerateDictionaryTestMutation', () => {
 
   it('does not generate a test until requested', () => {
     const onSuccess = jest.fn();
-    useGenerateDictionaryTestMutation({ onSuccess });
+    useGenerateDictionaryTestMutation();
     expect(mockFetchTest).not.toHaveBeenCalled();
     expect(onSuccess).not.toHaveBeenCalled();
   });
@@ -47,8 +48,8 @@ describe('useGenerateDictionaryTestMutation', () => {
       started.resolve();
       return pending.promise;
     });
-    const mutation = useGenerateDictionaryTestMutation({ onSuccess });
-    const result = mutation.mutateAsync();
+    const mutation = useGenerateDictionaryTestMutation();
+    const result = mutation.mutateAsync(undefined, { onSuccess });
     await started.promise;
     expect(onSuccess).not.toHaveBeenCalled();
     const test: DictionaryTest = {
@@ -73,8 +74,10 @@ describe('useGenerateDictionaryTestMutation', () => {
     const error = new Error('dictionary.test.error');
     mockFetchTest.mockRejectedValue(error);
     const onSuccess = jest.fn();
-    const mutation = useGenerateDictionaryTestMutation({ onSuccess });
-    await expect(mutation.mutateAsync()).rejects.toBe(error);
+    const mutation = useGenerateDictionaryTestMutation();
+    await expect(mutation.mutateAsync(undefined, { onSuccess })).rejects.toBe(
+      error,
+    );
     expect(onSuccess).not.toHaveBeenCalled();
   });
 });

@@ -1,3 +1,4 @@
+import { useArticleMutationFeedback } from '@/features/articles/hooks/useArticleMutationFeedback';
 import {
   createRecentArticleFromDetail,
   createSavedArticleFromDetail,
@@ -22,8 +23,8 @@ import { useCallback, useEffect } from 'react';
  *
  * @param article - Loaded article to record and optionally save/remove.
  * @returns Saved status, pending-save status, and an explicit toggle action that
- * ignores calls while saving. The owning mutation handles optimistic cache updates
- * and outcome banners; unauthenticated save attempts are rejected there.
+ * ignores calls while saving. The owning mutation handles optimistic cache updates; this hook supplies
+ * component-bound outcome banners. Unauthenticated saves are rejected by the mutation.
  * @example
  * // Inside a component or another hook:
  * const library = useArticleLibrary(article);
@@ -37,16 +38,27 @@ export function useArticleLibrary(article: WikipediaArticleDetail) {
   const { data: savedArticles } = useSavedArticlesQuery();
   const isCurrentArticleSaved = isArticleSaved(articleId, savedArticles);
   const savedArticleMutation = useToggleSavedArticleMutation();
+  const { onSaved: showArticleSavedBanner, onError: showArticleErrorBanner } =
+    useArticleMutationFeedback();
   const handleToggleSavedArticle = useCallback(() => {
     if (savedArticleMutation.isPending) {
       return;
     }
 
-    savedArticleMutation.mutate({
-      article: createSavedArticleFromDetail(article),
-      saved: isCurrentArticleSaved,
-    });
-  }, [savedArticleMutation, article, isCurrentArticleSaved]);
+    savedArticleMutation.mutate(
+      {
+        article: createSavedArticleFromDetail(article),
+        saved: isCurrentArticleSaved,
+      },
+      { onSuccess: showArticleSavedBanner, onError: showArticleErrorBanner },
+    );
+  }, [
+    savedArticleMutation,
+    article,
+    isCurrentArticleSaved,
+    showArticleSavedBanner,
+    showArticleErrorBanner,
+  ]);
   useEffect(() => {
     if (!article || !currentUser?.id) {
       return;

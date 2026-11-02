@@ -4,10 +4,7 @@ import { Pressable, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { ThemedText } from '@/components/themedText';
-import {
-  STREAK_FREEZE_TOKEN_PRICE,
-  STREAK_MAX_FREEZE_TOKENS,
-} from '../../constants';
+import { STREAK_MAX_FREEZE_TOKENS } from '../../constants';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
 import { styles } from './styles';
@@ -15,6 +12,7 @@ import { styles } from './styles';
 type StreakFreezeCardProps = {
   coinBalance: number;
   freezeTokens: number;
+  freezeTokenPrice: number;
   isBuying?: boolean;
   onBuyToken: () => void;
 };
@@ -22,15 +20,22 @@ type StreakFreezeCardProps = {
 export function StreakFreezeCard({
   coinBalance,
   freezeTokens,
+  freezeTokenPrice,
   isBuying = false,
   onBuyToken,
 }: StreakFreezeCardProps) {
   const { t } = useTranslation();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
-  const hasEnoughCoins = coinBalance >= STREAK_FREEZE_TOKEN_PRICE;
+  const hasEnoughCoins = coinBalance >= freezeTokenPrice;
   const reachedLimit = freezeTokens >= STREAK_MAX_FREEZE_TOKENS;
   const canBuy = hasEnoughCoins && !reachedLimit && !isBuying;
+  let buyButtonLabel = t('streak.freeze.buy');
+  if (reachedLimit) {
+    buyButtonLabel = t('streak.freeze.limitReached');
+  } else if (isBuying) {
+    buyButtonLabel = t('streak.freeze.buying');
+  }
 
   return (
     <View style={[styles.card, isDark ? styles.cardDark : styles.cardLight]}>
@@ -76,7 +81,7 @@ export function StreakFreezeCard({
               isDark ? styles.descriptionDark : styles.descriptionLight,
             ]}
           >
-            {STREAK_FREEZE_TOKEN_PRICE}
+            {freezeTokenPrice}
           </ThemedText>
         </View>
         <Pressable
@@ -92,11 +97,7 @@ export function StreakFreezeCard({
         >
           <Ionicons color="#ffffff" name="add-circle-outline" size={16} />
           <ThemedText type="bodyStrong" style={styles.buyButtonText}>
-            {reachedLimit
-              ? t('streak.freeze.limitReached')
-              : isBuying
-                ? t('streak.freeze.buying')
-                : t('streak.freeze.buy')}
+            {buyButtonLabel}
           </ThemedText>
         </Pressable>
       </View>

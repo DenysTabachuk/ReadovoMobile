@@ -10,3 +10,5 @@ export type {
   QuizSessionResult,
   QuizSubmitResult,
 } from './types';
+
+export { useQuizCompletionFeedback } from './hooks/useQuizCompletionFeedback';

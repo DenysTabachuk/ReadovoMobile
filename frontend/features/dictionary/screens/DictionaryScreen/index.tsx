@@ -1,3 +1,4 @@
+import { useDictionaryMutationFeedback } from '../../hooks/useDictionaryMutationFeedback';
 import type {
   DictionaryFilter,
   DictionaryProgressFilter,
@@ -110,18 +111,13 @@ export default function DictionaryScreen() {
     ? getApiErrorMessageKey(selectedWordTranslationError)
     : null;
   const shouldShowErrorState = Boolean(errorMessageKey) && words.length === 0;
+  const {
+    onDeleted: showWordDeletedBanner,
+    onError: showDictionaryErrorBanner,
+  } = useDictionaryMutationFeedback();
   const { mutate: updateWordProgress, isPending: isUpdatingProgress } =
-    useUpdateDictionaryWordProgressMutation({
-      onSuccess: () => {
-        setOpenProgressMenuWordId(null);
-      },
-    });
-  const deleteWordMutation = useDeleteDictionaryWordMutation({
-    onSuccess: () => {
-      setDeleteCandidate(null);
-      setSelectedWord(null);
-    },
-  });
+    useUpdateDictionaryWordProgressMutation();
+  const deleteWordMutation = useDeleteDictionaryWordMutation();
   const handleToggleProgressMenu = useCallback((wordId: string) => {
     setOpenProgressMenuWordId((current) =>
       current === wordId ? null : wordId,
@@ -129,9 +125,15 @@ export default function DictionaryScreen() {
   }, []);
   const handleMoveBackToInProgress = useCallback(
     (wordId: string) => {
-      updateWordProgress({ progress: 'in_progress', wordId });
+      updateWordProgress(
+        { progress: 'in_progress', wordId },
+        {
+          onSuccess: () => setOpenProgressMenuWordId(null),
+          onError: showDictionaryErrorBanner,
+        },
+      );
     },
-    [updateWordProgress],
+    [updateWordProgress, showDictionaryErrorBanner],
   );
   const renderWord = useCallback<ListRenderItem<DictionaryWord>>(
     ({ item }) => (
@@ -167,8 +169,20 @@ export default function DictionaryScreen() {
       return;
     }
 
-    deleteWordMutation.mutate(deleteCandidate.id);
-  }, [deleteCandidate, deleteWordMutation]);
+    deleteWordMutation.mutate(deleteCandidate.id, {
+      onSuccess: () => {
+        setDeleteCandidate(null);
+        setSelectedWord(null);
+        showWordDeletedBanner();
+      },
+      onError: showDictionaryErrorBanner,
+    });
+  }, [
+    deleteCandidate,
+    deleteWordMutation,
+    showWordDeletedBanner,
+    showDictionaryErrorBanner,
+  ]);
   if (shouldShowInitialLoader) {
     return (
       <ScreenContainer>

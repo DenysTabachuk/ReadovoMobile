@@ -10,6 +10,14 @@ import { MascotService } from './mascot.service';
 
 const routes = [
   {
+    method: 'delete',
+    path: '/mascot/profile/me/slots',
+    operation: 'clearAllSlots',
+    arguments: [],
+    body: {},
+    status: 200,
+  },
+  {
     method: 'get',
     path: '/mascot/profile/me',
     operation: 'getProfile',
@@ -56,6 +64,7 @@ describe('Mascot current-user contract (HTTP)', () => {
     buyItem: jest.fn().mockResolvedValue({}),
     equipItem: jest.fn().mockResolvedValue({}),
     clearSlot: jest.fn().mockResolvedValue({}),
+    clearAllSlots: jest.fn().mockResolvedValue({}),
   });
   let service: ReturnType<typeof createService>;
 

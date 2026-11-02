@@ -25,9 +25,9 @@ describe('Streak profile and calendar errors (HTTP)', () => {
   it.each([
     { method: 'get', path: '', body: {} },
     { method: 'get', path: '/calendar/month?year=2026&month=10', body: {} },
-    { method: 'post', path: '/restore', body: { price: 100 } },
+    { method: 'post', path: '/restore', body: {} },
     { method: 'post', path: '/freeze', body: { date: '2026-10-27' } },
-    { method: 'post', path: '/freeze-token/purchase', body: { price: 100 } },
+    { method: 'post', path: '/freeze-token/purchase', body: {} },
   ] as const)(
     'returns a domain 404 for a missing user on $method $path',
     async ({ method, path, body }) => {
@@ -140,6 +140,8 @@ describe('Streak profile and calendar errors (HTTP)', () => {
     expect(response.body).toMatchObject({
       currentStreak: 0,
       freezeTokens: 1,
+      freezeTokenPrice: 100,
+      restorePrice: 100,
       coinBalance: 0,
       activityHistory: [],
       serverNow: STREAK_TEST_NOW,
@@ -147,4 +149,48 @@ describe('Streak profile and calendar errors (HTTP)', () => {
     expect(response.body).not.toHaveProperty('code');
     expect(response.body).not.toHaveProperty('error');
   });
+
+  it.each([
+    {
+      format: 'current',
+      brokenStreakInfo: {
+        brokenAt: '2026-10-27',
+        canRestore: true,
+        previousStreak: 3,
+      },
+    },
+    {
+      format: 'legacy',
+      brokenStreakInfo: {
+        brokenAt: '2026-10-27',
+        canRestore: true,
+        previousStreak: 3,
+        restorePrice: 1,
+      },
+    },
+  ])(
+    'adds the current server price to a $format stored break',
+    async ({ brokenStreakInfo }) => {
+      testApp.prisma.userStreakProfile.upsert.mockResolvedValue({
+        ...testApp.profile,
+        brokenStreakInfo,
+      });
+
+      const response = await request(testApp.server)
+        .get('/streak/profile/me')
+        .set('Authorization', testApp.authorization)
+        .expect(200);
+
+      expect(response.body).toMatchObject({
+        brokenStreakInfo: {
+          brokenAt: '2026-10-27',
+          canRestore: true,
+          previousStreak: 3,
+        },
+        freezeTokenPrice: 100,
+        restorePrice: 100,
+      });
+      expect(response.body).not.toHaveProperty('brokenStreakInfo.restorePrice');
+    },
+  );
 });

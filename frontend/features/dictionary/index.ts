@@ -17,3 +17,5 @@ export type {
 } from './api';
 
 export { useCreateDictionaryWordMutation } from './api';
+
+export { useDictionaryMutationFeedback } from './hooks/useDictionaryMutationFeedback';

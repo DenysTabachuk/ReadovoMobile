@@ -203,14 +203,12 @@ Frontend behavior in this table is the intended mapping for its later migration.
 | Profile balance lookup after the user disappears                                           | 404    | `STREAK_USER_NOT_FOUND`             | Feature fallback                              | `streak-profile.http.spec.ts`, disappearing user                      |
 | Calendar: future month                                                                     | 400    | `STREAK_CALENDAR_MONTH_UNAVAILABLE` | Calendar fallback                             | `streak-profile.http.spec.ts`, future month                           |
 | Calendar: invalid year/month; freeze: invalid date                                         | 400    | `VALIDATION_FAILED`                 | Known field feedback or feature fallback      | DTO cases in profile/freeze HTTP suites                               |
-| POST restore: price differs from 100                                                       | 400    | `STREAK_RESTORE_PRICE_INVALID`      | `streak.errors.restoreFailed`                 | `streak-balance.http.spec.ts`, stale/manipulated restore price        |
 | POST restore: no restorable break                                                          | 400    | `STREAK_RESTORE_UNAVAILABLE`        | `streak.errors.restoreFailed`                 | `streak-balance.http.spec.ts`, no restorable break                    |
 | POST restore or freeze-token/purchase: insufficient balance                                | 400    | `STREAK_NOT_ENOUGH_COINS`           | `streak.errors.notEnoughCoins`                | `streak-balance.http.spec.ts`, both operations; no charge             |
 | POST freeze: no tokens                                                                     | 400    | `STREAK_NO_FREEZE_TOKENS`           | `streak.errors.noFreezeTokens`                | `streak-freeze.http.spec.ts`, empty token balance                     |
 | POST freeze: completed/frozen/restored date                                                | 400    | `STREAK_DAY_ALREADY_PROTECTED`      | `streak.errors.dayAlreadyProtected`           | `streak-freeze.http.spec.ts`, all three statuses                      |
 | POST freeze: date has no missed history                                                    | 400    | `STREAK_FREEZE_ONLY_MISSED_DAY`     | `streak.errors.freezeOnlyMissed`              | `streak-freeze.http.spec.ts`, no missed-day history                   |
 | POST freeze: three freezes already used in the break                                       | 400    | `STREAK_FREEZE_DAY_LIMIT_REACHED`   | `streak.errors.freezeDayLimitReached`         | `streak-freeze.http.spec.ts`, fourth frozen day                       |
-| POST freeze-token/purchase: price differs from 100                                         | 400    | `STREAK_FREEZE_TOKEN_PRICE_INVALID` | `streak.errors.purchaseFreezeFailed`          | `streak-balance.http.spec.ts`, stale/manipulated purchase price       |
 | POST freeze-token/purchase: three tokens already owned                                     | 400    | `STREAK_FREEZE_TOKEN_LIMIT_REACHED` | `streak.errors.freezeLimitReached`            | `streak-balance.http.spec.ts`, full inventory                         |
 | Persistence failure or invalid stored broken-streak data                                   | 500    | `INTERNAL_ERROR`                    | Feature fallback; no raw internal diagnostics | `streak-profile.http.spec.ts`, database and malformed-state cases     |
 
@@ -222,7 +220,7 @@ remains a separate task.
 
 Calendar year/month and freeze-date structure are validated once in the request
 DTOs. `StreakModule` exports its service for verified quiz completion within the
-completion transaction. Business constraints such as future months, prices,
+completion transaction. Business constraints such as future months,
 balance and freeze limits remain in the service. HTTP tests cover invalid ranges,
 non-integer and missing calendar values and invalid dates before persistence.
 
@@ -238,6 +236,14 @@ in the current service: freezing an old missed day is not explicitly rejected by
 age. Do not publish this code or add a time-window business rule during this
 migration. Resolve the intended policy separately before implementing that code.
 
+Restore and freeze-token purchase accept no request payload. The server determines
+and charges their prices; supplied body prices have no effect. Streak responses
+include top-level `freezeTokenPrice` and `restorePrice` for
+display. The former client-price mismatch error codes are no longer emitted.
+Persisted break details contain only `brokenAt`, `canRestore` and `previousStreak`;
+`restorePrice` is added when building the response. Legacy JSON prices are ignored
+on reads, omitted on writes and removed by the restore-price data migration.
+
 ## Authenticated personal routes
 
 All personal controllers use `UserAuthGuard` and obtain the owner from the verified
@@ -249,7 +255,7 @@ The guard no longer compares `request.params.userId`; unused owner DTOs were rem
 | Owner           | Current routes                                                                                                                                                                                                              |
 | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Achievements    | `GET /achievements/profile/me`                                                                                                                                                                                              |
-| Mascot          | `GET /mascot/profile/me`, `POST /mascot/profile/me/items/:itemId/buy`, `POST /mascot/profile/me/items/:itemId/equip`, `DELETE /mascot/profile/me/slots/:slot`                                                               |
+| Mascot          | `GET /mascot/profile/me`, `POST /mascot/profile/me/items/:itemId/buy`, `POST /mascot/profile/me/items/:itemId/equip`, `DELETE /mascot/profile/me/slots/:slot`, `DELETE /mascot/profile/me/slots`                            |
 | Article library | `GET/POST /api/users/me/articles/saved`, `DELETE /api/users/me/articles/saved/:articleId`, `GET/POST /api/users/me/articles/recent`                                                                                         |
 | Notifications   | `GET/PUT /notifications/preferences/me`, `POST/DELETE /notifications/push-token/me` (DELETE retains the `deviceId` query), `POST /notifications/test-push/me`, `DELETE /notifications/learning-reminders/dispatch/today/me` |
 | Dictionary      | `GET/POST /api/dictionary/me/words`, `DELETE /api/dictionary/me/words/:wordId`, `PATCH /api/dictionary/me/words/:wordId/progress`, `GET /api/dictionary/me/test`                                                            |

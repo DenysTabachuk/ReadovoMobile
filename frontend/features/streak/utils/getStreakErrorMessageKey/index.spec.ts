@@ -24,8 +24,6 @@ it.each([
     'STREAK_CALENDAR_MONTH_UNAVAILABLE',
     'streak.errors.calendarUnavailable',
   ],
-  [400, 'STREAK_RESTORE_PRICE_INVALID', 'streak.errors.priceChanged'],
-  [400, 'STREAK_FREEZE_TOKEN_PRICE_INVALID', 'streak.errors.priceChanged'],
 ] as const)(
   'maps %s/%s without relying on message text',
   (status, code, key) => {

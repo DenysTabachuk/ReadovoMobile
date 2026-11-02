@@ -16,6 +16,22 @@ describe('Mascot equipment (HTTP)', () => {
     await testApp.app.close();
   });
 
+  it('returns the unequipped profile while keeping owned items after clearing all slots', async () => {
+    testApp.prisma.userMascotProfile.update.mockResolvedValue({
+      ...testApp.profile,
+      ownedItemIds: ['glasses', 'pirate-hat'],
+    });
+
+    await request(testApp.server)
+      .delete('/mascot/profile/me/slots')
+      .set('Authorization', testApp.authorization)
+      .expect(200, {
+        userId: MASCOT_TEST_USER_ID,
+        ownedItemIds: ['glasses', 'pirate-hat'],
+        equippedItems: {},
+      });
+  });
+
   it('rejects an unknown catalog item before persistence', async () => {
     await request(testApp.server)
       .post(`/mascot/profile/me/items/unknown-item/equip`)

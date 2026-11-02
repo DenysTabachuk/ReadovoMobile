@@ -58,10 +58,38 @@ import-only updates do not require refactoring the imported module.
 
 - Wrap each `useQuery` and `useMutation` operation in its own named custom hook, with an `index.ts` entry point under the owning feature's `api/queries` or `api/mutations`, for example `api/queries/useArticleDetailQuery/index.ts`.
 - Keep query keys, request execution, cache updates, invalidation, and optimistic rollback inside the owning query or mutation hook.
-- Keep screen state, modal visibility, and navigation in the calling component or orchestration hook. Pass typed callbacks for screen-specific success behavior when needed.
+- Keep mutation-driven screen state, modal visibility, banners and navigation in the calling component or UI hook. Pass these effects as the second argument to `mutate(variables, callbacks)`; do not forward screen callbacks into `useMutation` options.
+- React Query's per-call callbacks stop after the owning observer unmounts. Hook-level callbacks still execute, and `mutateAsync` still settles after unmount; do not use its `.then/.catch/.finally` or an `await` continuation for screen effects. Reserve promises for workflows with an explicit lifetime and cancellation policy.
+- The root screen tree is keyed by the auth provider's session version and remounts on completed login/logout, including another login to the same account. Refresh preserves the version. This disposes old screen subscriptions; a mounted screen or an async callback already executing needs its own lifetime checks. Keep the banner provider outside that keyed tree so public sign-in feedback can survive the auth transition.
+- Cache updates, invalidation and rollback remain in data hooks with owner-specific keys. Preserve session assertions between awaited steps before another request or storage write; unmounting cannot stop those workflows or undo an accepted server write.
+- Single HTTP operations use the shared authenticated client directly, without manual session assertions around the request. Prefer one backend operation for a single user action such as clearing all mascot slots, rather than coordinating per-slot requests in the client. Native or storage work after an awaited request still needs its own session lifetime check where applicable.
+- Per-call callbacks run only for the latest invocation on that observer. Use them for the current screen action; work that must complete for every invocation belongs in data callbacks or an explicitly owned workflow.
 - Keep data hooks in the feature that owns the data. For example, a dictionary mutation used by an article screen belongs in `dictionary/api/mutations` and is imported through `dictionary/index.ts`.
 - Keep UI and orchestration hooks in feature- or screen-level `hooks` directories, separate from the API layer. API hooks must not depend on screen internals or their utility barrels.
 - Within the API layer, import request functions, types, and sibling modules directly or through their group barrels; do not import the owning feature's aggregate API barrel back into itself.
+
+## Hook result usage
+
+Prefer destructuring individual actions when an object name such as `feedback`
+does not explain what they do. Rename generic callbacks locally to describe their
+effect:
+
+```ts
+const { onSaved: showArticleSavedBanner, onError: showArticleErrorBanner } =
+  useArticleMutationFeedback();
+
+bookmark.mutate(action, {
+  onSuccess: showArticleSavedBanner,
+  onError: showArticleErrorBanner,
+});
+```
+
+Keep a hook result as an object when it is passed around as a whole or represents
+a clear, cohesive concept. For example, `completionFeedback` can be passed directly
+to `mutate`, and `saveMutation` can group `isPending`, `error`, `mutate` and `reset`.
+Choose based on the consumer's clarity; do not require universal destructuring or
+rename already descriptive actions. Apply this rule within touched code rather
+than migrating unrelated consumers.
 
 ## Hook documentation
 
@@ -214,19 +242,18 @@ API barrel. A cross-feature consumer uses the owning feature's root `index.ts`.
 type UseGenerateArticleQuizMutationParams = {
   article: WikipediaArticleDetail;
   selectedLevel: SimplifyArticleLevel;
-  onSuccess: (
-    mode: ArticleQuizMode,
-    resolvedLevel: SimplifyArticleLevel,
-  ) => void;
 };
 
 export function useGenerateArticleQuizMutation({
   article,
   selectedLevel,
-  onSuccess,
 }: UseGenerateArticleQuizMutationParams) {
   // Request/cache behavior belongs here; the caller owns navigation.
 }
+
+// In the screen or UI hook:
+const quiz = useGenerateArticleQuizMutation({ article, selectedLevel });
+quiz.mutate("article", { onSuccess: openQuiz, onError: showError });
 ```
 
 The type stays in this module unless another module needs it. One or two simple

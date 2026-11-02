@@ -33,14 +33,6 @@ const ERROR_MESSAGES = new Map([
     'STREAK_CALENDAR_MONTH_UNAVAILABLE',
     { status: 400, messageKey: 'streak.errors.calendarUnavailable' },
   ],
-  [
-    'STREAK_RESTORE_PRICE_INVALID',
-    { status: 400, messageKey: 'streak.errors.priceChanged' },
-  ],
-  [
-    'STREAK_FREEZE_TOKEN_PRICE_INVALID',
-    { status: 400, messageKey: 'streak.errors.priceChanged' },
-  ],
 ]);
 /**
  * Selects localized streak feedback from explicit API codes.

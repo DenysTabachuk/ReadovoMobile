@@ -1,3 +1,4 @@
+import { useArticleMutationFeedback } from '@/features/articles/hooks/useArticleMutationFeedback';
 import {
   useArticleAdaptationsQuery,
   useSimplifyArticleMutation,
@@ -57,11 +58,8 @@ export function useArticleTransformations(
   const { mutate, isPending, variables } = useSimplifyArticleMutation({
     article,
     selectedLevel,
-    onSuccess: (response) => {
-      dispatch({ type: 'generated', article: response });
-      onTextChange();
-    },
   });
+  const { onError: showArticleErrorBanner } = useArticleMutationFeedback();
   const availableAdaptations = useMemo(
     () =>
       mergeArticleAdaptations(
@@ -94,9 +92,16 @@ export function useArticleTransformations(
   );
   const generateTransformation = useCallback(
     (type: ArticleTextTransformationType) => {
-      if (!isPending) mutate(type);
+      if (!isPending)
+        mutate(type, {
+          onSuccess: (response) => {
+            dispatch({ type: 'generated', article: response });
+            onTextChange();
+          },
+          onError: showArticleErrorBanner,
+        });
     },
-    [isPending, mutate],
+    [isPending, mutate, onTextChange, showArticleErrorBanner],
   );
   const handleTextViewModeChange = useCallback(
     (mode: ArticleTextViewMode) => {

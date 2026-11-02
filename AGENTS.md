@@ -3,6 +3,9 @@
 - Before changing `frontend/**`, read [frontend/AGENTS.md](frontend/AGENTS.md),
   including when the session starts from the repository root. Read the linked
   convention sections relevant to the task.
+- For frontend mutations, put screen effects in per-call `mutate` callbacks so
+  unmounting drops them. Keep cache work in data hooks; see the data-layer rules
+  in [frontend/AGENTS.md](frontend/AGENTS.md) for session safety and promise limits.
 - Keep changes within the requested scope. Apply conventions to new, moved, and
   touched implementation; do not migrate unrelated code. Import-only updates do
   not require refactoring the module's existing implementation.
