@@ -1,5 +1,5 @@
-import { createElement } from 'react';
-import { act, create, type ReactTestRenderer } from 'react-test-renderer';
+import { act, createElement } from 'react';
+import { createRoot, type Root } from 'test-renderer';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { getStreakProfile } from '@/features/streak';
 import { ProfileStreak } from './components/profileStreak';
@@ -63,13 +63,12 @@ jest.mock('./components/profileStreak', () => ({
   ProfileStreak: jest.fn(() => null),
 }));
 
-let renderer: ReactTestRenderer | undefined;
+let renderer: Root | undefined;
 let client: QueryClient;
 
 beforeEach(() => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
   jest.useFakeTimers();
-  jest.spyOn(console, 'error').mockImplementation(() => undefined);
   jest.clearAllMocks();
   client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
 });
@@ -86,7 +85,8 @@ afterEach(async () => {
 it('keeps streak controls unmounted after an initial query failure and lets the user retry', async () => {
   jest.mocked(getStreakProfile).mockRejectedValue(new Error('Unavailable'));
   await act(async () => {
-    renderer = create(
+    renderer = createRoot();
+    renderer.render(
       createElement(
         QueryClientProvider,
         { client },
@@ -99,7 +99,9 @@ it('keeps streak controls unmounted after an initial query failure and lets the 
   });
   expect(ProfileStreak).not.toHaveBeenCalled();
   expect(getStreakProfile).toHaveBeenCalledTimes(1);
-  const retry = renderer?.root.findByType('button');
+  const retry = renderer?.container.queryAll(
+    (node) => node.type === 'button',
+  )[0];
   expect(retry).toBeDefined();
   await act(async () => {
     retry?.props.onPress();

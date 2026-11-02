@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { createElement } from 'react';
-import { act, create, type ReactTestRenderer } from 'react-test-renderer';
+import { act, createElement } from 'react';
+import { createRoot, type Root } from 'test-renderer';
 import { AuthProvider, useAuth, useAuthenticatedUser } from '.';
 import { AUTH_STORAGE_KEYS } from './constants';
 import { authSessionStore } from '../../session/authTokenStorage/authSessionStore';
@@ -27,7 +27,7 @@ const TOKENS = {
   refreshToken: 'refresh-a',
 };
 const values = new Map<string, string>();
-let renderer: ReactTestRenderer;
+let renderer: Root;
 let client: QueryClient;
 let latestAuth: ReturnType<typeof useAuth> | undefined;
 let observedPrivateId: string | undefined;
@@ -50,7 +50,8 @@ function auth() {
 
 async function mount() {
   await act(async () => {
-    renderer = create(
+    renderer = createRoot();
+    renderer.render(
       createElement(
         QueryClientProvider,
         { client },
@@ -62,8 +63,6 @@ async function mount() {
 
 beforeEach(() => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
-  // React 19 deprecates this renderer, but still supports effect/unmount testing.
-  jest.spyOn(console, 'error').mockImplementation(() => undefined);
   values.clear();
   latestAuth = undefined;
   observedPrivateId = undefined;
@@ -215,17 +214,23 @@ it('finishes hydration signed out when refresh rejects the persisted session', a
 });
 
 it('keeps stored tokens for a later attempt after a transient hydration refresh failure', async () => {
+  const networkError = new Error('Network unavailable');
+  const reportHydrationError = jest
+    .spyOn(console, 'error')
+    .mockImplementation(() => undefined);
   values.set(AUTH_STORAGE_KEYS.rememberMe, 'true');
   values.set(AUTH_STORAGE_KEYS.accessToken, 'expired');
   values.set(AUTH_STORAGE_KEYS.refreshToken, TOKENS.refreshToken);
   values.set(AUTH_STORAGE_KEYS.userProfile, JSON.stringify(USER));
-  jest
-    .mocked(refreshAuthSession)
-    .mockRejectedValue(new Error('Network unavailable'));
+  jest.mocked(refreshAuthSession).mockRejectedValue(networkError);
   await mount();
   expect(auth()).toMatchObject({
     isHydratingAuth: false,
     isAuthenticated: false,
   });
   expect(values.get(AUTH_STORAGE_KEYS.refreshToken)).toBe('refresh-a');
+  expect(reportHydrationError).toHaveBeenCalledWith(
+    'Failed to hydrate auth state',
+    networkError,
+  );
 });

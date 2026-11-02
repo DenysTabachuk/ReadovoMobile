@@ -1,12 +1,13 @@
 import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import {
+  act,
   createElement,
   Fragment,
   useState,
   type PropsWithChildren,
 } from 'react';
-import { act, create, type ReactTestRenderer } from 'react-test-renderer';
+import { createRoot, type Root } from 'test-renderer';
 import {
   QueryClient,
   QueryClientProvider,
@@ -121,7 +122,7 @@ let mockLoadingPreferences = false;
 let mockCompletedOnboarding = false;
 let mockInitialRoute = 'index';
 let mockClient: QueryClient;
-let renderer: ReactTestRenderer | undefined;
+let renderer: Root | undefined;
 let routeNames: string[] = [];
 let activeRoute: string | undefined;
 let navigationState: ReturnType<typeof router.getInitialState> | undefined;
@@ -191,14 +192,13 @@ function MockStack({ children }: PropsWithChildren) {
 
 async function renderRoot() {
   await act(async () => {
-    if (renderer) renderer.update(createElement(RootLayout));
-    else renderer = create(createElement(RootLayout));
+    renderer ??= createRoot();
+    renderer.render(createElement(RootLayout));
   });
 }
 
 beforeEach(() => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
-  jest.spyOn(console, 'error').mockImplementation(() => undefined);
   mockClient = new QueryClient({
     defaultOptions: { mutations: { retry: false } },
   });
@@ -240,9 +240,9 @@ it.each(['auth', 'preferences'])(
     };
     mockLoadingPreferences = pending === 'preferences';
     await renderRoot();
-    expect(renderer?.root.findAllByProps({ id: 'auth-loader' })).toHaveLength(
-      1,
-    );
+    expect(
+      renderer?.container.queryAll((node) => node.props.id === 'auth-loader'),
+    ).toHaveLength(1);
     expect(routeNames).toEqual([]);
     expect(privateMounts).toBe(0);
     mockAuth.isHydratingAuth = false;

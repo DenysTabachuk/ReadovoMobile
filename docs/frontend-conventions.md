@@ -306,6 +306,14 @@ for exactly three, prefer an object when callbacks or options obscure the call.
 
 ## Automated checks and review responsibilities
 
+Component and hook lifecycle tests use the maintained `test-renderer` package.
+Keep its minor compatibility line aligned with React (currently `1.1.x` for
+React `19.1`). Import `act` from React and render, rerender, and unmount roots
+inside awaited `act` calls. These tests exercise React lifecycle and real query
+observers with native/network boundaries replaced; they do not verify native
+rendering. Keep expected error spies local to the scenario rather than suppressing
+all renderer errors across a suite.
+
 | Tool       | Responsibility                                                                                                                                                                                                                                                            |
 | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | TypeScript | Strict typing, unused locals and parameters, consistent file-name casing, switch fallthrough.                                                                                                                                                                             |

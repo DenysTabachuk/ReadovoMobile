@@ -1,5 +1,5 @@
-import { createElement } from 'react';
-import { act, create, type ReactTestRenderer } from 'react-test-renderer';
+import { act, createElement } from 'react';
+import { createRoot, type Root } from 'test-renderer';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
   useStreakProfileQuery,
@@ -78,7 +78,7 @@ const INITIAL_STREAK: StreakState = {
 const mockBanner = jest.fn();
 const mockAchievementFeedback = jest.fn();
 let client: QueryClient;
-let renderer: ReactTestRenderer | undefined;
+let renderer: Root | undefined;
 let latestControls: ReturnType<typeof useProfileStreak> | undefined;
 
 function Probe() {
@@ -102,7 +102,8 @@ function controls() {
 
 async function mount() {
   await act(async () => {
-    renderer = create(
+    renderer = createRoot();
+    renderer.render(
       createElement(QueryClientProvider, { client }, createElement(Probe)),
     );
   });
@@ -110,7 +111,6 @@ async function mount() {
 
 beforeEach(() => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
-  jest.spyOn(console, 'error').mockImplementation(() => undefined);
   jest.clearAllMocks();
   latestControls = undefined;
   client = new QueryClient({
@@ -287,7 +287,8 @@ it('shares the parent query cache and drops feedback when only the streak compon
       }),
   );
   await act(async () => {
-    renderer = create(
+    renderer = createRoot();
+    renderer.render(
       createElement(
         QueryClientProvider,
         { client },
@@ -300,7 +301,7 @@ it('shares the parent query cache and drops feedback when only the streak compon
     controls().restoreStreak();
   });
   await act(async () => {
-    renderer?.update(
+    renderer?.render(
       createElement(
         QueryClientProvider,
         { client },
@@ -316,7 +317,7 @@ it('shares the parent query cache and drops feedback when only the streak compon
   expect(mockBanner).not.toHaveBeenCalled();
   expect(mockAchievementFeedback).not.toHaveBeenCalled();
   await act(async () => {
-    renderer?.update(
+    renderer?.render(
       createElement(
         QueryClientProvider,
         { client },
@@ -324,5 +325,9 @@ it('shares the parent query cache and drops feedback when only the streak compon
       ),
     );
   });
-  expect(renderer?.root.findByType('div').props['data-current-streak']).toBe(3);
+  expect(
+    renderer?.container.queryAll((node) => node.type === 'div')[0]?.props[
+      'data-current-streak'
+    ],
+  ).toBe(3);
 });
