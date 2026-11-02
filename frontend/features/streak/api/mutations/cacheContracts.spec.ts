@@ -1,25 +1,27 @@
 import {
   type MutationObserverOptions,
   QueryClient,
-  type QueryObserverOptions,
 } from '@tanstack/react-query';
 
-import { getStreakProfile } from '../../api/requests/getStreakProfile';
-import { applyStreakFreeze } from '../../api/requests/applyStreakFreeze';
-import { purchaseStreakFreezeToken } from '../../api/requests/purchaseStreakFreezeToken';
-import { restoreBrokenStreak } from '../../api/requests/restoreBrokenStreak';
+import { applyStreakFreeze } from '../requests/applyStreakFreeze';
+import { purchaseStreakFreezeToken } from '../requests/purchaseStreakFreezeToken';
+import { restoreBrokenStreak } from '../requests/restoreBrokenStreak';
 import type { StreakState } from '../../types';
-import { useStreak } from '.';
+import { useRestoreStreakMutation } from './useRestoreStreakMutation';
+import { useApplyStreakFreezeMutation } from './useApplyStreakFreezeMutation';
+import { usePurchaseStreakFreezeTokenMutation } from './usePurchaseStreakFreezeTokenMutation';
 
 const mockClient = new QueryClient({
   defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
 });
+let mockUserId = 'reader-a';
 const mockShowBanner = jest.fn();
 const mockUnsubscribers: (() => void)[] = [];
 
 jest.mock('@/api', () => ({ API_BASE_URL: 'https://api.example.test' }));
 jest.mock('@/features/auth', () => ({
   api: jest.fn(),
+  useAuthenticatedUser: () => ({ id: mockUserId }),
 }));
 jest.mock('@/components/banner', () => ({
   useBanner: () => ({ showBanner: mockShowBanner }),
@@ -27,17 +29,14 @@ jest.mock('@/components/banner', () => ({
 jest.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (key: string) => key }),
 }));
-jest.mock('../../api/requests/applyStreakFreeze', () => ({
+jest.mock('../requests/applyStreakFreeze', () => ({
   applyStreakFreeze: jest.fn(),
 }));
-jest.mock('../../api/requests/purchaseStreakFreezeToken', () => ({
+jest.mock('../requests/purchaseStreakFreezeToken', () => ({
   purchaseStreakFreezeToken: jest.fn(),
 }));
-jest.mock('../../api/requests/restoreBrokenStreak', () => ({
+jest.mock('../requests/restoreBrokenStreak', () => ({
   restoreBrokenStreak: jest.fn(),
-}));
-jest.mock('../../api/requests/getStreakProfile', () => ({
-  getStreakProfile: jest.fn(),
 }));
 // Replace React bindings only; real observers execute callbacks and cache updates.
 jest.mock('@tanstack/react-query', () => {
@@ -47,13 +46,6 @@ jest.mock('@tanstack/react-query', () => {
   return {
     ...actual,
     useQueryClient: () => mockClient,
-    useQuery: (options: QueryObserverOptions<StreakState>) => {
-      const observer = new actual.QueryObserver(mockClient, options);
-      return {
-        ...observer.getCurrentResult(),
-        refetch: observer.refetch.bind(observer),
-      };
-    },
     useMutation: (
       options: MutationObserverOptions<StreakState, Error, unknown>,
     ) => {
@@ -98,6 +90,7 @@ const UPDATED: StreakState = {
 };
 
 beforeEach(() => {
+  mockUserId = 'reader-a';
   jest.resetAllMocks();
   mockClient.setQueryData(['streak-profile', 'reader-a'], INITIAL);
   mockClient.setQueryData(['streak-profile', 'reader-b'], INITIAL);
@@ -110,7 +103,6 @@ beforeEach(() => {
       );
     }
   }
-  jest.mocked(getStreakProfile).mockResolvedValue(INITIAL);
   jest.mocked(restoreBrokenStreak).mockResolvedValue(UPDATED);
   jest.mocked(applyStreakFreeze).mockResolvedValue(UPDATED);
   jest.mocked(purchaseStreakFreezeToken).mockResolvedValue(UPDATED);
@@ -121,34 +113,38 @@ afterEach(() => {
   mockClient.clear();
 });
 
-describe('streak profile query', () => {
-  it('fetches the profile without submitting offline activity writes', async () => {
-    const { streakQuery } = useStreak('reader-a');
-    expect((await streakQuery.refetch()).data).toEqual(INITIAL);
-    expect(getStreakProfile).toHaveBeenCalledTimes(1);
-    expect(mockShowBanner).not.toHaveBeenCalled();
-  });
-
-  it('preserves profile failures without replacing cached data', async () => {
-    const error = new Error('Request failed');
-    jest.mocked(getStreakProfile).mockRejectedValue(error);
-    const { streakQuery } = useStreak('reader-a');
-    expect((await streakQuery.refetch()).error).toBe(error);
+describe('streak mutation cache contracts', () => {
+  it('uses the current account for purchases without a forwarded owner', async () => {
+    const accountBProfile = { ...INITIAL, currentStreak: 8 };
+    mockClient.setQueryData(['streak-profile', 'reader-b'], accountBProfile);
+    mockUserId = 'reader-b';
+    const purchaseFreezeTokenMutation = usePurchaseStreakFreezeTokenMutation();
+    await purchaseFreezeTokenMutation.mutateAsync();
+    expect(mockClient.getQueryData(['streak-profile', 'reader-b'])).toEqual(
+      UPDATED,
+    );
     expect(mockClient.getQueryData(['streak-profile', 'reader-a'])).toBe(
       INITIAL,
     );
+    expect(
+      mockClient.getQueryState(['achievements-profile', 'reader-b'])
+        ?.isInvalidated,
+    ).toBe(true);
+    expect(
+      mockClient.getQueryState(['achievements-profile', 'reader-a'])
+        ?.isInvalidated,
+    ).toBe(false);
   });
-});
 
-describe('streak mutation cache contracts', () => {
   it.each(['restore', 'freeze'] as const)(
     '%s updates only its owner without presenting UI feedback',
     async (operation) => {
-      const streak = useStreak('reader-a');
+      const restoreMutation = useRestoreStreakMutation();
+      const applyFreezeMutation = useApplyStreakFreezeMutation();
       const run = () =>
         operation === 'restore'
-          ? streak.restoreMutation.mutateAsync()
-          : streak.applyFreezeMutation.mutateAsync('2026-07-08');
+          ? restoreMutation.mutateAsync()
+          : applyFreezeMutation.mutateAsync('2026-07-08');
       await run();
       expect(mockClient.getQueryData(['streak-profile', 'reader-a'])).toEqual(
         UPDATED,
@@ -182,25 +178,30 @@ describe('streak mutation cache contracts', () => {
     },
   );
 
-  it('invalidates restored calendars after the screen observer unsubscribes', async () => {
+  it('keeps cache updates bound to the original owner after an account switch and observer unmount', async () => {
     const requestStarted = Promise.withResolvers<void>();
     const response = Promise.withResolvers<StreakState>();
     jest.mocked(restoreBrokenStreak).mockImplementationOnce(() => {
       requestStarted.resolve();
       return response.promise;
     });
-    const { restoreMutation } = useStreak('reader-a');
+    const restoreMutation = useRestoreStreakMutation();
     const onSuccess = jest.fn();
     const pending = restoreMutation.mutateAsync(undefined, { onSuccess });
 
     await requestStarted.promise;
     for (const unsubscribe of mockUnsubscribers.splice(0)) unsubscribe();
+    mockUserId = 'reader-b';
+    useRestoreStreakMutation();
     response.resolve(UPDATED);
     await pending;
 
     expect(onSuccess).not.toHaveBeenCalled();
     expect(mockClient.getQueryData(['streak-profile', 'reader-a'])).toEqual(
       UPDATED,
+    );
+    expect(mockClient.getQueryData(['streak-profile', 'reader-b'])).toBe(
+      INITIAL,
     );
     for (const month of [6, 7]) {
       expect(
@@ -223,9 +224,10 @@ describe('streak mutation cache contracts', () => {
   });
 
   it('calls restore and passes the missed date key to freeze', async () => {
-    const streak = useStreak('reader-a');
-    await streak.restoreMutation.mutateAsync();
-    await streak.applyFreezeMutation.mutateAsync('2026-07-08');
+    const restoreMutation = useRestoreStreakMutation();
+    const applyFreezeMutation = useApplyStreakFreezeMutation();
+    await restoreMutation.mutateAsync();
+    await applyFreezeMutation.mutateAsync('2026-07-08');
     expect(restoreBrokenStreak).toHaveBeenCalledTimes(1);
     expect(applyStreakFreeze).toHaveBeenCalledWith({ date: '2026-07-08' });
   });
@@ -234,7 +236,7 @@ describe('streak mutation cache contracts', () => {
     jest
       .mocked(restoreBrokenStreak)
       .mockResolvedValue({ ...INITIAL, currentStreak: 1 });
-    await useStreak('reader-a').restoreMutation.mutateAsync();
+    await useRestoreStreakMutation().mutateAsync();
     expect(mockClient.getQueryData(['streak-profile', 'reader-a'])).toEqual({
       ...INITIAL,
       currentStreak: 1,
@@ -248,8 +250,8 @@ describe('streak mutation cache contracts', () => {
 
   it('compares against an empty achievement list when there is no cached profile', async () => {
     mockClient.removeQueries({ queryKey: ['streak-profile', 'reader-a'] });
-    const streak = useStreak('reader-a');
-    await streak.restoreMutation.mutateAsync();
+    const restoreMutation = useRestoreStreakMutation();
+    await restoreMutation.mutateAsync();
     expect(mockClient.getQueryData(['streak-profile', 'reader-a'])).toEqual(
       UPDATED,
     );
@@ -257,8 +259,8 @@ describe('streak mutation cache contracts', () => {
   });
 
   it('always invalidates achievements after purchase, without a banner or calendar invalidation', async () => {
-    const streak = useStreak('reader-a');
-    await streak.purchaseFreezeTokenMutation.mutateAsync();
+    const purchaseFreezeTokenMutation = usePurchaseStreakFreezeTokenMutation();
+    await purchaseFreezeTokenMutation.mutateAsync();
     expect(purchaseStreakFreezeToken).toHaveBeenCalledTimes(1);
     expect(mockClient.getQueryData(['streak-profile', 'reader-a'])).toEqual(
       UPDATED,
@@ -276,7 +278,7 @@ describe('streak mutation cache contracts', () => {
       queryKey: ['achievements-profile', 'reader-a'],
     });
     jest.mocked(purchaseStreakFreezeToken).mockResolvedValue(INITIAL);
-    await streak.purchaseFreezeTokenMutation.mutateAsync();
+    await purchaseFreezeTokenMutation.mutateAsync();
     expect(
       mockClient.getQueryState(['achievements-profile', 'reader-a'])
         ?.isInvalidated,
@@ -288,14 +290,14 @@ describe('streak mutation cache contracts', () => {
     jest.mocked(restoreBrokenStreak).mockRejectedValue(error);
     jest.mocked(applyStreakFreeze).mockRejectedValue(error);
     jest.mocked(purchaseStreakFreezeToken).mockRejectedValue(error);
-    const streak = useStreak('reader-a');
-    await expect(streak.restoreMutation.mutateAsync()).rejects.toBe(error);
-    await expect(
-      streak.applyFreezeMutation.mutateAsync('2026-07-08'),
-    ).rejects.toBe(error);
-    await expect(streak.purchaseFreezeTokenMutation.mutateAsync()).rejects.toBe(
+    const restoreMutation = useRestoreStreakMutation();
+    const applyFreezeMutation = useApplyStreakFreezeMutation();
+    const purchaseFreezeTokenMutation = usePurchaseStreakFreezeTokenMutation();
+    await expect(restoreMutation.mutateAsync()).rejects.toBe(error);
+    await expect(applyFreezeMutation.mutateAsync('2026-07-08')).rejects.toBe(
       error,
     );
+    await expect(purchaseFreezeTokenMutation.mutateAsync()).rejects.toBe(error);
     expect(mockClient.getQueryData(['streak-profile', 'reader-a'])).toBe(
       INITIAL,
     );

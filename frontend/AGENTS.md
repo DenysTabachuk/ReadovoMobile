@@ -24,6 +24,14 @@ full requirements, examples, documentation template, and edge cases.
 - Keep transport independent of React/React Query. Data hooks own request
   execution, query keys, cache updates, invalidation, and optimistic rollback.
   UI state, modal visibility, and navigation belong in components or UI hooks.
+- Hooks for the current authenticated user (for example, `/me` operations) obtain
+  that user through `useAuthenticatedUser()` inside the data hook. Do not pass
+  `userId` through screens or composing hooks solely for cache ownership. Keep
+  the captured ID in owner-specific cache keys and mutation callbacks; do not
+  read the latest account when an earlier mutation completes. Explicit owner
+  parameters belong to operations with a real selectable user or an independently
+  owned workflow. Keep transport and pure utilities independent of auth hooks.
+  Apply within the task scope rather than migrating unrelated hooks.
 - Put mutation-driven UI effects (banners, navigation, modal/screen state) in the
   callbacks passed to `mutate(variables, callbacks)`, not in `useMutation` options
   or promise continuations after `mutateAsync`. React Query drops per-call callbacks

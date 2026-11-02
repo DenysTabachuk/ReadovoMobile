@@ -28,7 +28,7 @@ jest.mock('@/features/auth', () => ({
   ...jest.requireActual<typeof import('@/features/auth/session')>(
     '@/features/auth/session',
   ),
-  useAuth: () => ({ currentUser: { id: 'reader-a' } }),
+  useAuthenticatedUser: () => ({ id: 'reader-a' }),
 }));
 jest.mock('@tanstack/react-query', () => {
   const actual = jest.requireActual<typeof import('@tanstack/react-query')>(
@@ -109,7 +109,7 @@ it('discards a canceled profile query even if its final request has already succ
   const adapter = mockHttpAdapter(api).mockResolvedValue(
     createHttpResponse({ currentStreak: 7 }),
   );
-  const pending = useStreakProfileQuery('reader-a').refetch({
+  const pending = useStreakProfileQuery().refetch({
     throwOnError: true,
   });
 

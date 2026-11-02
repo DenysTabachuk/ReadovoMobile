@@ -9,6 +9,10 @@ export {
   getStreakProfile,
   purchaseStreakFreezeToken,
   restoreBrokenStreak,
+  useStreakProfileQuery,
+  useApplyStreakFreezeMutation,
+  useRestoreStreakMutation,
+  usePurchaseStreakFreezeTokenMutation,
 } from './api';
 export {
   STREAK_MAX_FREEZE_TOKENS,
@@ -30,7 +34,7 @@ export type {
   StreakState,
   StreakTodayStatus,
 } from './types';
-export { useStreak, useStreakAchievementFeedback } from './hooks';
+export { useStreakAchievementFeedback } from './hooks';
 
 export { ActivityCalendar } from './components/activityCalendar';
 

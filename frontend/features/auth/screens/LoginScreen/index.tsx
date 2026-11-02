@@ -65,17 +65,21 @@ export default function LoginScreen() {
         email: normalizedEmail,
         password,
       });
-      await signIn(rememberMe, response.accessToken, response.refreshToken, {
-        displayName: null,
-        email: response.user.email,
-        id: response.user.id,
+      await signIn({
+        rememberMe,
+        accessToken: response.accessToken,
+        refreshToken: response.refreshToken,
+        userProfile: {
+          displayName: null,
+          email: response.user.email,
+          id: response.user.id,
+        },
       });
 
       showBanner({
         title: t('auth.success.title'),
         variant: 'success',
       });
-      router.replace('/(tabs)');
     } catch (error) {
       const messageKey = getAuthErrorMessageKey(error);
       if (!messageKey) return;
@@ -108,17 +112,21 @@ export default function LoginScreen() {
         idToken: result.idToken,
       });
 
-      await signIn(rememberMe, response.accessToken, response.refreshToken, {
-        displayName: result.user.name ?? null,
-        email: response.user.email,
-        id: response.user.id,
+      await signIn({
+        rememberMe,
+        accessToken: response.accessToken,
+        refreshToken: response.refreshToken,
+        userProfile: {
+          displayName: result.user.name ?? null,
+          email: response.user.email,
+          id: response.user.id,
+        },
       });
 
       showBanner({
         title: t('auth.success.title'),
         variant: 'success',
       });
-      router.replace('/(tabs)');
     } catch (error) {
       console.error('[LoginScreen] Google sign-in flow failed.');
       const messageKey = getAuthErrorMessageKey(error);

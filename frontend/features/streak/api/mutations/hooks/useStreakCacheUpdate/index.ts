@@ -1,3 +1,4 @@
+import { useAuthenticatedUser } from '@/features/auth';
 import { useQueryClient } from '@tanstack/react-query';
 
 import { getNewlyUnlockedStreakAchievements } from '../../../../achievements';
@@ -5,15 +6,16 @@ import type { StreakState } from '../../../../types';
 
 /**
  * Creates the shared success handler for restore and freeze mutations.
+ * Captures the current authenticated owner so delayed updates keep their cache owner.
  *
- * @param userId - Cache owner.
  * @returns Handler that replaces the profile, invalidates achievements only when
  * new milestones unlock, without invoking screen effects.
  * @example
- * const updateStreak = useStreakCacheUpdate(userId);
+ * const updateStreak = useStreakCacheUpdate();
  * // Pass as onSuccess; it only updates the owning account cache.
  */
-export function useStreakCacheUpdate(userId: string) {
+export function useStreakCacheUpdate() {
+  const { id: userId } = useAuthenticatedUser();
   const queryClient = useQueryClient();
 
   return (streak: StreakState) => {

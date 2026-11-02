@@ -10,7 +10,7 @@ import {
   useState,
 } from 'react';
 
-import { refreshAuthSession } from '../../session';
+import { refreshAuthSession } from '../../session/refreshAuthSession';
 import { authSessionStore } from '../../session/authTokenStorage/authSessionStore';
 
 import { type AuthUserProfile } from '../../types';
@@ -18,6 +18,14 @@ import { type AuthUserProfile } from '../../types';
 import { AUTH_STORAGE_KEYS } from './constants';
 import { isJwtExpired } from './utils/isJwtExpired';
 import { cancelQueriesOnSessionChange } from './utils/cancelQueriesOnSessionChange';
+import { parseAuthUserProfile } from './utils/parseAuthUserProfile';
+
+type SignInParams = {
+  rememberMe: boolean;
+  accessToken: string;
+  refreshToken: string;
+  userProfile: AuthUserProfile;
+};
 
 type AuthContextValue = {
   currentUser: AuthUserProfile | null;
@@ -26,12 +34,7 @@ type AuthContextValue = {
   isHydratingAuth: boolean;
   rememberMePreference: boolean;
   setRememberMePreference: (rememberMe: boolean) => Promise<void>;
-  signIn: (
-    rememberMe: boolean,
-    accessToken: string,
-    refreshToken: string,
-    userProfile?: AuthUserProfile | null,
-  ) => Promise<void>;
+  signIn: (params: SignInParams) => Promise<void>;
   signOut: () => Promise<void>;
 };
 
@@ -42,7 +45,7 @@ type AuthProviderProps = {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 /**
- * Owns auth state and advances the screen-tree session key after sign-in/logout.
+ * Owns validated auth state and advances the screen-tree key on session invalidation.
  * Token refresh keeps the screen tree mounted. Login/logout replaces the key
  * so React Query disposes the old screens' per-call mutation subscriptions.
  * @param props - Application subtree receiving auth state and transition actions.
@@ -57,14 +60,26 @@ export function AuthProvider({ children }: AuthProviderProps) {
     authSessionStore.version,
   );
   const [isHydratingAuth, setIsHydratingAuth] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentUser, setCurrentUser] = useState<AuthUserProfile | null>(null);
+  const isAuthenticated = currentUser !== null;
   const [rememberMePreference, setRememberMePreferenceState] = useState(false);
 
   useEffect(() => cancelQueriesOnSessionChange(queryClient), [queryClient]);
 
+  useEffect(
+    () =>
+      authSessionStore.subscribe(() => {
+        // Includes refresh rejection, which clears tokens outside signOut.
+        setCurrentUser(null);
+        setSessionVersion(authSessionStore.version);
+      }),
+    [],
+  );
+
   useEffect(() => {
+    let isActive = true;
     async function hydrateAuthState() {
+      const hydrationVersion = authSessionStore.version;
       try {
         const [
           storedRememberMe,
@@ -78,22 +93,35 @@ export function AuthProvider({ children }: AuthProviderProps) {
           AsyncStorage.getItem(AUTH_STORAGE_KEYS.userProfile),
         ]);
 
+        if (!isActive) return;
+        authSessionStore.assertCurrent(hydrationVersion);
         const rememberMe = storedRememberMe === 'true';
+        setRememberMePreferenceState(rememberMe);
+        let storedProfile: unknown = null;
+        if (storedUserProfile) {
+          try {
+            storedProfile = JSON.parse(storedUserProfile);
+          } catch {
+            // Malformed storage is handled like a missing profile below.
+          }
+        }
+        const userProfile = parseAuthUserProfile(storedProfile);
         const hasValidStoredToken =
           Boolean(storedAccessToken) && !isJwtExpired(storedAccessToken);
         const refreshedSession =
-          rememberMe && !hasValidStoredToken && storedRefreshToken
+          rememberMe &&
+          userProfile &&
+          !hasValidStoredToken &&
+          storedRefreshToken
             ? await refreshAuthSession()
             : null;
         const isAuthenticatedAfterHydration =
-          rememberMe && (hasValidStoredToken || Boolean(refreshedSession));
-        setRememberMePreferenceState(rememberMe);
-        setIsAuthenticated(isAuthenticatedAfterHydration);
-        setCurrentUser(
-          isAuthenticatedAfterHydration && storedUserProfile
-            ? (JSON.parse(storedUserProfile) as AuthUserProfile)
-            : null,
-        );
+          rememberMe &&
+          userProfile !== null &&
+          (hasValidStoredToken || Boolean(refreshedSession));
+        if (!isActive) return;
+        authSessionStore.assertCurrent(hydrationVersion);
+        setCurrentUser(isAuthenticatedAfterHydration ? userProfile : null);
 
         if (!rememberMe || !isAuthenticatedAfterHydration) {
           await Promise.all([
@@ -102,13 +130,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
           ]);
         }
       } catch (error) {
-        console.error('Failed to hydrate auth state', error);
+        if (isActive && authSessionStore.version === hydrationVersion) {
+          setCurrentUser(null);
+          console.error('Failed to hydrate auth state', error);
+        }
       } finally {
-        setIsHydratingAuth(false);
+        if (isActive) setIsHydratingAuth(false);
       }
     }
 
     void hydrateAuthState();
+    return () => {
+      isActive = false;
+    };
   }, []);
 
   const setRememberMePreference = useCallback(async (rememberMe: boolean) => {
@@ -120,31 +154,39 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
   const signIn = useCallback(
-    async (
-      rememberMe: boolean,
-      accessToken: string,
-      refreshToken: string,
-      userProfile: AuthUserProfile | null = null,
-    ) => {
+    async ({
+      rememberMe,
+      accessToken,
+      refreshToken,
+      userProfile,
+    }: SignInParams) => {
+      const validatedUser = parseAuthUserProfile(userProfile);
+      if (!validatedUser)
+        throw new Error('Invalid authenticated user profile.');
       await setRememberMePreference(rememberMe);
 
+      const tokenWrite = authSessionStore.replace({
+        accessToken,
+        refreshToken,
+      });
+      const signInVersion = authSessionStore.version;
       if (rememberMe) {
-        const userProfileValue = userProfile ? JSON.stringify(userProfile) : '';
+        const userProfileValue = JSON.stringify(validatedUser);
 
         await Promise.all([
-          authSessionStore.replace({ accessToken, refreshToken }),
+          tokenWrite,
           AsyncStorage.setItem(AUTH_STORAGE_KEYS.userProfile, userProfileValue),
         ]);
       } else {
         await Promise.all([
-          authSessionStore.replace({ accessToken, refreshToken }),
+          tokenWrite,
           AsyncStorage.removeItem(AUTH_STORAGE_KEYS.userProfile),
         ]);
       }
 
-      setSessionVersion(authSessionStore.version);
-      setCurrentUser(userProfile);
-      setIsAuthenticated(true);
+      authSessionStore.assertCurrent(signInVersion);
+      setSessionVersion(signInVersion);
+      setCurrentUser(validatedUser);
     },
     [setRememberMePreference],
   );
@@ -161,9 +203,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
       AsyncStorage.removeItem(AUTH_STORAGE_KEYS.userProfile),
       googleSignOutPromise,
     ]);
-    setSessionVersion(authSessionStore.version);
-    setCurrentUser(null);
-    setIsAuthenticated(false);
   }, []);
 
   const value = useMemo<AuthContextValue>(
@@ -200,4 +239,13 @@ export function useAuth(): AuthContextValue {
   }
 
   return auth;
+}
+
+/** Returns the validated user inside a root-protected private screen. */
+export function useAuthenticatedUser(): AuthUserProfile {
+  const { currentUser } = useAuth();
+  if (!currentUser) {
+    throw new Error('useAuthenticatedUser requires a private route.');
+  }
+  return currentUser;
 }

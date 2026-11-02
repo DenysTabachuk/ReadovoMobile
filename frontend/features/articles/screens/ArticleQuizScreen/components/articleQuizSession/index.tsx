@@ -9,7 +9,6 @@ import {
   type SimplifyArticleTargetLength,
   type WikipediaArticleDetail,
 } from '@/features/articles/api';
-import { useAuth } from '@/features/auth';
 import {
   QuizResult,
   QuizRunner,
@@ -47,7 +46,6 @@ export function ArticleQuizSession({
 }: ArticleQuizSessionProps) {
   const { t } = useTranslation();
   const router = useRouter();
-  const { currentUser } = useAuth();
   const [result, setResult] = useState<QuizSessionResult | null>(null);
   const [attempt, setAttempt] = useState(0);
   const { data: session } = useArticleQuizSessionQuery({
@@ -85,7 +83,6 @@ export function ArticleQuizSession({
     const vocabularyQuestion = { ...question, ...answer.vocabularyWord };
     if (
       quizMode !== 'vocabulary' ||
-      !currentUser?.id ||
       !isVocabularyWordQuestion(vocabularyQuestion)
     )
       return null;

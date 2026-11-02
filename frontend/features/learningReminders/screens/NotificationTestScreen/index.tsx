@@ -14,7 +14,7 @@ import {
 } from '@/features/learningReminders/api';
 import { registerCurrentDevicePushToken } from '@/features/learningReminders/service';
 import { getStreakProfile } from '@/features/streak';
-import { useAuth } from '@/features/auth';
+import { useAuthenticatedUser } from '@/features/auth';
 import {
   type LearningReminderTime,
   usePreferences,
@@ -28,7 +28,7 @@ const LOCAL_TEST_CHANNEL_ID = 'notification-test';
 
 export default function NotificationTestScreen() {
   const { t } = useTranslation();
-  const { currentUser } = useAuth();
+  const currentUser = useAuthenticatedUser();
   const {
     learningReminderEnabled,
     learningReminderTime,
@@ -111,14 +111,6 @@ export default function NotificationTestScreen() {
       }
 
       if (scenario === 'smart-check') {
-        if (!currentUser?.id) {
-          console.warn(
-            '[NotificationTest] local notification smart-check skipped: no user id',
-          );
-          setStatus(t('settings.notificationTest.noUser'));
-          return;
-        }
-
         console.log(
           `[NotificationTest] loading streak profile userId=${currentUser.id}`,
         );
@@ -179,11 +171,6 @@ export default function NotificationTestScreen() {
   };
 
   const handleSendRemoteTestPush = async () => {
-    if (!currentUser?.id) {
-      setStatus(t('settings.notificationTest.noUser'));
-      return;
-    }
-
     try {
       console.log(
         `[NotificationTest] sending remote test push userId=${currentUser.id}`,
@@ -222,12 +209,6 @@ export default function NotificationTestScreen() {
 
   const handleRefreshPushToken = async () => {
     console.log('[NotificationTest] Refresh/Register FCM token button pressed');
-
-    if (!currentUser?.id) {
-      console.log('[NotificationTest] Missing currentUser.id');
-      setStatus(t('settings.notificationTest.noUser'));
-      return;
-    }
 
     try {
       console.log(
@@ -300,11 +281,6 @@ export default function NotificationTestScreen() {
   };
 
   const handleClearTodayDispatch = async () => {
-    if (!currentUser?.id) {
-      setStatus(t('settings.notificationTest.noUser'));
-      return;
-    }
-
     try {
       console.log(
         `[NotificationTest] clearing today dispatch userId=${currentUser.id}`,

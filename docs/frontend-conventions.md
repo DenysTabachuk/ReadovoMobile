@@ -17,6 +17,31 @@ import-only updates do not require refactoring the imported module.
 - Avoid importing another feature's internal files directly. Expose intentional cross-feature APIs through that feature's `index.ts`.
 - Prefer the dependency direction `app` to `features` to shared code.
 
+## Authentication and navigation
+
+- The root layout waits for both auth and preference hydration before mounting the
+  stack. Screens and nested layouts must not repeat auth loaders or redirects.
+- `AuthProvider` exposes a session only with a runtime-validated profile whose ID
+  is a nonblank string. Missing or invalid persisted profiles cannot open private
+  screens. Token-store invalidation also clears the provider's current user,
+  including when refresh rejects the session outside the explicit logout flow.
+- Declare pre-login routes (`index`, `about`, `login`, `register`, `forgot-password`, and
+  `reset-password`) and private routes in separate `Stack.Protected` groups.
+  Tabs, articles, quizzes, wardrobe, notification testing, and the modal are private.
+  Register every file route explicitly so automatic registration cannot bypass
+  the policy. `about` is part of onboarding before login; its continue action
+  completes onboarding and opens login without a screen-level auth check.
+- Private screen code obtains its required user through `useAuthenticatedUser()`
+  from `@/features/auth`. The hook checks a programming invariant, without loading
+  UI or redirects. General auth actions and nullable state remain in `useAuth()`.
+  Data hooks retain their owner-specific cache keys and session safeguards.
+- A signed-out private link falls back to `index`, which shows onboarding or
+  redirects to login according to the saved preference. The requested private
+  destination is not retained; login opens tabs. Authenticated private links can
+  open their destination. Password-reset links remain available before login.
+  Logout/expiry removes private history, and login removes pre-login history,
+  so back navigation cannot reopen an inaccessible screen.
+
 ## Localization
 
 - All app-owned text shown to users must be resolved through translation keys.
@@ -58,9 +83,28 @@ import-only updates do not require refactoring the imported module.
 
 - Wrap each `useQuery` and `useMutation` operation in its own named custom hook, with an `index.ts` entry point under the owning feature's `api/queries` or `api/mutations`, for example `api/queries/useArticleDetailQuery/index.ts`.
 - Keep query keys, request execution, cache updates, invalidation, and optimistic rollback inside the owning query or mutation hook.
+- Data hooks for the current authenticated user, such as `/me` operations, call
+  `useAuthenticatedUser()` from `@/features/auth` themselves. Screens and composing
+  hooks must not forward `userId` solely to identify the current user's cache.
+  These hooks run under the protected auth boundary; avoid optional IDs and
+  duplicate auth guards. Public/optional-auth hooks retain their explicit contract.
+  Keep owner IDs in cache keys and capture the owner when constructing a mutation,
+  so delayed callbacks continue to target their original owner's cache. Never
+  resolve the latest user inside a completion callback. An explicit owner argument
+  is appropriate for a genuinely selectable user or a workflow whose lifetime and
+  owner are independent of the mounted session. Transport and pure helpers stay
+  independent of React/auth context and receive required inputs explicitly.
+  Apply this convention to touched code without unrelated migrations.
 - Keep mutation-driven screen state, modal visibility, banners and navigation in the calling component or UI hook. Pass these effects as the second argument to `mutate(variables, callbacks)`; do not forward screen callbacks into `useMutation` options.
 - React Query's per-call callbacks stop after the owning observer unmounts. Hook-level callbacks still execute, and `mutateAsync` still settles after unmount; do not use its `.then/.catch/.finally` or an `await` continuation for screen effects. Reserve promises for workflows with an explicit lifetime and cancellation policy.
-- The root screen tree is keyed by the auth provider's session version and remounts on completed login/logout, including another login to the same account. Refresh preserves the version. This disposes old screen subscriptions; a mounted screen or an async callback already executing needs its own lifetime checks. Keep the banner provider outside that keyed tree so public sign-in feedback can survive the auth transition.
+- The root screen tree is keyed by the auth provider's session version. Token-store
+  invalidation (login, logout, or rejected refresh) changes the version and disposes
+  old screen mutation observers, including another login to the same account.
+  Successful token refresh preserves the version and navigation state.
+  `Stack.Protected` alone does not replace this lifetime boundary: its guard can
+  remain true when an authenticated session is replaced. A mounted screen or an
+  async callback already executing needs its own lifetime checks. Keep unrelated
+  providers, including banners, outside the keyed stack.
 - Cache updates, invalidation and rollback remain in data hooks with owner-specific keys. Preserve session assertions between awaited steps before another request or storage write; unmounting cannot stop those workflows or undo an accepted server write.
 - Single HTTP operations use the shared authenticated client directly, without manual session assertions around the request. Prefer one backend operation for a single user action such as clearing all mascot slots, rather than coordinating per-slot requests in the client. Native or storage work after an awaited request still needs its own session lifetime check where applicable.
 - Per-call callbacks run only for the latest invocation on that observer. Use them for the current screen action; work that must complete for every invocation belongs in data callbacks or an explicitly owned workflow.
@@ -261,6 +305,14 @@ positional arguments are acceptable. More than three arguments require an object
 for exactly three, prefer an object when callbacks or options obscure the call.
 
 ## Automated checks and review responsibilities
+
+Component and hook lifecycle tests use the maintained `test-renderer` package.
+Keep its minor compatibility line aligned with React (currently `1.1.x` for
+React `19.1`). Import `act` from React and render, rerender, and unmount roots
+inside awaited `act` calls. These tests exercise React lifecycle and real query
+observers with native/network boundaries replaced; they do not verify native
+rendering. Keep expected error spies local to the scenario rather than suppressing
+all renderer errors across a suite.
 
 | Tool       | Responsibility                                                                                                                                                                                                                                                            |
 | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

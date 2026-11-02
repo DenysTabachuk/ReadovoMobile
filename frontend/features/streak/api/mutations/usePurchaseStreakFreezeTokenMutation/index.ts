@@ -1,3 +1,4 @@
+import { useAuthenticatedUser } from '@/features/auth';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { purchaseStreakFreezeToken } from '../../requests/purchaseStreakFreezeToken';
@@ -5,15 +6,15 @@ import { purchaseStreakFreezeToken } from '../../requests/purchaseStreakFreezeTo
 /**
  * Buys a freeze token at the configured coin price.
  *
- * @param userId - Profile cache owner.
  * @returns Mutation controls. Success replaces the profile and always invalidates
  * achievements, without milestone notifications or calendar invalidation.
  * @example
- * const purchase = usePurchaseStreakFreezeTokenMutation(userId);
+ * const purchase = usePurchaseStreakFreezeTokenMutation();
  * await purchase.mutateAsync();
  * // The profile reflects the purchase and achievements are invalidated.
  */
-export function usePurchaseStreakFreezeTokenMutation(userId: string) {
+export function usePurchaseStreakFreezeTokenMutation() {
+  const { id: userId } = useAuthenticatedUser();
   const queryClient = useQueryClient();
 
   return useMutation({
