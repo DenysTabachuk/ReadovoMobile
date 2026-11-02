@@ -658,6 +658,9 @@
         "default": "Continue"
       },
       "daysInRow": "days in a row"
+    },
+    "debug": {
+      "previewAchievement": "Preview streak achievement"
     }
   },
   "errors": {

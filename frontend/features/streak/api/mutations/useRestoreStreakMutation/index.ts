@@ -9,7 +9,7 @@ import { useStreakCacheUpdate } from '../hooks/useStreakCacheUpdate';
  *
  * @param userId - Profile owner.
  * @returns Mutation controls; success replaces the profile and invalidates newly
- * unlocked achievements. Errors leave caches intact; calendars are not invalidated.
+ * unlocked achievements and all calendar months. Errors leave caches intact.
  * @example
  * const restore = useRestoreStreakMutation(userId);
  * await restore.mutateAsync();
@@ -23,6 +23,11 @@ export function useRestoreStreakMutation(userId: string) {
     onMutate: () =>
       queryClient.getQueryData<StreakState>(['streak-profile', userId]),
     mutationFn: restoreBrokenStreak,
-    onSuccess: updateStreak,
+    onSuccess: (streak) => {
+      updateStreak(streak);
+      void queryClient.invalidateQueries({
+        queryKey: ['streak-calendar-month', userId],
+      });
+    },
   });
 }

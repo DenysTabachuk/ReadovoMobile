@@ -658,6 +658,9 @@
         "default": "Продовжити"
       },
       "daysInRow": "днів поспіль"
+    },
+    "debug": {
+      "previewAchievement": "Показати досягнення серії"
     }
   },
   "errors": {

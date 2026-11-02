@@ -15,6 +15,7 @@ const mockClient = new QueryClient({
   defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
 });
 const mockShowBanner = jest.fn();
+const mockUnsubscribers: (() => void)[] = [];
 
 jest.mock('@/api', () => ({ API_BASE_URL: 'https://api.example.test' }));
 jest.mock('@/features/auth', () => ({
@@ -57,7 +58,7 @@ jest.mock('@tanstack/react-query', () => {
       options: MutationObserverOptions<StreakState, Error, unknown>,
     ) => {
       const observer = new actual.MutationObserver(mockClient, options);
-      observer.subscribe(() => undefined);
+      mockUnsubscribers.push(observer.subscribe(() => undefined));
       return { mutateAsync: observer.mutate.bind(observer) };
     },
   };
@@ -115,7 +116,10 @@ beforeEach(() => {
   jest.mocked(purchaseStreakFreezeToken).mockResolvedValue(UPDATED);
 });
 
-afterEach(() => mockClient.clear());
+afterEach(() => {
+  for (const unsubscribe of mockUnsubscribers.splice(0)) unsubscribe();
+  mockClient.clear();
+});
 
 describe('streak profile query', () => {
   it('fetches the profile without submitting offline activity writes', async () => {
@@ -164,11 +168,11 @@ describe('streak mutation cache contracts', () => {
       expect(
         mockClient.getQueryState(['streak-calendar-month', 'reader-a', 2026, 6])
           ?.isInvalidated,
-      ).toBe(operation === 'freeze');
+      ).toBe(true);
       expect(
         mockClient.getQueryState(['streak-calendar-month', 'reader-a', 2026, 7])
           ?.isInvalidated,
-      ).toBe(operation === 'freeze');
+      ).toBe(true);
       expect(
         mockClient.getQueryState(['streak-calendar-month', 'reader-b', 2026, 7])
           ?.isInvalidated,
@@ -177,6 +181,46 @@ describe('streak mutation cache contracts', () => {
       expect(mockShowBanner).not.toHaveBeenCalled();
     },
   );
+
+  it('invalidates restored calendars after the screen observer unsubscribes', async () => {
+    const requestStarted = Promise.withResolvers<void>();
+    const response = Promise.withResolvers<StreakState>();
+    jest.mocked(restoreBrokenStreak).mockImplementationOnce(() => {
+      requestStarted.resolve();
+      return response.promise;
+    });
+    const { restoreMutation } = useStreak('reader-a');
+    const onSuccess = jest.fn();
+    const pending = restoreMutation.mutateAsync(undefined, { onSuccess });
+
+    await requestStarted.promise;
+    for (const unsubscribe of mockUnsubscribers.splice(0)) unsubscribe();
+    response.resolve(UPDATED);
+    await pending;
+
+    expect(onSuccess).not.toHaveBeenCalled();
+    expect(mockClient.getQueryData(['streak-profile', 'reader-a'])).toEqual(
+      UPDATED,
+    );
+    for (const month of [6, 7]) {
+      expect(
+        mockClient.getQueryState([
+          'streak-calendar-month',
+          'reader-a',
+          2026,
+          month,
+        ])?.isInvalidated,
+      ).toBe(true);
+      expect(
+        mockClient.getQueryState([
+          'streak-calendar-month',
+          'reader-b',
+          2026,
+          month,
+        ])?.isInvalidated,
+      ).toBe(false);
+    }
+  });
 
   it('calls restore and passes the missed date key to freeze', async () => {
     const streak = useStreak('reader-a');

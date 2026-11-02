@@ -15,7 +15,6 @@ import { useState } from 'react';
 import { useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
-import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 
 import { isMockApiEnabled } from '@/api';
@@ -51,7 +50,6 @@ export function AuthenticatedProfile({
   displayName: userDisplayName,
 }: AuthenticatedProfileProps) {
   const { t } = useTranslation();
-  const queryClient = useQueryClient();
   const { showBanner } = useBanner();
   const router = useRouter();
   const colorScheme = useColorScheme();
@@ -325,9 +323,6 @@ export function AuthenticatedProfile({
                       onSuccess: (streak, _variables, previousStreak) => {
                         showUnlockedAchievements(streak, previousStreak);
                         setIsRestoreModalOpen(false);
-                        void queryClient.invalidateQueries({
-                          queryKey: ['streak-calendar-month', userId],
-                        });
                         showBanner({
                           title: t('streak.restore.success'),
                           variant: 'success',
@@ -440,7 +435,7 @@ export function AuthenticatedProfile({
                       isDarkTheme ? styles.streakRetryButtonTextDark : null,
                     ]}
                   >
-                    Програти streak-achievement
+                    {t('streak.debug.previewAchievement')}
                   </ThemedText>
                 </Pressable>
               ) : null}

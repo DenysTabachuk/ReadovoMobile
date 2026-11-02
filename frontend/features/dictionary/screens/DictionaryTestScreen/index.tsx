@@ -166,9 +166,7 @@ export default function DictionaryTestScreen() {
           <ThemedText type="description" style={styles.centerDescription}>
             {t(testErrorMessageKey)}
           </ThemedText>
-          <Button onPress={() => testMutation.mutate()}>
-            {t('dictionary.retry')}
-          </Button>
+          <Button onPress={handleRetryTest}>{t('dictionary.retry')}</Button>
         </View>
       ) : testResult ? (
         <QuizResult
