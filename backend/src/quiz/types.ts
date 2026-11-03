@@ -1,12 +1,10 @@
+import { type QuizVocabularyWordDto } from './dto/submit-quiz-answer-response.dto';
+
 export type QuizKind = 'article' | 'vocabulary' | 'dictionary';
 export type QuizLevel = 'A1' | 'A2' | 'B1' | 'B2' | 'C1';
 export type QuizLength = 'short' | 'medium' | 'long';
 
-export type QuizVocabularyWord = {
-  term: string;
-  translation: string;
-  sourceExcerpt?: string;
-};
+export type QuizVocabularyWord = QuizVocabularyWordDto;
 
 export type QuizQuestionSnapshot = {
   id: string;
@@ -18,13 +16,8 @@ export type QuizQuestionSnapshot = {
   vocabularyWord?: QuizVocabularyWord;
 };
 
-export type QuizAnswerResult = {
-  vocabularyWord?: QuizVocabularyWord;
-  newlyUnlockedAchievementIds: string[];
-  correctOptionIds: string[];
-  explanation?: string;
-  isCorrect: boolean;
-};
+export type { SubmitQuizAnswerResponseDto as QuizAnswerResult } from './dto/submit-quiz-answer-response.dto';
+export type { CompleteQuizResponseDto as QuizCompletionResponse } from './dto/complete-quiz-response.dto';
 
 export type CreateQuizSessionInput = {
   kind: QuizKind;

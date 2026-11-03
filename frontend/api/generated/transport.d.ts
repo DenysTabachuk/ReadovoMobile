@@ -123,6 +123,57 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/quiz-sessions/{sessionId}/answers': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Submit a graded answer to an owned quiz session */
+    post: operations['submitQuizAnswer'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/quiz-sessions/{sessionId}/complete': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Complete an owned quiz and return saved rewards with current profiles */
+    post: operations['completeQuiz'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/quiz-sessions/{sessionId}/retake': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Create a new owned attempt from a saved quiz session */
+    post: operations['retakeQuiz'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/streak/profile/me': {
     parameters: {
       query?: never;
@@ -267,6 +318,13 @@ export interface components {
       | 'today_completed'
       | 'future'
       | 'neutral';
+    CompleteQuizRequest: {
+      /**
+       * @description IANA timezone, trimmed before validation. Omission or null retains the stored timezone (UTC for a new profile).
+       * @example Europe/Kyiv
+       */
+      timezone?: string | null;
+    };
     /** @enum {string} */
     MascotAccessorySlot: 'eyes' | 'head';
     MascotEquippedItems: {
@@ -277,6 +335,42 @@ export interface components {
       equippedItems: components['schemas']['MascotEquippedItems'];
       ownedItemIds: string[];
       userId: string;
+    };
+    QuizCompletion: {
+      correctAnswers: number;
+      newlyUnlockedAchievementIds: string[];
+      newlyUnlockedStreakMilestones: number[];
+      percentage: number;
+      rewards: components['schemas']['QuizCompletionRewards'];
+      shouldShowStreakBanner: boolean;
+      totalQuestions: number;
+    };
+    QuizCompletionResponse: {
+      completion: components['schemas']['QuizCompletion'];
+      profile: components['schemas']['AchievementsProfileResponse'];
+      replayed: boolean;
+      /** Format: uuid */
+      sessionId: string;
+      streak: components['schemas']['StreakState'];
+    };
+    QuizCompletionRewards: {
+      achievementCoins: number;
+      quizCoins: number;
+      streakCoins: number;
+      totalCoins: number;
+    };
+    QuizSessionParams: {
+      /** Format: uuid */
+      sessionId: string;
+    };
+    QuizVocabularyWord: {
+      sourceExcerpt?: string;
+      term: string;
+      translation: string;
+    };
+    RetakeQuizResponse: {
+      /** Format: uuid */
+      sessionId: string;
     };
     StreakAchievement: {
       /** Format: date-time */
@@ -338,6 +432,18 @@ export interface components {
     /** @enum {string} */
     StreakTodayStatus:
       'completed' | 'pending' | 'missed' | 'frozen' | 'restored' | 'broken';
+    SubmitQuizAnswerRequest: {
+      /** @description Question ID from the saved quiz. Not trimmed; membership is checked by the service. */
+      questionId: string;
+      selectedOptionIds: string[];
+    };
+    SubmitQuizAnswerResponse: {
+      correctOptionIds: string[];
+      explanation?: string;
+      isCorrect: boolean;
+      newlyUnlockedAchievementIds: string[];
+      vocabularyWord?: components['schemas']['QuizVocabularyWord'];
+    };
     /** @description Unknown body properties are rejected by global DTO validation. */
     TranslateWordRequest: {
       /** @description Sentence context. Strings are trimmed; null is preserved. */
@@ -397,10 +503,19 @@ export type ApplyStreakFreezeRequest =
   components['schemas']['ApplyStreakFreezeRequest'];
 export type BrokenStreakInfo = components['schemas']['BrokenStreakInfo'];
 export type CalendarDayStatus = components['schemas']['CalendarDayStatus'];
+export type CompleteQuizRequest = components['schemas']['CompleteQuizRequest'];
 export type MascotAccessorySlot = components['schemas']['MascotAccessorySlot'];
 export type MascotEquippedItems = components['schemas']['MascotEquippedItems'];
 export type MascotProfileResponse =
   components['schemas']['MascotProfileResponse'];
+export type QuizCompletion = components['schemas']['QuizCompletion'];
+export type QuizCompletionResponse =
+  components['schemas']['QuizCompletionResponse'];
+export type QuizCompletionRewards =
+  components['schemas']['QuizCompletionRewards'];
+export type QuizSessionParams = components['schemas']['QuizSessionParams'];
+export type QuizVocabularyWord = components['schemas']['QuizVocabularyWord'];
+export type RetakeQuizResponse = components['schemas']['RetakeQuizResponse'];
 export type StreakAchievement = components['schemas']['StreakAchievement'];
 export type StreakAchievementMilestone =
   components['schemas']['StreakAchievementMilestone'];
@@ -413,6 +528,10 @@ export type StreakDayStatus = components['schemas']['StreakDayStatus'];
 export type StreakHistoryDay = components['schemas']['StreakHistoryDay'];
 export type StreakState = components['schemas']['StreakState'];
 export type StreakTodayStatus = components['schemas']['StreakTodayStatus'];
+export type SubmitQuizAnswerRequest =
+  components['schemas']['SubmitQuizAnswerRequest'];
+export type SubmitQuizAnswerResponse =
+  components['schemas']['SubmitQuizAnswerResponse'];
 export type TranslateWordRequest =
   components['schemas']['TranslateWordRequest'];
 export type TranslateWordResponse =
@@ -1720,6 +1839,743 @@ export interface operations {
                 code: 'MASCOT_USER_NOT_FOUND';
                 /** @enum {string} */
                 message: 'User not found.';
+                /** @enum {integer} */
+                statusCode: 404;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 404;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_TOO_LARGE';
+                /** @enum {string} */
+                message: 'Request body is too large.';
+                /** @enum {integer} */
+                statusCode: 413;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 413;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'INTERNAL_ERROR';
+                /** @enum {string} */
+                message: 'Internal server error.';
+                /** @enum {integer} */
+                statusCode: 500;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 500;
+              };
+        };
+      };
+      /** @description Other rejected requests retain their HTTP error status. Infrastructure errors may have a different body. */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** @enum {string} */
+            code: 'REQUEST_REJECTED';
+            /** @enum {string} */
+            message: 'Request rejected.';
+            statusCode: number;
+          };
+        };
+      };
+    };
+  };
+  submitQuizAnswer: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        sessionId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SubmitQuizAnswerRequest'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SubmitQuizAnswerResponse'];
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'VALIDATION_FAILED';
+                details: {
+                  fields: {
+                    path: (string | number)[];
+                    /** @enum {string} */
+                    rule:
+                      | 'VALUE_REQUIRED'
+                      | 'STRING_REQUIRED'
+                      | 'INTEGER_REQUIRED'
+                      | 'BOOLEAN_REQUIRED'
+                      | 'ARRAY_REQUIRED'
+                      | 'EMAIL_INVALID'
+                      | 'UUID_INVALID'
+                      | 'URL_INVALID'
+                      | 'TIMEZONE_INVALID'
+                      | 'DATE_INVALID'
+                      | 'STRING_TOO_SHORT'
+                      | 'STRING_TOO_LONG'
+                      | 'NUMBER_TOO_SMALL'
+                      | 'NUMBER_TOO_LARGE'
+                      | 'ARRAY_TOO_LARGE'
+                      | 'ARRAY_EMPTY'
+                      | 'VALUE_NOT_ALLOWED'
+                      | 'FORMAT_INVALID'
+                      | 'FIELDS_DO_NOT_MATCH'
+                      | 'PROPERTY_NOT_ALLOWED'
+                      | 'VALUE_INVALID';
+                  }[];
+                };
+                /** @enum {string} */
+                message: 'Request validation failed.';
+                /** @enum {integer} */
+                statusCode: 400;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_MALFORMED';
+                /** @enum {string} */
+                message: 'Malformed request body.';
+                /** @enum {integer} */
+                statusCode: 400;
+              }
+            | {
+                /** @enum {string} */
+                code: 'QUIZ_ANSWER_INVALID';
+                /** @enum {string} */
+                message: 'Invalid question or answer selection.';
+                /** @enum {integer} */
+                statusCode: 400;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 400;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'AUTH_AUTHENTICATION_REQUIRED';
+                /** @enum {string} */
+                message: 'Authentication is required.';
+                /** @enum {integer} */
+                statusCode: 401;
+              }
+            | {
+                /** @enum {string} */
+                code: 'AUTH_ACCESS_TOKEN_INVALID';
+                /** @enum {string} */
+                message: 'Access token is invalid.';
+                /** @enum {integer} */
+                statusCode: 401;
+              }
+            | {
+                /** @enum {string} */
+                code: 'AUTH_ACCESS_TOKEN_EXPIRED';
+                /** @enum {string} */
+                message: 'Access token has expired.';
+                /** @enum {integer} */
+                statusCode: 401;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 401;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'QUIZ_SESSION_NOT_FOUND';
+                /** @enum {string} */
+                message: 'Quiz session not found.';
+                /** @enum {integer} */
+                statusCode: 404;
+              }
+            | {
+                /** @enum {string} */
+                code: 'ACHIEVEMENTS_USER_NOT_FOUND';
+                /** @enum {string} */
+                message: 'User not found.';
+                /** @enum {integer} */
+                statusCode: 404;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 404;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'QUIZ_ANSWER_ALREADY_SUBMITTED';
+                /** @enum {string} */
+                message: 'This question already has a different answer.';
+                /** @enum {integer} */
+                statusCode: 409;
+              }
+            | {
+                /** @enum {string} */
+                code: 'QUIZ_SESSION_COMPLETED';
+                /** @enum {string} */
+                message: 'This quiz is already completed.';
+                /** @enum {integer} */
+                statusCode: 409;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 409;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_TOO_LARGE';
+                /** @enum {string} */
+                message: 'Request body is too large.';
+                /** @enum {integer} */
+                statusCode: 413;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 413;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'INTERNAL_ERROR';
+                /** @enum {string} */
+                message: 'Internal server error.';
+                /** @enum {integer} */
+                statusCode: 500;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 500;
+              };
+        };
+      };
+      /** @description Other rejected requests retain their HTTP error status. Infrastructure errors may have a different body. */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** @enum {string} */
+            code: 'REQUEST_REJECTED';
+            /** @enum {string} */
+            message: 'Request rejected.';
+            statusCode: number;
+          };
+        };
+      };
+    };
+  };
+  completeQuiz: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        sessionId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        'application/json': components['schemas']['CompleteQuizRequest'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['QuizCompletionResponse'];
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'VALIDATION_FAILED';
+                details: {
+                  fields: {
+                    path: (string | number)[];
+                    /** @enum {string} */
+                    rule:
+                      | 'VALUE_REQUIRED'
+                      | 'STRING_REQUIRED'
+                      | 'INTEGER_REQUIRED'
+                      | 'BOOLEAN_REQUIRED'
+                      | 'ARRAY_REQUIRED'
+                      | 'EMAIL_INVALID'
+                      | 'UUID_INVALID'
+                      | 'URL_INVALID'
+                      | 'TIMEZONE_INVALID'
+                      | 'DATE_INVALID'
+                      | 'STRING_TOO_SHORT'
+                      | 'STRING_TOO_LONG'
+                      | 'NUMBER_TOO_SMALL'
+                      | 'NUMBER_TOO_LARGE'
+                      | 'ARRAY_TOO_LARGE'
+                      | 'ARRAY_EMPTY'
+                      | 'VALUE_NOT_ALLOWED'
+                      | 'FORMAT_INVALID'
+                      | 'FIELDS_DO_NOT_MATCH'
+                      | 'PROPERTY_NOT_ALLOWED'
+                      | 'VALUE_INVALID';
+                  }[];
+                };
+                /** @enum {string} */
+                message: 'Request validation failed.';
+                /** @enum {integer} */
+                statusCode: 400;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_MALFORMED';
+                /** @enum {string} */
+                message: 'Malformed request body.';
+                /** @enum {integer} */
+                statusCode: 400;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 400;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'AUTH_AUTHENTICATION_REQUIRED';
+                /** @enum {string} */
+                message: 'Authentication is required.';
+                /** @enum {integer} */
+                statusCode: 401;
+              }
+            | {
+                /** @enum {string} */
+                code: 'AUTH_ACCESS_TOKEN_INVALID';
+                /** @enum {string} */
+                message: 'Access token is invalid.';
+                /** @enum {integer} */
+                statusCode: 401;
+              }
+            | {
+                /** @enum {string} */
+                code: 'AUTH_ACCESS_TOKEN_EXPIRED';
+                /** @enum {string} */
+                message: 'Access token has expired.';
+                /** @enum {integer} */
+                statusCode: 401;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 401;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'QUIZ_SESSION_NOT_FOUND';
+                /** @enum {string} */
+                message: 'Quiz session not found.';
+                /** @enum {integer} */
+                statusCode: 404;
+              }
+            | {
+                /** @enum {string} */
+                code: 'ACHIEVEMENTS_USER_NOT_FOUND';
+                /** @enum {string} */
+                message: 'User not found.';
+                /** @enum {integer} */
+                statusCode: 404;
+              }
+            | {
+                /** @enum {string} */
+                code: 'STREAK_USER_NOT_FOUND';
+                /** @enum {string} */
+                message: 'User not found.';
+                /** @enum {integer} */
+                statusCode: 404;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 404;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'QUIZ_SESSION_INCOMPLETE';
+                /** @enum {string} */
+                message: 'Answer all questions before completing the quiz.';
+                /** @enum {integer} */
+                statusCode: 409;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 409;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_TOO_LARGE';
+                /** @enum {string} */
+                message: 'Request body is too large.';
+                /** @enum {integer} */
+                statusCode: 413;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 413;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'INTERNAL_ERROR';
+                /** @enum {string} */
+                message: 'Internal server error.';
+                /** @enum {integer} */
+                statusCode: 500;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 500;
+              };
+        };
+      };
+      /** @description Other rejected requests retain their HTTP error status. Infrastructure errors may have a different body. */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** @enum {string} */
+            code: 'REQUEST_REJECTED';
+            /** @enum {string} */
+            message: 'Request rejected.';
+            statusCode: number;
+          };
+        };
+      };
+    };
+  };
+  retakeQuiz: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        sessionId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RetakeQuizResponse'];
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'VALIDATION_FAILED';
+                details: {
+                  fields: {
+                    path: (string | number)[];
+                    /** @enum {string} */
+                    rule:
+                      | 'VALUE_REQUIRED'
+                      | 'STRING_REQUIRED'
+                      | 'INTEGER_REQUIRED'
+                      | 'BOOLEAN_REQUIRED'
+                      | 'ARRAY_REQUIRED'
+                      | 'EMAIL_INVALID'
+                      | 'UUID_INVALID'
+                      | 'URL_INVALID'
+                      | 'TIMEZONE_INVALID'
+                      | 'DATE_INVALID'
+                      | 'STRING_TOO_SHORT'
+                      | 'STRING_TOO_LONG'
+                      | 'NUMBER_TOO_SMALL'
+                      | 'NUMBER_TOO_LARGE'
+                      | 'ARRAY_TOO_LARGE'
+                      | 'ARRAY_EMPTY'
+                      | 'VALUE_NOT_ALLOWED'
+                      | 'FORMAT_INVALID'
+                      | 'FIELDS_DO_NOT_MATCH'
+                      | 'PROPERTY_NOT_ALLOWED'
+                      | 'VALUE_INVALID';
+                  }[];
+                };
+                /** @enum {string} */
+                message: 'Request validation failed.';
+                /** @enum {integer} */
+                statusCode: 400;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_MALFORMED';
+                /** @enum {string} */
+                message: 'Malformed request body.';
+                /** @enum {integer} */
+                statusCode: 400;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 400;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'AUTH_AUTHENTICATION_REQUIRED';
+                /** @enum {string} */
+                message: 'Authentication is required.';
+                /** @enum {integer} */
+                statusCode: 401;
+              }
+            | {
+                /** @enum {string} */
+                code: 'AUTH_ACCESS_TOKEN_INVALID';
+                /** @enum {string} */
+                message: 'Access token is invalid.';
+                /** @enum {integer} */
+                statusCode: 401;
+              }
+            | {
+                /** @enum {string} */
+                code: 'AUTH_ACCESS_TOKEN_EXPIRED';
+                /** @enum {string} */
+                message: 'Access token has expired.';
+                /** @enum {integer} */
+                statusCode: 401;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 401;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'QUIZ_SESSION_NOT_FOUND';
+                /** @enum {string} */
+                message: 'Quiz session not found.';
                 /** @enum {integer} */
                 statusCode: 404;
               }

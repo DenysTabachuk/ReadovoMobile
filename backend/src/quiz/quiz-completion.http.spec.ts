@@ -75,7 +75,7 @@ describe('Quiz completion HTTP boundary', () => {
       expect(service.complete).toHaveBeenCalledWith(
         USER.id,
         SESSION_ID,
-        body.timezone,
+        body.timezone ?? undefined,
       );
     },
   );

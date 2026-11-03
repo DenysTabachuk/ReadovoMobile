@@ -1,8 +1,9 @@
 # OpenAPI contract and frontend transport types
 
 The document covers `POST /api/translations/word`, `GET /achievements/profile/me`,
-the five mascot operations under `/mascot/profile/me` and the five streak
-operations under `/streak/profile/me`. Other API modules are not covered yet.
+the five mascot operations under `/mascot/profile/me`, the five streak operations
+under `/streak/profile/me`, and the three operations under
+`/quiz-sessions/{sessionId}`. Other API modules are not covered yet.
 The migration status and remaining work are tracked in
 [the migration task](tasks/openapi-contract-generation.md).
 
@@ -106,6 +107,10 @@ Swagger UI and offline export produce the same document.
    Give public request/response schemas intentional names with `@ApiSchema`, such
    as `TranslateWordRequest` and `TranslateWordResponse`; these become direct
    generated type exports rather than exposing backend class naming conventions.
+   When embedding another module's response, reuse its intentional public schema
+   exports (for example `achievements/contracts.ts` and `streak/contracts.ts`). Do
+   not copy the shape, move it to `common`, or import another module's private DTOs.
+   These backend composition exports must never be imported by frontend code.
 3. Document status, operation ID, security and reachable errors on the controller.
    For operations protected by `UserAuthGuard`, use the auth-owned method decorator
    `@ApiUserAuth({ validation: true, errors: [...] })` and import `AuthModule` in the
@@ -189,6 +194,26 @@ Break details, last activity and claim timestamps are required fields that may b
 null. The break object-or-null schema is explicit rather than inferred from the
 TypeScript union. Status enums and numeric milestones are backend-owned and
 generated for frontend consumers. Existing persisted-data decoders are retained.
+
+Quiz answer, completion and retake operations require Bearer authentication and
+a UUID `sessionId` path parameter. All return HTTP **201**, including successful
+answer/completion retries. The answer body requires `questionId` and 1–20 unique
+`selectedOptionIds`, with existing 200-character identifier limits. IDs are not
+trimmed. Membership and single/multiple-choice rules remain service checks rather
+than DTO constraints. Feedback always includes `isCorrect`, `correctOptionIds`
+and `newlyUnlockedAchievementIds`; missing explanation/vocabulary fields are
+omitted rather than null. Unknown body properties are rejected by DTO validation.
+
+Quiz completion accepts an optional body with an optional nullable IANA `timezone`.
+The existing validator trims and checks the timezone; null and omission retain
+the stored timezone. This semantic IANA validation is not provided by generated
+TypeScript or fully encoded in an OpenAPI string schema. Completion returns saved
+score/reward totals, a `replayed` flag and fresh achievement/streak profiles using
+their existing public schemas. Persisted completion decoding is preserved;
+historical unlocked milestones remain integer arrays rather than being narrowed
+to today's milestone enum. Retake returns only a new `sessionId`. Foreign and
+missing sessions both return `QUIZ_SESSION_NOT_FOUND`; answer conflicts and
+incomplete/completed sessions retain their existing operation-specific 409 errors.
 
 Generated TypeScript is compile-time information, **not runtime validation**.
 Axios generics do not validate JSON. The existing API error decoder and its safe

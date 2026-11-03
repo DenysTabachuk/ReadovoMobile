@@ -7,14 +7,18 @@ import { Prisma, type QuizSession } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { StreakService } from '../streak/streak.service';
 import { calculateQuizReward } from './utils/calculateQuizReward';
-import type { SubmitQuizAnswerDto } from './dto';
+import type { SubmitQuizAnswerDto } from './dto/submit-quiz-answer.dto';
 import { QUIZ_ERRORS } from './quiz-errors';
 import {
   completionSchema,
   quizQuestionsSchema,
   quizSettingsSchema,
 } from './quiz.schemas';
-import type { CreateQuizSessionInput, QuizAnswerResult } from './types';
+import type {
+  CreateQuizSessionInput,
+  QuizAnswerResult,
+  QuizCompletionResponse,
+} from './types';
 
 @Injectable()
 export class QuizService {
@@ -119,7 +123,11 @@ export class QuizService {
   }
 
   /** Commits quiz rewards, counters, achievements, streak and the completion record together. */
-  async complete(userId: string, sessionId: string, timezone?: string) {
+  async complete(
+    userId: string,
+    sessionId: string,
+    timezone?: string,
+  ): Promise<QuizCompletionResponse> {
     return this.withOwnerLock(userId, async (transaction) => {
       const session = await this.getSession(transaction, userId, sessionId);
       // A retry returns the saved completion; none of the reward writes below run again.
@@ -278,7 +286,7 @@ export class QuizService {
     transaction: Prisma.TransactionClient,
     session: QuizSession,
     replayed: boolean,
-  ) {
+  ): Promise<QuizCompletionResponse> {
     // Historical score/rewards stay fixed; profiles are read fresh, including on replay.
     return {
       sessionId: session.id,

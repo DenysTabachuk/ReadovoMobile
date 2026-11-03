@@ -4,7 +4,8 @@ import { type Type } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 
-import { CompleteQuizDto, SubmitQuizAnswerDto } from '../../quiz/dto';
+import { CompleteQuizDto } from '../../quiz/dto/complete-quiz.dto';
+import { SubmitQuizAnswerDto } from '../../quiz/dto/submit-quiz-answer.dto';
 import {
   ArticleDetailQueryDto,
   ArticleListQueryDto,

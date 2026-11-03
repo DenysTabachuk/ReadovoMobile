@@ -1,13 +1,18 @@
 import { api } from '@/features/auth';
-import type { QuizSubmitResult } from '../../../types';
-import type { SubmitQuizAnswerRequest } from '../../types';
+import type {
+  QuizSessionParams,
+  SubmitQuizAnswerRequest,
+  SubmitQuizAnswerResponse,
+} from '@/api/generated/transport';
+
+type SubmitQuizAnswerParams = QuizSessionParams & SubmitQuizAnswerRequest;
 
 export async function submitQuizAnswer({
   sessionId,
   questionId,
   selectedOptionIds,
-}: SubmitQuizAnswerRequest): Promise<QuizSubmitResult> {
-  const response = await api.post<QuizSubmitResult>(
+}: SubmitQuizAnswerParams): Promise<SubmitQuizAnswerResponse> {
+  const response = await api.post<SubmitQuizAnswerResponse>(
     `/quiz-sessions/${sessionId}/answers`,
     { questionId, selectedOptionIds },
   );

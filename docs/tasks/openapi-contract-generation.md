@@ -1,6 +1,6 @@
 # Task: OpenAPI contract and frontend type generation
 
-Status: translations, achievements and mascot reviewed; streak migration implemented for review,
+Status: translations, achievements, mascot and streak reviewed; quiz-session migration implemented for review,
 following the implemented
 [API error contract](../api-error-contract.md). The pilot includes Swagger UI,
 offline schema export, generated transport types and CI/staged freshness checks.
@@ -216,6 +216,44 @@ error-only generator. Contributor workflow: [OpenAPI contract](../openapi-contra
   unstaged. The complete working tree passes. lint-staged restored the original
   state; no implementation files were added to staging by the agent.
 - Refreshed the local read-only Swagger viewer and verified all five streak paths.
+
+## Quiz-session migration
+
+- This batch covers answer, completion and retake under
+  `/quiz-sessions/{sessionId}`. Each uses `ApiUserAuth`, the existing UUID validator
+  and explicit success/error schemas. Routes, grading, reward transactions and
+  ownership decisions are preserved.
+- Request DTOs now live under `quiz/dto/`; named generated types describe answer
+  bodies, the optional completion body and path parameters. The frontend combines
+  generated path/body types for its answer function and removes handwritten
+  completion/retake transport declarations. Its richer UI feedback model derives
+  the relevant fields from the response type while retaining local display text.
+- `achievements/contracts.ts` and `streak/contracts.ts` intentionally expose their
+  serialized schemas for real composition in quiz completion. Nested profiles
+  reuse those schemas without duplicate DTOs or importing feature-private classes.
+- Verified HTTP 201 success/retry statuses, required answer feedback fields,
+  omitted optional vocabulary/explanation fields, nested ISO/date-only/null values,
+  completion replay and historical integer milestone values. Existing Zod decoders
+  still validate persisted questions/completions. No generated runtime validator,
+  HTTP client or React Query hook was introduced.
+- Completion accepts an omitted body or null timezone. The DTO now represents
+  that accepted null honestly; the controller normalizes it to undefined at the
+  service boundary, preserving the effective stored/default timezone behavior.
+- Focused real-module HTTP suites validate actual answer/completion/retake bodies
+  against exported schemas with mocked persistence. The fixture does not simulate
+  transaction isolation or rollback: database-backed reward tests retain those
+  responsibilities and still require the dedicated test database.
+- Remaining coverage: auth, dictionary, notifications, articles and the application
+  root endpoint. Continue in reviewed batches and retain this broader task.
+- Verification: backend CI passed (84 suites / 726 tests), frontend CI passed
+  (140 suites / 712 tests), and backend production build passed. New real-module
+  wire suites cover 29 cases. Typechecking, lint, formatting and both artifact
+  freshness checks passed. Backend e2e: 4 passed; 17 dedicated PostgreSQL cases
+  remain skipped without `QUIZ_TEST_DATABASE_URL`, so no new database-backed
+  concurrency/rollback verification is claimed.
+- The refreshed local read-only Swagger viewer serves all three quiz-session
+  routes. No files were staged at final verification, so `check:staged` could not
+  validate a selected commit snapshot; all results above cover the working tree.
 
 ## Goal
 
