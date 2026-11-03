@@ -30,30 +30,44 @@ export interface components {
       /** @description Sentence context. Strings are trimmed; null is preserved. */
       context?: string | null;
       /**
-       * @description Trimmed and lowercased before format validation.
+       * @description Trimmed and lowercased. Must form a supported pair with targetLanguage.
        * @default en
+       * @enum {string}
        */
-      sourceLanguage?: string;
+      sourceLanguage?: 'en';
       /**
-       * @description Trimmed and lowercased before format validation.
+       * @description Trimmed and lowercased. Must form a supported pair with sourceLanguage.
        * @default uk
+       * @enum {string}
        */
-      targetLanguage?: string;
+      targetLanguage?: 'uk';
       /**
        * @description Selected word. Trimmed before length validation.
        * @example book
        */
       word: string;
+    } & {
+      /** @enum {string} */
+      sourceLanguage?: 'en';
+      /** @enum {string} */
+      targetLanguage?: 'uk';
     };
     TranslateWordResponse: {
       baseTranslation: string;
       context?: string | null;
       contextTranslation?: string;
       contextualTranslation?: string;
-      sourceLanguage: string;
-      targetLanguage: string;
+      /** @enum {string} */
+      sourceLanguage: 'en';
+      /** @enum {string} */
+      targetLanguage: 'uk';
       translation: string;
       word: string;
+    } & {
+      /** @enum {string} */
+      sourceLanguage: 'en';
+      /** @enum {string} */
+      targetLanguage: 'uk';
     };
   };
   responses: never;

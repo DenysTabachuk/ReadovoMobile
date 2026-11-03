@@ -362,6 +362,11 @@ describe('Translation provider contract (HTTP)', () => {
     { word: 'book', targetLanguage: 42 },
     { word: 'book', sourceLanguage: null },
     { word: 'book', targetLanguage: null },
+    { word: 'book', sourceLanguage: 'uk', targetLanguage: 'en' },
+    { word: 'book', sourceLanguage: 'en', targetLanguage: 'en' },
+    { word: 'book', sourceLanguage: 'uk', targetLanguage: 'uk' },
+    { word: 'book', sourceLanguage: 'de', targetLanguage: 'uk' },
+    { word: 'book', sourceLanguage: 'en', targetLanguage: 'qqqq' },
   ])(
     'validates request fields before contacting the provider %#',
     async (body) => {

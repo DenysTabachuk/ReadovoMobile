@@ -1,13 +1,18 @@
 import { useQuery } from '@tanstack/react-query';
 
-import { translateWord, type TranslateWordResponse } from '../api';
+import {
+  translateWord,
+  type TranslateWordRequest,
+  type TranslateWordResponse,
+} from '../api';
 
-type UseWordTranslationParams = {
+type UseWordTranslationParams = Pick<
+  TranslateWordRequest,
+  'sourceLanguage' | 'targetLanguage'
+> & {
   context?: string;
   enabled: boolean;
   queryScope: string;
-  sourceLanguage?: string;
-  targetLanguage?: string;
   word?: string;
 };
 
@@ -15,8 +20,8 @@ export function useWordTranslation({
   context,
   enabled,
   queryScope,
-  sourceLanguage = 'en',
-  targetLanguage = 'uk',
+  sourceLanguage,
+  targetLanguage,
   word,
 }: UseWordTranslationParams) {
   return useQuery<TranslateWordResponse>({
@@ -38,8 +43,9 @@ export function useWordTranslation({
       queryScope,
       word ?? '',
       context ?? '',
-      sourceLanguage,
-      targetLanguage,
+      // null marks the server's default direction without duplicating its policy.
+      sourceLanguage ?? null,
+      targetLanguage ?? null,
     ],
   });
 }

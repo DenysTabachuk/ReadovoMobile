@@ -4,6 +4,25 @@
       "TranslateWordRequest": {
         "additionalProperties": false,
         "description": "Unknown body properties are rejected by global DTO validation.",
+        "oneOf": [
+          {
+            "properties": {
+              "sourceLanguage": {
+                "enum": [
+                  "en"
+                ],
+                "type": "string"
+              },
+              "targetLanguage": {
+                "enum": [
+                  "uk"
+                ],
+                "type": "string"
+              }
+            },
+            "type": "object"
+          }
+        ],
         "properties": {
           "context": {
             "description": "Sentence context. Strings are trimmed; null is preserved.",
@@ -13,14 +32,18 @@
           },
           "sourceLanguage": {
             "default": "en",
-            "description": "Trimmed and lowercased before format validation.",
-            "pattern": "^[a-z]{2,10}$",
+            "description": "Trimmed and lowercased. Must form a supported pair with targetLanguage.",
+            "enum": [
+              "en"
+            ],
             "type": "string"
           },
           "targetLanguage": {
             "default": "uk",
-            "description": "Trimmed and lowercased before format validation.",
-            "pattern": "^[a-z]{2,10}$",
+            "description": "Trimmed and lowercased. Must form a supported pair with sourceLanguage.",
+            "enum": [
+              "uk"
+            ],
             "type": "string"
           },
           "word": {
@@ -37,6 +60,29 @@
         "type": "object"
       },
       "TranslateWordResponse": {
+        "oneOf": [
+          {
+            "properties": {
+              "sourceLanguage": {
+                "enum": [
+                  "en"
+                ],
+                "type": "string"
+              },
+              "targetLanguage": {
+                "enum": [
+                  "uk"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "sourceLanguage",
+              "targetLanguage"
+            ],
+            "type": "object"
+          }
+        ],
         "properties": {
           "baseTranslation": {
             "type": "string"
@@ -52,9 +98,15 @@
             "type": "string"
           },
           "sourceLanguage": {
+            "enum": [
+              "en"
+            ],
             "type": "string"
           },
           "targetLanguage": {
+            "enum": [
+              "uk"
+            ],
             "type": "string"
           },
           "translation": {

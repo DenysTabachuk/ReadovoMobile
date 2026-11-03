@@ -173,12 +173,12 @@ describe('Offline OpenAPI export', () => {
           sourceLanguage: {
             type: 'string',
             default: 'en',
-            pattern: '^[a-z]{2,10}$',
+            enum: ['en'],
           },
           targetLanguage: {
             type: 'string',
             default: 'uk',
-            pattern: '^[a-z]{2,10}$',
+            enum: ['uk'],
           },
         },
       },
@@ -194,6 +194,8 @@ describe('Offline OpenAPI export', () => {
           context: { type: 'string', nullable: true },
           contextTranslation: { type: 'string' },
           contextualTranslation: { type: 'string' },
+          sourceLanguage: { type: 'string', enum: ['en'] },
+          targetLanguage: { type: 'string', enum: ['uk'] },
         },
       },
     });

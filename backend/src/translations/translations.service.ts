@@ -6,7 +6,11 @@ import { ApiException } from '../common/errors/api-exception';
 import { COMMON_ERRORS } from '../common/errors/common-errors';
 import { GoogleTranslateResponseSchema } from './google-translate-response.schema';
 import { TRANSLATIONS_ERRORS } from './translations-errors';
-import { type TranslateWordResponse } from './types';
+import {
+  type TranslateWordResponse,
+  type TranslationSourceLanguage,
+  type TranslationTargetLanguage,
+} from './types';
 import {
   TRANSLATION_DEFAULT_SOURCE_LANGUAGE,
   TRANSLATION_DEFAULT_TARGET_LANGUAGE,
@@ -26,8 +30,8 @@ export class TranslationsService {
 
   async translateWord(params: {
     context?: string | null;
-    sourceLanguage?: string;
-    targetLanguage?: string;
+    sourceLanguage?: TranslationSourceLanguage;
+    targetLanguage?: TranslationTargetLanguage;
     word: string;
   }): Promise<TranslateWordResponse> {
     const sourceLanguage =

@@ -120,8 +120,15 @@ Swagger UI and offline export produce the same document.
 ## Wire semantics and runtime validation
 
 Translations currently returns HTTP **201**. Omitted languages default to `en` and
-`uk`; explicit null languages fail validation. Language codes are strings constrained
-by a pattern, not a fixed enum. Strings are trimmed, and languages lowercased,
+`uk`; explicit null languages fail validation. The supported directions are owned
+by `SUPPORTED_TRANSLATION_PAIRS` in the translations module, currently only
+`en -> uk`. Source/target enums are derived from that policy, and a DTO validator
+checks the complete pair before any provider call. Reverse, same-language and
+unknown directions return `400 VALIDATION_FAILED`. OpenAPI `oneOf` branches describe
+the same pair restrictions, including effective defaults for omitted request fields.
+To add a direction, update that policy, regenerate contracts and extend the tests;
+do not independently widen two language lists. Frontend hooks use generated language
+types and leave defaults to the backend. Strings are trimmed and languages lowercased
 before validation. Unknown request properties are rejected. Swagger constraints
 describe the normalized input; they do not implement those transformations.
 

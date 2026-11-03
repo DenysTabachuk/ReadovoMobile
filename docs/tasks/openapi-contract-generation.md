@@ -33,6 +33,10 @@ error-only generator. Contributor workflow: [OpenAPI contract](../openapi-contra
   complete public API coverage and remove superseded declarations and plans.
 - Keep this task until the broader migration is complete. The user requested a
   dedicated branch and commit for the completed pilot.
+- Follow-up: translation directions are now an explicit backend-owned pair policy,
+  initially `en -> uk`. DTO validation and OpenAPI enums/oneOf use that policy;
+  unsupported requests are rejected before provider usage. Frontend language types
+  are generated and language defaults remain owned by the backend.
 
 ## Verification (2026-11-03)
 
@@ -69,6 +73,20 @@ error-only generator. Contributor workflow: [OpenAPI contract](../openapi-contra
 - A local read-only Swagger viewer was verified against the canonical JSON, with
   request execution disabled and no application endpoints registered. Deployment
   of the backend remains separate from this local review.
+
+## Language-direction follow-up (2026-11-03)
+
+- `SUPPORTED_TRANSLATION_PAIRS` is the only allowlist, currently `en -> uk`.
+  The named default pair is included explicitly and does not depend on list order.
+- Request field enums, cross-field DTO validation and OpenAPI request/response
+  `oneOf` schemas derive from this policy. Unsupported directions fail before
+  provider usage. Tests also cover multi-pair fixtures to reject cross-product
+  combinations and verify omitted-field defaults in the schemas.
+- Frontend hooks derive language types from generated transport types and leave
+  defaults to the backend rather than duplicating the pair policy.
+- Backend CI passed: 77 suites / 642 tests. Frontend CI passed: 140 suites / 712
+  tests. Generation freshness, backend build and e2e checks passed; 17 database
+  cases remain skipped without `QUIZ_TEST_DATABASE_URL`.
 
 ## Goal
 

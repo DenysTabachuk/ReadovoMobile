@@ -1,8 +1,8 @@
 import {
   IsNotEmpty,
+  IsIn,
   IsOptional,
   IsString,
-  Matches,
   MaxLength,
 } from 'class-validator';
 import {
@@ -17,19 +17,32 @@ import { Trim, TrimToLowerCase } from '../../common/validation/transforms';
 
 import {
   TRANSLATION_CONTEXT_MAX_LENGTH,
+  DEFAULT_TRANSLATION_PAIR,
+  SUPPORTED_TRANSLATION_PAIRS,
   TRANSLATION_DEFAULT_SOURCE_LANGUAGE,
   TRANSLATION_DEFAULT_TARGET_LANGUAGE,
-  TRANSLATION_LANGUAGE_CODE_PATTERN,
+  TRANSLATION_SOURCE_LANGUAGES,
+  TRANSLATION_TARGET_LANGUAGES,
   TRANSLATION_WORD_MAX_LENGTH,
 } from '../constants';
+import {
+  type TranslationSourceLanguage,
+  type TranslationTargetLanguage,
+} from '../types';
+import { createTranslationPairSchemas } from '../utils/createTranslationPairSchemas';
+import { IsSupportedTranslationPair } from '../validation/is-supported-translation-pair.decorator';
 
 // ApiSchema forwards schema metadata; keep this checked as both decorator options
 // and a standard schema property. Export tests verify the closed-object contract.
 const requestSchema: ApiSchemaOptions &
-  Pick<SchemaObject, 'additionalProperties'> = {
+  Pick<SchemaObject, 'additionalProperties' | 'oneOf'> = {
   name: 'TranslateWordRequest',
   description: 'Unknown body properties are rejected by global DTO validation.',
   additionalProperties: false,
+  oneOf: createTranslationPairSchemas(
+    SUPPORTED_TRANSLATION_PAIRS,
+    DEFAULT_TRANSLATION_PAIR,
+  ),
 };
 
 @ApiSchema(requestSchema)
@@ -49,22 +62,27 @@ export class TranslateWordDto {
   @ApiPropertyOptional({
     type: String,
     default: TRANSLATION_DEFAULT_SOURCE_LANGUAGE,
-    description: 'Trimmed and lowercased before format validation.',
-    pattern: TRANSLATION_LANGUAGE_CODE_PATTERN.source,
+    description:
+      'Trimmed and lowercased. Must form a supported pair with targetLanguage.',
+    enum: TRANSLATION_SOURCE_LANGUAGES,
   })
-  @Matches(TRANSLATION_LANGUAGE_CODE_PATTERN)
+  @IsIn(TRANSLATION_SOURCE_LANGUAGES)
   @TrimToLowerCase()
-  sourceLanguage = TRANSLATION_DEFAULT_SOURCE_LANGUAGE;
+  sourceLanguage: TranslationSourceLanguage =
+    TRANSLATION_DEFAULT_SOURCE_LANGUAGE;
 
   @ApiPropertyOptional({
     type: String,
     default: TRANSLATION_DEFAULT_TARGET_LANGUAGE,
-    description: 'Trimmed and lowercased before format validation.',
-    pattern: TRANSLATION_LANGUAGE_CODE_PATTERN.source,
+    description:
+      'Trimmed and lowercased. Must form a supported pair with sourceLanguage.',
+    enum: TRANSLATION_TARGET_LANGUAGES,
   })
-  @Matches(TRANSLATION_LANGUAGE_CODE_PATTERN)
+  @IsIn(TRANSLATION_TARGET_LANGUAGES)
+  @IsSupportedTranslationPair(SUPPORTED_TRANSLATION_PAIRS)
   @TrimToLowerCase()
-  targetLanguage = TRANSLATION_DEFAULT_TARGET_LANGUAGE;
+  targetLanguage: TranslationTargetLanguage =
+    TRANSLATION_DEFAULT_TARGET_LANGUAGE;
 
   @ApiProperty({
     type: String,
