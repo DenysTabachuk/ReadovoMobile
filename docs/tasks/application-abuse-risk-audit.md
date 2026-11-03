@@ -15,6 +15,11 @@ of maintaining a second implementation plan.
 
 ## Audit work
 
+Code review during the OpenAPI migration also found non-atomic mascot purchase
+writes. The scope and required transaction/concurrency checks are tracked in
+[mascot purchase atomicity](mascot-purchase-atomicity.md). This is not a completed
+audit or a verified live concurrency reproduction.
+
 - Inventory all controllers, routes, HTTP methods, guards and global middleware.
   Record which routes are intentionally public and why. Do not infer protection
   from Swagger metadata, frontend navigation, CORS or an undocumented URL.

@@ -1,14 +1,12 @@
 import { type ImageSourcePropType } from 'react-native';
 
-export type MascotAccessorySlot = 'eyes' | 'head';
+import { type MascotAccessorySlot } from '@/api/generated/transport';
 
-export type MascotEquippedItems = Partial<Record<MascotAccessorySlot, string>>;
-
-export type MascotProfile = {
-  equippedItems: MascotEquippedItems;
-  ownedItemIds: string[];
-  userId: string;
-};
+export type {
+  MascotAccessorySlot,
+  MascotEquippedItems,
+  MascotProfileResponse as MascotProfile,
+} from '@/api/generated/transport';
 
 export type MascotCatalogItem = {
   asset: ImageSourcePropType;

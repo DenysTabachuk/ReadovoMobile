@@ -60,6 +60,11 @@ describe('Offline OpenAPI export', () => {
     expect(Object.keys(first.paths).sort()).toEqual([
       '/achievements/profile/me',
       '/api/translations/word',
+      '/mascot/profile/me',
+      '/mascot/profile/me/items/{itemId}/buy',
+      '/mascot/profile/me/items/{itemId}/equip',
+      '/mascot/profile/me/slots',
+      '/mascot/profile/me/slots/{slot}',
     ]);
     expect(listen).not.toHaveBeenCalled();
     expect(init).not.toHaveBeenCalled();

@@ -23,7 +23,7 @@ class OpenApiExportModule {}
  * @returns OpenAPI document; the temporary metadata-only application is closed.
  * @example
  * const document = await exportOpenApi();
- * // document.paths contains translations and achievements routes only.
+ * // document.paths contains only explicitly documented feature routes.
  */
 export async function exportOpenApi() {
   const app = await NestFactory.create(OpenApiExportModule, {

@@ -1,6 +1,9 @@
 import { api } from '@/features/auth';
 
-import type { MascotAccessorySlot, MascotProfile } from '../../../types';
+import type {
+  MascotAccessorySlot,
+  MascotProfileResponse as MascotProfile,
+} from '@/api/generated/transport';
 
 export async function clearMascotSlot(
   slot: MascotAccessorySlot,

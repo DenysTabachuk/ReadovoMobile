@@ -14,7 +14,7 @@ import {
   CreateDictionaryWordDto,
   DictionaryWordParamsDto,
 } from '../../dictionary/dto';
-import { ClearMascotSlotParamsDto } from '../../mascot/dto';
+import { ClearMascotSlotParamsDto } from '../../mascot/dto/clear-mascot-slot-params.dto';
 import { RegisterPushTokenDto } from '../../notifications/dto';
 import { ApplyStreakFreezeDto } from '../../streak/dto';
 import { TranslateWordDto } from '../../translations/dto/translate-word.dto';

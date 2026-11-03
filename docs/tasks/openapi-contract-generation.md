@@ -1,6 +1,6 @@
 # Task: OpenAPI contract and frontend type generation
 
-Status: translations pilot reviewed; achievements migration implemented for review,
+Status: translations and achievements reviewed; mascot migration implemented for review,
 following the implemented
 [API error contract](../api-error-contract.md). The pilot includes Swagger UI,
 offline schema export, generated transport types and CI/staged freshness checks.
@@ -139,6 +139,41 @@ error-only generator. Contributor workflow: [OpenAPI contract](../openapi-contra
   so offline export reports a stale artifact. The full working tree passes.
   lint-staged restored the original state; the staged diff hash was unchanged.
   No additional files were staged automatically.
+
+## Mascot migration
+
+- This batch covers all five routes under `/mascot/profile/me`: profile read,
+  purchase, equip, clear one slot and clear all slots. Each uses `ApiUserAuth`.
+- Module-owned response DTOs describe `MascotProfileResponse` and
+  `MascotEquippedItems`; frontend requests import generated response types and
+  feature exports preserve the existing `MascotProfile` name as a type alias.
+  The catalog's image assets, placement and localization models stay frontend-owned.
+- Path DTOs now live in the module's `dto/` directory. The backend-owned
+  `MASCOT_ACCESSORY_SLOTS` list supplies runtime validation and the named generated
+  `MascotAccessorySlot` enum. Nonempty item IDs remain strings; catalog membership
+  is an existing service rule rather than an independently copied transport list.
+- Preserved HTTP 200/201 statuses, required profile fields and optional non-null
+  equipped-item strings. Empty slots serialize as omitted properties; database
+  timestamps and legacy columns are not leaked into transport types.
+- HTTP contract tests compare all five operations' actual success, auth and
+  missing-user responses with their exported schemas. Additional cases verify
+  required path metadata, slot enums, validation and specific service errors.
+  Existing purchase/equipment behavior tests remain intact.
+- Remaining modules include auth, streak, dictionary, notifications, articles and
+  quiz, plus the application root endpoint. Continue in reviewed batches and keep
+  this task until full public API coverage is complete.
+- Verification: backend CI passed (79 suites / 669 tests), frontend CI passed
+  (140 suites / 712 tests) and backend production build passed. Both project
+  freshness checks and documentation/instruction formatting passed. Staged files
+  were selected by the user during this batch; snapshot verification is separate
+  from these working-tree checks.
+- `check:staged` passed against the actual selected implementation snapshot,
+  including related tests, both TypeScript checks and contract freshness. No
+  additional implementation files were staged by the agent. The refreshed local
+  read-only Swagger viewer was verified to serve all five mascot paths.
+- Existing behavior found during review: mascot debit and ownership writes are
+  non-atomic. Recorded separately in [the follow-up task](mascot-purchase-atomicity.md);
+  no purchase business logic was changed in this transport migration.
 
 ## Goal
 

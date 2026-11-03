@@ -1,7 +1,8 @@
 # OpenAPI contract and frontend transport types
 
 The document covers `POST /api/translations/word` and
-`GET /achievements/profile/me`. Other API modules are not covered yet.
+`GET /achievements/profile/me` and all five mascot profile/equipment operations
+under `/mascot/profile/me`. Other API modules are not covered yet.
 The migration status and remaining work are tracked in
 [the migration task](tasks/openapi-contract-generation.md).
 
@@ -160,6 +161,18 @@ present: ISO date-time strings for stored dates, or null when absent. Achievemen
 IDs are an enum derived from the backend's `ACHIEVEMENT_IDS` list. Missing,
 invalid and expired tokens return documented **401** errors; a deleted/missing
 user returns **404**. Authentication endpoint contracts remain outside coverage.
+
+Mascot operations require Bearer authentication. Profile reads and slot clearing
+return HTTP **200**; purchases and equipping return **201**, including purchasing
+an already owned item. All return `MascotProfileResponse`. `equippedItems` is
+always present; its `eyes` and `head` properties are optional strings, never null.
+Empty slots are omitted from JSON. `ownedItemIds` contains strings and may be
+empty. Database timestamps and legacy equipped-item columns are not exposed.
+Path parameters are required: `itemId` is trimmed and must be nonempty; `slot`
+is trimmed and must match the backend-owned `eyes`/`head` enum. Catalog membership,
+ownership and balance are checked by the service and documented as distinct 400
+errors alongside DTO validation. Catalog IDs remain strings rather than a fixed
+transport enum, preserving the existing service boundary and stored legacy IDs.
 
 Generated TypeScript is compile-time information, **not runtime validation**.
 Axios generics do not validate JSON. The existing API error decoder and its safe
