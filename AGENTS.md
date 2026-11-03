@@ -103,6 +103,27 @@
   Public endpoints use `ApiErrorResponses`; ownership and role checks still need
   their own guards/logic. Do not migrate unrelated endpoints just for this rule.
 
+## Backend feature organization
+
+- When a feature contains distinct responsibilities, group their implementation
+  into named subfolders such as `diagnostics/`, `preferences/` or `delivery/`.
+  Keep the controller, exclusive DTOs, helpers and tests with their actual owner;
+  keep shared feature contracts and infrastructure at the closest common owner.
+  Prefer responsibility boundaries over feature-wide `controllers/`, `services/`
+  or `tests/` buckets. A file count alone does not justify another folder.
+- For example, notification diagnostics should own their optional controller and
+  module under `notifications/diagnostics/`, while ordinary notification APIs,
+  shared delivery infrastructure and worker contracts retain their production
+  owner. Production code must not depend on optional diagnostics internals.
+- Folder organization and NestJS module boundaries are separate decisions. Add a
+  module for actual DI/export or registration needs, such as development-only
+  controllers; do not create a module/service for every folder or duplicate
+  providers, SDK clients or background workers just to organize files.
+- Apply this to new subareas and structural changes within the current task.
+  Move associated imports/tests and verify registration and public contracts when
+  reorganizing. Do not expand a focused change into an unrelated feature rewrite
+  or split an existing service solely to satisfy a naming/file-count rule.
+
 ## Backend naming
 
 - Name variables after the domain data they contain. Include the relevant state

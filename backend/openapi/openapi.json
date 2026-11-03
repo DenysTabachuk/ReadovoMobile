@@ -4683,7 +4683,7 @@
     },
     "/notifications/learning-reminders/dispatch": {
       "post": {
-        "description": "Dispatches all eligible users, not only the caller. Available to authenticated users only when NODE_ENV is not production; otherwise returns 403.",
+        "description": "Processes all eligible users. Available only when the diagnostics module is installed; its production safety check returns 403 if the running environment changes.",
         "operationId": "dispatchLearningRemindersNow",
         "parameters": [],
         "responses": {
@@ -5141,15 +5141,15 @@
             "bearer": []
           }
         ],
-        "summary": "Run reminder dispatch outside production",
+        "summary": "Run reminder dispatch for development",
         "tags": [
-          "notifications"
+          "Notification diagnostics"
         ]
       }
     },
     "/notifications/learning-reminders/dispatch/today/me": {
       "delete": {
-        "description": "Available to authenticated users only when NODE_ENV is not production; otherwise returns 403.",
+        "description": "Available only when the diagnostics module is installed. Its production safety check returns 403 if the running environment changes.",
         "operationId": "clearTodayLearningReminderDispatch",
         "parameters": [],
         "responses": {
@@ -5607,9 +5607,9 @@
             "bearer": []
           }
         ],
-        "summary": "Clear today’s reminder dispatch record outside production",
+        "summary": "Clear today’s reminder dispatch record for development",
         "tags": [
-          "notifications"
+          "Notification diagnostics"
         ]
       }
     },
@@ -7993,9 +7993,9 @@
             "bearer": []
           }
         ],
-        "summary": "Send a test push and return delivery counts, including failed deliveries",
+        "summary": "Send a development test push and return delivery counts",
         "tags": [
-          "notifications"
+          "Notification diagnostics"
         ]
       }
     },

@@ -4,7 +4,7 @@ import {
   createNotificationsHttpApp,
   NOTIFICATIONS_TEST_TOKEN,
   type NotificationsHttpTestApp,
-} from './testing/create-notifications-http-app';
+} from '../testing/create-notifications-http-app';
 
 const dispatchPath = '/notifications/learning-reminders/dispatch';
 const clearPath = `${dispatchPath}/today/me`;

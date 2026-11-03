@@ -15,13 +15,16 @@ const bootstrapLogger = new Logger('Bootstrap');
 loadBackendEnv();
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, {
-    bodyParser: false,
-  });
+  const app = await NestFactory.create(
+    AppModule.forEnvironment(process.env.NODE_ENV),
+    {
+      bodyParser: false,
+    },
+  );
 
   app.enableCors();
   configureApiBoundaries(app);
-  // Create an in-memory object describing the pilot API; no file is read or written.
+  // Scan registered controllers: production has no notification diagnostics.
   const apiDocument = createApiDocument(app, DOCUMENTED_API_MODULES);
   // Serve Swagger UI at /api/docs. It renders apiDocument as browsable documentation.
   // This registers documentation routes; app.listen below starts the HTTP server.

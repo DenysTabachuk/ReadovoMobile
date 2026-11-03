@@ -9,7 +9,6 @@ import {
   Query,
 } from '@nestjs/common';
 import {
-  ApiBody,
   ApiCreatedResponse,
   ApiExtraModels,
   ApiOkResponse,
@@ -20,23 +19,13 @@ import {
 import { CurrentUser } from '../auth/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/types';
 import { ApiUserAuth } from '../auth/api-user-auth.decorator';
-import { ApiException } from '../common/errors/api-exception';
 import { DeviceIdQueryDto } from './dto/device-id-query.dto';
 import { RegisterPushTokenDto } from './dto/register-push-token.dto';
-import { SendTestPushDto } from './dto/send-test-push.dto';
 import { UpsertLearningReminderPreferencesDto } from './dto/upsert-learning-reminder-preferences.dto';
 import { GetLearningReminderPreferencesResponseDto } from './dto/get-learning-reminder-preferences-response.dto';
 import { RegisterPushTokenResponseDto } from './dto/register-push-token-response.dto';
-import { SendTestPushResponseDto } from './dto/send-test-push-response.dto';
-import { DispatchLearningRemindersResponseDto } from './dto/dispatch-learning-reminders-response.dto';
-import { ClearTodayLearningReminderDispatchResponseDto } from './dto/clear-today-learning-reminder-dispatch-response.dto';
 import { NotificationsService } from './notifications.service';
-import { NOTIFICATIONS_ERRORS } from './notifications-errors';
-import type {
-  LearningReminderDispatchResult,
-  LearningReminderPreferences,
-  SendTestPushResult,
-} from './types';
+import type { LearningReminderPreferences } from './types';
 
 @Controller('notifications')
 @ApiTags('notifications')
@@ -122,94 +111,5 @@ export class NotificationsController {
   ): Promise<RegisterPushTokenResponseDto> {
     await this.notificationsService.deactivatePushToken(user.id, deviceId);
     return { ok: true };
-  }
-
-  @Post('test-push/me')
-  @ApiOperation({
-    operationId: 'sendRemoteTestPush',
-    summary:
-      'Send a test push and return delivery counts, including failed deliveries',
-  })
-  @ApiBody({ type: SendTestPushDto, required: false })
-  @ApiCreatedResponse({ type: SendTestPushResponseDto })
-  @ApiUserAuth({ validation: true })
-  async sendTestPush(
-    @CurrentUser() user: AuthenticatedUser,
-    @Body() payload: SendTestPushDto,
-  ): Promise<SendTestPushResult> {
-    this.logger.log(`sendTestPush request userId=${user.id}`);
-    try {
-      const result = await this.notificationsService.sendTestPush(
-        user.id,
-        payload,
-      );
-      this.logger.log(
-        `sendTestPush result userId=${user.id} tokenCount=${result.tokenCount} sentCount=${result.sentCount} failedCount=${result.failedCount}`,
-      );
-      return result;
-    } catch (error) {
-      this.logger.error('Test push request failed.');
-      throw error;
-    }
-  }
-
-  @Delete('learning-reminders/dispatch/today/me')
-  @ApiOperation({
-    operationId: 'clearTodayLearningReminderDispatch',
-    summary: 'Clear today’s reminder dispatch record outside production',
-    description:
-      'Available to authenticated users only when NODE_ENV is not production; otherwise returns 403.',
-  })
-  @ApiOkResponse({ type: ClearTodayLearningReminderDispatchResponseDto })
-  @ApiUserAuth({ errors: [NOTIFICATIONS_ERRORS.DISPATCH_CLEAR_DISABLED] })
-  async clearTodayLearningReminderDispatchForDevelopment(
-    @CurrentUser() user: AuthenticatedUser,
-  ): Promise<ClearTodayLearningReminderDispatchResponseDto> {
-    if (process.env.NODE_ENV === 'production') {
-      throw new ApiException(NOTIFICATIONS_ERRORS.DISPATCH_CLEAR_DISABLED);
-    }
-
-    this.logger.log(
-      `clear today reminder dispatch requested userId=${user.id}`,
-    );
-    const result =
-      await this.notificationsService.clearTodayLearningReminderDispatch(
-        user.id,
-      );
-    this.logger.log(
-      `clear today reminder dispatch completed userId=${user.id} deletedCount=${result.deletedCount}`,
-    );
-
-    return result;
-  }
-
-  @Post('learning-reminders/dispatch')
-  @ApiOperation({
-    operationId: 'dispatchLearningRemindersNow',
-    summary: 'Run reminder dispatch outside production',
-    description:
-      'Dispatches all eligible users, not only the caller. Available to authenticated users only when NODE_ENV is not production; otherwise returns 403.',
-  })
-  @ApiCreatedResponse({ type: DispatchLearningRemindersResponseDto })
-  @ApiUserAuth({ errors: [NOTIFICATIONS_ERRORS.MANUAL_DISPATCH_DISABLED] })
-  async dispatchLearningRemindersForDevelopment(): Promise<LearningReminderDispatchResult> {
-    if (process.env.NODE_ENV === 'production') {
-      throw new ApiException(NOTIFICATIONS_ERRORS.MANUAL_DISPATCH_DISABLED);
-    }
-
-    this.logger.log('manual learning reminder dispatch requested');
-    let result: LearningReminderDispatchResult;
-
-    try {
-      result = await this.notificationsService.dispatchLearningReminders();
-      this.logger.log(
-        `manual learning reminder dispatch completed checked=${result.checkedCount} sent=${result.sentCount} outsideWindow=${result.skippedOutsideWindowCount} completedToday=${result.skippedCompletedTodayCount} alreadySent=${result.skippedAlreadySentCount} noTokens=${result.skippedNoTokensCount} sendFailed=${result.skippedSendFailedCount}`,
-      );
-    } catch (error) {
-      this.logger.error('Manual learning reminder dispatch failed.');
-      throw error;
-    }
-
-    return result;
   }
 }

@@ -133,8 +133,8 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Run reminder dispatch outside production
-     * @description Dispatches all eligible users, not only the caller. Available to authenticated users only when NODE_ENV is not production; otherwise returns 403.
+     * Run reminder dispatch for development
+     * @description Processes all eligible users. Available only when the diagnostics module is installed; its production safety check returns 403 if the running environment changes.
      */
     post: operations['dispatchLearningRemindersNow'];
     delete?: never;
@@ -154,8 +154,8 @@ export interface paths {
     put?: never;
     post?: never;
     /**
-     * Clear today’s reminder dispatch record outside production
-     * @description Available to authenticated users only when NODE_ENV is not production; otherwise returns 403.
+     * Clear today’s reminder dispatch record for development
+     * @description Available only when the diagnostics module is installed. Its production safety check returns 403 if the running environment changes.
      */
     delete: operations['clearTodayLearningReminderDispatch'];
     options?: never;
@@ -208,7 +208,7 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /** Send a test push and return delivery counts, including failed deliveries */
+    /** Send a development test push and return delivery counts */
     post: operations['sendRemoteTestPush'];
     delete?: never;
     options?: never;

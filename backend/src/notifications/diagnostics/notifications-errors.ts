@@ -1,4 +1,4 @@
-import { type ApiErrorDefinition } from '../common/errors/api-error-definition';
+import { type ApiErrorDefinition } from '../../common/errors/api-error-definition';
 
 export const NOTIFICATIONS_ERRORS = {
   DISPATCH_CLEAR_DISABLED: {

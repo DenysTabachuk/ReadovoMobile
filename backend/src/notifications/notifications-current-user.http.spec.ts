@@ -6,6 +6,7 @@ import { JwtService } from '../auth/jwt.service';
 import { UserAuthGuard } from '../auth/user-auth.guard';
 import { configureApiBoundaries } from '../common/configure-api-boundaries';
 import { NotificationsController } from './notifications.controller';
+import { NotificationsDiagnosticsController } from './diagnostics/notifications-diagnostics.controller';
 import { NotificationsService } from './notifications.service';
 
 const routes = [
@@ -98,7 +99,10 @@ describe('Notifications current-user contract (HTTP)', () => {
   beforeEach(async () => {
     service = createService();
     const module = await Test.createTestingModule({
-      controllers: [NotificationsController],
+      controllers: [
+        NotificationsController,
+        NotificationsDiagnosticsController,
+      ],
       providers: [
         JwtService,
         UserAuthGuard,

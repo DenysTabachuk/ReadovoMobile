@@ -294,6 +294,64 @@ error-only generator. Contributor workflow: [OpenAPI contract](../openapi-contra
   No files were staged at final verification, so `check:staged` had no selected
   commit snapshot to validate; the checks above cover the working tree.
 
+## Development-only notification diagnostics
+
+- The user requested keeping test push, manual dispatch and clearing today's
+  dispatch record in development while omitting their routes from production.
+- Moved those operations into `NotificationsDiagnosticsController` and a separate
+  `NotificationsDiagnosticsModule`. Ordinary preferences/token operations and the
+  background worker stay in `NotificationsModule`; the worker is not duplicated.
+- Startup calls `AppModule.forEnvironment` after loading `.env`. Only development
+  or an unset local environment registers diagnostics; production, test and unknown
+  values omit the module. The safe bare `AppModule` also has no diagnostics.
+- Runtime Swagger omits absent operations and groups installed diagnostics under
+  `Notification diagnostics`. The canonical offline export explicitly includes
+  diagnostic contracts for frontend debug tooling and is byte-stable across
+  environment values. No second generated artifact or environment-specific schema
+  list was introduced.
+- Real app-composition HTTP tests verify all three production URLs return 404
+  both with and without a valid token, ordinary notifications still work, and
+  Swagger omits the diagnostic operations. Development tests verify the group,
+  registration and required authentication. Existing direct-controller 403 safety
+  checks are retained; they are separate from actual production route absence.
+- Frontend debug screens remain gated by `__DEV__`; request paths, transport
+  types, provider delivery behavior and normal app/session logic remain intact.
+- Verification: backend CI passed (87 suites / 763 tests), frontend CI passed
+  (141 suites / 725 tests), and production build passed. Five real-composition HTTP
+  cases and a cross-environment export regression passed. Contract freshness and
+  changed-document formatting passed. E2e: 4 passed; 17 dedicated database cases
+  remain skipped without `QUIZ_TEST_DATABASE_URL`.
+- The actual partial staged snapshot failed `check:staged`: only the original
+  controller's operation removal was selected, without the new diagnostics module,
+  updated app/catalogue/test composition or regenerated artifacts. Related tests
+  and freshness checks correctly rejected that incomplete snapshot. lint-staged
+  restored the original state and the staged diff hash was unchanged; no files
+  were added to staging by the agent. The full working tree passes its checks.
+- Refreshed and verified the local read-only Swagger viewer: all three diagnostic
+  operations share `Notification diagnostics`; ordinary preferences retain their
+  `notifications` tag.
+
+## Notification folder organization
+
+- Moved the optional diagnostics controller/module into `notifications/diagnostics/`
+  along with their production-registration, direct-operation and delivery HTTP
+  suites, diagnostic error definitions and exclusive dispatch-clearing response DTO.
+- Shared request/response DTOs used by the production notification service remain
+  in `notifications/dto/`. The single service, worker and shared HTTP test factories
+  retain their existing owners; no SDK clients or background workers are duplicated.
+- Updated application composition, OpenAPI coverage, error catalogue, test imports
+  and documentation references. Canonical contracts and operation behavior remain
+  unchanged; freshness checks pass without rewriting generated artifacts.
+- Verification: backend CI passed (87 suites / 763 tests), including discovery of
+  the three relocated suites and production/development route registration tests.
+  Backend build, both contract freshness checks, instruction/documentation
+  formatting and diff whitespace checks passed. No frontend implementation changed.
+- `check:staged` still rejects the user's partial selection: the diagnostics
+  controller/module, composition and test updates are not all selected together.
+  The staged contract and related tests therefore see removed operations without
+  their replacement controller. lint-staged restored the original working state;
+  no additional files or deletions were staged by the agent.
+
 ## Goal
 
 Describe the complete public HTTP API with OpenAPI and generate frontend transport

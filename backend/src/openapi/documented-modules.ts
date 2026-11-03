@@ -6,8 +6,10 @@ import { MascotModule } from '../mascot/mascot.module';
 import { StreakModule } from '../streak/streak.module';
 import { QuizModule } from '../quiz/quiz.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { NotificationsDiagnosticsModule } from '../notifications/diagnostics/notifications-diagnostics.module';
 
-// One coverage list for the production Swagger UI and the offline exporter.
+// Canonical coverage includes development contracts for frontend type generation.
+// Runtime Swagger scans only modules actually registered in its application.
 // Review import-time side effects and rerun isolation tests before adding modules.
 export const DOCUMENTED_API_MODULES = [
   TranslationsModule,
@@ -16,4 +18,5 @@ export const DOCUMENTED_API_MODULES = [
   StreakModule,
   QuizModule,
   NotificationsModule,
+  NotificationsDiagnosticsModule,
 ] satisfies Type[];

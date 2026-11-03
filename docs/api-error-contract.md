@@ -33,7 +33,7 @@ Backend definitions belong to their owners: shared errors in
 `backend/src/achievements/achievements-errors.ts`, translations errors in
 `backend/src/translations/translations-errors.ts`, article errors in
 `backend/src/articles/articles-errors.ts`, notifications errors in
-`backend/src/notifications/notifications-errors.ts`, and validation rules in
+`backend/src/notifications/diagnostics/notifications-errors.ts`, and validation rules in
 `backend/src/common/validation/create-validation-exception.ts`.
 `backend/src/api-error-catalogue.ts` collects module definitions for contract
 tooling; its test rejects duplicate public codes. `common` does not import auth
@@ -696,18 +696,25 @@ representative-excerpt or question-count policy is changed.
 
 All seven `/notifications` routes retain `UserAuthGuard`. Six personal routes
 derive their owner through `@CurrentUser()` and use the `me` segment. Manual dispatch has no route user ID; in
-non-production it remains available to any authenticated user. This migration adds no permissions.
-Definitions live in `notifications/notifications-errors.ts` and allow no details.
+development it remains available to any authenticated user. Diagnostic routes are
+registered only for development or an unset local environment. Normal production
+startup omits all three diagnostics, including test push; these URLs return
+`404 ROUTE_NOT_FOUND` with or without a token. Regular preference/token routes
+remain registered and guarded. This change does not add an administrative role.
+Diagnostic error definitions live in `notifications/diagnostics/notifications-errors.ts`
+and allow no details.
 
 | Route / branch                                                            | Status | Code                                     | Contract coverage                                  |
 | ------------------------------------------------------------------------- | ------ | ---------------------------------------- | -------------------------------------------------- |
-| POST learning-reminders/dispatch: production restriction                  | 403    | `NOTIFICATIONS_MANUAL_DISPATCH_DISABLED` | Operations HTTP suite, production dispatch         |
-| DELETE learning-reminders/dispatch/today/me: production restriction       | 403    | `NOTIFICATIONS_DISPATCH_CLEAR_DISABLED`  | Operations HTTP suite, production clearing         |
+| Direct diagnostic controller: dispatch production safety check            | 403    | `NOTIFICATIONS_MANUAL_DISPATCH_DISABLED` | Operations HTTP suite, directly mounted controller |
+| Direct diagnostic controller: clearing production safety check            | 403    | `NOTIFICATIONS_DISPATCH_CLEAR_DISABLED`  | Operations HTTP suite, directly mounted controller |
+| All diagnostic URLs in production composition                             | 404    | `ROUTE_NOT_FOUND`                        | Registration HTTP suite, with/without valid token  |
 | Missing JWT on any route                                                  | 401    | `AUTH_AUTHENTICATION_REQUIRED`           | Access HTTP suite, all seven routes                |
 | Invalid preferences, push-token fields, device-ID query or test-push body | 400    | `VALIDATION_FAILED`                      | Preferences, push-token and operations HTTP suites |
 | Unexpected persistence failure                                            | 500    | `INTERNAL_ERROR`                         | Preferences, push-token and operations HTTP suites |
 
-Production-operation restrictions use operation feedback without token refresh.
+The retained direct-controller 403 safety checks use operation feedback without
+token refresh; actual production route absence uses the ordinary 404 fallback.
 Validation uses known field feedback or a form fallback; persistence failures use
 a generic operation fallback. There is no explicit user-existence check in these
 services, so database failures remain generic 500 errors rather than acquiring an
@@ -715,7 +722,7 @@ invented missing-user code.
 
 HTTP coverage is split into `notifications-access.http.spec.ts`,
 `notifications-preferences.http.spec.ts`, `notifications-push-token.http.spec.ts`
-and `notifications-operations.http.spec.ts`. Their shared factory creates real
+and `diagnostics/notifications-operations.http.spec.ts`. Their shared factory creates real
 controllers/services, JWT guards, DTO validation and production error boundaries
 with fresh narrow persistence mocks. Firebase discovery defaults to unavailable
 before credentials are read. The separate delivery suite uses a caller-owned local
@@ -751,7 +758,7 @@ logged nor stringified. The frontend currently displays these strings without
 matching their contents; localized structured delivery feedback remains separate
 from the non-2xx error decoder.
 
-`notifications-delivery.http.spec.ts` verifies safe HTTP feedback and logs,
+`diagnostics/notifications-delivery.http.spec.ts` verifies safe HTTP feedback and logs,
 deactivation for both known invalid-token codes, fallback for unknown/non-string
 codes, startup warning redaction, successful delivery and token deduplication.
 Each case owns its local Firebase app, SDK send spy and Nest app; all are cleaned

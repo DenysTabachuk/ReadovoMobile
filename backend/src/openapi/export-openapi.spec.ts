@@ -276,6 +276,22 @@ describe('Offline OpenAPI export', () => {
     });
   });
 
+  it('keeps canonical development contracts deterministic in a production export environment', async () => {
+    const expected = await exportOpenApi();
+    const previousEnvironment = process.env.NODE_ENV;
+    try {
+      process.env.NODE_ENV = 'production';
+      const document = await exportOpenApi();
+      expect(document).toEqual(expected);
+      expect(document.paths['/notifications/test-push/me']?.post?.tags).toEqual(
+        ['Notification diagnostics'],
+      );
+    } finally {
+      if (previousEnvironment === undefined) delete process.env.NODE_ENV;
+      else process.env.NODE_ENV = previousEnvironment;
+    }
+  });
+
   it('documents authenticated achievements separately from public translations', async () => {
     const document = await exportOpenApi();
     const operation = document.paths['/achievements/profile/me']?.get;

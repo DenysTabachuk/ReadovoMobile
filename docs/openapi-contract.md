@@ -73,8 +73,11 @@ It uses lint-staged's hidden working-tree changes to verify the selected commit
 snapshot. Stage source changes and regenerated artifacts together; unstaged fixes
 do not repair a stale staged contract.
 
-`backend/src/openapi/documented-modules.ts` owns the single list of modules included
-in both production Swagger UI and offline export. Export imports these real modules
+`backend/src/openapi/documented-modules.ts` owns the canonical coverage list,
+including development diagnostic contracts needed by the frontend debug tools.
+Runtime Swagger scans only modules actually registered in that application;
+production omits the notification diagnostics module and its three operations.
+Export imports all listed real modules explicitly, independent of `NODE_ENV`,
 and creates a Nest application with `preview: true`; it does not duplicate controller
 lists or substitute service bindings. Preview skips DI constructors and factories
 by default. Export does not import `AppModule`, call `app.init()` or listen on a port.
@@ -91,7 +94,8 @@ Before adding a real module to the coverage list, review these behaviors and run
 the isolation tests. A fresh-process test guards against network/listening, `.env`
 reads and relevant secret reads before importing application code. Tests also verify
 that production service/controller initialization is skipped and that normal
-Swagger UI and offline export produce the same document.
+development Swagger UI and offline export produce the same document. Production
+registration tests verify its smaller runtime document and absent diagnostic URLs.
 
 ## Adding or changing an endpoint
 
@@ -232,11 +236,22 @@ existing server defaults. It returns **201** with all delivery counters and safe
 `failureReasons`, including zero tokens, complete delivery failure and partial
 delivery. Those reasons are diagnostics rather than an API error-code catalogue.
 
-Manual reminder dispatch returns **201** counters, and clearing today's dispatch
-record returns **200** with `deletedCount`. Both return their documented **403**
-errors when `NODE_ENV` is `production`. Outside production they require an ordinary
-user token; manual dispatch processes all eligible users. The schema documents
-these existing controls and does not introduce an administrative role check.
+Test push, manual reminder dispatch and clearing today's dispatch record belong
+to `NotificationsDiagnosticsModule` under `notifications/diagnostics/`, grouped as **Notification diagnostics** in
+Swagger. Manual dispatch returns **201** counters, and clearing returns **200**
+with `deletedCount`. These operations require an ordinary user token; manual
+dispatch processes all eligible users.
+
+`main.ts` loads backend environment files before selecting
+`AppModule.forEnvironment(process.env.NODE_ENV)`. Only `development` or an unset
+environment (local development) installs diagnostics. Production, test and unknown
+environment values do not register those three routes: they return **404**, with
+or without a token, and are absent from runtime Swagger. Regular notification
+preferences/token routes and the normal background reminder worker are retained.
+The two older in-controller production **403** safety checks remain for direct
+diagnostics mounting or environment changes; they are not the production boundary.
+Frontend diagnostic types remain in the single canonical artifact, and the existing
+debug screen remains gated by `__DEV__`.
 
 Offline notification export skips Firebase initialization and dispatch intervals.
 Isolation tests block relevant Firebase/Google credential reads and background

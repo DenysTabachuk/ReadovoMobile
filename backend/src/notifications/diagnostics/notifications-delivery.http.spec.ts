@@ -7,8 +7,8 @@ import {
   NOTIFICATIONS_TEST_TOKEN,
   NOTIFICATIONS_TEST_USER_ID,
   type NotificationsHttpTestApp,
-} from './testing/create-notifications-http-app';
-import { createNotificationsResponseAssertion } from './testing/create-notifications-response-assertion';
+} from '../testing/create-notifications-http-app';
+import { createNotificationsResponseAssertion } from '../testing/create-notifications-response-assertion';
 import {
   deleteApp,
   getApps,
