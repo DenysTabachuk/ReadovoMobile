@@ -1,11 +1,18 @@
 import { CanceledError } from 'axios';
 
 import { createHttpResponse, mockHttpAdapter } from '@/api/testing/http';
+import { type TranslateWordResponse } from '../../types';
 
 import { translateWord } from '.';
 
 it('returns translation data and lets Axios serialize the request', async () => {
-  const result = { translation: 'сонце' };
+  const result = {
+    baseTranslation: 'сонце',
+    sourceLanguage: 'en',
+    targetLanguage: 'uk',
+    translation: 'сонце',
+    word: 'sun',
+  } satisfies TranslateWordResponse;
   const adapter = mockHttpAdapter().mockResolvedValue(
     createHttpResponse(result),
   );

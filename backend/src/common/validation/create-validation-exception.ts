@@ -27,8 +27,13 @@ const RULES = {
   whitelistValidation: 'PROPERTY_NOT_ALLOWED',
 } as const;
 
+export const UNKNOWN_VALIDATION_RULE = 'VALUE_INVALID';
+export const VALIDATION_RULE_CODES = [
+  ...new Set([...Object.values(RULES), UNKNOWN_VALIDATION_RULE]),
+];
+
 export type ValidationRule =
-  (typeof RULES)[keyof typeof RULES] | 'VALUE_INVALID';
+  (typeof RULES)[keyof typeof RULES] | typeof UNKNOWN_VALIDATION_RULE;
 
 // Translate validator identifiers, not their English messages, into public rules.
 // Unknown identifiers still produce a safe, stable fallback.
@@ -36,7 +41,7 @@ function resolveRule(constraint: string): ValidationRule {
   for (const [name, rule] of Object.entries(RULES)) {
     if (name === constraint) return rule;
   }
-  return 'VALUE_INVALID';
+  return UNKNOWN_VALIDATION_RULE;
 }
 
 /**

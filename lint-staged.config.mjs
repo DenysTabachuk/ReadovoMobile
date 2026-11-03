@@ -20,7 +20,12 @@ export default {
     () => "npm --prefix backend run test:e2e -- --runInBand",
   ],
 
-  "frontend/**/*.{js,jsx,ts,tsx}": [
+  "backend/scripts/**/*.{cjs,mjs}": [
+    "npm --prefix backend run format:staged --",
+    "npm --prefix backend run lint:staged --",
+  ],
+
+  "frontend/**/*.{js,jsx,mjs,ts,tsx}": [
     "npm --prefix frontend run format:staged --",
     "npm --prefix frontend run lint:staged --",
     "npm --prefix frontend run test:staged --",
@@ -31,5 +36,5 @@ export default {
 
   // Run the full TypeScript check against the staged project snapshot.
   // The function stops lint-staged from adding file paths to this command.
-  "*": () => "npm run typecheck",
+  "*": () => ["npm run typecheck", "npm run contracts:check"],
 };

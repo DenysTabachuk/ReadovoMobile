@@ -2,7 +2,7 @@
 
 Status: backend error codes, shared boundaries, minimal frontend code extraction,
 auth/session decisions and feature presentation are implemented. OpenAPI/type
-generation remains a [separate deferred task](tasks/openapi-contract-generation.md).
+generation is being piloted in a [separate task](tasks/openapi-contract-generation.md).
 Legacy Mock API migration/removal is excluded by the user's decision.
 
 ## Response and ownership
@@ -42,10 +42,11 @@ or the catalogue. Callers pass a definition to the shared exception class:
 `REQUEST_REJECTED` is a shared template with no fixed status; the filter supplies
 the original exception's HTTP status. Validation definitions require field details.
 
-Cross-project schema/type generation is deferred to
+Cross-project schema/type generation is tracked in
 [OpenAPI contract generation](tasks/openapi-contract-generation.md), which covers the
-entire HTTP API. Do not introduce a separate `contracts/api-errors.json` generator
-as part of this task. Future OpenAPI error schemas must use these module-owned
+entire HTTP API. The translations pilot uses the [OpenAPI workflow](openapi-contract.md).
+Do not introduce a separate `contracts/api-errors.json` generator.
+OpenAPI error schemas must use these module-owned
 definitions, validation details and allowed statuses. Generated files will remain
 read-only, with freshness checks in CI.
 

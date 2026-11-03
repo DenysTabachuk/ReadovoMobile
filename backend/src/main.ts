@@ -7,6 +7,9 @@ import { NestFactory } from '@nestjs/core';
 
 import { AppModule } from './app.module';
 import { configureApiBoundaries } from './common/configure-api-boundaries';
+import { SwaggerModule } from '@nestjs/swagger';
+import { createApiDocument } from './openapi/utils/createApiDocument';
+import { DOCUMENTED_API_MODULES } from './openapi/documented-modules';
 
 const bootstrapLogger = new Logger('Bootstrap');
 loadBackendEnv();
@@ -18,6 +21,11 @@ async function bootstrap() {
 
   app.enableCors();
   configureApiBoundaries(app);
+  // Create an in-memory object describing the pilot API; no file is read or written.
+  const apiDocument = createApiDocument(app, DOCUMENTED_API_MODULES);
+  // Serve Swagger UI at /api/docs. It renders apiDocument as browsable documentation.
+  // This registers documentation routes; app.listen below starts the HTTP server.
+  SwaggerModule.setup('api/docs', app, apiDocument);
 
   const port = process.env.PORT ?? 3000;
 

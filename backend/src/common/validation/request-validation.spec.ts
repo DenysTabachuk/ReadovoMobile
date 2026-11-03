@@ -17,7 +17,7 @@ import {
 import { ClearMascotSlotParamsDto } from '../../mascot/dto';
 import { RegisterPushTokenDto } from '../../notifications/dto';
 import { ApplyStreakFreezeDto } from '../../streak/dto';
-import { TranslateWordDto } from '../../translations/dto';
+import { TranslateWordDto } from '../../translations/dto/translate-word.dto';
 
 describe('HTTP request DTO validation', () => {
   it('normalizes a valid registration request', async () => {

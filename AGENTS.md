@@ -11,6 +11,11 @@
   not require refactoring the module's existing implementation.
 - Keep existing user changes intact. Report logical problems and material
   improvement opportunities found while working.
+- Write new JavaScript scripts as ES modules with the `.mjs` extension and static
+  `import` statements. Use `import.meta.url` for paths relative to the script.
+  Keep npm commands and relevant formatting, linting and staged-check patterns in
+  sync with `.mjs` files. Retain another format when required by the tool that loads
+  the file; do not migrate unrelated existing scripts just to apply this preference.
 - In TypeScript, prefer inference, checked type annotations, generics and narrowing
   over type assertions (`as Type`). Validate untrusted data at runtime. Use an
   assertion only for a justified boundary the compiler cannot express, and explain
@@ -61,6 +66,12 @@
 
 ## Backend module ownership and validation
 
+- Keep new feature request and response DTOs in the owning module's `dto/`
+  directory. Use operation-specific filenames: `<operation>.dto.ts` for input and
+  `<operation>-response.dto.ts` for the serialized response, for example
+  `dto/translate-word.dto.ts` and `dto/translate-word-response.dto.ts`. Name other
+  DTOs after their specific responsibility; avoid aggregate `dto.ts` files. Apply
+  this to DTOs created or moved within the task; do not reorganize unrelated modules.
 - Keep feature-specific DTOs, domain types, constants, error definitions and
   utilities in their owning NestJS module. Keep exclusive implementation helpers
   private. Apply these rules within the task scope; do not migrate unrelated code.
