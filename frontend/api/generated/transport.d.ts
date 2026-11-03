@@ -4,6 +4,23 @@
  */
 
 export interface paths {
+  '/achievements/profile/me': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Read the authenticated user’s achievement progress */
+    get: operations['getAchievementsProfile'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/translations/word': {
     parameters: {
       query?: never;
@@ -25,6 +42,37 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    AchievementProgress: {
+      balance: number;
+      lessonsCompleted: number;
+      testsCompleted: number;
+      wordsLearned: number;
+    };
+    AchievementsProfileResponse: {
+      achievements: components['schemas']['AchievementStatus'][];
+      progress: components['schemas']['AchievementProgress'];
+      userId: string;
+    };
+    AchievementStatus: {
+      badgeKey: string;
+      /** Format: date-time */
+      claimedAt: string | null;
+      coinsReward: number;
+      descriptionKey: string;
+      /** @enum {string} */
+      id:
+        | 'first_test_completed'
+        | 'ten_tests_completed'
+        | 'ten_words_learned'
+        | 'first_thousand_coins';
+      isClaimed: boolean;
+      isUnlocked: boolean;
+      progressValue: number;
+      targetValue: number;
+      titleKey: string;
+      /** Format: date-time */
+      unlockedAt: string | null;
+    };
     /** @description Unknown body properties are rejected by global DTO validation. */
     TranslateWordRequest: {
       /** @description Sentence context. Strings are trimmed; null is preserved. */
@@ -76,12 +124,191 @@ export interface components {
   headers: never;
   pathItems: never;
 }
+export type AchievementProgress = components['schemas']['AchievementProgress'];
+export type AchievementsProfileResponse =
+  components['schemas']['AchievementsProfileResponse'];
+export type AchievementStatus = components['schemas']['AchievementStatus'];
 export type TranslateWordRequest =
   components['schemas']['TranslateWordRequest'];
 export type TranslateWordResponse =
   components['schemas']['TranslateWordResponse'];
 export type $defs = Record<string, never>;
 export interface operations {
+  getAchievementsProfile: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AchievementsProfileResponse'];
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_MALFORMED';
+                /** @enum {string} */
+                message: 'Malformed request body.';
+                /** @enum {integer} */
+                statusCode: 400;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 400;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'AUTH_AUTHENTICATION_REQUIRED';
+                /** @enum {string} */
+                message: 'Authentication is required.';
+                /** @enum {integer} */
+                statusCode: 401;
+              }
+            | {
+                /** @enum {string} */
+                code: 'AUTH_ACCESS_TOKEN_INVALID';
+                /** @enum {string} */
+                message: 'Access token is invalid.';
+                /** @enum {integer} */
+                statusCode: 401;
+              }
+            | {
+                /** @enum {string} */
+                code: 'AUTH_ACCESS_TOKEN_EXPIRED';
+                /** @enum {string} */
+                message: 'Access token has expired.';
+                /** @enum {integer} */
+                statusCode: 401;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 401;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'ACHIEVEMENTS_USER_NOT_FOUND';
+                /** @enum {string} */
+                message: 'User not found.';
+                /** @enum {integer} */
+                statusCode: 404;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 404;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_TOO_LARGE';
+                /** @enum {string} */
+                message: 'Request body is too large.';
+                /** @enum {integer} */
+                statusCode: 413;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 413;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'INTERNAL_ERROR';
+                /** @enum {string} */
+                message: 'Internal server error.';
+                /** @enum {integer} */
+                statusCode: 500;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 500;
+              };
+        };
+      };
+      /** @description Other rejected requests retain their HTTP error status. Infrastructure errors may have a different body. */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** @enum {string} */
+            code: 'REQUEST_REJECTED';
+            /** @enum {string} */
+            message: 'Request rejected.';
+            statusCode: number;
+          };
+        };
+      };
+    };
+  };
   translateWord: {
     parameters: {
       query?: never;

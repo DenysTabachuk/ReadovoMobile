@@ -6,6 +6,8 @@ import { resolve } from 'node:path';
 
 import { TranslationsController } from '../translations/translations.controller';
 import { TranslationsService } from '../translations/translations.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { JwtService } from '../auth/jwt.service';
 import { exportOpenApi } from './export-openapi';
 
 type HttpServiceAccessor = {
@@ -14,9 +16,6 @@ type HttpServiceAccessor = {
 
 jest.mock('../app.module', () => {
   throw new Error('Offline export must not import AppModule');
-});
-jest.mock('../prisma/prisma.service', () => {
-  throw new Error('Offline export must not import Prisma');
 });
 jest.mock('dotenv', () => {
   throw new Error('Offline export must not load environment files');
@@ -58,7 +57,10 @@ describe('Offline OpenAPI export', () => {
     const first = await exportOpenApi();
     const second = await exportOpenApi();
     expect(second).toEqual(first);
-    expect(Object.keys(first.paths)).toEqual(['/api/translations/word']);
+    expect(Object.keys(first.paths).sort()).toEqual([
+      '/achievements/profile/me',
+      '/api/translations/word',
+    ]);
     expect(listen).not.toHaveBeenCalled();
     expect(init).not.toHaveBeenCalled();
     expect(connect).not.toHaveBeenCalled();
@@ -81,6 +83,10 @@ describe('Offline OpenAPI export', () => {
     expect(Object.hasOwn(translationController, 'translationsService')).toBe(
       false,
     );
+    expect(Object.hasOwn(app.get<JwtService>(JwtService), 'secret')).toBe(
+      false,
+    );
+    expect(app.get<PrismaService>(PrismaService)).toBeInstanceOf(PrismaService);
   });
 
   it(
@@ -128,6 +134,7 @@ describe('Offline OpenAPI export', () => {
       });
       require(${JSON.stringify(require.resolve('ts-node'))}).register({
         project: ${JSON.stringify(resolve(__dirname, '../../tsconfig.json'))},
+        experimentalResolver: true,
       });
       const { exportOpenApi } = require(${JSON.stringify(resolve(__dirname, 'export-openapi.ts'))});
       exportOpenApi().then(document => process.stdout.write(JSON.stringify(document)))
@@ -139,7 +146,14 @@ describe('Offline OpenAPI export', () => {
         timeout: OFFLINE_EXPORT_TIMEOUT_MS,
       });
       expect(result.error).toBeUndefined();
-      expect(result.stderr).toBe('');
+      // ts-node's experimental resolver uses fs.Stats on newer Node releases.
+      // Allow only that upstream deprecation; unexpected stderr must still fail.
+      expect(
+        result.stderr.replace(
+          /\(node:\d+\) \[DEP0180\] DeprecationWarning: fs\.Stats constructor is deprecated\.\r?\n\(Use `node --trace-deprecation \.\.\.` to show where the warning was created\)\r?\n/g,
+          '',
+        ),
+      ).toBe('');
       expect(result.status).toBe(0);
       expect(result.stdout).toBe(JSON.stringify(await exportOpenApi()));
     },
@@ -222,6 +236,58 @@ describe('Offline OpenAPI export', () => {
                   statusCode: { enum: [502] },
                 },
               },
+            ],
+          },
+        },
+      },
+    });
+  });
+
+  it('documents authenticated achievements separately from public translations', async () => {
+    const document = await exportOpenApi();
+    const operation = document.paths['/achievements/profile/me']?.get;
+    expect(operation).toMatchObject({
+      operationId: 'getAchievementsProfile',
+      security: [{ bearer: [] }],
+      parameters: [],
+    });
+    expect(operation).not.toHaveProperty('requestBody');
+    expect(Object.keys(operation?.responses ?? {})).toEqual([
+      '200',
+      '400',
+      '401',
+      '404',
+      '413',
+      '500',
+      'default',
+    ]);
+    expect(document.components?.securitySchemes).toMatchObject({
+      bearer: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
+    });
+    expect(document.components?.schemas).toMatchObject({
+      AchievementStatus: {
+        required: [
+          'badgeKey',
+          'claimedAt',
+          'coinsReward',
+          'descriptionKey',
+          'id',
+          'isClaimed',
+          'isUnlocked',
+          'progressValue',
+          'targetValue',
+          'titleKey',
+          'unlockedAt',
+        ],
+        properties: {
+          claimedAt: { type: 'string', format: 'date-time', nullable: true },
+          unlockedAt: { type: 'string', format: 'date-time', nullable: true },
+          id: {
+            enum: [
+              'first_test_completed',
+              'ten_tests_completed',
+              'ten_words_learned',
+              'first_thousand_coins',
             ],
           },
         },

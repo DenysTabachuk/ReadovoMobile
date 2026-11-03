@@ -2,6 +2,7 @@ import 'reflect-metadata';
 import { Module } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 
+import { PrismaModule } from '../prisma/prisma.module';
 import { DOCUMENTED_API_MODULES } from './documented-modules';
 import { createApiDocument } from './utils/createApiDocument';
 
@@ -9,7 +10,9 @@ import { createApiDocument } from './utils/createApiDocument';
 // and factories by default, so controller/service bindings do not need duplicates.
 // Module imports still execute JavaScript; isolation tests guard against I/O.
 @Module({
-  imports: DOCUMENTED_API_MODULES,
+  // Real modules rely on this global provider in production. Preview mode skips
+  // its constructor and lifecycle hooks, so registering it does not connect to DB.
+  imports: [PrismaModule, ...DOCUMENTED_API_MODULES],
 })
 class OpenApiExportModule {}
 
@@ -20,7 +23,7 @@ class OpenApiExportModule {}
  * @returns OpenAPI document; the temporary metadata-only application is closed.
  * @example
  * const document = await exportOpenApi();
- * // document.paths contains only /api/translations/word
+ * // document.paths contains translations and achievements routes only.
  */
 export async function exportOpenApi() {
   const app = await NestFactory.create(OpenApiExportModule, {

@@ -93,6 +93,15 @@
   in services. Do not duplicate DTO validation for hypothetical internal callers;
   verify actual call sites before adding or retaining another validation boundary.
   Persisted data and external provider responses require their own runtime checks.
+- For new or touched OpenAPI-documented endpoints protected by `UserAuthGuard`,
+  use the auth module's method decorator `@ApiUserAuth({ errors, validation })`.
+  It installs the real guard and documents Bearer security, token errors and shared
+  HTTP errors together. Import `AuthModule` in the owning feature module. Supply
+  only operation-specific errors and opt into DTO validation when applicable;
+  do not repeat token error lists or stack `ApiErrorResponses` on that method,
+  because Swagger responses with the same status can overwrite one another.
+  Public endpoints use `ApiErrorResponses`; ownership and role checks still need
+  their own guards/logic. Do not migrate unrelated endpoints just for this rule.
 
 ## Backend naming
 

@@ -1,32 +1,9 @@
-export type AchievementId =
-  | 'first_test_completed'
-  | 'ten_tests_completed'
-  | 'ten_words_learned'
-  | 'first_thousand_coins';
+import { type AchievementStatus } from '@/api/generated/transport';
 
-export type AchievementStatus = {
-  badgeKey: string;
-  claimedAt: string | null;
-  coinsReward: number;
-  descriptionKey: string;
-  id: AchievementId;
-  isClaimed: boolean;
-  isUnlocked: boolean;
-  progressValue: number;
-  targetValue: number;
-  titleKey: string;
-  unlockedAt: string | null;
-};
+export type AchievementId = AchievementStatus['id'];
 
-export type AchievementProgress = {
-  balance: number;
-  lessonsCompleted: number;
-  testsCompleted: number;
-  wordsLearned: number;
-};
-
-export type AchievementsProfileResponse = {
-  achievements: AchievementStatus[];
-  progress: AchievementProgress;
-  userId: string;
-};
+export type {
+  AchievementProgress,
+  AchievementStatus,
+  AchievementsProfileResponse,
+} from '@/api/generated/transport';

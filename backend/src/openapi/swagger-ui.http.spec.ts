@@ -5,15 +5,20 @@ import { type Server } from 'node:http';
 import request from 'supertest';
 
 import { configureApiBoundaries } from '../common/configure-api-boundaries';
+import { PrismaModule } from '../prisma/prisma.module';
+import { PrismaService } from '../prisma/prisma.service';
 import { DOCUMENTED_API_MODULES } from './documented-modules';
 import { exportOpenApi } from './export-openapi';
 import { createApiDocument } from './utils/createApiDocument';
 
-describe('Pilot Swagger UI (HTTP)', () => {
+describe('Documented Swagger UI (HTTP)', () => {
   it('serves local UI assets and the same document as offline export', async () => {
     const module = await Test.createTestingModule({
-      imports: DOCUMENTED_API_MODULES,
-    }).compile();
+      imports: [PrismaModule, ...DOCUMENTED_API_MODULES],
+    })
+      .overrideProvider(PrismaService)
+      .useValue({})
+      .compile();
     const app = module.createNestApplication<INestApplication<Server>>({
       bodyParser: false,
     });

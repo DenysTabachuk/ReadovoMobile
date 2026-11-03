@@ -5,7 +5,7 @@ import { type ApiErrorDefinition } from '../errors/api-error-definition';
 import { COMMON_ERRORS } from '../errors/common-errors';
 import { apiErrorResponses } from '../utils/apiErrorResponses';
 
-type ApiErrorResponsesOptions = {
+export type ApiErrorResponsesOptions = {
   errors?: readonly ApiErrorDefinition[];
   validation?: boolean;
 };

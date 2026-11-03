@@ -1,9 +1,10 @@
 # Task: OpenAPI contract and frontend type generation
 
-Status: translations pilot implemented and ready for review, following the implemented
+Status: translations pilot reviewed; achievements migration implemented for review,
+following the implemented
 [API error contract](../api-error-contract.md). The pilot includes Swagger UI,
 offline schema export, generated transport types and CI/staged freshness checks.
-Do not expand to other modules before pilot review. Do not introduce a separate
+Continue in small module batches after review. Do not introduce a separate
 error-only generator. Contributor workflow: [OpenAPI contract](../openapi-contract.md).
 
 ## Pilot progress and remaining migration
@@ -87,6 +88,57 @@ error-only generator. Contributor workflow: [OpenAPI contract](../openapi-contra
 - Backend CI passed: 77 suites / 642 tests. Frontend CI passed: 140 suites / 712
   tests. Generation freshness, backend build and e2e checks passed; 17 database
   cases remain skipped without `QUIZ_TEST_DATABASE_URL`.
+
+## Achievements migration (2026-11-03)
+
+- The user approved continuing after the translations pilot. This batch covers
+  only `GET /achievements/profile/me`; auth endpoints and other modules remain
+  outside the published document.
+- Explicit response DTOs own progress, achievement status and profile schemas.
+  Backend services use those types; frontend requests and feature exports use
+  generated `AchievementsProfileResponse`, `AchievementStatus` and
+  `AchievementProgress` instead of duplicate transport declarations.
+- Achievement IDs derive from one backend-owned literal list. Timestamp fields
+  are required nullable `date-time` strings, matching service `toISOString()`
+  serialization. They are not optional JavaScript dates.
+- Swagger documents Bearer JWT authentication and existing missing/invalid/expired
+  token errors, the missing-user 404 and shared boundary errors. Runtime guards,
+  HTTP clients, cache/session behavior and UI models are unchanged.
+- The offline root registers the real global Prisma module for DI metadata.
+  Preview mode skips its constructor and hooks; fresh-process isolation tests
+  continue to block database/network access, environment files and secret reads.
+  ts-node's resolver maps Prisma's generated `.js` imports to TypeScript sources.
+  Newer Node versions emit upstream `DEP0180` from this resolver; this warning
+  does not affect export. The test permits only that known warning on stderr.
+- HTTP tests validate actual success/error bodies against the exported schema,
+  with explicit expectations for ISO dates, null grants and authentication errors.
+- Remaining: migrate the other modules in reviewed batches, including path/query
+  DTOs, unions and partial responses; retain the broader task until full coverage.
+- Verification: backend CI passed (77 suites / 647 tests), frontend CI passed
+  (140 suites / 712 tests), and backend production build passed. Both CI commands
+  include typechecking, lint, formatting and artifact freshness. Root
+  `contracts:check`, instruction formatting and changed-document formatting passed.
+  The local read-only Swagger viewer serves both documented endpoints. No changes
+  were staged in this batch, so no commit snapshot was available for `check:staged`.
+
+## Shared authenticated-operation decorator
+
+- `auth/api-user-auth.decorator.ts` now owns `ApiUserAuth`, a method decorator
+  combining the real user guard, Bearer documentation, token errors and shared
+  HTTP errors. Achievements supplies only its domain error through the options.
+- Operation errors and validation opt-in are passed into this decorator rather
+  than stacking `ApiErrorResponses`; errors sharing HTTP 401 are grouped together.
+  No endpoint contracts or generated artifacts changed in this refactor.
+- `AGENTS.md` and the contributor guide explain when to use the decorator, the
+  `AuthModule` dependency, and its ownership/role-check limitations.
+- Backend CI passed: 78 suites / 649 tests, including the existing real-guard
+  achievements HTTP tests and new documentation composition tests. Contract
+  freshness and instruction/documentation formatting passed.
+- The actual user-selected staged snapshot failed `check:staged`: its JSON already
+  includes achievements but the controller/documented-module changes are unstaged,
+  so offline export reports a stale artifact. The full working tree passes.
+  lint-staged restored the original state; the staged diff hash was unchanged.
+  No additional files were staged automatically.
 
 ## Goal
 

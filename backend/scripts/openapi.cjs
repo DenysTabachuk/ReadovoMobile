@@ -8,6 +8,9 @@ const JSON_INDENT_SPACES = 2;
 // __dirname is this script's folder; resolve() builds an absolute path from it.
 require('ts-node').register({
   project: resolve(__dirname, '../tsconfig.json'),
+  // Prisma's generated TypeScript imports .js paths intended for compiled output.
+  // Resolve those paths to the corresponding .ts sources during offline export.
+  experimentalResolver: true,
 });
 // This script uses CommonJS to load backend TypeScript through ts-node directly.
 const { exportOpenApi } = require('../src/openapi/export-openapi');

@@ -1,7 +1,8 @@
 # OpenAPI contract and frontend transport types
 
-The translations pilot documents `POST /api/translations/word`. Other API modules
-are not covered yet. The migration status and remaining work are tracked in
+The document covers `POST /api/translations/word` and
+`GET /achievements/profile/me`. Other API modules are not covered yet.
+The migration status and remaining work are tracked in
 [the migration task](tasks/openapi-contract-generation.md).
 
 ## Viewing the API
@@ -9,9 +10,12 @@ are not covered yet. The migration status and remaining work are tracked in
 Start the backend normally, then open `http://localhost:3000/api/docs` (adjust the
 port if configured). A deployed backend serves the same page at `/api/docs` on its
 own origin. Swagger UI assets are served locally. The raw document is available at
-`/api/docs-json`. This pilot endpoint is public; no bearer token is required.
+`/api/docs-json`. Translations is currently public. Achievements requires the
+existing access token: use **Authorize** and enter the JWT without a `Bearer`
+prefix. Swagger sends `Authorization: Bearer <token>` for secured operations.
+The security declaration documents the existing guard; it does not install one.
 Swagger's **Try it out** sends real requests to the backend and may contact the
-translation provider. Normal backend startup still requires its usual services.
+translation provider or persistence. Normal backend startup still requires its usual services.
 
 ## Ownership and artifacts
 
@@ -73,6 +77,11 @@ lists or substitute service bindings. Preview skips DI constructors and factorie
 by default. Export does not import `AppModule`, call `app.init()` or listen on a port.
 No database, provider credentials, mail, push or jobs are needed.
 
+The export root also registers the real global `PrismaModule` to satisfy feature
+module dependencies. Preview skips its database adapter constructor and lifecycle
+hooks. The offline ts-node loader maps generated Prisma `.js` imports back to their
+`.ts` sources; it does not build or start the backend.
+
 Preview is not a sandbox: JavaScript at import time still runs, including static
 dynamic-module registration, and modules can opt into initialization during preview.
 Before adding a real module to the coverage list, review these behaviors and run
@@ -97,7 +106,16 @@ Swagger UI and offline export produce the same document.
    as `TranslateWordRequest` and `TranslateWordResponse`; these become direct
    generated type exports rather than exposing backend class naming conventions.
 3. Document status, operation ID, security and reachable errors on the controller.
-   Use `@ApiErrorResponses({ validation: true, errors: [...] })` with existing,
+   For operations protected by `UserAuthGuard`, use the auth-owned method decorator
+   `@ApiUserAuth({ validation: true, errors: [...] })` and import `AuthModule` in the
+   feature module. It installs the real guard, documents Bearer security and adds
+   missing/invalid/expired token errors alongside shared HTTP errors. Supply only
+   operation-specific errors; omit `validation` when there is no DTO validation.
+   Do not stack `ApiErrorResponses` on the same method: pass all operation errors
+   through `ApiUserAuth` so responses sharing a status (including 401) are grouped
+   once. This decorator does not enforce ownership or roles.
+   For public operations or a different authentication boundary, use
+   `@ApiErrorResponses({ validation: true, errors: [...] })` with existing,
    explicitly selected operation error definitions. The decorator adds shared
    malformed-body, oversized-body and internal errors automatically. Set
    `validation: true` only when DTO validation can reject the request; it defaults
@@ -134,9 +152,14 @@ describe the normalized input; they do not implement those transformations.
 
 Context may be omitted, null, empty or a string. The response preserves null;
 undefined context and unavailable contextual translation fields are omitted during
-JSON serialization. Required response fields remain strings. There are no date
-fields in this pilot; date serialization must be verified when migrating modules
-that actually return dates.
+JSON serialization. Required response fields remain strings.
+
+Achievements returns HTTP **200** and reads the owner from the verified token,
+not a client-supplied user ID. Its `claimedAt` and `unlockedAt` fields are always
+present: ISO date-time strings for stored dates, or null when absent. Achievement
+IDs are an enum derived from the backend's `ACHIEVEMENT_IDS` list. Missing,
+invalid and expired tokens return documented **401** errors; a deleted/missing
+user returns **404**. Authentication endpoint contracts remain outside coverage.
 
 Generated TypeScript is compile-time information, **not runtime validation**.
 Axios generics do not validate JSON. The existing API error decoder and its safe

@@ -6,7 +6,7 @@ import {
 } from '@nestjs/swagger';
 
 /**
- * Scans explicitly selected pilot modules using the same settings for UI and export.
+ * Scans explicitly selected modules using the same settings for UI and export.
  * @param app - Created Nest application; initialization and HTTP listening are unnecessary.
  * @param modules - Modules whose real controller metadata belongs in the contract.
  * @returns A plain JavaScript object described by the OpenAPIObject TypeScript
@@ -23,13 +23,15 @@ export function createApiDocument(
 ): OpenAPIObject {
   // Build only the document's general metadata: title, description and version.
   const config = new DocumentBuilder()
-    .setTitle('Readovo HTTP API — translations pilot')
+    .setTitle('Readovo HTTP API')
     .setDescription(
-      'Partial API coverage: only translations is documented in this pilot.',
+      'Partial API coverage: translations and achievements. Other modules are not yet documented.',
     )
     // TODO: Define API contract versioning rules and choose the version's source
     // (explicit contract version or backend release version). Keep the pilot stable.
     .setVersion('1.0.0')
+    // Register the scheme without applying it globally: public routes stay public.
+    .addBearerAuth()
     .build();
   // Read controller/DTO decorator metadata and add paths, requests and responses.
   // Return the assembled object in memory; JSON export is a separate step.
