@@ -1,53 +1,31 @@
-export type StreakTodayStatus =
-  'completed' | 'pending' | 'missed' | 'frozen' | 'restored' | 'broken';
+import {
+  STREAK_CALENDAR_DAY_STATUSES,
+  STREAK_DAY_STATUSES,
+  STREAK_MILESTONES,
+  STREAK_TODAY_STATUSES,
+} from './constants';
+import {
+  type BrokenStreakInfoDto,
+  type GetStreakProfileResponseDto,
+} from './dto/get-streak-profile-response.dto';
 
-export type StreakDayStatus = 'completed' | 'missed' | 'frozen' | 'restored';
-export type CalendarDayStatus =
-  | 'completed'
-  | 'missed'
-  | 'frozen'
-  | 'restored'
-  | 'today_pending'
-  | 'today_completed'
-  | 'future'
-  | 'neutral';
+export type StreakTodayStatus = (typeof STREAK_TODAY_STATUSES)[number];
+export type StreakDayStatus = (typeof STREAK_DAY_STATUSES)[number];
+export type CalendarDayStatus = (typeof STREAK_CALENDAR_DAY_STATUSES)[number];
+export type StreakAchievementMilestone =
+  (typeof STREAK_MILESTONES)[number]['milestone'];
 
-export type StreakHistoryDay = {
-  date: string;
-  status: StreakDayStatus;
-};
+export type BrokenStreakInfo = BrokenStreakInfoDto;
+export type StreakState = GetStreakProfileResponseDto;
 
-export type BrokenStreakInfo = {
-  brokenAt: string;
-  canRestore: boolean;
-  previousStreak: number;
-};
-
-export type StreakAchievementMilestone = 3 | 7 | 14 | 30 | 100;
-
-export type StreakAchievement = {
-  claimedAt: string | null;
-  isUnlocked: boolean;
-  milestone: StreakAchievementMilestone;
-  rewardCoins: number;
-};
-
-export type StreakState = {
-  activityHistory: StreakHistoryDay[];
-  brokenStreakInfo: BrokenStreakInfo | null;
-  claimedStreakAchievements: StreakAchievement[];
-  coinBalance: number;
-  currentStreak: number;
-  freezeTokenPrice: number;
-  freezeTokens: number;
-  lastActivityDate: string | null;
-  longestStreak: number;
-  nextBonusInDays: number;
-  nextMilestone: StreakAchievementMilestone;
-  restorePrice: number;
-  serverNow: string;
-  todayStatus: StreakTodayStatus;
-};
+export type {
+  StreakHistoryDayDto as StreakHistoryDay,
+  StreakAchievementDto as StreakAchievement,
+} from './dto/get-streak-profile-response.dto';
+export type {
+  StreakCalendarDayDto as StreakCalendarDay,
+  GetStreakCalendarMonthResponseDto as StreakCalendarMonthResponse,
+} from './dto/get-streak-calendar-month-response.dto';
 
 export type CompleteStreakActivityResponse = {
   streak: StreakState;
@@ -71,19 +49,4 @@ export type StreakClaimedAchievementRecord = {
   claimedAt: Date;
   milestone: number;
   rewardCoins: number;
-};
-
-export type StreakCalendarDay = {
-  date: string;
-  dayOfMonth: number;
-  status: CalendarDayStatus;
-};
-
-export type StreakCalendarMonthResponse = {
-  days: StreakCalendarDay[];
-  month: number;
-  monthLabel: string;
-  serverNow: string;
-  timezone: string;
-  year: number;
 };

@@ -1,16 +1,14 @@
 import { api } from '@/features/auth';
 
-import type { StreakCalendarMonthResponse } from '../../../types';
-
-type GetStreakCalendarMonthParams = {
-  year: number;
-  month: number;
-};
+import type {
+  StreakCalendarMonthResponse,
+  StreakCalendarMonthQuery,
+} from '@/api/generated/transport';
 
 export async function getStreakCalendarMonth({
   year,
   month,
-}: GetStreakCalendarMonthParams): Promise<StreakCalendarMonthResponse> {
+}: StreakCalendarMonthQuery): Promise<StreakCalendarMonthResponse> {
   const response = await api.get<StreakCalendarMonthResponse>(
     `/streak/profile/me/calendar/month?year=${year}&month=${month}`,
   );

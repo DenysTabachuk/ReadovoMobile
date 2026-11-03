@@ -16,7 +16,7 @@ import {
 } from '../../dictionary/dto';
 import { ClearMascotSlotParamsDto } from '../../mascot/dto/clear-mascot-slot-params.dto';
 import { RegisterPushTokenDto } from '../../notifications/dto';
-import { ApplyStreakFreezeDto } from '../../streak/dto';
+import { ApplyStreakFreezeDto } from '../../streak/dto/apply-streak-freeze.dto';
 import { TranslateWordDto } from '../../translations/dto/translate-word.dto';
 
 describe('HTTP request DTO validation', () => {

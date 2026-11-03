@@ -1,6 +1,6 @@
 # Task: OpenAPI contract and frontend type generation
 
-Status: translations and achievements reviewed; mascot migration implemented for review,
+Status: translations, achievements and mascot reviewed; streak migration implemented for review,
 following the implemented
 [API error contract](../api-error-contract.md). The pilot includes Swagger UI,
 offline schema export, generated transport types and CI/staged freshness checks.
@@ -174,6 +174,48 @@ error-only generator. Contributor workflow: [OpenAPI contract](../openapi-contra
 - Existing behavior found during review: mascot debit and ownership writes are
   non-atomic. Recorded separately in [the follow-up task](mascot-purchase-atomicity.md);
   no purchase business logic was changed in this transport migration.
+
+## Streak migration
+
+- This batch covers the five existing routes under `/streak/profile/me`: profile,
+  monthly calendar, restore, freeze and freeze-token purchase. They use `ApiUserAuth`
+  with operation-specific errors; routes and business behavior are preserved.
+- Explicit response DTOs own streak state, history, break details, achievement
+  metadata and calendar transport shapes. Backend persistence records remain
+  internal. Frontend requests and feature exports use generated types; the UI-only
+  reminder union remains in the feature.
+- Request DTOs now live under `streak/dto/`. The freeze body exposes a named
+  `ApplyStreakFreezeRequest`; calendar parameters expose `StreakCalendarMonthQuery`
+  and required numeric query fields with the existing month/year bounds. Numeric
+  query text is converted by the existing DTO transform, not by generated types.
+- The existing milestone/reward table now has one backend owner shared by service
+  behavior and Swagger enum metadata. Named status/milestone schemas generate
+  direct frontend exports without handwritten unions.
+- Verified date-only strings versus ISO timestamps, required nullable last-activity
+  and claim dates, and the explicit object-or-null break union. No persistence
+  decoder, request validation or session/cache safety check was removed.
+- New focused HTTP suites compare real profile/calendar and mutation responses
+  against the exported document, mocking only persistence. They cover all three
+  successful HTTP 201 mutations, query conversion/rejection, date normalization,
+  null/date serialization, auth, missing users and representative business errors.
+- Existing restore behavior and atomicity limitations remain tracked in
+  [restore the full missed interval](restore-full-streak-gap.md). This migration
+  does not claim to fix the paid restore workflow.
+- Remaining coverage: auth, dictionary, notifications, articles, quiz and the
+  application root endpoint. Continue in small reviewed batches.
+- Existing UI policy duplication remains outside this transport batch: the freeze
+  card owns a copied token-cap constant and the feature exports an unused copied
+  milestone/reward table. A later policy cleanup can expose required limits from
+  the backend and remove unused UI values; no new frontend policy copies were added.
+- Verification: backend CI passed (81 suites / 697 tests), frontend CI passed
+  (140 suites / 712 tests), and backend production build passed. Both CI commands
+  include typechecking, lint, formatting and contract freshness. New wire suites
+  cover 28 cases; instruction and changed-document formatting passed.
+- The actual partial staged snapshot failed `check:staged`: deletion of the old
+  `streak/dto.ts` was selected while the controller's updated imports were still
+  unstaged. The complete working tree passes. lint-staged restored the original
+  state; no implementation files were added to staging by the agent.
+- Refreshed the local read-only Swagger viewer and verified all five streak paths.
 
 ## Goal
 

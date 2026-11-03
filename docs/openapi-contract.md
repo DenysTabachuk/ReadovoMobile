@@ -1,8 +1,8 @@
 # OpenAPI contract and frontend transport types
 
-The document covers `POST /api/translations/word` and
-`GET /achievements/profile/me` and all five mascot profile/equipment operations
-under `/mascot/profile/me`. Other API modules are not covered yet.
+The document covers `POST /api/translations/word`, `GET /achievements/profile/me`,
+the five mascot operations under `/mascot/profile/me` and the five streak
+operations under `/streak/profile/me`. Other API modules are not covered yet.
 The migration status and remaining work are tracked in
 [the migration task](tasks/openapi-contract-generation.md).
 
@@ -173,6 +173,22 @@ is trimmed and must match the backend-owned `eyes`/`head` enum. Catalog membersh
 ownership and balance are checked by the service and documented as distinct 400
 errors alongside DTO validation. Catalog IDs remain strings rather than a fixed
 transport enum, preserving the existing service boundary and stored legacy IDs.
+
+Streak operations require Bearer authentication. Profile/calendar reads return
+HTTP **200**; restore, freeze and token purchase return **201** with `StreakState`.
+The monthly calendar requires integer `month` (1–12) and `year` (1970–2100) query
+parameters. The DTO converts query text to numbers; the service rejects future
+months separately. Freeze accepts a required `date` body field, trims it and
+validates an actual `YYYY-MM-DD` date. Unknown query/freeze-body properties are
+rejected. Restore and token purchase have no request DTO: prices come from backend
+policy, and existing unused JSON body fields do not override them.
+
+Activity/calendar dates, `brokenAt` and `lastActivityDate` are date-only strings.
+`serverNow` and non-null achievement `claimedAt` values are ISO date-time strings.
+Break details, last activity and claim timestamps are required fields that may be
+null. The break object-or-null schema is explicit rather than inferred from the
+TypeScript union. Status enums and numeric milestones are backend-owned and
+generated for frontend consumers. Existing persisted-data decoders are retained.
 
 Generated TypeScript is compile-time information, **not runtime validation**.
 Axios generics do not validate JSON. The existing API error decoder and its safe

@@ -65,6 +65,11 @@ describe('Offline OpenAPI export', () => {
       '/mascot/profile/me/items/{itemId}/equip',
       '/mascot/profile/me/slots',
       '/mascot/profile/me/slots/{slot}',
+      '/streak/profile/me',
+      '/streak/profile/me/calendar/month',
+      '/streak/profile/me/freeze',
+      '/streak/profile/me/freeze-token/purchase',
+      '/streak/profile/me/restore',
     ]);
     expect(listen).not.toHaveBeenCalled();
     expect(init).not.toHaveBeenCalled();

@@ -1,6 +1,9 @@
 import { api } from '@/features/auth';
 
-import type { ApplyStreakFreezeRequest, StreakState } from '../../../types';
+import type {
+  ApplyStreakFreezeRequest,
+  StreakState,
+} from '@/api/generated/transport';
 
 export async function applyStreakFreeze(
   payload: ApplyStreakFreezeRequest,

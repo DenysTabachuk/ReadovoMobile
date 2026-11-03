@@ -7,6 +7,7 @@ import { UserAuthGuard } from '../../auth/user-auth.guard';
 import { configureApiBoundaries } from '../../common/configure-api-boundaries';
 import {
   type UserStreakHistory,
+  type UserStreakAchievement,
   type UserStreakProfile,
 } from '../../generated/prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -73,7 +74,9 @@ export async function createStreakHttpApp() {
         .mockRejectedValue(new Error('Unexpected history mutation')),
     },
     userStreakAchievement: {
-      findMany: jest.fn<Promise<never[]>, [unknown]>().mockResolvedValue([]),
+      findMany: jest
+        .fn<Promise<UserStreakAchievement[]>, [unknown]>()
+        .mockResolvedValue([]),
     },
   };
   const module = await Test.createTestingModule({
