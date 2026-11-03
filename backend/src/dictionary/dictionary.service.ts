@@ -8,12 +8,10 @@ import { QuizService } from '../quiz/quiz.service';
 import { MAX_DICTIONARY_FRAGMENT_WORDS } from './constants';
 import { DICTIONARY_ERRORS } from './dictionary-errors';
 import { DictionaryRepository } from './dictionary.repository';
-import {
-  type CreateDictionaryWordDto,
-  type QuizOptionsDto,
-  type SimilarWordsDto,
-  type UpdateDictionaryWordProgressDto,
-} from './dto';
+import { type CreateDictionaryWordDto } from './dto/create-dictionary-word.dto';
+import { type QuizOptionsDto } from './dto/quiz-options.dto';
+import { type SimilarWordsDto } from './dto/similar-words.dto';
+import { type UpdateDictionaryWordProgressDto } from './dto/update-dictionary-word-progress.dto';
 import {
   type DictionaryTest,
   type DictionaryTestQuestionFormat,
@@ -194,7 +192,7 @@ export class DictionaryService {
     return updatedWord;
   }
 
-  private resolveWordList(wordList?: string[]): string[] {
+  private resolveWordList(wordList?: string[] | null): string[] {
     if (wordList?.length) {
       return wordList;
     }

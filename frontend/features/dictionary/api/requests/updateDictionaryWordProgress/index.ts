@@ -3,7 +3,7 @@ import { api } from '@/features/auth';
 import {
   type DictionaryWord,
   type UpdateDictionaryWordProgressRequest,
-} from '../../types';
+} from '@/api/generated/transport';
 
 export async function updateDictionaryWordProgress(
   wordId: string,

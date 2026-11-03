@@ -4,8 +4,8 @@ The document covers `POST /api/translations/word`, `GET /achievements/profile/me
 the five mascot operations under `/mascot/profile/me`, the five streak operations
 under `/streak/profile/me`, and the three operations under
 `/quiz-sessions/{sessionId}`, plus the seven notification operations under
-`/notifications`, and the nine credential operations under `/auth`. Dictionary,
-articles and the root endpoint are not covered yet.
+`/notifications`, the nine credential operations under `/auth`, and the eight dictionary operations
+under `/api/dictionary`. Articles and the root endpoint are not covered yet.
 The migration status and remaining work are tracked in
 [the migration task](tasks/openapi-contract-generation.md).
 
@@ -190,7 +190,7 @@ not a client-supplied user ID. Its `claimedAt` and `unlockedAt` fields are alway
 present: ISO date-time strings for stored dates, or null when absent. Achievement
 IDs are an enum derived from the backend's `ACHIEVEMENT_IDS` list. Missing,
 invalid and expired tokens return documented **401** errors; a deleted/missing
-user returns **404**. Authentication endpoint contracts remain outside coverage.
+user returns **404**. Credential endpoint contracts are documented separately without Bearer security.
 
 Mascot operations require Bearer authentication. Profile reads and slot clearing
 return HTTP **200**; purchases and equipping return **201**, including purchasing
@@ -277,6 +277,31 @@ Offline notification export skips Firebase initialization and dispatch intervals
 Isolation tests block relevant Firebase/Google credential reads and background
 intervals before importing application code, and record attempted secret reads
 even if a constructor's catch block would suppress the thrown guard error.
+
+Dictionary word list/create/delete/progress and test generation require Bearer
+security through `ApiUserAuth`. List, delete, progress and test return HTTP **200**;
+word creation returns **201**. Embedding, similar-word and quiz-option POST routes
+remain public and return **201** arrays, including an empty similar-word result.
+The migration preserves these existing access boundaries.
+
+Dictionary word dates are ISO date-time strings. `createdAt` is required;
+`lastReviewedAt` is omitted when absent, never null. Progress and test question
+format enums are backend-owned. Manual progress updates accept only
+`in_progress`; learning remains controlled by quiz answers. Word IDs are trimmed
+UUID path parameters. Test `limit` is an optional integer query from 1 to 10,
+defaulting to 10; generation may create a session despite using GET, preserving
+the existing route. Word/context/translation strings are trimmed and validated;
+the five-word phrase limit and duplicate/missing-word errors remain service rules.
+
+Public candidate lists accept omission, null or empty arrays. Entries must contain
+non-whitespace text, and arrays contain at most 1000 entries. No candidates means
+an empty similar-word result or the existing insufficient-distractors error for
+quiz options. The schema documents validation and model/provider failure bodies
+without adding new runtime validation. Existing embedding algorithms, AI response
+checks, HTTP client, hooks and session handling remain independently maintained.
+Offline preview skips the embedding service constructor and lifecycle hooks;
+export never loads the TensorFlow model. The Swagger HTTP test replaces that
+provider to avoid downloads when it initializes the documentation-only app.
 
 Generated TypeScript is compile-time information, **not runtime validation**.
 Axios generics do not validate JSON. The existing API error decoder and its safe

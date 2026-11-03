@@ -1,10 +1,10 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/features/auth';
 import { updateDictionaryWordProgress } from '../../requests/updateDictionaryWordProgress';
-import type { DictionaryWordProgress } from '../../types';
+import type { UpdateDictionaryWordProgressRequest } from '../../types';
 
 type UpdateDictionaryWordProgressVariables = {
-  progress: DictionaryWordProgress;
+  progress: UpdateDictionaryWordProgressRequest['progress'];
   wordId: string;
 };
 

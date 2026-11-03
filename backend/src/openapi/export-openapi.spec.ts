@@ -9,6 +9,7 @@ import { TranslationsService } from '../translations/translations.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '../auth/jwt.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { DictionaryEmbeddingService } from '../dictionary/dictionary-embedding.service';
 import { exportOpenApi } from './export-openapi';
 
 type HttpServiceAccessor = {
@@ -60,6 +61,13 @@ describe('Offline OpenAPI export', () => {
     expect(second).toEqual(first);
     expect(Object.keys(first.paths).sort()).toEqual([
       '/achievements/profile/me',
+      '/api/dictionary/embedding',
+      '/api/dictionary/me/test',
+      '/api/dictionary/me/words',
+      '/api/dictionary/me/words/{wordId}',
+      '/api/dictionary/me/words/{wordId}/progress',
+      '/api/dictionary/quiz-options',
+      '/api/dictionary/similar-words',
       '/api/translations/word',
       '/auth/google',
       '/auth/login',
@@ -115,6 +123,12 @@ describe('Offline OpenAPI export', () => {
       false,
     );
     expect(app.get<PrismaService>(PrismaService)).toBeInstanceOf(PrismaService);
+    const embeddings = app.get<DictionaryEmbeddingService>(
+      DictionaryEmbeddingService,
+    );
+    expect(embeddings).toBeInstanceOf(DictionaryEmbeddingService);
+    expect(Object.hasOwn(embeddings, 'embeddingCache')).toBe(false);
+    expect(Object.hasOwn(embeddings, 'modelPromise')).toBe(false);
     const notificationsService =
       app.get<NotificationsService>(NotificationsService);
     expect(Object.hasOwn(notificationsService, 'messaging')).toBe(false);

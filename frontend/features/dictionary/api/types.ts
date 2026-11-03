@@ -1,46 +1,10 @@
-export type DictionaryWordProgress = 'new' | 'in_progress' | 'learned';
-
-export type DictionaryWord = {
-  context: string;
-  correctAnswersCount: number;
-  createdAt: string;
-  id: string;
-  lastReviewedAt?: string;
-  progress: DictionaryWordProgress;
-  requiredCorrectAnswers: number;
-  translation: string;
-  userId: string;
-  word: string;
-};
-
-export type CreateDictionaryWordRequest = {
-  context: string;
-  translation: string;
-  word: string;
-};
-
-export type DictionaryTestQuestionOption = {
-  id: string;
-  text: string;
-  translation: string;
-};
-
-export type DictionaryTestQuestionFormat =
-  'translation' | 'reverse_translation' | 'cloze';
-
-export type DictionaryTestQuestion = {
-  format: DictionaryTestQuestionFormat;
-  options: DictionaryTestQuestionOption[];
-  prompt: string;
-  word: string;
-  wordId: string;
-};
-
-export type DictionaryTest = {
-  sessionId: string;
-  questions: DictionaryTestQuestion[];
-};
-
-export type UpdateDictionaryWordProgressRequest = {
-  progress: DictionaryWordProgress;
-};
+export type {
+  DictionaryWordProgress,
+  DictionaryWord,
+  CreateDictionaryWordRequest,
+  DictionaryTestQuestionOption,
+  DictionaryTestQuestionFormat,
+  DictionaryTestQuestion,
+  DictionaryTest,
+  UpdateDictionaryWordProgressRequest,
+} from '@/api/generated/transport';

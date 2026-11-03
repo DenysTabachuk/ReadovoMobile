@@ -5,6 +5,7 @@ import { type Server } from 'node:http';
 import request from 'supertest';
 
 import { configureApiBoundaries } from '../common/configure-api-boundaries';
+import { DictionaryEmbeddingService } from '../dictionary/dictionary-embedding.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -20,6 +21,8 @@ describe('Documented Swagger UI (HTTP)', () => {
       .overrideProvider(PrismaService)
       .useValue({})
       // This test serves documentation only; do not initialize Firebase or jobs.
+      .overrideProvider(DictionaryEmbeddingService)
+      .useValue({})
       .overrideProvider(NotificationsService)
       .useValue({})
       .compile();

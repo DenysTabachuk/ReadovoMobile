@@ -1,36 +1,18 @@
-export type DictionaryWordProgress = 'new' | 'in_progress' | 'learned';
+import {
+  DICTIONARY_WORD_PROGRESS,
+  DICTIONARY_TEST_QUESTION_FORMATS,
+} from './constants';
+import { type DictionaryWordResponseDto } from './dto/dictionary-word-response.dto';
+import {
+  type DictionaryTestQuestionOptionDto,
+  type DictionaryTestQuestionDto,
+  type GetDictionaryTestResponseDto,
+} from './dto/get-dictionary-test-response.dto';
 
-export type DictionaryWord = {
-  context: string;
-  correctAnswersCount: number;
-  createdAt: string;
-  id: string;
-  lastReviewedAt?: string;
-  progress: DictionaryWordProgress;
-  requiredCorrectAnswers: number;
-  translation: string;
-  userId: string;
-  word: string;
-};
-
-export type DictionaryTestQuestionOption = {
-  id: string;
-  text: string;
-  translation: string;
-};
-
+export type DictionaryWordProgress = (typeof DICTIONARY_WORD_PROGRESS)[number];
 export type DictionaryTestQuestionFormat =
-  'translation' | 'reverse_translation' | 'cloze';
-
-export type DictionaryTestQuestion = {
-  format: DictionaryTestQuestionFormat;
-  options: DictionaryTestQuestionOption[];
-  prompt: string;
-  word: string;
-  wordId: string;
-};
-
-export type DictionaryTest = {
-  sessionId: string;
-  questions: DictionaryTestQuestion[];
-};
+  (typeof DICTIONARY_TEST_QUESTION_FORMATS)[number];
+export type DictionaryWord = DictionaryWordResponseDto;
+export type DictionaryTestQuestionOption = DictionaryTestQuestionOptionDto;
+export type DictionaryTestQuestion = DictionaryTestQuestionDto;
+export type DictionaryTest = GetDictionaryTestResponseDto;

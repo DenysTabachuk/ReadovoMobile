@@ -1,3 +1,4 @@
+import { createDictionaryResponseAssertion } from './testing/create-dictionary-response-assertion';
 import request from 'supertest';
 
 import {
@@ -12,6 +13,13 @@ const path = `/api/dictionary/me/words/${DICTIONARY_TEST_WORD_ID}/progress`;
 describe('Dictionary manual progress (HTTP)', () => {
   let testApp: DictionaryHttpTestApp;
 
+  let assertResponse: Awaited<
+    ReturnType<typeof createDictionaryResponseAssertion>
+  >;
+  beforeAll(async () => {
+    assertResponse = await createDictionaryResponseAssertion();
+  });
+
   beforeEach(async () => {
     testApp = await createDictionaryHttpApp();
   });
@@ -24,6 +32,9 @@ describe('Dictionary manual progress (HTTP)', () => {
       .patch(path)
       .set('Authorization', testApp.authorization)
       .send({ progress: 'learned' })
+      .expect((response) =>
+        assertResponse('updateDictionaryWordProgress', response),
+      )
       .expect(400);
     expect(response.body).toMatchObject({
       statusCode: 400,
@@ -39,6 +50,9 @@ describe('Dictionary manual progress (HTTP)', () => {
       .patch(path)
       .set('Authorization', testApp.authorization)
       .send({ progress: 'in_progress' })
+      .expect((response) =>
+        assertResponse('updateDictionaryWordProgress', response),
+      )
       .expect(404, {
         statusCode: 404,
         code: 'DICTIONARY_WORD_NOT_FOUND',
@@ -57,6 +71,9 @@ describe('Dictionary manual progress (HTTP)', () => {
       .patch(path)
       .set('Authorization', testApp.authorization)
       .send({ progress: 'in_progress' })
+      .expect((response) =>
+        assertResponse('updateDictionaryWordProgress', response),
+      )
       .expect(404, {
         statusCode: 404,
         code: 'DICTIONARY_WORD_NOT_FOUND',
@@ -86,6 +103,9 @@ describe('Dictionary manual progress (HTTP)', () => {
       .patch(path)
       .set('Authorization', testApp.authorization)
       .send({ progress: 'in_progress' })
+      .expect((response) =>
+        assertResponse('updateDictionaryWordProgress', response),
+      )
       .expect(200, updated);
     expect(testApp.repository.updateProgress).toHaveBeenCalledWith(
       DICTIONARY_TEST_WORD_ID,

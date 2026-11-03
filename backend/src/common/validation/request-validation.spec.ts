@@ -11,10 +11,8 @@ import {
   ArticleListQueryDto,
 } from '../../articles/contracts/dto';
 import { RegisterUserDto } from '../../auth/dto/register-user.dto';
-import {
-  CreateDictionaryWordDto,
-  DictionaryWordParamsDto,
-} from '../../dictionary/dto';
+import { CreateDictionaryWordDto } from '../../dictionary/dto/create-dictionary-word.dto';
+import { DictionaryWordParamsDto } from '../../dictionary/dto/dictionary-word-params.dto';
 import { ClearMascotSlotParamsDto } from '../../mascot/dto/clear-mascot-slot-params.dto';
 import { RegisterPushTokenDto } from '../../notifications/dto/register-push-token.dto';
 import { ApplyStreakFreezeDto } from '../../streak/dto/apply-streak-freeze.dto';

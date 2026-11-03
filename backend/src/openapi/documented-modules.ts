@@ -7,6 +7,7 @@ import { StreakModule } from '../streak/streak.module';
 import { QuizModule } from '../quiz/quiz.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { NotificationsDiagnosticsModule } from '../notifications/diagnostics/notifications-diagnostics.module';
+import { DictionaryModule } from '../dictionary/dictionary.module';
 import { AuthModule } from '../auth/auth.module';
 
 // Canonical coverage includes development contracts for frontend type generation.
@@ -21,4 +22,5 @@ export const DOCUMENTED_API_MODULES = [
   NotificationsModule,
   NotificationsDiagnosticsModule,
   AuthModule,
+  DictionaryModule,
 ] satisfies Type[];

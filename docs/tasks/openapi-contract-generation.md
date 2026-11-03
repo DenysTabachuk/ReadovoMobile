@@ -1,7 +1,7 @@
 # Task: OpenAPI contract and frontend type generation
 
-Status: translations, achievements, mascot, streak, quiz sessions and notifications
-reviewed; auth migration implemented for review,
+Status: translations, achievements, mascot, streak, quiz sessions, notifications
+and auth reviewed; dictionary migration implemented for review,
 following the implemented
 [API error contract](../api-error-contract.md). The pilot includes Swagger UI,
 offline schema export, generated transport types and CI/staged freshness checks.
@@ -19,9 +19,9 @@ error-only generator. Contributor workflow: [OpenAPI contract](../openapi-contra
   and password reset using real services/validation with mocked persistence,
   provider and mail boundaries. Actual success/error bodies are checked against
   exported schemas. Existing mixed auth test suites remain outside this batch.
-- Remaining migration after auth: dictionary (eight operations), articles
-  (twelve operations), and root `GET /` (one operation). Review this auth batch
-  before continuing. Keep this task until complete API coverage is reviewed.
+- Remaining migration after dictionary: articles (twelve operations) and root
+  `GET /` (one operation). Review this dictionary batch before continuing.
+  Keep this task until complete API coverage is reviewed.
 - Auth verification (2026-11-03): backend CI passed (92 suites / 784 tests),
   followed by the additional auth schema/security test and its lint/format checks
   (one suite / one test). Frontend CI passed (141 suites / 726 tests); root
@@ -378,6 +378,42 @@ error-only generator. Contributor workflow: [OpenAPI contract](../openapi-contra
   The staged contract and related tests therefore see removed operations without
   their replacement controller. lint-staged restored the original working state;
   no additional files or deletions were staged by the agent.
+
+## Dictionary migration (2026-11-03)
+
+- Initial working tree and index were clean; the earlier auth partial-staging
+  failure is historical. No files are staged automatically and no commit is made.
+- All eight dictionary operations have explicit request/response metadata,
+  existing statuses and operation-specific errors. Five owner operations use
+  `ApiUserAuth`; embedding/similarity/quiz-option endpoints retain public access.
+- Moved the aggregate request DTOs into operation-specific files under `dto/`.
+  Module-owned response DTOs replace backend duplicate transport shapes;
+  frontend requests import direct named generated exports and API types re-export
+  them. The progress mutation's input type now matches the backend's existing
+  `in_progress` restriction. Runtime hooks, caches and session logic are preserved.
+- Preserved ISO dates, omitted review dates, nullable optional candidate lists,
+  normalized inputs, UUID paths, optional/defaulted integer test limits, arrays,
+  question format/progress enums and generation error distinctions.
+- Existing word/progress/generation/embedding HTTP suites validate real success
+  and error responses against exported schemas. Additional HTTP checks cover all
+  protected routes' token failures, date omission and metadata. External AI/model
+  and persistence boundaries stay mocked; production validation and services run.
+- Added the real dictionary module to canonical coverage. Offline isolation checks
+  cover its skipped embedding initialization; the Swagger UI HTTP harness replaces
+  the embedding provider before app initialization to avoid model downloads.
+- Review observations: the existing test-generation GET creates a quiz session;
+  three embedding operations are public. These behaviors are documented and
+  preserved. The repository mapper also repeats the five-answer threshold; policy
+  consolidation is outside this transport migration.
+- Verification: backend CI passed (94 suites / 802 tests); frontend CI passed
+  (141 suites / 726 tests). Both include typecheck, lint, formatting and artifact
+  freshness. Backend build, root contract freshness, instruction formatting and
+  changed-document formatting passed. E2E passed four tests; 17 database-backed
+  cases remain skipped without `QUIZ_TEST_DATABASE_URL`. Backend CI, build and contract freshness also passed after the final DTO
+  constant-owner cleanup.
+- The final index is empty, so `check:staged` has no commit snapshot to validate;
+  an empty run is not recorded as a pass. Keep this task until articles, root
+  coverage and the complete migration are reviewed.
 
 ## Goal
 
