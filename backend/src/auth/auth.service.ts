@@ -12,6 +12,10 @@ import { COMMON_ERRORS } from '../common/errors/common-errors';
 import { mapProviderError } from '../http/map-provider-error';
 
 import { AUTH_ERRORS } from './auth-errors';
+import {
+  AUTH_PASSWORD_MIN_LENGTH,
+  AUTH_VERIFICATION_CODE_PATTERN,
+} from './constants';
 import { type LoginUserDto } from './dto/login-user.dto';
 import { type RegisterUserDto } from './dto/register-user.dto';
 import { type GoogleLoginDto } from './dto/google-login.dto';
@@ -41,8 +45,6 @@ import { RefreshTokensRepository } from './refresh-tokens.repository';
 import { UsersRepository } from './users.repository';
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const minPasswordLength = 8;
-const verificationCodePattern = /^\d{6}$/;
 const resetTokenTtlMinutes = 15;
 const refreshTokenTtlDays = 30;
 
@@ -88,7 +90,7 @@ export class AuthService {
       });
     }
 
-    if (password.length < minPasswordLength) {
+    if (password.length < AUTH_PASSWORD_MIN_LENGTH) {
       throw new ApiException(COMMON_ERRORS.VALIDATION_FAILED, {
         fields: [{ path: ['password'], rule: 'STRING_TOO_SHORT' }],
       });
@@ -182,7 +184,10 @@ export class AuthService {
     const email = verifyEmailDto.email?.trim().toLowerCase() ?? '';
     const code = verifyEmailDto.code?.trim() ?? '';
 
-    if (!emailPattern.test(email) || !verificationCodePattern.test(code)) {
+    if (
+      !emailPattern.test(email) ||
+      !AUTH_VERIFICATION_CODE_PATTERN.test(code)
+    ) {
       throw new ApiException(AUTH_ERRORS.VERIFICATION_CODE_INVALID);
     }
 
@@ -329,7 +334,10 @@ export class AuthService {
     const email = verifyPasswordResetCodeDto.email?.trim().toLowerCase() ?? '';
     const code = verifyPasswordResetCodeDto.code?.trim() ?? '';
 
-    if (!emailPattern.test(email) || !verificationCodePattern.test(code)) {
+    if (
+      !emailPattern.test(email) ||
+      !AUTH_VERIFICATION_CODE_PATTERN.test(code)
+    ) {
       throw new ApiException(AUTH_ERRORS.RESET_CODE_INVALID);
     }
 
@@ -386,7 +394,7 @@ export class AuthService {
       throw new ApiException(AUTH_ERRORS.RESET_REQUEST_INVALID);
     }
 
-    if (password.length < minPasswordLength) {
+    if (password.length < AUTH_PASSWORD_MIN_LENGTH) {
       throw new ApiException(COMMON_ERRORS.VALIDATION_FAILED, {
         fields: [{ path: ['password'], rule: 'STRING_TOO_SHORT' }],
       });

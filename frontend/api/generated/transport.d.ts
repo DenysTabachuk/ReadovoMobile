@@ -38,6 +38,159 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/auth/google': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Exchange a verified Google ID token for an app session */
+    post: operations['loginWithGoogle'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/auth/login': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Sign in with email and password */
+    post: operations['loginUser'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/auth/refresh': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Rotate a session using its refresh credential */
+    post: operations['refreshAuthSession'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/auth/register': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Create a pending registration and send a verification code */
+    post: operations['registerUser'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/auth/request-password-reset': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Request a password-reset code without revealing account existence */
+    post: operations['requestPasswordReset'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/auth/resend-verification-code': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Resend a pending registration’s verification code */
+    post: operations['resendVerificationCode'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/auth/reset-password': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Change a password using a verified reset credential */
+    post: operations['resetPassword'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/auth/verify-email': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Verify a pending registration and create a session */
+    post: operations['verifyEmail'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/auth/verify-password-reset-code': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Exchange a password-reset code for a reset credential */
+    post: operations['verifyPasswordResetCode'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/mascot/profile/me': {
     parameters: {
       query?: never;
@@ -395,6 +548,34 @@ export interface components {
        */
       date: string;
     };
+    AuthEmailRequest: {
+      /**
+       * Format: email
+       * @description Trimmed and lowercased before validation.
+       */
+      email: string;
+    };
+    AuthSessionResponse: {
+      accessToken: string;
+      /** Format: date-time */
+      accessTokenExpiresAt: string;
+      refreshToken: string;
+      /** Format: date-time */
+      refreshTokenExpiresAt: string;
+      user: components['schemas']['AuthUser'];
+    };
+    AuthUser: {
+      balance: number;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: email */
+      email: string;
+      /** Format: uuid */
+      id: string;
+      lessonsCompleted: number;
+      testsCompleted: number;
+      wordsLearned: number;
+    };
     BrokenStreakInfo: {
       /** Format: date */
       brokenAt: string;
@@ -425,6 +606,10 @@ export interface components {
       /** @description Device ID, trimmed before validation. */
       deviceId: string;
     };
+    GoogleLoginRequest: {
+      /** @description Google ID token, trimmed before validation. Identity is verified with the provider. */
+      idToken: string;
+    };
     LearningReminderDispatchResponse: {
       checkedCount: number;
       sentCount: number;
@@ -441,6 +626,15 @@ export interface components {
        * @example 19:00
        */
       learningReminderTime: string;
+    };
+    LoginUserRequest: {
+      /**
+       * Format: email
+       * @description Trimmed and lowercased before validation.
+       */
+      email: string;
+      /** @description Password is not trimmed. */
+      password: string;
     };
     /** @enum {string} */
     MascotAccessorySlot: 'eyes' | 'head';
@@ -489,6 +683,10 @@ export interface components {
       term: string;
       translation: string;
     };
+    RefreshSessionRequest: {
+      /** @description Refresh credential in the body; an access JWT is not required. Trimmed before validation. */
+      refreshToken: string;
+    };
     RegisterPushTokenRequest: {
       /** @description Device ID, trimmed before validation. */
       deviceId: string;
@@ -498,6 +696,34 @@ export interface components {
       provider: 'fcm';
       /** @description FCM token, trimmed before validation. */
       pushToken: string;
+    };
+    RegisterUserRequest: {
+      /**
+       * Format: email
+       * @description Trimmed and lowercased before validation.
+       */
+      email: string;
+      /** @description Password is not trimmed. */
+      password: string;
+      /** @description Must exactly match password; equality is enforced by class-validator. */
+      passwordConfirmation: string;
+    };
+    ResetPasswordRequest: {
+      /**
+       * Format: email
+       * @description Trimmed and lowercased before validation.
+       */
+      email: string;
+      /** @description Password is not trimmed. */
+      password: string;
+      /** @description Must exactly match password; equality is enforced by class-validator. */
+      passwordConfirmation: string;
+      /** @description Reset credential returned after code verification. Trimmed before validation. */
+      resetToken: string;
+    };
+    ResetPasswordResponse: {
+      /** Format: email */
+      email: string;
     };
     RetakeQuizResponse: {
       /** Format: uuid */
@@ -640,6 +866,26 @@ export interface components {
        */
       learningReminderTime?: string | null;
     };
+    VerificationCodeDeliveryResponse: {
+      /** Format: email */
+      email: string;
+      /** Format: date-time */
+      verificationExpiresAt: string;
+    };
+    VerifyAuthCodeRequest: {
+      /** @description Six-digit code, trimmed before validation. */
+      code: string;
+      /**
+       * Format: email
+       * @description Trimmed and lowercased before validation.
+       */
+      email: string;
+    };
+    VerifyPasswordResetCodeResponse: {
+      /** Format: email */
+      email: string;
+      resetToken: string;
+    };
   };
   responses: never;
   parameters: never;
@@ -653,6 +899,9 @@ export type AchievementsProfileResponse =
 export type AchievementStatus = components['schemas']['AchievementStatus'];
 export type ApplyStreakFreezeRequest =
   components['schemas']['ApplyStreakFreezeRequest'];
+export type AuthEmailRequest = components['schemas']['AuthEmailRequest'];
+export type AuthSessionResponse = components['schemas']['AuthSessionResponse'];
+export type AuthUser = components['schemas']['AuthUser'];
 export type BrokenStreakInfo = components['schemas']['BrokenStreakInfo'];
 export type CalendarDayStatus = components['schemas']['CalendarDayStatus'];
 export type ClearTodayLearningReminderDispatchResponse =
@@ -660,10 +909,12 @@ export type ClearTodayLearningReminderDispatchResponse =
 export type CompleteQuizRequest = components['schemas']['CompleteQuizRequest'];
 export type DeactivatePushTokenQuery =
   components['schemas']['DeactivatePushTokenQuery'];
+export type GoogleLoginRequest = components['schemas']['GoogleLoginRequest'];
 export type LearningReminderDispatchResponse =
   components['schemas']['LearningReminderDispatchResponse'];
 export type LearningReminderPreferencesResponse =
   components['schemas']['LearningReminderPreferencesResponse'];
+export type LoginUserRequest = components['schemas']['LoginUserRequest'];
 export type MascotAccessorySlot = components['schemas']['MascotAccessorySlot'];
 export type MascotEquippedItems = components['schemas']['MascotEquippedItems'];
 export type MascotProfileResponse =
@@ -677,8 +928,15 @@ export type QuizCompletionRewards =
   components['schemas']['QuizCompletionRewards'];
 export type QuizSessionParams = components['schemas']['QuizSessionParams'];
 export type QuizVocabularyWord = components['schemas']['QuizVocabularyWord'];
+export type RefreshSessionRequest =
+  components['schemas']['RefreshSessionRequest'];
 export type RegisterPushTokenRequest =
   components['schemas']['RegisterPushTokenRequest'];
+export type RegisterUserRequest = components['schemas']['RegisterUserRequest'];
+export type ResetPasswordRequest =
+  components['schemas']['ResetPasswordRequest'];
+export type ResetPasswordResponse =
+  components['schemas']['ResetPasswordResponse'];
 export type RetakeQuizResponse = components['schemas']['RetakeQuizResponse'];
 export type SendTestPushRequest = components['schemas']['SendTestPushRequest'];
 export type SendTestPushResponse =
@@ -705,6 +963,12 @@ export type TranslateWordResponse =
   components['schemas']['TranslateWordResponse'];
 export type UpdateLearningReminderPreferencesRequest =
   components['schemas']['UpdateLearningReminderPreferencesRequest'];
+export type VerificationCodeDeliveryResponse =
+  components['schemas']['VerificationCodeDeliveryResponse'];
+export type VerifyAuthCodeRequest =
+  components['schemas']['VerifyAuthCodeRequest'];
+export type VerifyPasswordResetCodeResponse =
+  components['schemas']['VerifyPasswordResetCodeResponse'];
 export type $defs = Record<string, never>;
 export interface operations {
   getAchievementsProfile: {
@@ -1044,6 +1308,1561 @@ export interface operations {
                 message: 'Request rejected.';
                 /** @enum {integer} */
                 statusCode: 502;
+              };
+        };
+      };
+      /** @description Other rejected requests retain their HTTP error status. Infrastructure errors may have a different body. */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** @enum {string} */
+            code: 'REQUEST_REJECTED';
+            /** @enum {string} */
+            message: 'Request rejected.';
+            statusCode: number;
+          };
+        };
+      };
+    };
+  };
+  loginWithGoogle: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['GoogleLoginRequest'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AuthSessionResponse'];
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'VALIDATION_FAILED';
+                details: {
+                  fields: {
+                    path: (string | number)[];
+                    /** @enum {string} */
+                    rule:
+                      | 'VALUE_REQUIRED'
+                      | 'STRING_REQUIRED'
+                      | 'INTEGER_REQUIRED'
+                      | 'BOOLEAN_REQUIRED'
+                      | 'ARRAY_REQUIRED'
+                      | 'EMAIL_INVALID'
+                      | 'UUID_INVALID'
+                      | 'URL_INVALID'
+                      | 'TIMEZONE_INVALID'
+                      | 'DATE_INVALID'
+                      | 'STRING_TOO_SHORT'
+                      | 'STRING_TOO_LONG'
+                      | 'NUMBER_TOO_SMALL'
+                      | 'NUMBER_TOO_LARGE'
+                      | 'ARRAY_TOO_LARGE'
+                      | 'ARRAY_EMPTY'
+                      | 'VALUE_NOT_ALLOWED'
+                      | 'FORMAT_INVALID'
+                      | 'FIELDS_DO_NOT_MATCH'
+                      | 'PROPERTY_NOT_ALLOWED'
+                      | 'VALUE_INVALID';
+                  }[];
+                };
+                /** @enum {string} */
+                message: 'Request validation failed.';
+                /** @enum {integer} */
+                statusCode: 400;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_MALFORMED';
+                /** @enum {string} */
+                message: 'Malformed request body.';
+                /** @enum {integer} */
+                statusCode: 400;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 400;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'AUTH_GOOGLE_IDENTITY_REJECTED';
+                /** @enum {string} */
+                message: 'Google identity is invalid.';
+                /** @enum {integer} */
+                statusCode: 401;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 401;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_TOO_LARGE';
+                /** @enum {string} */
+                message: 'Request body is too large.';
+                /** @enum {integer} */
+                statusCode: 413;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 413;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'INTERNAL_ERROR';
+                /** @enum {string} */
+                message: 'Internal server error.';
+                /** @enum {integer} */
+                statusCode: 500;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 500;
+              };
+        };
+      };
+      /** @description Other rejected requests retain their HTTP error status. Infrastructure errors may have a different body. */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** @enum {string} */
+            code: 'REQUEST_REJECTED';
+            /** @enum {string} */
+            message: 'Request rejected.';
+            statusCode: number;
+          };
+        };
+      };
+    };
+  };
+  loginUser: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['LoginUserRequest'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AuthSessionResponse'];
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'VALIDATION_FAILED';
+                details: {
+                  fields: {
+                    path: (string | number)[];
+                    /** @enum {string} */
+                    rule:
+                      | 'VALUE_REQUIRED'
+                      | 'STRING_REQUIRED'
+                      | 'INTEGER_REQUIRED'
+                      | 'BOOLEAN_REQUIRED'
+                      | 'ARRAY_REQUIRED'
+                      | 'EMAIL_INVALID'
+                      | 'UUID_INVALID'
+                      | 'URL_INVALID'
+                      | 'TIMEZONE_INVALID'
+                      | 'DATE_INVALID'
+                      | 'STRING_TOO_SHORT'
+                      | 'STRING_TOO_LONG'
+                      | 'NUMBER_TOO_SMALL'
+                      | 'NUMBER_TOO_LARGE'
+                      | 'ARRAY_TOO_LARGE'
+                      | 'ARRAY_EMPTY'
+                      | 'VALUE_NOT_ALLOWED'
+                      | 'FORMAT_INVALID'
+                      | 'FIELDS_DO_NOT_MATCH'
+                      | 'PROPERTY_NOT_ALLOWED'
+                      | 'VALUE_INVALID';
+                  }[];
+                };
+                /** @enum {string} */
+                message: 'Request validation failed.';
+                /** @enum {integer} */
+                statusCode: 400;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_MALFORMED';
+                /** @enum {string} */
+                message: 'Malformed request body.';
+                /** @enum {integer} */
+                statusCode: 400;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 400;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'AUTH_CREDENTIALS_INVALID';
+                /** @enum {string} */
+                message: 'Email or password is invalid.';
+                /** @enum {integer} */
+                statusCode: 401;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 401;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_TOO_LARGE';
+                /** @enum {string} */
+                message: 'Request body is too large.';
+                /** @enum {integer} */
+                statusCode: 413;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 413;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'INTERNAL_ERROR';
+                /** @enum {string} */
+                message: 'Internal server error.';
+                /** @enum {integer} */
+                statusCode: 500;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 500;
+              };
+        };
+      };
+      /** @description Other rejected requests retain their HTTP error status. Infrastructure errors may have a different body. */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** @enum {string} */
+            code: 'REQUEST_REJECTED';
+            /** @enum {string} */
+            message: 'Request rejected.';
+            statusCode: number;
+          };
+        };
+      };
+    };
+  };
+  refreshAuthSession: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['RefreshSessionRequest'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AuthSessionResponse'];
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'VALIDATION_FAILED';
+                details: {
+                  fields: {
+                    path: (string | number)[];
+                    /** @enum {string} */
+                    rule:
+                      | 'VALUE_REQUIRED'
+                      | 'STRING_REQUIRED'
+                      | 'INTEGER_REQUIRED'
+                      | 'BOOLEAN_REQUIRED'
+                      | 'ARRAY_REQUIRED'
+                      | 'EMAIL_INVALID'
+                      | 'UUID_INVALID'
+                      | 'URL_INVALID'
+                      | 'TIMEZONE_INVALID'
+                      | 'DATE_INVALID'
+                      | 'STRING_TOO_SHORT'
+                      | 'STRING_TOO_LONG'
+                      | 'NUMBER_TOO_SMALL'
+                      | 'NUMBER_TOO_LARGE'
+                      | 'ARRAY_TOO_LARGE'
+                      | 'ARRAY_EMPTY'
+                      | 'VALUE_NOT_ALLOWED'
+                      | 'FORMAT_INVALID'
+                      | 'FIELDS_DO_NOT_MATCH'
+                      | 'PROPERTY_NOT_ALLOWED'
+                      | 'VALUE_INVALID';
+                  }[];
+                };
+                /** @enum {string} */
+                message: 'Request validation failed.';
+                /** @enum {integer} */
+                statusCode: 400;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_MALFORMED';
+                /** @enum {string} */
+                message: 'Malformed request body.';
+                /** @enum {integer} */
+                statusCode: 400;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 400;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'AUTH_REFRESH_REJECTED';
+                /** @enum {string} */
+                message: 'Refresh token is invalid.';
+                /** @enum {integer} */
+                statusCode: 401;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 401;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_TOO_LARGE';
+                /** @enum {string} */
+                message: 'Request body is too large.';
+                /** @enum {integer} */
+                statusCode: 413;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 413;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'INTERNAL_ERROR';
+                /** @enum {string} */
+                message: 'Internal server error.';
+                /** @enum {integer} */
+                statusCode: 500;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 500;
+              };
+        };
+      };
+      /** @description Other rejected requests retain their HTTP error status. Infrastructure errors may have a different body. */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** @enum {string} */
+            code: 'REQUEST_REJECTED';
+            /** @enum {string} */
+            message: 'Request rejected.';
+            statusCode: number;
+          };
+        };
+      };
+    };
+  };
+  registerUser: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['RegisterUserRequest'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['VerificationCodeDeliveryResponse'];
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'VALIDATION_FAILED';
+                details: {
+                  fields: {
+                    path: (string | number)[];
+                    /** @enum {string} */
+                    rule:
+                      | 'VALUE_REQUIRED'
+                      | 'STRING_REQUIRED'
+                      | 'INTEGER_REQUIRED'
+                      | 'BOOLEAN_REQUIRED'
+                      | 'ARRAY_REQUIRED'
+                      | 'EMAIL_INVALID'
+                      | 'UUID_INVALID'
+                      | 'URL_INVALID'
+                      | 'TIMEZONE_INVALID'
+                      | 'DATE_INVALID'
+                      | 'STRING_TOO_SHORT'
+                      | 'STRING_TOO_LONG'
+                      | 'NUMBER_TOO_SMALL'
+                      | 'NUMBER_TOO_LARGE'
+                      | 'ARRAY_TOO_LARGE'
+                      | 'ARRAY_EMPTY'
+                      | 'VALUE_NOT_ALLOWED'
+                      | 'FORMAT_INVALID'
+                      | 'FIELDS_DO_NOT_MATCH'
+                      | 'PROPERTY_NOT_ALLOWED'
+                      | 'VALUE_INVALID';
+                  }[];
+                };
+                /** @enum {string} */
+                message: 'Request validation failed.';
+                /** @enum {integer} */
+                statusCode: 400;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_MALFORMED';
+                /** @enum {string} */
+                message: 'Malformed request body.';
+                /** @enum {integer} */
+                statusCode: 400;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 400;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'AUTH_EMAIL_ALREADY_EXISTS';
+                /** @enum {string} */
+                message: 'User with this email already exists.';
+                /** @enum {integer} */
+                statusCode: 409;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 409;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_TOO_LARGE';
+                /** @enum {string} */
+                message: 'Request body is too large.';
+                /** @enum {integer} */
+                statusCode: 413;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 413;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'INTERNAL_ERROR';
+                /** @enum {string} */
+                message: 'Internal server error.';
+                /** @enum {integer} */
+                statusCode: 500;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 500;
+              };
+        };
+      };
+      /** @description Other rejected requests retain their HTTP error status. Infrastructure errors may have a different body. */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** @enum {string} */
+            code: 'REQUEST_REJECTED';
+            /** @enum {string} */
+            message: 'Request rejected.';
+            statusCode: number;
+          };
+        };
+      };
+    };
+  };
+  requestPasswordReset: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AuthEmailRequest'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['VerificationCodeDeliveryResponse'];
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'VALIDATION_FAILED';
+                details: {
+                  fields: {
+                    path: (string | number)[];
+                    /** @enum {string} */
+                    rule:
+                      | 'VALUE_REQUIRED'
+                      | 'STRING_REQUIRED'
+                      | 'INTEGER_REQUIRED'
+                      | 'BOOLEAN_REQUIRED'
+                      | 'ARRAY_REQUIRED'
+                      | 'EMAIL_INVALID'
+                      | 'UUID_INVALID'
+                      | 'URL_INVALID'
+                      | 'TIMEZONE_INVALID'
+                      | 'DATE_INVALID'
+                      | 'STRING_TOO_SHORT'
+                      | 'STRING_TOO_LONG'
+                      | 'NUMBER_TOO_SMALL'
+                      | 'NUMBER_TOO_LARGE'
+                      | 'ARRAY_TOO_LARGE'
+                      | 'ARRAY_EMPTY'
+                      | 'VALUE_NOT_ALLOWED'
+                      | 'FORMAT_INVALID'
+                      | 'FIELDS_DO_NOT_MATCH'
+                      | 'PROPERTY_NOT_ALLOWED'
+                      | 'VALUE_INVALID';
+                  }[];
+                };
+                /** @enum {string} */
+                message: 'Request validation failed.';
+                /** @enum {integer} */
+                statusCode: 400;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_MALFORMED';
+                /** @enum {string} */
+                message: 'Malformed request body.';
+                /** @enum {integer} */
+                statusCode: 400;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 400;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_TOO_LARGE';
+                /** @enum {string} */
+                message: 'Request body is too large.';
+                /** @enum {integer} */
+                statusCode: 413;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 413;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'INTERNAL_ERROR';
+                /** @enum {string} */
+                message: 'Internal server error.';
+                /** @enum {integer} */
+                statusCode: 500;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 500;
+              };
+        };
+      };
+      /** @description Other rejected requests retain their HTTP error status. Infrastructure errors may have a different body. */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** @enum {string} */
+            code: 'REQUEST_REJECTED';
+            /** @enum {string} */
+            message: 'Request rejected.';
+            statusCode: number;
+          };
+        };
+      };
+    };
+  };
+  resendVerificationCode: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AuthEmailRequest'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['VerificationCodeDeliveryResponse'];
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'VALIDATION_FAILED';
+                details: {
+                  fields: {
+                    path: (string | number)[];
+                    /** @enum {string} */
+                    rule:
+                      | 'VALUE_REQUIRED'
+                      | 'STRING_REQUIRED'
+                      | 'INTEGER_REQUIRED'
+                      | 'BOOLEAN_REQUIRED'
+                      | 'ARRAY_REQUIRED'
+                      | 'EMAIL_INVALID'
+                      | 'UUID_INVALID'
+                      | 'URL_INVALID'
+                      | 'TIMEZONE_INVALID'
+                      | 'DATE_INVALID'
+                      | 'STRING_TOO_SHORT'
+                      | 'STRING_TOO_LONG'
+                      | 'NUMBER_TOO_SMALL'
+                      | 'NUMBER_TOO_LARGE'
+                      | 'ARRAY_TOO_LARGE'
+                      | 'ARRAY_EMPTY'
+                      | 'VALUE_NOT_ALLOWED'
+                      | 'FORMAT_INVALID'
+                      | 'FIELDS_DO_NOT_MATCH'
+                      | 'PROPERTY_NOT_ALLOWED'
+                      | 'VALUE_INVALID';
+                  }[];
+                };
+                /** @enum {string} */
+                message: 'Request validation failed.';
+                /** @enum {integer} */
+                statusCode: 400;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_MALFORMED';
+                /** @enum {string} */
+                message: 'Malformed request body.';
+                /** @enum {integer} */
+                statusCode: 400;
+              }
+            | {
+                /** @enum {string} */
+                code: 'AUTH_REGISTRATION_NOT_PENDING';
+                /** @enum {string} */
+                message: 'No pending registration found.';
+                /** @enum {integer} */
+                statusCode: 400;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 400;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'AUTH_EMAIL_ALREADY_EXISTS';
+                /** @enum {string} */
+                message: 'User with this email already exists.';
+                /** @enum {integer} */
+                statusCode: 409;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 409;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_TOO_LARGE';
+                /** @enum {string} */
+                message: 'Request body is too large.';
+                /** @enum {integer} */
+                statusCode: 413;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 413;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'INTERNAL_ERROR';
+                /** @enum {string} */
+                message: 'Internal server error.';
+                /** @enum {integer} */
+                statusCode: 500;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 500;
+              };
+        };
+      };
+      /** @description Other rejected requests retain their HTTP error status. Infrastructure errors may have a different body. */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** @enum {string} */
+            code: 'REQUEST_REJECTED';
+            /** @enum {string} */
+            message: 'Request rejected.';
+            statusCode: number;
+          };
+        };
+      };
+    };
+  };
+  resetPassword: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ResetPasswordRequest'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ResetPasswordResponse'];
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'VALIDATION_FAILED';
+                details: {
+                  fields: {
+                    path: (string | number)[];
+                    /** @enum {string} */
+                    rule:
+                      | 'VALUE_REQUIRED'
+                      | 'STRING_REQUIRED'
+                      | 'INTEGER_REQUIRED'
+                      | 'BOOLEAN_REQUIRED'
+                      | 'ARRAY_REQUIRED'
+                      | 'EMAIL_INVALID'
+                      | 'UUID_INVALID'
+                      | 'URL_INVALID'
+                      | 'TIMEZONE_INVALID'
+                      | 'DATE_INVALID'
+                      | 'STRING_TOO_SHORT'
+                      | 'STRING_TOO_LONG'
+                      | 'NUMBER_TOO_SMALL'
+                      | 'NUMBER_TOO_LARGE'
+                      | 'ARRAY_TOO_LARGE'
+                      | 'ARRAY_EMPTY'
+                      | 'VALUE_NOT_ALLOWED'
+                      | 'FORMAT_INVALID'
+                      | 'FIELDS_DO_NOT_MATCH'
+                      | 'PROPERTY_NOT_ALLOWED'
+                      | 'VALUE_INVALID';
+                  }[];
+                };
+                /** @enum {string} */
+                message: 'Request validation failed.';
+                /** @enum {integer} */
+                statusCode: 400;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_MALFORMED';
+                /** @enum {string} */
+                message: 'Malformed request body.';
+                /** @enum {integer} */
+                statusCode: 400;
+              }
+            | {
+                /** @enum {string} */
+                code: 'AUTH_RESET_REQUEST_INVALID';
+                /** @enum {string} */
+                message: 'Password reset request is invalid.';
+                /** @enum {integer} */
+                statusCode: 400;
+              }
+            | {
+                /** @enum {string} */
+                code: 'AUTH_RESET_REQUEST_EXPIRED';
+                /** @enum {string} */
+                message: 'Password reset request has expired.';
+                /** @enum {integer} */
+                statusCode: 400;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 400;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_TOO_LARGE';
+                /** @enum {string} */
+                message: 'Request body is too large.';
+                /** @enum {integer} */
+                statusCode: 413;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 413;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'INTERNAL_ERROR';
+                /** @enum {string} */
+                message: 'Internal server error.';
+                /** @enum {integer} */
+                statusCode: 500;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 500;
+              };
+        };
+      };
+      /** @description Other rejected requests retain their HTTP error status. Infrastructure errors may have a different body. */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** @enum {string} */
+            code: 'REQUEST_REJECTED';
+            /** @enum {string} */
+            message: 'Request rejected.';
+            statusCode: number;
+          };
+        };
+      };
+    };
+  };
+  verifyEmail: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['VerifyAuthCodeRequest'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AuthSessionResponse'];
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'VALIDATION_FAILED';
+                details: {
+                  fields: {
+                    path: (string | number)[];
+                    /** @enum {string} */
+                    rule:
+                      | 'VALUE_REQUIRED'
+                      | 'STRING_REQUIRED'
+                      | 'INTEGER_REQUIRED'
+                      | 'BOOLEAN_REQUIRED'
+                      | 'ARRAY_REQUIRED'
+                      | 'EMAIL_INVALID'
+                      | 'UUID_INVALID'
+                      | 'URL_INVALID'
+                      | 'TIMEZONE_INVALID'
+                      | 'DATE_INVALID'
+                      | 'STRING_TOO_SHORT'
+                      | 'STRING_TOO_LONG'
+                      | 'NUMBER_TOO_SMALL'
+                      | 'NUMBER_TOO_LARGE'
+                      | 'ARRAY_TOO_LARGE'
+                      | 'ARRAY_EMPTY'
+                      | 'VALUE_NOT_ALLOWED'
+                      | 'FORMAT_INVALID'
+                      | 'FIELDS_DO_NOT_MATCH'
+                      | 'PROPERTY_NOT_ALLOWED'
+                      | 'VALUE_INVALID';
+                  }[];
+                };
+                /** @enum {string} */
+                message: 'Request validation failed.';
+                /** @enum {integer} */
+                statusCode: 400;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_MALFORMED';
+                /** @enum {string} */
+                message: 'Malformed request body.';
+                /** @enum {integer} */
+                statusCode: 400;
+              }
+            | {
+                /** @enum {string} */
+                code: 'AUTH_REGISTRATION_NOT_PENDING';
+                /** @enum {string} */
+                message: 'No pending registration found.';
+                /** @enum {integer} */
+                statusCode: 400;
+              }
+            | {
+                /** @enum {string} */
+                code: 'AUTH_VERIFICATION_CODE_INVALID';
+                /** @enum {string} */
+                message: 'Verification code is invalid.';
+                /** @enum {integer} */
+                statusCode: 400;
+              }
+            | {
+                /** @enum {string} */
+                code: 'AUTH_VERIFICATION_CODE_EXPIRED';
+                /** @enum {string} */
+                message: 'Verification code has expired.';
+                /** @enum {integer} */
+                statusCode: 400;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 400;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'AUTH_EMAIL_ALREADY_EXISTS';
+                /** @enum {string} */
+                message: 'User with this email already exists.';
+                /** @enum {integer} */
+                statusCode: 409;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 409;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_TOO_LARGE';
+                /** @enum {string} */
+                message: 'Request body is too large.';
+                /** @enum {integer} */
+                statusCode: 413;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 413;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'INTERNAL_ERROR';
+                /** @enum {string} */
+                message: 'Internal server error.';
+                /** @enum {integer} */
+                statusCode: 500;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 500;
+              };
+        };
+      };
+      /** @description Other rejected requests retain their HTTP error status. Infrastructure errors may have a different body. */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** @enum {string} */
+            code: 'REQUEST_REJECTED';
+            /** @enum {string} */
+            message: 'Request rejected.';
+            statusCode: number;
+          };
+        };
+      };
+    };
+  };
+  verifyPasswordResetCode: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['VerifyAuthCodeRequest'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['VerifyPasswordResetCodeResponse'];
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'VALIDATION_FAILED';
+                details: {
+                  fields: {
+                    path: (string | number)[];
+                    /** @enum {string} */
+                    rule:
+                      | 'VALUE_REQUIRED'
+                      | 'STRING_REQUIRED'
+                      | 'INTEGER_REQUIRED'
+                      | 'BOOLEAN_REQUIRED'
+                      | 'ARRAY_REQUIRED'
+                      | 'EMAIL_INVALID'
+                      | 'UUID_INVALID'
+                      | 'URL_INVALID'
+                      | 'TIMEZONE_INVALID'
+                      | 'DATE_INVALID'
+                      | 'STRING_TOO_SHORT'
+                      | 'STRING_TOO_LONG'
+                      | 'NUMBER_TOO_SMALL'
+                      | 'NUMBER_TOO_LARGE'
+                      | 'ARRAY_TOO_LARGE'
+                      | 'ARRAY_EMPTY'
+                      | 'VALUE_NOT_ALLOWED'
+                      | 'FORMAT_INVALID'
+                      | 'FIELDS_DO_NOT_MATCH'
+                      | 'PROPERTY_NOT_ALLOWED'
+                      | 'VALUE_INVALID';
+                  }[];
+                };
+                /** @enum {string} */
+                message: 'Request validation failed.';
+                /** @enum {integer} */
+                statusCode: 400;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_MALFORMED';
+                /** @enum {string} */
+                message: 'Malformed request body.';
+                /** @enum {integer} */
+                statusCode: 400;
+              }
+            | {
+                /** @enum {string} */
+                code: 'AUTH_RESET_CODE_INVALID';
+                /** @enum {string} */
+                message: 'Verification code is invalid.';
+                /** @enum {integer} */
+                statusCode: 400;
+              }
+            | {
+                /** @enum {string} */
+                code: 'AUTH_RESET_CODE_EXPIRED';
+                /** @enum {string} */
+                message: 'Verification code has expired.';
+                /** @enum {integer} */
+                statusCode: 400;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 400;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_TOO_LARGE';
+                /** @enum {string} */
+                message: 'Request body is too large.';
+                /** @enum {integer} */
+                statusCode: 413;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 413;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'INTERNAL_ERROR';
+                /** @enum {string} */
+                message: 'Internal server error.';
+                /** @enum {integer} */
+                statusCode: 500;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 500;
               };
         };
       };

@@ -7,6 +7,7 @@ import { StreakModule } from '../streak/streak.module';
 import { QuizModule } from '../quiz/quiz.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { NotificationsDiagnosticsModule } from '../notifications/diagnostics/notifications-diagnostics.module';
+import { AuthModule } from '../auth/auth.module';
 
 // Canonical coverage includes development contracts for frontend type generation.
 // Runtime Swagger scans only modules actually registered in its application.
@@ -19,4 +20,5 @@ export const DOCUMENTED_API_MODULES = [
   QuizModule,
   NotificationsModule,
   NotificationsDiagnosticsModule,
+  AuthModule,
 ] satisfies Type[];

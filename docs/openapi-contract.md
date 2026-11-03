@@ -4,7 +4,8 @@ The document covers `POST /api/translations/word`, `GET /achievements/profile/me
 the five mascot operations under `/mascot/profile/me`, the five streak operations
 under `/streak/profile/me`, and the three operations under
 `/quiz-sessions/{sessionId}`, plus the seven notification operations under
-`/notifications`. Other API modules are not covered yet.
+`/notifications`, and the nine credential operations under `/auth`. Dictionary,
+articles and the root endpoint are not covered yet.
 The migration status and remaining work are tracked in
 [the migration task](tasks/openapi-contract-generation.md).
 
@@ -21,6 +22,25 @@ Swagger's **Try it out** sends real requests to the backend and may contact the
 translation provider or persistence. Normal backend startup still requires its usual services.
 
 ## Ownership and artifacts
+
+Auth operations issue or recover credentials and do not require an existing
+Bearer access token (`security: []`). This does not bypass credential checks:
+login accepts a password, Google login an ID token, refresh a refresh token, and
+verification/reset operations their codes or reset credentials. All nine routes
+retain their existing HTTP 201 success status. Session responses share
+`AuthSessionResponse`; code-delivery acknowledgments share
+`VerificationCodeDeliveryResponse`. Email-only and email/code bodies share
+`AuthEmailRequest` and `VerifyAuthCodeRequest`. Feature aliases preserve familiar
+operation names without duplicating their transport fields.
+
+Session expiry and user creation dates are required ISO date-time strings, not
+JavaScript `Date` objects or nullable values. Public user responses omit stored
+password hashes and salts. Passwords are not trimmed; email input is trimmed and
+lowercased. Password-confirmation equality remains a runtime class-validator
+rule, described in OpenAPI rather than falsely represented as a static field
+constraint. Password-reset requests preserve the same acknowledgment for missing
+and existing accounts. Generated types do not validate received JSON; refresh
+response checks, token storage/session guards and existing UI decoders remain.
 
 Backend modules own request DTOs, path/query parameters, success schemas, error
 definitions, statuses and authorization. Existing NestJS/class-validator validation

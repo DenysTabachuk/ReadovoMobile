@@ -1,7 +1,7 @@
 # Task: OpenAPI contract and frontend type generation
 
-Status: translations, achievements, mascot, streak and quiz sessions reviewed;
-notifications migration implemented for review,
+Status: translations, achievements, mascot, streak, quiz sessions and notifications
+reviewed; auth migration implemented for review,
 following the implemented
 [API error contract](../api-error-contract.md). The pilot includes Swagger UI,
 offline schema export, generated transport types and CI/staged freshness checks.
@@ -9,6 +9,33 @@ Continue in small module batches after review. Do not introduce a separate
 error-only generator. Contributor workflow: [OpenAPI contract](../openapi-contract.md).
 
 ## Pilot progress and remaining migration
+
+- Auth batch: all nine credential endpoints now have explicit body/response
+  schemas, existing HTTP 201 statuses, public access-token security declarations
+  and module-owned error responses. Shared session, email/code and delivery
+  shapes avoid duplicate transport fields. Frontend requests and session refresh
+  consume generated types; existing runtime decoders and session behavior remain.
+- Focused HTTP suites cover login, Google identity, refresh rotation, registration
+  and password reset using real services/validation with mocked persistence,
+  provider and mail boundaries. Actual success/error bodies are checked against
+  exported schemas. Existing mixed auth test suites remain outside this batch.
+- Remaining migration after auth: dictionary (eight operations), articles
+  (twelve operations), and root `GET /` (one operation). Review this auth batch
+  before continuing. Keep this task until complete API coverage is reviewed.
+- Auth verification (2026-11-03): backend CI passed (92 suites / 784 tests),
+  followed by the additional auth schema/security test and its lint/format checks
+  (one suite / one test). Frontend CI passed (141 suites / 726 tests); root
+  typecheck, backend build, contract freshness and documentation formatting
+  passed. E2E passed four tests; 17 database-backed cases were skipped without
+  `QUIZ_TEST_DATABASE_URL`. The local read-only Swagger preview serves all nine
+  auth operations. `check:staged` failed on the actual partial snapshot: frontend
+  consumers were staged while the updated generated `transport.d.ts` was not,
+  so new exports were missing during typechecking and related tests. The contract
+  freshness step was skipped after that failure. Backend related tests passed
+  (55 suites / 614 tests). lint-staged restored the original index and working
+  files; no additional files were staged by the agent. Include the generated
+  artifact, documentation and additional auth schema test when selecting the
+  complete batch for commit, then rerun `check:staged`.
 
 - Selected translations after inspecting its single public POST endpoint, existing
   provider HTTP tests and real frontend request/query consumers.

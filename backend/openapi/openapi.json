@@ -122,6 +122,88 @@
         ],
         "type": "object"
       },
+      "AuthEmailRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "email": {
+            "description": "Trimmed and lowercased before validation.",
+            "format": "email",
+            "maxLength": 254,
+            "type": "string"
+          }
+        },
+        "required": [
+          "email"
+        ],
+        "type": "object"
+      },
+      "AuthSessionResponse": {
+        "properties": {
+          "accessToken": {
+            "type": "string"
+          },
+          "accessTokenExpiresAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "refreshToken": {
+            "type": "string"
+          },
+          "refreshTokenExpiresAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/AuthUser"
+          }
+        },
+        "required": [
+          "accessToken",
+          "accessTokenExpiresAt",
+          "refreshToken",
+          "refreshTokenExpiresAt",
+          "user"
+        ],
+        "type": "object"
+      },
+      "AuthUser": {
+        "properties": {
+          "balance": {
+            "type": "number"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "email": {
+            "format": "email",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "lessonsCompleted": {
+            "type": "number"
+          },
+          "testsCompleted": {
+            "type": "number"
+          },
+          "wordsLearned": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "balance",
+          "createdAt",
+          "email",
+          "id",
+          "lessonsCompleted",
+          "testsCompleted",
+          "wordsLearned"
+        ],
+        "type": "object"
+      },
       "BrokenStreakInfo": {
         "properties": {
           "brokenAt": {
@@ -193,6 +275,22 @@
         ],
         "type": "object"
       },
+      "GoogleLoginRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "idToken": {
+            "description": "Google ID token, trimmed before validation. Identity is verified with the provider.",
+            "maxLength": 8192,
+            "minLength": 1,
+            "type": "string",
+            "writeOnly": true
+          }
+        },
+        "required": [
+          "idToken"
+        ],
+        "type": "object"
+      },
       "LearningReminderDispatchResponse": {
         "properties": {
           "checkedCount": {
@@ -249,6 +347,29 @@
         "required": [
           "learningReminderTime",
           "learningRemindersEnabled"
+        ],
+        "type": "object"
+      },
+      "LoginUserRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "email": {
+            "description": "Trimmed and lowercased before validation.",
+            "format": "email",
+            "maxLength": 254,
+            "type": "string"
+          },
+          "password": {
+            "description": "Password is not trimmed.",
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string",
+            "writeOnly": true
+          }
+        },
+        "required": [
+          "email",
+          "password"
         ],
         "type": "object"
       },
@@ -436,6 +557,22 @@
         ],
         "type": "object"
       },
+      "RefreshSessionRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "refreshToken": {
+            "description": "Refresh credential in the body; an access JWT is not required. Trimmed before validation.",
+            "maxLength": 1024,
+            "minLength": 1,
+            "type": "string",
+            "writeOnly": true
+          }
+        },
+        "required": [
+          "refreshToken"
+        ],
+        "type": "object"
+      },
       "RegisterPushTokenRequest": {
         "additionalProperties": false,
         "properties": {
@@ -469,6 +606,83 @@
           "platform",
           "provider",
           "pushToken"
+        ],
+        "type": "object"
+      },
+      "RegisterUserRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "email": {
+            "description": "Trimmed and lowercased before validation.",
+            "format": "email",
+            "maxLength": 254,
+            "type": "string"
+          },
+          "password": {
+            "description": "Password is not trimmed.",
+            "maxLength": 128,
+            "minLength": 8,
+            "type": "string",
+            "writeOnly": true
+          },
+          "passwordConfirmation": {
+            "description": "Must exactly match password; equality is enforced by class-validator.",
+            "type": "string",
+            "writeOnly": true
+          }
+        },
+        "required": [
+          "email",
+          "password",
+          "passwordConfirmation"
+        ],
+        "type": "object"
+      },
+      "ResetPasswordRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "email": {
+            "description": "Trimmed and lowercased before validation.",
+            "format": "email",
+            "maxLength": 254,
+            "type": "string"
+          },
+          "password": {
+            "description": "Password is not trimmed.",
+            "maxLength": 128,
+            "minLength": 8,
+            "type": "string",
+            "writeOnly": true
+          },
+          "passwordConfirmation": {
+            "description": "Must exactly match password; equality is enforced by class-validator.",
+            "type": "string",
+            "writeOnly": true
+          },
+          "resetToken": {
+            "description": "Reset credential returned after code verification. Trimmed before validation.",
+            "pattern": "^[a-fA-F\\d]{64}$",
+            "type": "string",
+            "writeOnly": true
+          }
+        },
+        "required": [
+          "email",
+          "password",
+          "passwordConfirmation",
+          "resetToken"
+        ],
+        "type": "object"
+      },
+      "ResetPasswordResponse": {
+        "properties": {
+          "email": {
+            "format": "email",
+            "type": "string"
+          }
+        },
+        "required": [
+          "email"
         ],
         "type": "object"
       },
@@ -982,6 +1196,62 @@
           "learningRemindersEnabled"
         ],
         "type": "object"
+      },
+      "VerificationCodeDeliveryResponse": {
+        "properties": {
+          "email": {
+            "format": "email",
+            "type": "string"
+          },
+          "verificationExpiresAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "email",
+          "verificationExpiresAt"
+        ],
+        "type": "object"
+      },
+      "VerifyAuthCodeRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "description": "Six-digit code, trimmed before validation.",
+            "pattern": "^\\d{6}$",
+            "type": "string",
+            "writeOnly": true
+          },
+          "email": {
+            "description": "Trimmed and lowercased before validation.",
+            "format": "email",
+            "maxLength": 254,
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "email"
+        ],
+        "type": "object"
+      },
+      "VerifyPasswordResetCodeResponse": {
+        "properties": {
+          "email": {
+            "format": "email",
+            "type": "string"
+          },
+          "resetToken": {
+            "pattern": "^[a-fA-F\\d]{64}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "email",
+          "resetToken"
+        ],
+        "type": "object"
       }
     },
     "securitySchemes": {
@@ -994,7 +1264,7 @@
   },
   "info": {
     "contact": {},
-    "description": "Partial API coverage: translations, achievements, mascot, streak, quiz sessions and notifications. Other modules are not yet documented.",
+    "description": "Partial API coverage: auth, translations, achievements, mascot, streak, quiz sessions and notifications. Other modules are not yet documented.",
     "title": "Readovo HTTP API",
     "version": "1.0.0"
   },
@@ -1927,6 +2197,3955 @@
         "summary": "Translate a selected word with optional sentence context",
         "tags": [
           "translations"
+        ]
+      }
+    },
+    "/auth/google": {
+      "post": {
+        "operationId": "loginWithGoogle",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GoogleLoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthSessionResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "VALIDATION_FAILED"
+                          ],
+                          "type": "string"
+                        },
+                        "details": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "fields": {
+                              "items": {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "path": {
+                                    "items": {
+                                      "oneOf": [
+                                        {
+                                          "type": "string"
+                                        },
+                                        {
+                                          "minimum": 0,
+                                          "type": "integer"
+                                        }
+                                      ]
+                                    },
+                                    "type": "array"
+                                  },
+                                  "rule": {
+                                    "enum": [
+                                      "VALUE_REQUIRED",
+                                      "STRING_REQUIRED",
+                                      "INTEGER_REQUIRED",
+                                      "BOOLEAN_REQUIRED",
+                                      "ARRAY_REQUIRED",
+                                      "EMAIL_INVALID",
+                                      "UUID_INVALID",
+                                      "URL_INVALID",
+                                      "TIMEZONE_INVALID",
+                                      "DATE_INVALID",
+                                      "STRING_TOO_SHORT",
+                                      "STRING_TOO_LONG",
+                                      "NUMBER_TOO_SMALL",
+                                      "NUMBER_TOO_LARGE",
+                                      "ARRAY_TOO_LARGE",
+                                      "ARRAY_EMPTY",
+                                      "VALUE_NOT_ALLOWED",
+                                      "FORMAT_INVALID",
+                                      "FIELDS_DO_NOT_MATCH",
+                                      "PROPERTY_NOT_ALLOWED",
+                                      "VALUE_INVALID"
+                                    ],
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "path",
+                                  "rule"
+                                ],
+                                "type": "object"
+                              },
+                              "type": "array"
+                            }
+                          },
+                          "required": [
+                            "fields"
+                          ],
+                          "type": "object"
+                        },
+                        "message": {
+                          "enum": [
+                            "Request validation failed."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            400
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message",
+                        "details"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_MALFORMED"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "Malformed request body."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            400
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_REJECTED"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "Request rejected."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            400
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Application-owned error. statusCode equals the HTTP status."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "AUTH_GOOGLE_IDENTITY_REJECTED"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "Google identity is invalid."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            401
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_REJECTED"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "Request rejected."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            401
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Application-owned error. statusCode equals the HTTP status."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_TOO_LARGE"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "Request body is too large."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            413
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_REJECTED"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "Request rejected."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            413
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Application-owned error. statusCode equals the HTTP status."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "INTERNAL_ERROR"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "Internal server error."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            500
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_REJECTED"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "Request rejected."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            500
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Application-owned error. statusCode equals the HTTP status."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "code": {
+                      "enum": [
+                        "REQUEST_REJECTED"
+                      ],
+                      "type": "string"
+                    },
+                    "message": {
+                      "enum": [
+                        "Request rejected."
+                      ],
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "maximum": 599,
+                      "minimum": 400,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "statusCode",
+                    "code",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Other rejected requests retain their HTTP error status. Infrastructure errors may have a different body."
+          }
+        },
+        "security": [],
+        "summary": "Exchange a verified Google ID token for an app session",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "operationId": "loginUser",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginUserRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthSessionResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "VALIDATION_FAILED"
+                          ],
+                          "type": "string"
+                        },
+                        "details": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "fields": {
+                              "items": {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "path": {
+                                    "items": {
+                                      "oneOf": [
+                                        {
+                                          "type": "string"
+                                        },
+                                        {
+                                          "minimum": 0,
+                                          "type": "integer"
+                                        }
+                                      ]
+                                    },
+                                    "type": "array"
+                                  },
+                                  "rule": {
+                                    "enum": [
+                                      "VALUE_REQUIRED",
+                                      "STRING_REQUIRED",
+                                      "INTEGER_REQUIRED",
+                                      "BOOLEAN_REQUIRED",
+                                      "ARRAY_REQUIRED",
+                                      "EMAIL_INVALID",
+                                      "UUID_INVALID",
+                                      "URL_INVALID",
+                                      "TIMEZONE_INVALID",
+                                      "DATE_INVALID",
+                                      "STRING_TOO_SHORT",
+                                      "STRING_TOO_LONG",
+                                      "NUMBER_TOO_SMALL",
+                                      "NUMBER_TOO_LARGE",
+                                      "ARRAY_TOO_LARGE",
+                                      "ARRAY_EMPTY",
+                                      "VALUE_NOT_ALLOWED",
+                                      "FORMAT_INVALID",
+                                      "FIELDS_DO_NOT_MATCH",
+                                      "PROPERTY_NOT_ALLOWED",
+                                      "VALUE_INVALID"
+                                    ],
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "path",
+                                  "rule"
+                                ],
+                                "type": "object"
+                              },
+                              "type": "array"
+                            }
+                          },
+                          "required": [
+                            "fields"
+                          ],
+                          "type": "object"
+                        },
+                        "message": {
+                          "enum": [
+                            "Request validation failed."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            400
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message",
+                        "details"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_MALFORMED"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "Malformed request body."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            400
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_REJECTED"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "Request rejected."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            400
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Application-owned error. statusCode equals the HTTP status."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "AUTH_CREDENTIALS_INVALID"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "Email or password is invalid."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            401
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_REJECTED"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "Request rejected."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            401
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Application-owned error. statusCode equals the HTTP status."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_TOO_LARGE"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "Request body is too large."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            413
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_REJECTED"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "Request rejected."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            413
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Application-owned error. statusCode equals the HTTP status."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "INTERNAL_ERROR"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "Internal server error."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            500
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_REJECTED"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "Request rejected."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            500
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Application-owned error. statusCode equals the HTTP status."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "code": {
+                      "enum": [
+                        "REQUEST_REJECTED"
+                      ],
+                      "type": "string"
+                    },
+                    "message": {
+                      "enum": [
+                        "Request rejected."
+                      ],
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "maximum": 599,
+                      "minimum": 400,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "statusCode",
+                    "code",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Other rejected requests retain their HTTP error status. Infrastructure errors may have a different body."
+          }
+        },
+        "security": [],
+        "summary": "Sign in with email and password",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "operationId": "refreshAuthSession",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshSessionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthSessionResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "VALIDATION_FAILED"
+                          ],
+                          "type": "string"
+                        },
+                        "details": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "fields": {
+                              "items": {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "path": {
+                                    "items": {
+                                      "oneOf": [
+                                        {
+                                          "type": "string"
+                                        },
+                                        {
+                                          "minimum": 0,
+                                          "type": "integer"
+                                        }
+                                      ]
+                                    },
+                                    "type": "array"
+                                  },
+                                  "rule": {
+                                    "enum": [
+                                      "VALUE_REQUIRED",
+                                      "STRING_REQUIRED",
+                                      "INTEGER_REQUIRED",
+                                      "BOOLEAN_REQUIRED",
+                                      "ARRAY_REQUIRED",
+                                      "EMAIL_INVALID",
+                                      "UUID_INVALID",
+                                      "URL_INVALID",
+                                      "TIMEZONE_INVALID",
+                                      "DATE_INVALID",
+                                      "STRING_TOO_SHORT",
+                                      "STRING_TOO_LONG",
+                                      "NUMBER_TOO_SMALL",
+                                      "NUMBER_TOO_LARGE",
+                                      "ARRAY_TOO_LARGE",
+                                      "ARRAY_EMPTY",
+                                      "VALUE_NOT_ALLOWED",
+                                      "FORMAT_INVALID",
+                                      "FIELDS_DO_NOT_MATCH",
+                                      "PROPERTY_NOT_ALLOWED",
+                                      "VALUE_INVALID"
+                                    ],
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "path",
+                                  "rule"
+                                ],
+                                "type": "object"
+                              },
+                              "type": "array"
+                            }
+                          },
+                          "required": [
+                            "fields"
+                          ],
+                          "type": "object"
+                        },
+                        "message": {
+                          "enum": [
+                            "Request validation failed."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            400
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message",
+                        "details"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_MALFORMED"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "Malformed request body."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            400
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_REJECTED"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "Request rejected."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            400
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Application-owned error. statusCode equals the HTTP status."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "AUTH_REFRESH_REJECTED"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "Refresh token is invalid."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            401
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_REJECTED"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "Request rejected."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            401
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Application-owned error. statusCode equals the HTTP status."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_TOO_LARGE"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "Request body is too large."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            413
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_REJECTED"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "Request rejected."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            413
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Application-owned error. statusCode equals the HTTP status."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "INTERNAL_ERROR"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "Internal server error."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            500
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_REJECTED"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "Request rejected."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            500
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Application-owned error. statusCode equals the HTTP status."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "code": {
+                      "enum": [
+                        "REQUEST_REJECTED"
+                      ],
+                      "type": "string"
+                    },
+                    "message": {
+                      "enum": [
+                        "Request rejected."
+                      ],
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "maximum": 599,
+                      "minimum": 400,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "statusCode",
+                    "code",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Other rejected requests retain their HTTP error status. Infrastructure errors may have a different body."
+          }
+        },
+        "security": [],
+        "summary": "Rotate a session using its refresh credential",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/auth/register": {
+      "post": {
+        "operationId": "registerUser",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterUserRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VerificationCodeDeliveryResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "VALIDATION_FAILED"
+                          ],
+                          "type": "string"
+                        },
+                        "details": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "fields": {
+                              "items": {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "path": {
+                                    "items": {
+                                      "oneOf": [
+                                        {
+                                          "type": "string"
+                                        },
+                                        {
+                                          "minimum": 0,
+                                          "type": "integer"
+                                        }
+                                      ]
+                                    },
+                                    "type": "array"
+                                  },
+                                  "rule": {
+                                    "enum": [
+                                      "VALUE_REQUIRED",
+                                      "STRING_REQUIRED",
+                                      "INTEGER_REQUIRED",
+                                      "BOOLEAN_REQUIRED",
+                                      "ARRAY_REQUIRED",
+                                      "EMAIL_INVALID",
+                                      "UUID_INVALID",
+                                      "URL_INVALID",
+                                      "TIMEZONE_INVALID",
+                                      "DATE_INVALID",
+                                      "STRING_TOO_SHORT",
+                                      "STRING_TOO_LONG",
+                                      "NUMBER_TOO_SMALL",
+                                      "NUMBER_TOO_LARGE",
+                                      "ARRAY_TOO_LARGE",
+                                      "ARRAY_EMPTY",
+                                      "VALUE_NOT_ALLOWED",
+                                      "FORMAT_INVALID",
+                                      "FIELDS_DO_NOT_MATCH",
+                                      "PROPERTY_NOT_ALLOWED",
+                                      "VALUE_INVALID"
+                                    ],
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "path",
+                                  "rule"
+                                ],
+                                "type": "object"
+                              },
+                              "type": "array"
+                            }
+                          },
+                          "required": [
+                            "fields"
+                          ],
+                          "type": "object"
+                        },
+                        "message": {
+                          "enum": [
+                            "Request validation failed."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            400
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message",
+                        "details"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_MALFORMED"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "Malformed request body."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            400
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_REJECTED"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "Request rejected."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            400
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Application-owned error. statusCode equals the HTTP status."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "AUTH_EMAIL_ALREADY_EXISTS"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "User with this email already exists."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            409
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_REJECTED"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "Request rejected."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            409
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Application-owned error. statusCode equals the HTTP status."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_TOO_LARGE"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "Request body is too large."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            413
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_REJECTED"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "Request rejected."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            413
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Application-owned error. statusCode equals the HTTP status."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "INTERNAL_ERROR"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "Internal server error."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            500
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_REJECTED"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "Request rejected."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            500
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Application-owned error. statusCode equals the HTTP status."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "code": {
+                      "enum": [
+                        "REQUEST_REJECTED"
+                      ],
+                      "type": "string"
+                    },
+                    "message": {
+                      "enum": [
+                        "Request rejected."
+                      ],
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "maximum": 599,
+                      "minimum": 400,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "statusCode",
+                    "code",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Other rejected requests retain their HTTP error status. Infrastructure errors may have a different body."
+          }
+        },
+        "security": [],
+        "summary": "Create a pending registration and send a verification code",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/auth/request-password-reset": {
+      "post": {
+        "operationId": "requestPasswordReset",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthEmailRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VerificationCodeDeliveryResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "VALIDATION_FAILED"
+                          ],
+                          "type": "string"
+                        },
+                        "details": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "fields": {
+                              "items": {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "path": {
+                                    "items": {
+                                      "oneOf": [
+                                        {
+                                          "type": "string"
+                                        },
+                                        {
+                                          "minimum": 0,
+                                          "type": "integer"
+                                        }
+                                      ]
+                                    },
+                                    "type": "array"
+                                  },
+                                  "rule": {
+                                    "enum": [
+                                      "VALUE_REQUIRED",
+                                      "STRING_REQUIRED",
+                                      "INTEGER_REQUIRED",
+                                      "BOOLEAN_REQUIRED",
+                                      "ARRAY_REQUIRED",
+                                      "EMAIL_INVALID",
+                                      "UUID_INVALID",
+                                      "URL_INVALID",
+                                      "TIMEZONE_INVALID",
+                                      "DATE_INVALID",
+                                      "STRING_TOO_SHORT",
+                                      "STRING_TOO_LONG",
+                                      "NUMBER_TOO_SMALL",
+                                      "NUMBER_TOO_LARGE",
+                                      "ARRAY_TOO_LARGE",
+                                      "ARRAY_EMPTY",
+                                      "VALUE_NOT_ALLOWED",
+                                      "FORMAT_INVALID",
+                                      "FIELDS_DO_NOT_MATCH",
+                                      "PROPERTY_NOT_ALLOWED",
+                                      "VALUE_INVALID"
+                                    ],
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "path",
+                                  "rule"
+                                ],
+                                "type": "object"
+                              },
+                              "type": "array"
+                            }
+                          },
+                          "required": [
+                            "fields"
+                          ],
+                          "type": "object"
+                        },
+                        "message": {
+                          "enum": [
+                            "Request validation failed."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            400
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message",
+                        "details"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_MALFORMED"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "Malformed request body."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            400
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_REJECTED"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "Request rejected."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            400
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Application-owned error. statusCode equals the HTTP status."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_TOO_LARGE"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "Request body is too large."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            413
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_REJECTED"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "Request rejected."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            413
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Application-owned error. statusCode equals the HTTP status."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "INTERNAL_ERROR"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "Internal server error."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            500
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_REJECTED"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "Request rejected."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            500
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Application-owned error. statusCode equals the HTTP status."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "code": {
+                      "enum": [
+                        "REQUEST_REJECTED"
+                      ],
+                      "type": "string"
+                    },
+                    "message": {
+                      "enum": [
+                        "Request rejected."
+                      ],
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "maximum": 599,
+                      "minimum": 400,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "statusCode",
+                    "code",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Other rejected requests retain their HTTP error status. Infrastructure errors may have a different body."
+          }
+        },
+        "security": [],
+        "summary": "Request a password-reset code without revealing account existence",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/auth/resend-verification-code": {
+      "post": {
+        "operationId": "resendVerificationCode",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthEmailRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VerificationCodeDeliveryResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "VALIDATION_FAILED"
+                          ],
+                          "type": "string"
+                        },
+                        "details": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "fields": {
+                              "items": {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "path": {
+                                    "items": {
+                                      "oneOf": [
+                                        {
+                                          "type": "string"
+                                        },
+                                        {
+                                          "minimum": 0,
+                                          "type": "integer"
+                                        }
+                                      ]
+                                    },
+                                    "type": "array"
+                                  },
+                                  "rule": {
+                                    "enum": [
+                                      "VALUE_REQUIRED",
+                                      "STRING_REQUIRED",
+                                      "INTEGER_REQUIRED",
+                                      "BOOLEAN_REQUIRED",
+                                      "ARRAY_REQUIRED",
+                                      "EMAIL_INVALID",
+                                      "UUID_INVALID",
+                                      "URL_INVALID",
+                                      "TIMEZONE_INVALID",
+                                      "DATE_INVALID",
+                                      "STRING_TOO_SHORT",
+                                      "STRING_TOO_LONG",
+                                      "NUMBER_TOO_SMALL",
+                                      "NUMBER_TOO_LARGE",
+                                      "ARRAY_TOO_LARGE",
+                                      "ARRAY_EMPTY",
+                                      "VALUE_NOT_ALLOWED",
+                                      "FORMAT_INVALID",
+                                      "FIELDS_DO_NOT_MATCH",
+                                      "PROPERTY_NOT_ALLOWED",
+                                      "VALUE_INVALID"
+                                    ],
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "path",
+                                  "rule"
+                                ],
+                                "type": "object"
+                              },
+                              "type": "array"
+                            }
+                          },
+                          "required": [
+                            "fields"
+                          ],
+                          "type": "object"
+                        },
+                        "message": {
+                          "enum": [
+                            "Request validation failed."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            400
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message",
+                        "details"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_MALFORMED"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "Malformed request body."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            400
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "AUTH_REGISTRATION_NOT_PENDING"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "No pending registration found."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            400
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_REJECTED"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "Request rejected."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            400
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Application-owned error. statusCode equals the HTTP status."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "AUTH_EMAIL_ALREADY_EXISTS"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "User with this email already exists."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            409
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_REJECTED"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "Request rejected."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            409
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Application-owned error. statusCode equals the HTTP status."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_TOO_LARGE"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "Request body is too large."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            413
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_REJECTED"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "Request rejected."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            413
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Application-owned error. statusCode equals the HTTP status."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "INTERNAL_ERROR"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "Internal server error."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            500
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_REJECTED"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "Request rejected."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            500
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Application-owned error. statusCode equals the HTTP status."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "code": {
+                      "enum": [
+                        "REQUEST_REJECTED"
+                      ],
+                      "type": "string"
+                    },
+                    "message": {
+                      "enum": [
+                        "Request rejected."
+                      ],
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "maximum": 599,
+                      "minimum": 400,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "statusCode",
+                    "code",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Other rejected requests retain their HTTP error status. Infrastructure errors may have a different body."
+          }
+        },
+        "security": [],
+        "summary": "Resend a pending registration’s verification code",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/auth/reset-password": {
+      "post": {
+        "operationId": "resetPassword",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetPasswordRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResetPasswordResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "VALIDATION_FAILED"
+                          ],
+                          "type": "string"
+                        },
+                        "details": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "fields": {
+                              "items": {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "path": {
+                                    "items": {
+                                      "oneOf": [
+                                        {
+                                          "type": "string"
+                                        },
+                                        {
+                                          "minimum": 0,
+                                          "type": "integer"
+                                        }
+                                      ]
+                                    },
+                                    "type": "array"
+                                  },
+                                  "rule": {
+                                    "enum": [
+                                      "VALUE_REQUIRED",
+                                      "STRING_REQUIRED",
+                                      "INTEGER_REQUIRED",
+                                      "BOOLEAN_REQUIRED",
+                                      "ARRAY_REQUIRED",
+                                      "EMAIL_INVALID",
+                                      "UUID_INVALID",
+                                      "URL_INVALID",
+                                      "TIMEZONE_INVALID",
+                                      "DATE_INVALID",
+                                      "STRING_TOO_SHORT",
+                                      "STRING_TOO_LONG",
+                                      "NUMBER_TOO_SMALL",
+                                      "NUMBER_TOO_LARGE",
+                                      "ARRAY_TOO_LARGE",
+                                      "ARRAY_EMPTY",
+                                      "VALUE_NOT_ALLOWED",
+                                      "FORMAT_INVALID",
+                                      "FIELDS_DO_NOT_MATCH",
+                                      "PROPERTY_NOT_ALLOWED",
+                                      "VALUE_INVALID"
+                                    ],
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "path",
+                                  "rule"
+                                ],
+                                "type": "object"
+                              },
+                              "type": "array"
+                            }
+                          },
+                          "required": [
+                            "fields"
+                          ],
+                          "type": "object"
+                        },
+                        "message": {
+                          "enum": [
+                            "Request validation failed."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            400
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message",
+                        "details"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_MALFORMED"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "Malformed request body."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            400
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "AUTH_RESET_REQUEST_INVALID"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "Password reset request is invalid."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            400
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "AUTH_RESET_REQUEST_EXPIRED"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "Password reset request has expired."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            400
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_REJECTED"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "Request rejected."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            400
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Application-owned error. statusCode equals the HTTP status."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_TOO_LARGE"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "Request body is too large."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            413
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_REJECTED"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "Request rejected."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            413
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Application-owned error. statusCode equals the HTTP status."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "INTERNAL_ERROR"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "Internal server error."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            500
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_REJECTED"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "Request rejected."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            500
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Application-owned error. statusCode equals the HTTP status."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "code": {
+                      "enum": [
+                        "REQUEST_REJECTED"
+                      ],
+                      "type": "string"
+                    },
+                    "message": {
+                      "enum": [
+                        "Request rejected."
+                      ],
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "maximum": 599,
+                      "minimum": 400,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "statusCode",
+                    "code",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Other rejected requests retain their HTTP error status. Infrastructure errors may have a different body."
+          }
+        },
+        "security": [],
+        "summary": "Change a password using a verified reset credential",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/auth/verify-email": {
+      "post": {
+        "operationId": "verifyEmail",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyAuthCodeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthSessionResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "VALIDATION_FAILED"
+                          ],
+                          "type": "string"
+                        },
+                        "details": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "fields": {
+                              "items": {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "path": {
+                                    "items": {
+                                      "oneOf": [
+                                        {
+                                          "type": "string"
+                                        },
+                                        {
+                                          "minimum": 0,
+                                          "type": "integer"
+                                        }
+                                      ]
+                                    },
+                                    "type": "array"
+                                  },
+                                  "rule": {
+                                    "enum": [
+                                      "VALUE_REQUIRED",
+                                      "STRING_REQUIRED",
+                                      "INTEGER_REQUIRED",
+                                      "BOOLEAN_REQUIRED",
+                                      "ARRAY_REQUIRED",
+                                      "EMAIL_INVALID",
+                                      "UUID_INVALID",
+                                      "URL_INVALID",
+                                      "TIMEZONE_INVALID",
+                                      "DATE_INVALID",
+                                      "STRING_TOO_SHORT",
+                                      "STRING_TOO_LONG",
+                                      "NUMBER_TOO_SMALL",
+                                      "NUMBER_TOO_LARGE",
+                                      "ARRAY_TOO_LARGE",
+                                      "ARRAY_EMPTY",
+                                      "VALUE_NOT_ALLOWED",
+                                      "FORMAT_INVALID",
+                                      "FIELDS_DO_NOT_MATCH",
+                                      "PROPERTY_NOT_ALLOWED",
+                                      "VALUE_INVALID"
+                                    ],
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "path",
+                                  "rule"
+                                ],
+                                "type": "object"
+                              },
+                              "type": "array"
+                            }
+                          },
+                          "required": [
+                            "fields"
+                          ],
+                          "type": "object"
+                        },
+                        "message": {
+                          "enum": [
+                            "Request validation failed."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            400
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message",
+                        "details"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_MALFORMED"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "Malformed request body."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            400
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "AUTH_REGISTRATION_NOT_PENDING"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "No pending registration found."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            400
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "AUTH_VERIFICATION_CODE_INVALID"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "Verification code is invalid."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            400
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "AUTH_VERIFICATION_CODE_EXPIRED"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "Verification code has expired."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            400
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_REJECTED"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "Request rejected."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            400
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Application-owned error. statusCode equals the HTTP status."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "AUTH_EMAIL_ALREADY_EXISTS"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "User with this email already exists."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            409
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_REJECTED"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "Request rejected."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            409
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Application-owned error. statusCode equals the HTTP status."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_TOO_LARGE"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "Request body is too large."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            413
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_REJECTED"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "Request rejected."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            413
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Application-owned error. statusCode equals the HTTP status."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "INTERNAL_ERROR"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "Internal server error."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            500
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_REJECTED"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "Request rejected."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            500
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Application-owned error. statusCode equals the HTTP status."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "code": {
+                      "enum": [
+                        "REQUEST_REJECTED"
+                      ],
+                      "type": "string"
+                    },
+                    "message": {
+                      "enum": [
+                        "Request rejected."
+                      ],
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "maximum": 599,
+                      "minimum": 400,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "statusCode",
+                    "code",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Other rejected requests retain their HTTP error status. Infrastructure errors may have a different body."
+          }
+        },
+        "security": [],
+        "summary": "Verify a pending registration and create a session",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/auth/verify-password-reset-code": {
+      "post": {
+        "operationId": "verifyPasswordResetCode",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyAuthCodeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VerifyPasswordResetCodeResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "VALIDATION_FAILED"
+                          ],
+                          "type": "string"
+                        },
+                        "details": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "fields": {
+                              "items": {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "path": {
+                                    "items": {
+                                      "oneOf": [
+                                        {
+                                          "type": "string"
+                                        },
+                                        {
+                                          "minimum": 0,
+                                          "type": "integer"
+                                        }
+                                      ]
+                                    },
+                                    "type": "array"
+                                  },
+                                  "rule": {
+                                    "enum": [
+                                      "VALUE_REQUIRED",
+                                      "STRING_REQUIRED",
+                                      "INTEGER_REQUIRED",
+                                      "BOOLEAN_REQUIRED",
+                                      "ARRAY_REQUIRED",
+                                      "EMAIL_INVALID",
+                                      "UUID_INVALID",
+                                      "URL_INVALID",
+                                      "TIMEZONE_INVALID",
+                                      "DATE_INVALID",
+                                      "STRING_TOO_SHORT",
+                                      "STRING_TOO_LONG",
+                                      "NUMBER_TOO_SMALL",
+                                      "NUMBER_TOO_LARGE",
+                                      "ARRAY_TOO_LARGE",
+                                      "ARRAY_EMPTY",
+                                      "VALUE_NOT_ALLOWED",
+                                      "FORMAT_INVALID",
+                                      "FIELDS_DO_NOT_MATCH",
+                                      "PROPERTY_NOT_ALLOWED",
+                                      "VALUE_INVALID"
+                                    ],
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "path",
+                                  "rule"
+                                ],
+                                "type": "object"
+                              },
+                              "type": "array"
+                            }
+                          },
+                          "required": [
+                            "fields"
+                          ],
+                          "type": "object"
+                        },
+                        "message": {
+                          "enum": [
+                            "Request validation failed."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            400
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message",
+                        "details"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_MALFORMED"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "Malformed request body."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            400
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "AUTH_RESET_CODE_INVALID"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "Verification code is invalid."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            400
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "AUTH_RESET_CODE_EXPIRED"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "Verification code has expired."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            400
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_REJECTED"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "Request rejected."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            400
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Application-owned error. statusCode equals the HTTP status."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_TOO_LARGE"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "Request body is too large."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            413
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_REJECTED"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "Request rejected."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            413
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Application-owned error. statusCode equals the HTTP status."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "INTERNAL_ERROR"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "Internal server error."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            500
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_REJECTED"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "enum": [
+                            "Request rejected."
+                          ],
+                          "type": "string"
+                        },
+                        "statusCode": {
+                          "enum": [
+                            500
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "statusCode",
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Application-owned error. statusCode equals the HTTP status."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "code": {
+                      "enum": [
+                        "REQUEST_REJECTED"
+                      ],
+                      "type": "string"
+                    },
+                    "message": {
+                      "enum": [
+                        "Request rejected."
+                      ],
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "maximum": 599,
+                      "minimum": 400,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "statusCode",
+                    "code",
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Other rejected requests retain their HTTP error status. Infrastructure errors may have a different body."
+          }
+        },
+        "security": [],
+        "summary": "Exchange a password-reset code for a reset credential",
+        "tags": [
+          "auth"
         ]
       }
     },

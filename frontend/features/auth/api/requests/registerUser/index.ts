@@ -1,13 +1,16 @@
 import {
   type RegisterUserRequest,
-  type RegisterUserResponse,
-} from '../../types';
+  type VerificationCodeDeliveryResponse as RegisterUserResponse,
+} from '@/api/generated/transport';
 import { postAuthRequest } from '../../utils/postAuthRequest';
 
 export async function registerUser(
   request: RegisterUserRequest,
 ): Promise<RegisterUserResponse> {
-  const response = await postAuthRequest('register', request);
+  const response = await postAuthRequest<RegisterUserResponse>(
+    'register',
+    request,
+  );
 
-  return response.data as RegisterUserResponse;
+  return response.data;
 }

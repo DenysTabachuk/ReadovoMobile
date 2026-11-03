@@ -1,6 +1,10 @@
 import { httpClient } from '@/api/httpClient';
 import { HttpError } from '@/api/httpError';
 import { API_BASE_URL, HTTP_STATUS } from '@/api';
+import type {
+  AuthSessionResponse,
+  RefreshSessionRequest,
+} from '@/api/generated/transport';
 
 import { authSessionStore } from '../authTokenStorage/authSessionStore';
 import { type AuthTokens } from '../types';
@@ -62,13 +66,17 @@ async function refreshAuthSessionOnce(
     return null;
   }
 
-  const response = await httpClient(`${API_BASE_URL}/auth/refresh`, {
-    data: { refreshToken },
-    headers: {
-      'Content-Type': 'application/json',
+  const payload: RefreshSessionRequest = { refreshToken };
+  const response = await httpClient<AuthSessionResponse>(
+    `${API_BASE_URL}/auth/refresh`,
+    {
+      data: payload,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      method: 'POST',
     },
-    method: 'POST',
-  }).catch(async (error: unknown) => {
+  ).catch(async (error: unknown) => {
     if (
       !(error instanceof HttpError) ||
       error.status !== HTTP_STATUS.unauthorized ||
