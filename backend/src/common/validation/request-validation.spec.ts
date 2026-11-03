@@ -16,7 +16,7 @@ import {
   DictionaryWordParamsDto,
 } from '../../dictionary/dto';
 import { ClearMascotSlotParamsDto } from '../../mascot/dto/clear-mascot-slot-params.dto';
-import { RegisterPushTokenDto } from '../../notifications/dto';
+import { RegisterPushTokenDto } from '../../notifications/dto/register-push-token.dto';
 import { ApplyStreakFreezeDto } from '../../streak/dto/apply-streak-freeze.dto';
 import { TranslateWordDto } from '../../translations/dto/translate-word.dto';
 

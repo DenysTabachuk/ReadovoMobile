@@ -3,7 +3,8 @@
 The document covers `POST /api/translations/word`, `GET /achievements/profile/me`,
 the five mascot operations under `/mascot/profile/me`, the five streak operations
 under `/streak/profile/me`, and the three operations under
-`/quiz-sessions/{sessionId}`. Other API modules are not covered yet.
+`/quiz-sessions/{sessionId}`, plus the seven notification operations under
+`/notifications`. Other API modules are not covered yet.
 The migration status and remaining work are tracked in
 [the migration task](tasks/openapi-contract-generation.md).
 
@@ -214,6 +215,33 @@ historical unlocked milestones remain integer arrays rather than being narrowed
 to today's milestone enum. Retake returns only a new `sessionId`. Foreign and
 missing sessions both return `QUIZ_SESSION_NOT_FOUND`; answer conflicts and
 incomplete/completed sessions retain their existing operation-specific 409 errors.
+
+Notification operations require Bearer authentication. Preferences use GET/PUT
+with HTTP **200**; PUT requires `learningRemindersEnabled` and optionally accepts
+nullable `learningReminderTime`. HH:mm strings are trimmed and validated; omitted
+or null time resets to the backend default `19:00`, including existing settings.
+The generated response time remains a string. Before hydrating local preferences,
+the feature validates the response and narrows it to its local HH:mm UI type;
+malformed successful responses reject instead of being asserted into that type.
+
+Push registration accepts only Android FCM tokens, with the existing device/token
+length limits. It returns HTTP **201** with `{ "ok": true }`. Token deactivation
+requires a trimmed `deviceId` query and returns **200** with the same acknowledgment.
+Test push accepts an optional body; nullable/omitted/empty title and body use the
+existing server defaults. It returns **201** with all delivery counters and safe
+`failureReasons`, including zero tokens, complete delivery failure and partial
+delivery. Those reasons are diagnostics rather than an API error-code catalogue.
+
+Manual reminder dispatch returns **201** counters, and clearing today's dispatch
+record returns **200** with `deletedCount`. Both return their documented **403**
+errors when `NODE_ENV` is `production`. Outside production they require an ordinary
+user token; manual dispatch processes all eligible users. The schema documents
+these existing controls and does not introduce an administrative role check.
+
+Offline notification export skips Firebase initialization and dispatch intervals.
+Isolation tests block relevant Firebase/Google credential reads and background
+intervals before importing application code, and record attempted secret reads
+even if a constructor's catch block would suppress the thrown guard error.
 
 Generated TypeScript is compile-time information, **not runtime validation**.
 Axios generics do not validate JSON. The existing API error decoder and its safe

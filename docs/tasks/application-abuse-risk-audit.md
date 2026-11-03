@@ -20,6 +20,13 @@ writes. The scope and required transaction/concurrency checks are tracked in
 [mascot purchase atomicity](mascot-purchase-atomicity.md). This is not a completed
 audit or a verified live concurrency reproduction.
 
+Notification code review during migration also confirmed two existing review
+targets: the non-production manual dispatch route accepts an ordinary user token
+and processes all eligible users, and frontend device registration logs token
+prefixes. Verify deployed environment/role controls and remove token material from
+logs in a focused follow-up. The OpenAPI migration preserves these behaviors and
+does not establish deployment exposure or perform a live abuse reproduction.
+
 - Inventory all controllers, routes, HTTP methods, guards and global middleware.
   Record which routes are intentionally public and why. Do not infer protection
   from Swagger metadata, frontend navigation, CORS or an undocumented URL.

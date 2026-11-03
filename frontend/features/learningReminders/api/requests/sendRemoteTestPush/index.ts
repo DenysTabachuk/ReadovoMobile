@@ -1,9 +1,9 @@
 import { api } from '@/features/auth';
 
-import type { SendRemoteTestPushResponse } from '../../types';
+import type { SendTestPushResponse } from '@/api/generated/transport';
 
-export async function sendRemoteTestPush(): Promise<SendRemoteTestPushResponse> {
-  const response = await api.post<SendRemoteTestPushResponse>(
+export async function sendRemoteTestPush(): Promise<SendTestPushResponse> {
+  const response = await api.post<SendTestPushResponse>(
     `/notifications/test-push/me`,
     {},
   );

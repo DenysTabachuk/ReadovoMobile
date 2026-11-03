@@ -1,6 +1,6 @@
 import { api } from '@/features/auth';
 
-import type { LearningReminderDispatchResponse } from '../../types';
+import type { LearningReminderDispatchResponse } from '@/api/generated/transport';
 
 export async function dispatchLearningRemindersNow(): Promise<LearningReminderDispatchResponse> {
   const response = await api.post<LearningReminderDispatchResponse>(

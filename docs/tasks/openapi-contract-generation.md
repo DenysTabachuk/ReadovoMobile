@@ -1,6 +1,7 @@
 # Task: OpenAPI contract and frontend type generation
 
-Status: translations, achievements, mascot and streak reviewed; quiz-session migration implemented for review,
+Status: translations, achievements, mascot, streak and quiz sessions reviewed;
+notifications migration implemented for review,
 following the implemented
 [API error contract](../api-error-contract.md). The pilot includes Swagger UI,
 offline schema export, generated transport types and CI/staged freshness checks.
@@ -254,6 +255,44 @@ error-only generator. Contributor workflow: [OpenAPI contract](../openapi-contra
 - The refreshed local read-only Swagger viewer serves all three quiz-session
   routes. No files were staged at final verification, so `check:staged` could not
   validate a selected commit snapshot; all results above cover the working tree.
+
+## Notifications migration
+
+- This batch covers all seven notification operations: GET/PUT preferences,
+  POST/DELETE push token, test push, manual dispatch and clearing today's dispatch.
+  Routes, delivery behavior, counters and production restrictions are preserved.
+- Request/response DTOs now live in `notifications/dto/`. Shared device limits,
+  Android/FCM allowlists and reminder-time metadata derive from backend-owned
+  constants. Optional null time/title/body input is represented explicitly.
+  All operations use `ApiUserAuth`, with the two production-only restriction errors
+  taken from their existing definitions.
+- Frontend requests import generated transport types, including acknowledgments
+  and dispatch results; feature API aliases only re-export generated declarations.
+  Removed the incorrect iOS option from transport typing; the existing Android
+  runtime guard stays in place. Local UI preferences retain their own HH:mm type.
+- Generated JSON strings are not runtime-validated. A feature-owned decoder now
+  checks returned time/boolean settings before local preference hydration, without
+  assertions, silent defaults or changing the shared preferences/storage contract.
+- Real HTTP tests compare responses with the exported document, including
+  nullable/defaulted inputs, query validation, literal acknowledgment, auth,
+  production 403s, sanitized complete/partial delivery failure and normal success.
+  Firebase delivery is mocked at the SDK boundary; no live push is sent.
+- Offline export includes the real module but skips Firebase constructors and
+  dispatch hooks. The fresh-process test blocks interval creation and Firebase/
+  Google credential reads and detects attempted reads even if exceptions are
+  caught. The normal Swagger HTTP test stubs the unrelated notification worker
+  provider so documentation serving cannot start Firebase or background dispatch.
+- Remaining coverage: auth, dictionary, articles and the application root route.
+  The wider migration task remains open.
+- Verification: backend CI passed (86 suites / 757 tests), frontend CI passed
+  (141 suites / 725 tests), and backend production build passed. The new HTTP
+  suites cover 30 cases plus one new mixed-delivery case in the SDK-boundary suite;
+  the UI decoder has 13 cases. Typechecking, lint, formatting and both artifact
+  freshness checks passed. Existing audit targets are recorded in
+  [the application abuse audit](application-abuse-risk-audit.md).
+- The refreshed local read-only Swagger viewer serves all notification routes.
+  No files were staged at final verification, so `check:staged` had no selected
+  commit snapshot to validate; the checks above cover the working tree.
 
 ## Goal
 

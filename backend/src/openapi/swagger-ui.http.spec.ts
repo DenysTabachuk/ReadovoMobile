@@ -7,6 +7,7 @@ import request from 'supertest';
 import { configureApiBoundaries } from '../common/configure-api-boundaries';
 import { PrismaModule } from '../prisma/prisma.module';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { DOCUMENTED_API_MODULES } from './documented-modules';
 import { exportOpenApi } from './export-openapi';
 import { createApiDocument } from './utils/createApiDocument';
@@ -17,6 +18,9 @@ describe('Documented Swagger UI (HTTP)', () => {
       imports: [PrismaModule, ...DOCUMENTED_API_MODULES],
     })
       .overrideProvider(PrismaService)
+      .useValue({})
+      // This test serves documentation only; do not initialize Firebase or jobs.
+      .overrideProvider(NotificationsService)
       .useValue({})
       .compile();
     const app = module.createNestApplication<INestApplication<Server>>({

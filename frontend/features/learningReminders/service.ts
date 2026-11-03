@@ -7,6 +7,8 @@ import {
   registerPushToken,
   updateLearningReminderPreferences,
 } from './api';
+import type { LearningReminderSettings } from './types';
+import { parseLearningReminderPreferences } from './utils/parseLearningReminderPreferences';
 
 const DEVICE_ID_STORAGE_KEY = 'readovo.notifications.deviceId';
 let hasLoggedReminderSyncError = false;
@@ -156,9 +158,14 @@ export async function syncLearningReminder(
   }
 }
 
-export async function loadLearningReminderPreferences(): Promise<{
-  learningReminderTime: LearningReminderTime;
-  learningRemindersEnabled: boolean;
-}> {
-  return getLearningReminderPreferences();
+/**
+ * Loads server settings and validates them for the local preferences provider.
+ * @returns Valid UI settings; malformed server values reject before hydration.
+ * @example
+ * const preferences = await loadLearningReminderPreferences();
+ * // preferences.learningReminderTime is a validated HH:mm string.
+ */
+export async function loadLearningReminderPreferences(): Promise<LearningReminderSettings> {
+  const preferences = await getLearningReminderPreferences();
+  return parseLearningReminderPreferences(preferences);
 }

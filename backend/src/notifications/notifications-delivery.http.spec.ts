@@ -1,5 +1,5 @@
 import { Logger } from '@nestjs/common';
-import request from 'supertest';
+import request, { type Response } from 'supertest';
 
 // Import the factory first so its SDK-discovery mock is installed before use.
 import {
@@ -8,6 +8,7 @@ import {
   NOTIFICATIONS_TEST_USER_ID,
   type NotificationsHttpTestApp,
 } from './testing/create-notifications-http-app';
+import { createNotificationsResponseAssertion } from './testing/create-notifications-response-assertion';
 import {
   deleteApp,
   getApps,
@@ -20,6 +21,12 @@ const path = `/notifications/test-push/me`;
 const privateDetails = 'PRIVATE_PROVIDER_DIAGNOSTICS';
 
 describe('Notification delivery diagnostics (HTTP)', () => {
+  let assertResponse: Awaited<
+    ReturnType<typeof createNotificationsResponseAssertion>
+  >;
+  beforeAll(async () => {
+    assertResponse = await createNotificationsResponseAssertion();
+  });
   let testApp: NotificationsHttpTestApp;
   let firebaseApp: App;
   let send: jest.SpyInstance<
@@ -96,7 +103,10 @@ describe('Notification delivery diagnostics (HTTP)', () => {
           sentCount: 0,
           failedCount: 1,
           failureReasons: [reason],
-        });
+        })
+        .expect((response: Response) =>
+          assertResponse('sendRemoteTestPush', response),
+        );
       expect(log).toHaveBeenCalledWith('Push dispatch failed.');
       expect(JSON.stringify(log.mock.calls)).not.toContain(privateDetails);
       expect(JSON.stringify(log.mock.calls)).not.toContain(
@@ -135,7 +145,10 @@ describe('Notification delivery diagnostics (HTTP)', () => {
         sentCount: 0,
         failedCount: 1,
         failureReasons: ['Push delivery failed.'],
-      });
+      })
+      .expect((response: Response) =>
+        assertResponse('sendRemoteTestPush', response),
+      );
     expect(stringify).not.toHaveBeenCalled();
     expect(testApp.prisma.userPushToken.updateMany).not.toHaveBeenCalled();
   });
@@ -160,8 +173,41 @@ describe('Notification delivery diagnostics (HTTP)', () => {
         sentCount: 1,
         failedCount: 0,
         failureReasons: [],
-      });
+      })
+      .expect((response: Response) =>
+        assertResponse('sendRemoteTestPush', response),
+      );
     expect(send).toHaveBeenCalledTimes(1);
+    expect(testApp.prisma.userPushToken.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('returns a documented partial delivery result with HTTP 201', async () => {
+    testApp.prisma.userPushToken.findMany.mockResolvedValueOnce([
+      {
+        deviceId: 'first-device',
+        pushToken: NOTIFICATIONS_TEST_TOKEN.pushToken,
+      },
+      {
+        deviceId: 'second-device',
+        pushToken: `${NOTIFICATIONS_TEST_TOKEN.pushToken}-other`,
+      },
+    ]);
+    send
+      .mockResolvedValueOnce('test-message-id')
+      .mockRejectedValueOnce({ code: 'messaging/server-unavailable' });
+    await request(testApp.server)
+      .post(path)
+      .set('Authorization', testApp.authorization)
+      .send({ title: null, body: null })
+      .expect(201, {
+        tokenCount: 2,
+        sentCount: 1,
+        failedCount: 1,
+        failureReasons: ['Push delivery failed.'],
+      })
+      .expect((response: Response) =>
+        assertResponse('sendRemoteTestPush', response),
+      );
     expect(testApp.prisma.userPushToken.updateMany).not.toHaveBeenCalled();
   });
 

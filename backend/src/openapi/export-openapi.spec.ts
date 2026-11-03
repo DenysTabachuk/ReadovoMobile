@@ -8,6 +8,7 @@ import { TranslationsController } from '../translations/translations.controller'
 import { TranslationsService } from '../translations/translations.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '../auth/jwt.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { exportOpenApi } from './export-openapi';
 
 type HttpServiceAccessor = {
@@ -65,6 +66,11 @@ describe('Offline OpenAPI export', () => {
       '/mascot/profile/me/items/{itemId}/equip',
       '/mascot/profile/me/slots',
       '/mascot/profile/me/slots/{slot}',
+      '/notifications/learning-reminders/dispatch',
+      '/notifications/learning-reminders/dispatch/today/me',
+      '/notifications/preferences/me',
+      '/notifications/push-token/me',
+      '/notifications/test-push/me',
       '/quiz-sessions/{sessionId}/answers',
       '/quiz-sessions/{sessionId}/complete',
       '/quiz-sessions/{sessionId}/retake',
@@ -100,6 +106,10 @@ describe('Offline OpenAPI export', () => {
       false,
     );
     expect(app.get<PrismaService>(PrismaService)).toBeInstanceOf(PrismaService);
+    const notificationsService =
+      app.get<NotificationsService>(NotificationsService);
+    expect(Object.hasOwn(notificationsService, 'messaging')).toBe(false);
+    expect(Object.hasOwn(notificationsService, 'dispatchTimer')).toBe(false);
   });
 
   it(
@@ -119,6 +129,7 @@ describe('Offline OpenAPI export', () => {
       Server.prototype.listen = function () { throw new Error('Unexpected HTTP listener'); };
       Socket.prototype.connect = function () { throw new Error('Unexpected network connection'); };
       globalThis.fetch = function () { throw new Error('Unexpected fetch request'); };
+      globalThis.setInterval = function () { throw new Error('Unexpected background interval'); };
       function rejectEnvironmentFile(file) {
         const name = basename(String(file));
         if (name === '.env' || name.startsWith('.env.')) throw new Error('Unexpected environment file read');
@@ -138,10 +149,16 @@ describe('Offline OpenAPI export', () => {
         rejectEnvironmentFile(file);
         return readFileAsync.call(this, file, ...args);
       };
-      const secretNames = new Set(['DATABASE_URL', 'GOOGLE_TRANSLATE_API_KEY', 'GROQ_API_KEY', 'JWT_SECRET']);
+      const secretNames = new Set(['DATABASE_URL', 'GOOGLE_TRANSLATE_API_KEY', 'GROQ_API_KEY', 'JWT_SECRET',
+        'FIREBASE_SERVICE_ACCOUNT_JSON', 'FIREBASE_SERVICE_ACCOUNT_PATH', 'FIREBASE_PROJECT_ID',
+        'FIREBASE_CLIENT_EMAIL', 'FIREBASE_PRIVATE_KEY', 'GOOGLE_APPLICATION_CREDENTIALS']);
+      const forbiddenSecretReads = [];
       process.env = new Proxy(process.env, {
         get(target, key) {
-          if (secretNames.has(key)) throw new Error('Unexpected secret read: ' + key);
+          if (secretNames.has(key)) {
+            forbiddenSecretReads.push(String(key));
+            throw new Error('Unexpected secret read: ' + key);
+          }
           return Reflect.get(target, key);
         },
       });
@@ -150,7 +167,10 @@ describe('Offline OpenAPI export', () => {
         experimentalResolver: true,
       });
       const { exportOpenApi } = require(${JSON.stringify(resolve(__dirname, 'export-openapi.ts'))});
-      exportOpenApi().then(document => process.stdout.write(JSON.stringify(document)))
+      exportOpenApi().then(document => {
+        if (forbiddenSecretReads.length) throw new Error('Secret reads were attempted: ' + forbiddenSecretReads.join(', '));
+        process.stdout.write(JSON.stringify(document));
+      })
         .catch(error => { console.error(error.message); process.exitCode = 1; });
     `;
       const result = spawnSync(process.execPath, ['-e', script], {
