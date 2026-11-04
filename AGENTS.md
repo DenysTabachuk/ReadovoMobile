@@ -3,6 +3,8 @@
 - Before changing `frontend/**`, read [frontend/AGENTS.md](frontend/AGENTS.md),
   including when the session starts from the repository root. Read the linked
   convention sections relevant to the task.
+- Before changing HTTP endpoints, request/response DTOs, Swagger metadata or
+  frontend API transport types, read [docs/openapi-contract.md](docs/openapi-contract.md).
 - For frontend mutations, put screen effects in per-call `mutate` callbacks so
   unmounting drops them. Keep cache work in data hooks; see the data-layer rules
   in [frontend/AGENTS.md](frontend/AGENTS.md) for session safety and promise limits.
@@ -63,6 +65,29 @@
 - Apply this rule to new and touched implementation within the task scope;
   do not perform unrelated constant-extraction sweeps. Frontend theme/token and
   StyleSheet guidance remains in the frontend convention guide.
+
+## OpenAPI contracts and generated transport types
+
+- Backend DTOs, validation and Swagger metadata own the HTTP contract. When an
+  API changes, update its inputs, serialized responses, statuses, security and
+  reachable errors together with the affected frontend consumers and fixtures.
+- After a contract change, run `npm run contracts:generate`, then
+  `npm run contracts:check` from the repository root. Keep source changes and both
+  artifacts (`backend/openapi/openapi.json` and
+  `frontend/api/generated/transport.d.ts`) together in the same review/commit.
+  Preserve the user's staging choices; do not stage files automatically.
+- Never edit generated artifacts manually. Frontend consumers use direct named
+  exports from the generated transport types instead of duplicating request or
+  response fields. Feature re-exports, aliases and UI/domain adaptations may
+  compose those types; frontend production code must not import backend DTOs.
+- Add or update relevant HTTP contract tests to verify actual serialization,
+  nullable/optional fields, statuses, security and errors against the documented
+  contract. Generated types and HTTP-client generics do not validate received JSON;
+  preserve runtime decoders and auth/session safeguards.
+- Keep export deterministic and offline: no HTTP listener, database connection,
+  environment-file/secret reads, external services or background jobs. When adding
+  a module or changing export composition, verify route coverage, export isolation
+  and runtime Swagger parity with the relevant tests described in the guide.
 
 ## Backend module ownership and validation
 
@@ -215,6 +240,8 @@ Run from the repository root:
 - Frontend checks: `npm run ci:frontend`.
 - Backend checks: `npm run ci:backend`.
 - TypeScript for both projects: `npm run typecheck`.
+- Generate OpenAPI and frontend transport types: `npm run contracts:generate`.
+- Check contract freshness without writing files: `npm run contracts:check`.
 - Instruction/documentation formatting: `npm --prefix frontend run docs:check`.
 - Pre-commit staged checks: `npm run check:staged`.
 
