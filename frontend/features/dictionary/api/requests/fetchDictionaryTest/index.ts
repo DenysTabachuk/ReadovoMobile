@@ -1,6 +1,6 @@
 import { api } from '@/features/auth';
 
-import { type DictionaryTest } from '../../types';
+import { type DictionaryTest } from '@/api/generated/transport';
 
 const DICTIONARY_TEST_QUESTION_LIMIT = 10;
 

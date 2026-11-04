@@ -1,0 +1,2 @@
+# Keep documentation compatible with Prettier's LF default on Windows and Linux.
+*.md text eol=lf

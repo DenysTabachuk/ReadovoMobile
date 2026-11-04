@@ -1,6 +1,6 @@
 import { api } from '@/features/auth';
 
-import { type AchievementsProfileResponse } from '../../../types';
+import { type AchievementsProfileResponse } from '@/api/generated/transport';
 
 export async function getAchievementsProfile(): Promise<AchievementsProfileResponse> {
   const response = await api.get<AchievementsProfileResponse>(

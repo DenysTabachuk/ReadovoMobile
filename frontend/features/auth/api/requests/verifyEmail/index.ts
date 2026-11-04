@@ -1,10 +1,16 @@
-import { type VerifyEmailRequest, type VerifyEmailResponse } from '../../types';
+import {
+  type VerifyAuthCodeRequest as VerifyEmailRequest,
+  type AuthSessionResponse as VerifyEmailResponse,
+} from '@/api/generated/transport';
 import { postAuthRequest } from '../../utils/postAuthRequest';
 
 export async function verifyEmail(
   request: VerifyEmailRequest,
 ): Promise<VerifyEmailResponse> {
-  const response = await postAuthRequest('verify-email', request);
+  const response = await postAuthRequest<VerifyEmailResponse>(
+    'verify-email',
+    request,
+  );
 
-  return response.data as VerifyEmailResponse;
+  return response.data;
 }

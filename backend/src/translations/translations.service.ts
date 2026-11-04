@@ -6,10 +6,16 @@ import { ApiException } from '../common/errors/api-exception';
 import { COMMON_ERRORS } from '../common/errors/common-errors';
 import { GoogleTranslateResponseSchema } from './google-translate-response.schema';
 import { TRANSLATIONS_ERRORS } from './translations-errors';
-import { type TranslateWordResponse } from './types';
+import {
+  type TranslateWordResponse,
+  type TranslationSourceLanguage,
+  type TranslationTargetLanguage,
+} from './types';
+import {
+  TRANSLATION_DEFAULT_SOURCE_LANGUAGE,
+  TRANSLATION_DEFAULT_TARGET_LANGUAGE,
+} from './constants';
 
-const DEFAULT_SOURCE_LANGUAGE = 'en';
-const DEFAULT_TARGET_LANGUAGE = 'uk';
 const GOOGLE_TRANSLATE_API_URL =
   'https://translation.googleapis.com/language/translate/v2';
 const CONTEXT_WORD_TAG = 'span';
@@ -23,13 +29,15 @@ export class TranslationsService {
   private readonly baseWordCache = new Map<string, string>();
 
   async translateWord(params: {
-    context?: string;
-    sourceLanguage?: string;
-    targetLanguage?: string;
+    context?: string | null;
+    sourceLanguage?: TranslationSourceLanguage;
+    targetLanguage?: TranslationTargetLanguage;
     word: string;
   }): Promise<TranslateWordResponse> {
-    const sourceLanguage = params.sourceLanguage ?? DEFAULT_SOURCE_LANGUAGE;
-    const targetLanguage = params.targetLanguage ?? DEFAULT_TARGET_LANGUAGE;
+    const sourceLanguage =
+      params.sourceLanguage ?? TRANSLATION_DEFAULT_SOURCE_LANGUAGE;
+    const targetLanguage =
+      params.targetLanguage ?? TRANSLATION_DEFAULT_TARGET_LANGUAGE;
     const baseCacheKey = this.createBaseCacheKey(
       params.word,
       sourceLanguage,

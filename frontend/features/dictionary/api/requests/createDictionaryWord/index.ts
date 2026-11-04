@@ -3,7 +3,7 @@ import { api } from '@/features/auth';
 import {
   type CreateDictionaryWordRequest,
   type DictionaryWord,
-} from '../../types';
+} from '@/api/generated/transport';
 
 export async function createDictionaryWord(
   request: CreateDictionaryWordRequest,

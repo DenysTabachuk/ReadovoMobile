@@ -1,9 +1,9 @@
 import { api } from '@/features/auth';
 
-import type { RecentArticle } from '../../../recentArticles/types';
+import type { UserRecentArticle } from '@/api/generated/transport';
 
-export async function readRecentArticles(): Promise<RecentArticle[]> {
-  const response = await api.get<RecentArticle[]>(
+export async function readRecentArticles(): Promise<UserRecentArticle[]> {
+  const response = await api.get<UserRecentArticle[]>(
     `/api/users/me/articles/recent`,
   );
 

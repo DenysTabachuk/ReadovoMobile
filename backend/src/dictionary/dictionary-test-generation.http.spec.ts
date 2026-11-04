@@ -1,3 +1,4 @@
+import { createDictionaryResponseAssertion } from './testing/create-dictionary-response-assertion';
 import { Logger } from '@nestjs/common';
 import request from 'supertest';
 
@@ -39,6 +40,13 @@ describe('Dictionary test generation (HTTP)', () => {
   let testApp: DictionaryHttpTestApp;
   let previousApiKey: string | undefined;
 
+  let assertResponse: Awaited<
+    ReturnType<typeof createDictionaryResponseAssertion>
+  >;
+  beforeAll(async () => {
+    assertResponse = await createDictionaryResponseAssertion();
+  });
+
   beforeEach(async () => {
     previousApiKey = process.env.GROQ_API_KEY;
     process.env.GROQ_API_KEY = 'dictionary-test-key';
@@ -57,6 +65,7 @@ describe('Dictionary test generation (HTTP)', () => {
     await request(testApp.server)
       .get(path)
       .set('Authorization', testApp.authorization)
+      .expect((response) => assertResponse('getDictionaryTest', response))
       .expect(400, {
         statusCode: 400,
         code: 'DICTIONARY_TEST_NO_WORDS',
@@ -71,6 +80,7 @@ describe('Dictionary test generation (HTTP)', () => {
     await request(testApp.server)
       .get(path)
       .set('Authorization', testApp.authorization)
+      .expect((response) => assertResponse('getDictionaryTest', response))
       .expect(400, {
         statusCode: 400,
         code: 'DICTIONARY_TEST_NO_REVIEW_CANDIDATES',
@@ -89,6 +99,7 @@ describe('Dictionary test generation (HTTP)', () => {
       const response = await request(testApp.server)
         .get(`${path}?limit=${limit}`)
         .set('Authorization', testApp.authorization)
+        .expect((response) => assertResponse('getDictionaryTest', response))
         .expect(400);
       expect(response.body).toMatchObject({
         statusCode: 400,
@@ -111,6 +122,7 @@ describe('Dictionary test generation (HTTP)', () => {
       await request(testApp.server)
         .get(path)
         .set('Authorization', testApp.authorization)
+        .expect((response) => assertResponse('getDictionaryTest', response))
         .expect(500, {
           statusCode: 500,
           code: 'INTERNAL_ERROR',
@@ -129,6 +141,7 @@ describe('Dictionary test generation (HTTP)', () => {
       await request(testApp.server)
         .get(path)
         .set('Authorization', testApp.authorization)
+        .expect((response) => assertResponse('getDictionaryTest', response))
         .expect(502, {
           statusCode: 502,
           code: 'DICTIONARY_TEST_GENERATION_FAILED',
@@ -208,6 +221,7 @@ describe('Dictionary test generation (HTTP)', () => {
         await request(testApp.server)
           .get(path)
           .set('Authorization', testApp.authorization)
+          .expect((response) => assertResponse('getDictionaryTest', response))
           .expect(502, { statusCode: 502, code, message });
       },
     );
@@ -232,6 +246,7 @@ describe('Dictionary test generation (HTTP)', () => {
       await request(testApp.server)
         .get(path)
         .set('Authorization', testApp.authorization)
+        .expect((response) => assertResponse('getDictionaryTest', response))
         .expect(502, {
           statusCode: 502,
           code: 'DICTIONARY_TEST_GENERATION_INCOMPLETE',
@@ -265,6 +280,7 @@ describe('Dictionary test generation (HTTP)', () => {
       const response = await request(testApp.server)
         .get(`${path}?limit=1`)
         .set('Authorization', testApp.authorization)
+        .expect((response) => assertResponse('getDictionaryTest', response))
         .expect(200);
       expect(response.body).not.toHaveProperty('code');
       expect(response.body).toHaveProperty(
@@ -347,6 +363,7 @@ describe('Dictionary test generation (HTTP)', () => {
     const response = await request(testApp.server)
       .get(`${path}?limit=3`)
       .set('Authorization', testApp.authorization)
+      .expect((response) => assertResponse('getDictionaryTest', response))
       .expect(200);
     expect(response.body).toHaveProperty('questions.length', 3);
     expect(response.body).toHaveProperty(
@@ -380,6 +397,7 @@ describe('Dictionary test generation (HTTP)', () => {
     await request(testApp.server)
       .get(path)
       .set('Authorization', testApp.authorization)
+      .expect((response) => assertResponse('getDictionaryTest', response))
       .expect(500, {
         statusCode: 500,
         code: 'INTERNAL_ERROR',

@@ -1,11 +1,14 @@
 import { httpClient } from '@/api/httpClient';
 import { API_BASE_URL } from '@/api';
 
-import type { ArticleAdaptationsByArticleId } from '../../types';
+import type {
+  ArticleAdaptationsByArticleId,
+  ArticleAdaptationsQuery,
+} from '@/api/generated/transport';
 
 export async function fetchArticleAdaptations(
-  articleIds: number[],
-  transformationType?: 'adaptation' | 'summary' | 'all',
+  articleIds: ArticleAdaptationsQuery['articleIds'],
+  transformationType?: ArticleAdaptationsQuery['transformationType'],
 ): Promise<ArticleAdaptationsByArticleId> {
   if (articleIds.length === 0) {
     return {};
@@ -19,9 +22,9 @@ export async function fetchArticleAdaptations(
     searchParams.set('transformationType', transformationType);
   }
 
-  const response = await httpClient(
+  const response = await httpClient<ArticleAdaptationsByArticleId>(
     `${API_BASE_URL}/api/articles/adaptations?${searchParams.toString()}`,
   );
 
-  return response.data as ArticleAdaptationsByArticleId;
+  return response.data;
 }

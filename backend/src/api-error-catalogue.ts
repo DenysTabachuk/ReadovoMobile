@@ -4,7 +4,7 @@ import { AUTH_ERRORS } from './auth/auth-errors';
 import { COMMON_ERRORS } from './common/errors/common-errors';
 import { DICTIONARY_ERRORS } from './dictionary/dictionary-errors';
 import { MASCOT_ERRORS } from './mascot/mascot-errors';
-import { NOTIFICATIONS_ERRORS } from './notifications/notifications-errors';
+import { NOTIFICATIONS_ERRORS } from './notifications/diagnostics/notifications-errors';
 import { STREAK_ERRORS } from './streak/streak-errors';
 import { TRANSLATIONS_ERRORS } from './translations/translations-errors';
 import { QUIZ_ERRORS } from './quiz/quiz-errors';

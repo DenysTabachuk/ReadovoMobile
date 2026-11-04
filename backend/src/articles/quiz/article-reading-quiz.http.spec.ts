@@ -1,3 +1,4 @@
+import { createArticlesResponseAssertion } from '../testing/create-articles-response-assertion';
 import { Logger } from '@nestjs/common';
 import request from 'supertest';
 import { z } from 'zod';
@@ -30,6 +31,12 @@ const validOutput: ReadingQuizOutput = {
 describe('Article reading quiz contract (HTTP)', () => {
   let testApp: ArticleQuizHttpTestApp<ReadingQuizOutput>;
   let previousKey: string | undefined;
+  let assertResponse: Awaited<
+    ReturnType<typeof createArticlesResponseAssertion>
+  >;
+  beforeAll(async () => {
+    assertResponse = await createArticlesResponseAssertion();
+  });
   beforeEach(async () => {
     previousKey = process.env.GROQ_API_KEY;
     process.env.GROQ_API_KEY = 'test-key';
@@ -42,6 +49,49 @@ describe('Article reading quiz contract (HTTP)', () => {
     jest.restoreAllMocks();
   });
 
+  it.each([
+    {
+      name: 'missing',
+      authorization: '',
+      code: 'AUTH_AUTHENTICATION_REQUIRED',
+    },
+    {
+      name: 'invalid',
+      authorization: 'Bearer invalid',
+      code: 'AUTH_ACCESS_TOKEN_INVALID',
+    },
+  ])(
+    'rejects $name authentication before generation',
+    async ({ authorization, code }) => {
+      const response = await request(testApp.server)
+        .post(path)
+        .set('Authorization', authorization)
+        .send({})
+        .expect(401)
+        .expect(assertResponse);
+      expect(response.body).toMatchObject({ statusCode: 401, code });
+      expect(testApp.provider.completeStructured).not.toHaveBeenCalled();
+    },
+  );
+
+  it('rejects expired authentication before generation', async () => {
+    const EXPIRED_TOKEN_OFFSET_MS = 60 * 60 * 1000;
+    jest
+      .spyOn(Date, 'now')
+      .mockReturnValue(Date.now() + EXPIRED_TOKEN_OFFSET_MS);
+    const response = await request(testApp.server)
+      .post(path)
+      .set('Authorization', testApp.authorization)
+      .send({})
+      .expect(401)
+      .expect(assertResponse);
+    expect(response.body).toMatchObject({
+      statusCode: 401,
+      code: 'AUTH_ACCESS_TOKEN_EXPIRED',
+    });
+    expect(testApp.provider.completeStructured).not.toHaveBeenCalled();
+  });
+
   it('creates an authenticated session without exposing its answer key', async () => {
     testApp.provider.completeStructured.mockResolvedValueOnce(validOutput);
     const createSession = jest.spyOn(testApp.app.get(QuizService), 'create');
@@ -49,6 +99,7 @@ describe('Article reading quiz contract (HTTP)', () => {
       .post(path)
       .set('Authorization', testApp.authorization)
       .send({ text: ' Space is vast. ', level: ' b1 ', targetLength: ' LONG ' })
+      .expect(assertResponse)
       .expect(201);
     const { questions } = z
       .object({
@@ -116,6 +167,7 @@ describe('Article reading quiz contract (HTTP)', () => {
       .post(path)
       .set('Authorization', testApp.authorization)
       .send({ text: 'Space is vast.', level: 'A2', targetLength: 'short' })
+      .expect(assertResponse)
       .expect(201);
     expect(testApp.provider.completeStructured).toHaveBeenCalledTimes(2);
   });
@@ -126,6 +178,7 @@ describe('Article reading quiz contract (HTTP)', () => {
       .post(path)
       .set('Authorization', testApp.authorization)
       .send({ text: 'Space is vast.', level: 'A2', targetLength: 'short' })
+      .expect(assertResponse)
       .expect(500, {
         statusCode: 500,
         code: 'INTERNAL_ERROR',
@@ -146,6 +199,7 @@ describe('Article reading quiz contract (HTTP)', () => {
         .post(path)
         .set('Authorization', testApp.authorization)
         .send({ text: 'Space is vast.', level: 'A2', targetLength: 'short' })
+        .expect(assertResponse)
         .expect(502, {
           statusCode: 502,
           code: 'ARTICLES_QUIZ_GENERATION_FAILED',
@@ -164,6 +218,7 @@ describe('Article reading quiz contract (HTTP)', () => {
       .post(path)
       .set('Authorization', testApp.authorization)
       .send({ text: 'Space is vast.', level: 'A2', targetLength: 'short' })
+      .expect(assertResponse)
       .expect(502, {
         statusCode: 502,
         code: 'ARTICLES_QUIZ_GENERATION_FAILED',
@@ -187,6 +242,7 @@ describe('Article reading quiz contract (HTTP)', () => {
       .post(path)
       .set('Authorization', testApp.authorization)
       .send(body)
+      .expect(assertResponse)
       .expect(400);
     expect(response.body).toMatchObject({
       statusCode: 400,

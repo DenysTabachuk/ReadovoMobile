@@ -1,3 +1,4 @@
+import { createArticlesResponseAssertion } from '../testing/create-articles-response-assertion';
 import request from 'supertest';
 
 import {
@@ -7,6 +8,12 @@ import {
 
 describe('Wikipedia request and success contracts (HTTP)', () => {
   let testApp: WikipediaHttpTestApp;
+  let assertResponse: Awaited<
+    ReturnType<typeof createArticlesResponseAssertion>
+  >;
+  beforeAll(async () => {
+    assertResponse = await createArticlesResponseAssertion();
+  });
   beforeEach(async () => {
     testApp = await createWikipediaHttpApp();
   });
@@ -19,6 +26,7 @@ describe('Wikipedia request and success contracts (HTTP)', () => {
     async (path) => {
       await request(testApp.server)
         .get(path)
+        .expect(assertResponse)
         .expect(200, [
           {
             extract: 'Space is vast.',
@@ -34,6 +42,7 @@ describe('Wikipedia request and success contracts (HTTP)', () => {
   it('keeps HTML detail parsing and its public payload', async () => {
     const response = await request(testApp.server)
       .get('/articles/42')
+      .expect(assertResponse)
       .expect(200);
     expect(response.body).toMatchObject({
       id: 42,
@@ -73,6 +82,7 @@ describe('Wikipedia request and success contracts (HTTP)', () => {
     testApp.provider.mockResolvedValueOnce(data);
     await request(testApp.server)
       .get('/articles?recommended=false')
+      .expect(assertResponse)
       .expect(200, []);
   });
 
@@ -83,7 +93,10 @@ describe('Wikipedia request and success contracts (HTTP)', () => {
     '/articles/invalid',
     '/articles/42?languageCode=uk',
   ])('validates %s before provider access', async (path) => {
-    const response = await request(testApp.server).get(path).expect(400);
+    const response = await request(testApp.server)
+      .get(path)
+      .expect(assertResponse)
+      .expect(400);
     expect(response.body).toMatchObject({
       statusCode: 400,
       code: 'VALIDATION_FAILED',
@@ -91,14 +104,31 @@ describe('Wikipedia request and success contracts (HTTP)', () => {
     expect(testApp.provider).not.toHaveBeenCalled();
   });
 
+  it('preserves comma-separated query normalization and rejects repeated string arrays', async () => {
+    await request(testApp.server)
+      .get('/articles?recommended=false&excludeIds=1,1,2')
+      .expect(200)
+      .expect(assertResponse);
+    testApp.provider.mockClear();
+    const response = await request(testApp.server)
+      .get('/articles?excludeIds=1&excludeIds=2')
+      .expect(400)
+      .expect(assertResponse);
+    expect(response.body).toMatchObject({ code: 'VALIDATION_FAILED' });
+    expect(testApp.provider).not.toHaveBeenCalled();
+  });
+
   it('hides persistence failures while attaching available adaptations', async () => {
     testApp.prisma.articleSimplification.findMany.mockRejectedValueOnce(
       new Error('private database error'),
     );
-    await request(testApp.server).get('/articles/random').expect(500, {
-      statusCode: 500,
-      code: 'INTERNAL_ERROR',
-      message: 'Internal server error.',
-    });
+    await request(testApp.server)
+      .get('/articles/random')
+      .expect(assertResponse)
+      .expect(500, {
+        statusCode: 500,
+        code: 'INTERNAL_ERROR',
+        message: 'Internal server error.',
+      });
   });
 });

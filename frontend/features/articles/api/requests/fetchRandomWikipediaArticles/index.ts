@@ -1,5 +1,5 @@
 import { DEFAULT_ARTICLE_LIMIT } from '../../constants';
-import type { WikipediaArticle } from '../../types';
+import type { WikipediaArticle } from '@/api/generated/transport';
 import { fetchWikipediaArticles } from '../fetchWikipediaArticles';
 
 export async function fetchRandomWikipediaArticles(

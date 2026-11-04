@@ -1,12 +1,14 @@
 import { api } from '@/features/auth';
 
-import type { SavedArticle } from '../../../savedArticles/types';
-import type { WikipediaArticle } from '../../types';
+import type {
+  UserSavedArticle,
+  SaveArticleRequest,
+} from '@/api/generated/transport';
 
 export async function saveArticleForLater(
-  article: WikipediaArticle,
-): Promise<SavedArticle[]> {
-  const response = await api.post<SavedArticle[]>(
+  article: SaveArticleRequest,
+): Promise<UserSavedArticle[]> {
+  const response = await api.post<UserSavedArticle[]>(
     `/api/users/me/articles/saved`,
     article,
   );

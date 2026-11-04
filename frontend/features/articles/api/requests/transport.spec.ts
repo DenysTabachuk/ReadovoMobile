@@ -18,11 +18,11 @@ it('preserves omitted defaults, trimmed search, comma-separated IDs and explicit
   );
   expect(adapter.mock.calls[0][0].headers.has('Authorization')).toBe(false);
 });
-it('preserves language parameters and encoded adaptations with deduplicated IDs', async () => {
+it('preserves supported language parameters and encoded adaptations with deduplicated IDs', async () => {
   const adapter = mockHttpAdapter().mockResolvedValue(createHttpResponse({}));
-  await fetchWikipediaArticleDetail(42, 'uk');
+  await fetchWikipediaArticleDetail(42, 'en');
   expect(adapter.mock.calls[0][0].url).toBe(
-    'https://api.example.test/articles/42?languageCode=uk',
+    'https://api.example.test/articles/42?languageCode=en',
   );
   await fetchArticleAdaptations([42, 42, 7], 'summary');
   expect(adapter.mock.calls[1][0].url).toBe(

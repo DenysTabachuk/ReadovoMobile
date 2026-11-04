@@ -1,3 +1,5 @@
+import type { SubmitQuizAnswerResponse } from '@/api/generated/transport';
+
 export type QuizQuestionType =
   'single_choice' | 'multiple_choice' | 'true_false';
 
@@ -15,16 +17,13 @@ export type QuizQuestion = {
   type: QuizQuestionType;
 };
 
-export type QuizSubmitResult = {
-  vocabularyWord?: {
-    term: string;
-    translation: string;
-    sourceExcerpt?: string;
-  };
-  correctOptionIds?: string[];
-  explanation?: string;
+// UI feedback can exist before a server answer and may include local display text.
+export type QuizSubmitResult = Pick<
+  SubmitQuizAnswerResponse,
+  'vocabularyWord' | 'explanation' | 'isCorrect'
+> & {
+  correctOptionIds?: SubmitQuizAnswerResponse['correctOptionIds'];
   feedbackText?: string;
-  isCorrect: boolean;
 };
 
 export type QuizSessionResult = {

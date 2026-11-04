@@ -45,6 +45,10 @@ jobs:
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: npm run typecheck
 
+      - name: OpenAPI freshness (backend installation only)
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: npm run openapi:check
+
       - name: ESLint
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: npm run lint
@@ -83,6 +87,10 @@ jobs:
       - name: TypeScript
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: npm run typecheck
+
+      - name: Transport type freshness (frontend installation only)
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: npm run api-types:check
 
       - name: ESLint
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}

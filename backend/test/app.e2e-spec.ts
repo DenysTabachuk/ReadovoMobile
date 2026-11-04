@@ -6,7 +6,7 @@ import { AppModule } from './../src/app.module';
 import { configureApiBoundaries } from './../src/common/configure-api-boundaries';
 import { DictionaryEmbeddingService } from './../src/dictionary/dictionary-embedding.service';
 
-describe('AppController (e2e)', () => {
+describe('Application HTTP boundaries (e2e)', () => {
   let app: INestApplication<App>;
 
   beforeEach(async () => {
@@ -22,11 +22,12 @@ describe('AppController (e2e)', () => {
     await app.init();
   });
 
-  it('/ (GET)', () => {
-    return request(app.getHttpServer())
-      .get('/')
-      .expect(200)
-      .expect('Hello World!');
+  it('returns the standard route-not-found response for the removed root route', () => {
+    return request(app.getHttpServer()).get('/').expect(404, {
+      statusCode: 404,
+      code: 'ROUTE_NOT_FOUND',
+      message: 'Route not found.',
+    });
   });
 
   it('rejects invalid and unknown request properties globally', async () => {

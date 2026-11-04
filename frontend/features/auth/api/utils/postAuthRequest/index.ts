@@ -10,16 +10,17 @@ import { API_BASE_URL } from '@/api';
  * @param path - Endpoint suffix relative to /auth/, without a leading slash.
  * @param body - JSON-serializable request body.
  * @returns The parsed successful response; HTTP errors reject for endpoint-specific mapping.
- *   Serialization and transport failures propagate.
+ *   Serialization and transport failures propagate. TResponse describes JSON at
+ *   compile time only; existing runtime decoders remain responsible for validation.
  * @example
  * const response = await postAuthRequest('login', { email: 'reader@example.com', password: 'example-password' });
  * // => the server's status and parsed data, without credentials
  */
-export function postAuthRequest(
+export function postAuthRequest<TResponse = unknown>(
   path: string,
   body: unknown,
-): Promise<AxiosResponse<unknown>> {
-  return httpClient(`${API_BASE_URL}/auth/${path}`, {
+): Promise<AxiosResponse<TResponse>> {
+  return httpClient<TResponse>(`${API_BASE_URL}/auth/${path}`, {
     data: body,
     headers: {
       'Content-Type': 'application/json',

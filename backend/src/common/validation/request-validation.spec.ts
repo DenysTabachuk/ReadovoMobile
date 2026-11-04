@@ -4,20 +4,17 @@ import { type Type } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 
-import { CompleteQuizDto, SubmitQuizAnswerDto } from '../../quiz/dto';
-import {
-  ArticleDetailQueryDto,
-  ArticleListQueryDto,
-} from '../../articles/contracts/dto';
+import { CompleteQuizDto } from '../../quiz/dto/complete-quiz.dto';
+import { SubmitQuizAnswerDto } from '../../quiz/dto/submit-quiz-answer.dto';
+import { ArticleDetailQueryDto } from '../../articles/dto/article-detail-query.dto';
+import { ArticleListQueryDto } from '../../articles/dto/article-list-query.dto';
 import { RegisterUserDto } from '../../auth/dto/register-user.dto';
-import {
-  CreateDictionaryWordDto,
-  DictionaryWordParamsDto,
-} from '../../dictionary/dto';
-import { ClearMascotSlotParamsDto } from '../../mascot/dto';
-import { RegisterPushTokenDto } from '../../notifications/dto';
-import { ApplyStreakFreezeDto } from '../../streak/dto';
-import { TranslateWordDto } from '../../translations/dto';
+import { CreateDictionaryWordDto } from '../../dictionary/dto/create-dictionary-word.dto';
+import { DictionaryWordParamsDto } from '../../dictionary/dto/dictionary-word-params.dto';
+import { ClearMascotSlotParamsDto } from '../../mascot/dto/clear-mascot-slot-params.dto';
+import { RegisterPushTokenDto } from '../../notifications/dto/register-push-token.dto';
+import { ApplyStreakFreezeDto } from '../../streak/dto/apply-streak-freeze.dto';
+import { TranslateWordDto } from '../../translations/dto/translate-word.dto';
 
 describe('HTTP request DTO validation', () => {
   it('normalizes a valid registration request', async () => {

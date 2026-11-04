@@ -5,7 +5,7 @@ import { DEFAULT_ARTICLE_LIMIT } from '../../constants';
 import type {
   FetchWikipediaArticlesParams,
   WikipediaArticle,
-} from '../../types';
+} from '@/api/generated/transport';
 
 export async function fetchWikipediaArticles(
   params: FetchWikipediaArticlesParams = {},
@@ -56,9 +56,9 @@ export async function fetchWikipediaArticles(
     searchParams.set('recommended', String(params.recommended));
   }
 
-  const response = await httpClient(
+  const response = await httpClient<WikipediaArticle[]>(
     `${API_BASE_URL}/articles?${searchParams.toString()}`,
   );
 
-  return response.data as WikipediaArticle[];
+  return response.data;
 }

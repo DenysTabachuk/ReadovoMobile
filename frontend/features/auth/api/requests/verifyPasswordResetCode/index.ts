@@ -1,13 +1,16 @@
 import {
-  type VerifyPasswordResetCodeRequest,
+  type VerifyAuthCodeRequest as VerifyPasswordResetCodeRequest,
   type VerifyPasswordResetCodeResponse,
-} from '../../types';
+} from '@/api/generated/transport';
 import { postAuthRequest } from '../../utils/postAuthRequest';
 
 export async function verifyPasswordResetCode(
   request: VerifyPasswordResetCodeRequest,
 ): Promise<VerifyPasswordResetCodeResponse> {
-  const response = await postAuthRequest('verify-password-reset-code', request);
+  const response = await postAuthRequest<VerifyPasswordResetCodeResponse>(
+    'verify-password-reset-code',
+    request,
+  );
 
-  return response.data as VerifyPasswordResetCodeResponse;
+  return response.data;
 }

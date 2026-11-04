@@ -1,3 +1,4 @@
+import { createDictionaryResponseAssertion } from './testing/create-dictionary-response-assertion';
 import request from 'supertest';
 
 import {
@@ -11,6 +12,13 @@ const path = '/api/dictionary/me/words';
 
 describe('Dictionary words (HTTP)', () => {
   let testApp: DictionaryHttpTestApp;
+
+  let assertResponse: Awaited<
+    ReturnType<typeof createDictionaryResponseAssertion>
+  >;
+  beforeAll(async () => {
+    assertResponse = await createDictionaryResponseAssertion();
+  });
 
   beforeEach(async () => {
     testApp = await createDictionaryHttpApp();
@@ -28,6 +36,7 @@ describe('Dictionary words (HTTP)', () => {
         translation: 'Translation',
         word: 'one two three four five six',
       })
+      .expect((response) => assertResponse('createDictionaryWord', response))
       .expect(400, {
         statusCode: 400,
         code: 'DICTIONARY_WORD_TOO_LONG',
@@ -41,6 +50,7 @@ describe('Dictionary words (HTTP)', () => {
       .post(path)
       .set('Authorization', testApp.authorization)
       .send({ context: 'Context', translation: 'Translation', word: 'example' })
+      .expect((response) => assertResponse('createDictionaryWord', response))
       .expect(400, {
         statusCode: 400,
         code: 'DICTIONARY_WORD_ALREADY_EXISTS',
@@ -61,6 +71,7 @@ describe('Dictionary words (HTTP)', () => {
         translation: ' Translation ',
         word: ' example ',
       })
+      .expect((response) => assertResponse('createDictionaryWord', response))
       .expect(201);
     expect(response.body).toMatchObject({
       context: 'Context',
@@ -79,6 +90,7 @@ describe('Dictionary words (HTTP)', () => {
       .post(path)
       .set('Authorization', testApp.authorization)
       .send({ context: 'Context', translation: 'Translation', word: 42 })
+      .expect((response) => assertResponse('createDictionaryWord', response))
       .expect(400);
     expect(response.body).toMatchObject({
       statusCode: 400,
@@ -92,6 +104,7 @@ describe('Dictionary words (HTTP)', () => {
     await request(testApp.server)
       .get(path)
       .set('Authorization', testApp.authorization)
+      .expect((response) => assertResponse('getDictionaryWords', response))
       .expect(200, []);
     expect(testApp.repository.findAll).toHaveBeenCalledWith(
       DICTIONARY_TEST_USER_ID,
@@ -102,6 +115,7 @@ describe('Dictionary words (HTTP)', () => {
     await request(testApp.server)
       .delete(`${path}/${DICTIONARY_TEST_WORD_ID}`)
       .set('Authorization', testApp.authorization)
+      .expect((response) => assertResponse('deleteDictionaryWord', response))
       .expect(404, {
         statusCode: 404,
         code: 'DICTIONARY_WORD_NOT_FOUND',
@@ -118,6 +132,7 @@ describe('Dictionary words (HTTP)', () => {
     await request(testApp.server)
       .delete(`${path}/${DICTIONARY_TEST_WORD_ID}`)
       .set('Authorization', testApp.authorization)
+      .expect((response) => assertResponse('deleteDictionaryWord', response))
       .expect(200, testApp.word);
     expect(testApp.repository.deleteById).toHaveBeenCalledWith(
       DICTIONARY_TEST_WORD_ID,
@@ -129,6 +144,7 @@ describe('Dictionary words (HTTP)', () => {
     const response = await request(testApp.server)
       .delete(`${path}/invalid`)
       .set('Authorization', testApp.authorization)
+      .expect((response) => assertResponse('deleteDictionaryWord', response))
       .expect(400);
     expect(response.body).toMatchObject({
       statusCode: 400,
@@ -146,6 +162,7 @@ describe('Dictionary words (HTTP)', () => {
       .post(path)
       .set('Authorization', testApp.authorization)
       .send({ context: 'Context', translation: 'Translation', word: 'example' })
+      .expect((response) => assertResponse('createDictionaryWord', response))
       .expect(500, {
         statusCode: 500,
         code: 'INTERNAL_ERROR',

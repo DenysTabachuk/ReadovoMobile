@@ -1,3 +1,4 @@
+import { createArticlesResponseAssertion } from '../testing/create-articles-response-assertion';
 import { AxiosError } from 'axios';
 import request from 'supertest';
 
@@ -9,6 +10,12 @@ import {
 
 describe('Wikipedia provider errors (HTTP)', () => {
   let testApp: WikipediaHttpTestApp;
+  let assertResponse: Awaited<
+    ReturnType<typeof createArticlesResponseAssertion>
+  >;
+  beforeAll(async () => {
+    assertResponse = await createArticlesResponseAssertion();
+  });
   beforeEach(async () => {
     testApp = await createWikipediaHttpApp();
   });
@@ -36,11 +43,14 @@ describe('Wikipedia provider errors (HTTP)', () => {
           ),
         ),
       );
-      await request(testApp.server).get(path).expect(502, {
-        statusCode: 502,
-        code: 'ARTICLES_WIKIPEDIA_REQUEST_FAILED',
-        message: 'Failed to fetch Wikipedia content.',
-      });
+      await request(testApp.server)
+        .get(path)
+        .expect(assertResponse)
+        .expect(502, {
+          statusCode: 502,
+          code: 'ARTICLES_WIKIPEDIA_REQUEST_FAILED',
+          message: 'Failed to fetch Wikipedia content.',
+        });
     },
   );
 
@@ -64,11 +74,14 @@ describe('Wikipedia provider errors (HTTP)', () => {
           ),
         ),
       );
-    await request(testApp.server).get('/articles/42').expect(502, {
-      statusCode: 502,
-      code: 'ARTICLES_WIKIPEDIA_HTML_REQUEST_FAILED',
-      message: 'Failed to fetch Wikipedia article HTML.',
-    });
+    await request(testApp.server)
+      .get('/articles/42')
+      .expect(assertResponse)
+      .expect(502, {
+        statusCode: 502,
+        code: 'ARTICLES_WIKIPEDIA_HTML_REQUEST_FAILED',
+        message: 'Failed to fetch Wikipedia article HTML.',
+      });
   });
 
   it.each(['/articles', '/articles?search=space&category=science'])(
@@ -93,11 +106,14 @@ describe('Wikipedia provider errors (HTTP)', () => {
             ),
           ),
         );
-      await request(testApp.server).get(path).expect(502, {
-        statusCode: 502,
-        code: 'ARTICLES_WIKIPEDIA_REQUEST_FAILED',
-        message: 'Failed to fetch Wikipedia content.',
-      });
+      await request(testApp.server)
+        .get(path)
+        .expect(assertResponse)
+        .expect(502, {
+          statusCode: 502,
+          code: 'ARTICLES_WIKIPEDIA_REQUEST_FAILED',
+          message: 'Failed to fetch Wikipedia content.',
+        });
     },
   );
 
@@ -109,11 +125,14 @@ describe('Wikipedia provider errors (HTTP)', () => {
     'maps absent article metadata %# to the existing 502 status',
     async (data) => {
       testApp.provider.mockResolvedValueOnce(data);
-      await request(testApp.server).get('/articles/42').expect(502, {
-        statusCode: 502,
-        code: 'ARTICLES_WIKIPEDIA_ARTICLE_UNAVAILABLE',
-        message: 'Wikipedia article is unavailable.',
-      });
+      await request(testApp.server)
+        .get('/articles/42')
+        .expect(assertResponse)
+        .expect(502, {
+          statusCode: 502,
+          code: 'ARTICLES_WIKIPEDIA_ARTICLE_UNAVAILABLE',
+          message: 'Wikipedia article is unavailable.',
+        });
       expect(testApp.provider).toHaveBeenCalledTimes(1);
     },
   );
@@ -129,6 +148,7 @@ describe('Wikipedia provider errors (HTTP)', () => {
       testApp.provider.mockResolvedValueOnce(data);
       await request(testApp.server)
         .get('/articles?recommended=false')
+        .expect(assertResponse)
         .expect(502, {
           statusCode: 502,
           code: 'ARTICLES_WIKIPEDIA_INVALID_RESPONSE',
@@ -143,11 +163,14 @@ describe('Wikipedia provider errors (HTTP)', () => {
       testApp.provider
         .mockResolvedValueOnce(WIKIPEDIA_TEST_RESPONSE)
         .mockResolvedValueOnce(html);
-      await request(testApp.server).get('/articles/42').expect(502, {
-        statusCode: 502,
-        code: 'ARTICLES_WIKIPEDIA_CONTENT_UNAVAILABLE',
-        message: 'Wikipedia article content is unavailable.',
-      });
+      await request(testApp.server)
+        .get('/articles/42')
+        .expect(assertResponse)
+        .expect(502, {
+          statusCode: 502,
+          code: 'ARTICLES_WIKIPEDIA_CONTENT_UNAVAILABLE',
+          message: 'Wikipedia article content is unavailable.',
+        });
     },
   );
 
@@ -155,19 +178,25 @@ describe('Wikipedia provider errors (HTTP)', () => {
     testApp.provider.mockRejectedValueOnce(
       new AxiosError('private timeout', 'ETIMEDOUT'),
     );
-    await request(testApp.server).get('/articles/random').expect(500, {
-      statusCode: 500,
-      code: 'INTERNAL_ERROR',
-      message: 'Internal server error.',
-    });
+    await request(testApp.server)
+      .get('/articles/random')
+      .expect(assertResponse)
+      .expect(500, {
+        statusCode: 500,
+        code: 'INTERNAL_ERROR',
+        message: 'Internal server error.',
+      });
   });
 
   it('preserves generic 500 for provider JSON rejected by the transport parser', async () => {
     testApp.provider.mockResolvedValueOnce('<html>private error page</html>');
-    await request(testApp.server).get('/articles/random').expect(500, {
-      statusCode: 500,
-      code: 'INTERNAL_ERROR',
-      message: 'Internal server error.',
-    });
+    await request(testApp.server)
+      .get('/articles/random')
+      .expect(assertResponse)
+      .expect(500, {
+        statusCode: 500,
+        code: 'INTERNAL_ERROR',
+        message: 'Internal server error.',
+      });
   });
 });

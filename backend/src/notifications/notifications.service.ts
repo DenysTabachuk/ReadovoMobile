@@ -17,11 +17,10 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dateOnlyToDate } from '../common/database/date-only';
 import { PrismaService } from '../prisma/prisma.service';
 import { resolveFcmFailure } from './resolve-fcm-failure';
-import type {
-  RegisterPushTokenDto,
-  SendTestPushDto,
-  UpsertLearningReminderPreferencesDto,
-} from './dto';
+import type { RegisterPushTokenDto } from './dto/register-push-token.dto';
+import type { SendTestPushDto } from './dto/send-test-push.dto';
+import type { UpsertLearningReminderPreferencesDto } from './dto/upsert-learning-reminder-preferences.dto';
+import { DEFAULT_LEARNING_REMINDER_TIME } from './constants';
 import type {
   LearningReminderDispatchResult,
   LearningReminderPreferences,
@@ -45,7 +44,6 @@ type PushSendResult = {
   shouldDeactivateToken: boolean;
 };
 
-const DEFAULT_LEARNING_REMINDER_TIME = '19:00';
 const DISPATCH_INTERVAL_MS = 60 * 1000;
 
 @Injectable()

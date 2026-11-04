@@ -6,6 +6,7 @@ import { dateOnlyToDate, dateToDateOnly } from '../common/database/date-only';
 import { Prisma } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { STREAK_ERRORS } from './streak-errors';
+import { STREAK_MILESTONES } from './constants';
 import {
   mapStreakHistory,
   mapStreakProfile,
@@ -16,7 +17,6 @@ import {
   type CalendarDayStatus,
   type CompleteStreakActivityResponse,
   type StreakAchievement,
-  type StreakAchievementMilestone,
   type StreakCalendarDay,
   type StreakCalendarMonthResponse,
   type StreakClaimedAchievementRecord,
@@ -31,16 +31,6 @@ const RESTORE_PRICE = 100;
 const FREEZE_TOKEN_PRICE = 100;
 const MAX_FREEZE_TOKENS = 3;
 const MAX_FREEZE_DAYS_PER_BREAK = 3;
-const STREAK_MILESTONES: readonly {
-  milestone: StreakAchievementMilestone;
-  rewardCoins: number;
-}[] = [
-  { milestone: 3, rewardCoins: 30 },
-  { milestone: 7, rewardCoins: 70 },
-  { milestone: 14, rewardCoins: 150 },
-  { milestone: 30, rewardCoins: 400 },
-  { milestone: 100, rewardCoins: 1500 },
-];
 
 type UserBalanceRow = { balance: number };
 

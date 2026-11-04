@@ -1,6 +1,6 @@
 import type {
   ArticleTextTransformationType,
-  SimplifyArticleLevel,
+  ArticleAdaptationSummary,
 } from '@/features/articles/api';
 
 /**
@@ -14,7 +14,7 @@ import type {
  * // => 'summary:A2'
  */
 export function createAdaptationKey(
-  level: SimplifyArticleLevel,
+  level: ArticleAdaptationSummary['level'],
   transformationType: ArticleTextTransformationType,
 ): string {
   return `${transformationType}:${level}`;

@@ -8,6 +8,7 @@ import { UserAuthGuard } from '../../auth/user-auth.guard';
 import { configureApiBoundaries } from '../../common/configure-api-boundaries';
 import { PrismaService } from '../../prisma/prisma.service';
 import { NotificationsController } from '../notifications.controller';
+import { NotificationsDiagnosticsController } from '../diagnostics/notifications-diagnostics.controller';
 import { NotificationsService } from '../notifications.service';
 import { type LearningReminderPreferences } from '../types';
 
@@ -84,7 +85,7 @@ export async function createNotificationsHttpApp(firebaseApp?: App) {
     },
   };
   const module = await Test.createTestingModule({
-    controllers: [NotificationsController],
+    controllers: [NotificationsController, NotificationsDiagnosticsController],
     providers: [
       NotificationsService,
       JwtService,

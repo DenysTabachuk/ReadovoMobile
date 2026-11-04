@@ -1,5 +1,7 @@
 {
   "scripts": {
+    "contracts:generate": "npm --prefix backend run openapi:generate && npm --prefix frontend run api-types:generate",
+    "contracts:check": "npm --prefix backend run openapi:check && npm --prefix frontend run api-types:check",
     "prepare": "node scripts/setup-git.cjs && husky",
     "typecheck": "npm run typecheck:backend && npm run typecheck:frontend",
     "typecheck:backend": "npm --prefix backend run typecheck",

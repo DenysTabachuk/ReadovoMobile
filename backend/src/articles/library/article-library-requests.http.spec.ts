@@ -1,3 +1,4 @@
+import { createArticlesResponseAssertion } from '../testing/create-articles-response-assertion';
 import request from 'supertest';
 
 import {
@@ -11,6 +12,12 @@ const basePath = `/api/users/me/articles`;
 
 describe('Article library request and success contracts (HTTP)', () => {
   let testApp: ArticleLibraryHttpTestApp;
+  let assertResponse: Awaited<
+    ReturnType<typeof createArticlesResponseAssertion>
+  >;
+  beforeAll(async () => {
+    assertResponse = await createArticlesResponseAssertion();
+  });
   beforeEach(async () => {
     testApp = await createArticleLibraryHttpApp();
   });
@@ -24,6 +31,7 @@ describe('Article library request and success contracts (HTTP)', () => {
       await request(testApp.server)
         .get(`${basePath}/${suffix}`)
         .set('Authorization', testApp.authorization)
+        .expect(assertResponse)
         .expect(200, []);
     },
   );
@@ -32,6 +40,7 @@ describe('Article library request and success contracts (HTTP)', () => {
     await request(testApp.server)
       .delete(`${basePath}/saved/42`)
       .set('Authorization', testApp.authorization)
+      .expect(assertResponse)
       .expect(200, []);
     expect(testApp.prisma.userSavedArticle.deleteMany).toHaveBeenCalledWith({
       where: { articleId: 42, userId: LIBRARY_TEST_USER_ID },
@@ -54,6 +63,7 @@ describe('Article library request and success contracts (HTTP)', () => {
       .post(`${basePath}/saved`)
       .set('Authorization', testApp.authorization)
       .send(LIBRARY_TEST_ARTICLE)
+      .expect(assertResponse)
       .expect(201, [
         { ...LIBRARY_TEST_ARTICLE, savedAt: '2026-10-28T12:00:00.000Z' },
       ]);
@@ -71,6 +81,7 @@ describe('Article library request and success contracts (HTTP)', () => {
       .post(`${basePath}/recent`)
       .set('Authorization', testApp.authorization)
       .send(LIBRARY_TEST_ARTICLE)
+      .expect(assertResponse)
       .expect(201, []);
     expect(testApp.prisma.userRecentArticle.upsert).toHaveBeenCalledTimes(1);
     expect(testApp.prisma.userRecentArticle.findMany).toHaveBeenCalledWith({
@@ -88,6 +99,7 @@ describe('Article library request and success contracts (HTTP)', () => {
         .post(`${basePath}/${suffix}`)
         .set('Authorization', testApp.authorization)
         .send({ ...LIBRARY_TEST_ARTICLE, id: 0, title: ' ', url: 'invalid' })
+        .expect(assertResponse)
         .expect(400);
       expect(response.body).toMatchObject({
         statusCode: 400,
@@ -101,6 +113,7 @@ describe('Article library request and success contracts (HTTP)', () => {
     const response = await request(testApp.server)
       .delete(`${basePath}/saved/invalid`)
       .set('Authorization', testApp.authorization)
+      .expect(assertResponse)
       .expect(400);
     expect(response.body).toMatchObject({
       statusCode: 400,

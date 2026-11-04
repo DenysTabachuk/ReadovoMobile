@@ -1,3 +1,9 @@
+import type {
+  AuthSessionResponseDto,
+  AuthUserResponseDto,
+} from './dto/auth-session-response.dto';
+import type { VerificationCodeDeliveryResponseDto } from './dto/verification-code-delivery-response.dto';
+
 export type StoredUser = {
   balance: number;
   createdAt: string;
@@ -43,53 +49,22 @@ export type RefreshTokenRecord = {
   userId: string;
 };
 
-export type AuthUser = {
-  balance: number;
-  createdAt: string;
-  email: string;
-  id: string;
-  lessonsCompleted: number;
-  testsCompleted: number;
-  wordsLearned: number;
-};
+export type AuthUser = AuthUserResponseDto;
 
 export type AuthenticatedUser = {
   email: string;
   id: string;
 };
 
-export type AuthSession = {
-  accessToken: string;
-  accessTokenExpiresAt: string;
-  refreshToken: string;
-  refreshTokenExpiresAt: string;
-  user: AuthUser;
-};
-
-export type RegisterUserResponse = {
-  email: string;
-  verificationExpiresAt: string;
-};
+export type AuthSession = AuthSessionResponseDto;
+export type RegisterUserResponse = VerificationCodeDeliveryResponseDto;
 
 export type LoginUserResponse = AuthSession;
 
 export type VerifyEmailResponse = AuthSession;
 
-export type ResendVerificationCodeResponse = {
-  email: string;
-  verificationExpiresAt: string;
-};
-
-export type RequestPasswordResetResponse = {
-  email: string;
-  verificationExpiresAt: string;
-};
-
-export type VerifyPasswordResetCodeResponse = {
-  email: string;
-  resetToken: string;
-};
-
-export type ResetPasswordResponse = {
-  email: string;
-};
+export type ResendVerificationCodeResponse =
+  VerificationCodeDeliveryResponseDto;
+export type RequestPasswordResetResponse = VerificationCodeDeliveryResponseDto;
+export type { VerifyPasswordResetCodeResponseDto as VerifyPasswordResetCodeResponse } from './dto/verify-password-reset-code-response.dto';
+export type { ResetPasswordResponseDto as ResetPasswordResponse } from './dto/reset-password-response.dto';

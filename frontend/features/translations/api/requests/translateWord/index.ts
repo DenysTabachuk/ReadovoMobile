@@ -4,7 +4,7 @@ import { API_BASE_URL } from '@/api';
 import {
   type TranslateWordRequest,
   type TranslateWordResponse,
-} from '../../types';
+} from '@/api/generated/transport';
 
 export async function translateWord(
   request: TranslateWordRequest,

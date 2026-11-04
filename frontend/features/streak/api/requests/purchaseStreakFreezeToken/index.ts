@@ -1,6 +1,6 @@
 import { api } from '@/features/auth';
 
-import type { StreakState } from '../../../types';
+import type { StreakState } from '@/api/generated/transport';
 
 export async function purchaseStreakFreezeToken(): Promise<StreakState> {
   const response = await api.post<StreakState>(

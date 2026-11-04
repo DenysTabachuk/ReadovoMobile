@@ -1,3 +1,4 @@
+import { createDictionaryResponseAssertion } from './testing/create-dictionary-response-assertion';
 import request from 'supertest';
 
 import { DictionaryEmbeddingService } from './dictionary-embedding.service';
@@ -23,6 +24,13 @@ describe('Dictionary embeddings and distractors (HTTP)', () => {
   let testApp: DictionaryHttpTestApp;
   let dispose: jest.Mock<void, []>;
 
+  let assertResponse: Awaited<
+    ReturnType<typeof createDictionaryResponseAssertion>
+  >;
+  beforeAll(async () => {
+    assertResponse = await createDictionaryResponseAssertion();
+  });
+
   beforeEach(async () => {
     mockEmbed.mockReset();
     mockLoad.mockReset();
@@ -42,10 +50,16 @@ describe('Dictionary embeddings and distractors (HTTP)', () => {
     await request(testApp.server)
       .post('/api/dictionary/embedding')
       .send({ text: ' Target ' })
+      .expect((response) =>
+        assertResponse('generateDictionaryEmbedding', response),
+      )
       .expect(201, [1, 0]);
     await request(testApp.server)
       .post('/api/dictionary/embedding')
       .send({ text: 'target' })
+      .expect((response) =>
+        assertResponse('generateDictionaryEmbedding', response),
+      )
       .expect(201, [1, 0]);
     expect(mockEmbed).toHaveBeenCalledTimes(1);
     expect(mockEmbed).toHaveBeenCalledWith(['target']);
@@ -56,6 +70,9 @@ describe('Dictionary embeddings and distractors (HTTP)', () => {
     const response = await request(testApp.server)
       .post('/api/dictionary/embedding')
       .send({ text: '  ' })
+      .expect((response) =>
+        assertResponse('generateDictionaryEmbedding', response),
+      )
       .expect(400);
     expect(response.body).toMatchObject({
       statusCode: 400,
@@ -74,6 +91,14 @@ describe('Dictionary embeddings and distractors (HTTP)', () => {
       const response = await request(testApp.server)
         .post(`/api/dictionary/${route}`)
         .send(body)
+        .expect((response) =>
+          assertResponse(
+            route === 'similar-words'
+              ? 'getSimilarDictionaryWords'
+              : 'generateDictionaryQuizOptions',
+            response,
+          ),
+        )
         .expect(400);
       expect(response.body).toMatchObject({
         statusCode: 400,
@@ -94,6 +119,9 @@ describe('Dictionary embeddings and distractors (HTTP)', () => {
       await request(testApp.server)
         .post('/api/dictionary/similar-words')
         .send(body)
+        .expect((response) =>
+          assertResponse('getSimilarDictionaryWords', response),
+        )
         .expect(201, []);
       expect(mockEmbed).not.toHaveBeenCalled();
     },
@@ -126,6 +154,9 @@ describe('Dictionary embeddings and distractors (HTTP)', () => {
           'opposite',
         ],
       })
+      .expect((response) =>
+        assertResponse('getSimilarDictionaryWords', response),
+      )
       .expect(201, ['closest', 'nearby', 'distant']);
     expect(mockEmbed).toHaveBeenCalledTimes(5);
   });
@@ -146,6 +177,9 @@ describe('Dictionary embeddings and distractors (HTTP)', () => {
       await request(testApp.server)
         .post('/api/dictionary/similar-words')
         .send({ word: 'target', wordList: ['other'] })
+        .expect((response) =>
+          assertResponse('getSimilarDictionaryWords', response),
+        )
         .expect(400, {
           statusCode: 400,
           code: 'DICTIONARY_EMBEDDINGS_INVALID',
@@ -164,6 +198,9 @@ describe('Dictionary embeddings and distractors (HTTP)', () => {
     await request(testApp.server)
       .post('/api/dictionary/quiz-options')
       .send(body)
+      .expect((response) =>
+        assertResponse('generateDictionaryQuizOptions', response),
+      )
       .expect(400, {
         statusCode: 400,
         code: 'DICTIONARY_QUIZ_DISTRACTORS_INSUFFICIENT',
@@ -175,6 +212,9 @@ describe('Dictionary embeddings and distractors (HTTP)', () => {
     const response = await request(testApp.server)
       .post('/api/dictionary/quiz-options')
       .send({ correctWord: 'TARGET', wordList: ['one', 'two', 'three'] })
+      .expect((response) =>
+        assertResponse('generateDictionaryQuizOptions', response),
+      )
       .expect(201);
     expect(response.body).toHaveLength(4);
     expect(response.body).toEqual(
@@ -187,6 +227,9 @@ describe('Dictionary embeddings and distractors (HTTP)', () => {
     await request(testApp.server)
       .post('/api/dictionary/embedding')
       .send({ text: 'target' })
+      .expect((response) =>
+        assertResponse('generateDictionaryEmbedding', response),
+      )
       .expect(500, {
         statusCode: 500,
         code: 'INTERNAL_ERROR',

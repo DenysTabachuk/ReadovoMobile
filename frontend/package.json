@@ -3,6 +3,8 @@
   "main": "expo-router/entry",
   "version": "1.0.1",
   "scripts": {
+    "api-types:generate": "node scripts/api-types.mjs",
+    "api-types:check": "node scripts/api-types.mjs --check",
     "start": "node ./scripts/start-dev.js --api=local",
     "start:local": "node ./scripts/start-dev.js --api=local",
     "start:render": "node ./scripts/start-dev.js --api=render",
@@ -21,13 +23,13 @@
     "lint:fix": "expo lint --fix",
     "lint:staged": "eslint --fix",
     "typecheck": "tsc --noEmit --incremental false",
-    "format": "prettier --write \"{app,api,components,constants,devtools,features,hooks,localization,providers,utils}/**/*.{js,json,ts,tsx}\" \"scripts/**/*.{js,ts}\" \"*.js\" \"app.json\" \"tsconfig.json\"",
-    "format:check": "prettier --check \"{app,api,components,constants,devtools,features,hooks,localization,providers,utils}/**/*.{js,json,ts,tsx}\" \"scripts/**/*.{js,ts}\" \"*.js\" \"app.json\" \"tsconfig.json\"",
+    "format": "prettier --write \"{app,api,components,constants,devtools,features,hooks,localization,providers,utils}/**/*.{js,json,ts,tsx}\" \"scripts/**/*.{js,mjs,ts}\" \"*.js\" \"app.json\" \"tsconfig.json\"",
+    "format:check": "prettier --check \"{app,api,components,constants,devtools,features,hooks,localization,providers,utils}/**/*.{js,json,ts,tsx}\" \"scripts/**/*.{js,mjs,ts}\" \"*.js\" \"app.json\" \"tsconfig.json\"",
     "format:staged": "prettier --write",
     "docs:check": "prettier --check \"../AGENTS.md\" \"AGENTS.md\" \"../docs/frontend-conventions.md\"",
     "test": "jest",
     "test:staged": "jest --findRelatedTests --runInBand --passWithNoTests",
-    "ci": "npm run typecheck && npm run lint && npm run format:check && npm run docs:check && npm test -- --runInBand"
+    "ci": "npm run typecheck && npm run lint && npm run format:check && npm run docs:check && npm test -- --runInBand && npm run api-types:check"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
@@ -76,6 +78,7 @@
     "eslint": "^9.25.0",
     "eslint-config-expo": "~10.0.0",
     "jest": "^30.3.0",
+    "openapi-typescript": "7.13.0",
     "prettier": "^3.9.10",
     "reactotron-react-native": "^5.1.18",
     "test-renderer": "~1.1.0",

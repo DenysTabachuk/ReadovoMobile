@@ -1,9 +1,12 @@
+import type {
+  QuizVocabularyWord,
+  ArticleVocabularyQuizQuestion,
+} from '@/api/generated/transport';
 import type { ArticleQuizMode } from '../../articleQuizSession';
 import type {
   ArticleQuizLengthParam,
   SimplifyArticleLevel,
   SimplifyArticleTargetLength,
-  ArticleVocabularyQuizQuestion,
 } from '@/features/articles/api';
 
 export type ArticleQuizRouteParams = {
@@ -13,10 +16,8 @@ export type ArticleQuizRouteParams = {
   targetLength?: string | string[];
 };
 
-export type VocabularyWordQuestion = Pick<
-  ArticleVocabularyQuizQuestion,
-  'id' | 'term' | 'translation' | 'sourceExcerpt'
->;
+export type VocabularyWordQuestion = QuizVocabularyWord &
+  Pick<ArticleVocabularyQuizQuestion, 'id'>;
 
 export type ResolvedArticleQuizParams = {
   articleId: number | null;

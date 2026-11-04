@@ -1,6 +1,6 @@
 import { api } from '@/features/auth';
 
-import type { MascotProfile } from '../../../types';
+import type { MascotProfileResponse as MascotProfile } from '@/api/generated/transport';
 
 export async function equipMascotItem(itemId: string): Promise<MascotProfile> {
   const response = await api.post<MascotProfile>(

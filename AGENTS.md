@@ -3,6 +3,8 @@
 - Before changing `frontend/**`, read [frontend/AGENTS.md](frontend/AGENTS.md),
   including when the session starts from the repository root. Read the linked
   convention sections relevant to the task.
+- Before changing HTTP endpoints, request/response DTOs, Swagger metadata or
+  frontend API transport types, read [docs/openapi-contract.md](docs/openapi-contract.md).
 - For frontend mutations, put screen effects in per-call `mutate` callbacks so
   unmounting drops them. Keep cache work in data hooks; see the data-layer rules
   in [frontend/AGENTS.md](frontend/AGENTS.md) for session safety and promise limits.
@@ -11,6 +13,11 @@
   not require refactoring the module's existing implementation.
 - Keep existing user changes intact. Report logical problems and material
   improvement opportunities found while working.
+- Write new JavaScript scripts as ES modules with the `.mjs` extension and static
+  `import` statements. Use `import.meta.url` for paths relative to the script.
+  Keep npm commands and relevant formatting, linting and staged-check patterns in
+  sync with `.mjs` files. Retain another format when required by the tool that loads
+  the file; do not migrate unrelated existing scripts just to apply this preference.
 - In TypeScript, prefer inference, checked type annotations, generics and narrowing
   over type assertions (`as Type`). Validate untrusted data at runtime. Use an
   assertion only for a justified boundary the compiler cannot express, and explain
@@ -59,8 +66,37 @@
   do not perform unrelated constant-extraction sweeps. Frontend theme/token and
   StyleSheet guidance remains in the frontend convention guide.
 
+## OpenAPI contracts and generated transport types
+
+- Backend DTOs, validation and Swagger metadata own the HTTP contract. When an
+  API changes, update its inputs, serialized responses, statuses, security and
+  reachable errors together with the affected frontend consumers and fixtures.
+- After a contract change, run `npm run contracts:generate`, then
+  `npm run contracts:check` from the repository root. Keep source changes and both
+  artifacts (`backend/openapi/openapi.json` and
+  `frontend/api/generated/transport.d.ts`) together in the same review/commit.
+  Preserve the user's staging choices; do not stage files automatically.
+- Never edit generated artifacts manually. Frontend consumers use direct named
+  exports from the generated transport types instead of duplicating request or
+  response fields. Feature re-exports, aliases and UI/domain adaptations may
+  compose those types; frontend production code must not import backend DTOs.
+- Add or update relevant HTTP contract tests to verify actual serialization,
+  nullable/optional fields, statuses, security and errors against the documented
+  contract. Generated types and HTTP-client generics do not validate received JSON;
+  preserve runtime decoders and auth/session safeguards.
+- Keep export deterministic and offline: no HTTP listener, database connection,
+  environment-file/secret reads, external services or background jobs. When adding
+  a module or changing export composition, verify route coverage, export isolation
+  and runtime Swagger parity with the relevant tests described in the guide.
+
 ## Backend module ownership and validation
 
+- Keep new feature request and response DTOs in the owning module's `dto/`
+  directory. Use operation-specific filenames: `<operation>.dto.ts` for input and
+  `<operation>-response.dto.ts` for the serialized response, for example
+  `dto/translate-word.dto.ts` and `dto/translate-word-response.dto.ts`. Name other
+  DTOs after their specific responsibility; avoid aggregate `dto.ts` files. Apply
+  this to DTOs created or moved within the task; do not reorganize unrelated modules.
 - Keep feature-specific DTOs, domain types, constants, error definitions and
   utilities in their owning NestJS module. Keep exclusive implementation helpers
   private. Apply these rules within the task scope; do not migrate unrelated code.
@@ -82,6 +118,36 @@
   in services. Do not duplicate DTO validation for hypothetical internal callers;
   verify actual call sites before adding or retaining another validation boundary.
   Persisted data and external provider responses require their own runtime checks.
+- For new or touched OpenAPI-documented endpoints protected by `UserAuthGuard`,
+  use the auth module's method decorator `@ApiUserAuth({ errors, validation })`.
+  It installs the real guard and documents Bearer security, token errors and shared
+  HTTP errors together. Import `AuthModule` in the owning feature module. Supply
+  only operation-specific errors and opt into DTO validation when applicable;
+  do not repeat token error lists or stack `ApiErrorResponses` on that method,
+  because Swagger responses with the same status can overwrite one another.
+  Public endpoints use `ApiErrorResponses`; ownership and role checks still need
+  their own guards/logic. Do not migrate unrelated endpoints just for this rule.
+
+## Backend feature organization
+
+- When a feature contains distinct responsibilities, group their implementation
+  into named subfolders such as `diagnostics/`, `preferences/` or `delivery/`.
+  Keep the controller, exclusive DTOs, helpers and tests with their actual owner;
+  keep shared feature contracts and infrastructure at the closest common owner.
+  Prefer responsibility boundaries over feature-wide `controllers/`, `services/`
+  or `tests/` buckets. A file count alone does not justify another folder.
+- For example, notification diagnostics should own their optional controller and
+  module under `notifications/diagnostics/`, while ordinary notification APIs,
+  shared delivery infrastructure and worker contracts retain their production
+  owner. Production code must not depend on optional diagnostics internals.
+- Folder organization and NestJS module boundaries are separate decisions. Add a
+  module for actual DI/export or registration needs, such as development-only
+  controllers; do not create a module/service for every folder or duplicate
+  providers, SDK clients or background workers just to organize files.
+- Apply this to new subareas and structural changes within the current task.
+  Move associated imports/tests and verify registration and public contracts when
+  reorganizing. Do not expand a focused change into an unrelated feature rewrite
+  or split an existing service solely to satisfy a naming/file-count rule.
 
 ## Backend naming
 
@@ -174,6 +240,8 @@ Run from the repository root:
 - Frontend checks: `npm run ci:frontend`.
 - Backend checks: `npm run ci:backend`.
 - TypeScript for both projects: `npm run typecheck`.
+- Generate OpenAPI and frontend transport types: `npm run contracts:generate`.
+- Check contract freshness without writing files: `npm run contracts:check`.
 - Instruction/documentation formatting: `npm --prefix frontend run docs:check`.
 - Pre-commit staged checks: `npm run check:staged`.
 
