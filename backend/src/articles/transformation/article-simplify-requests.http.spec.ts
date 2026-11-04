@@ -1,3 +1,4 @@
+import { createArticlesResponseAssertion } from '../testing/create-articles-response-assertion';
 import request from 'supertest';
 
 import { type ArticleTransformationOutput } from '../contracts/ai-output.schemas';
@@ -24,6 +25,12 @@ const questions: NonNullable<ArticleTransformationOutput['questions']> = [
 describe('Article simplification requests and success (HTTP)', () => {
   let testApp: ArticleSimplifyHttpTestApp;
   let previousKey: string | undefined;
+  let assertResponse: Awaited<
+    ReturnType<typeof createArticlesResponseAssertion>
+  >;
+  beforeAll(async () => {
+    assertResponse = await createArticlesResponseAssertion();
+  });
   beforeEach(async () => {
     previousKey = process.env.GROQ_API_KEY;
     process.env.GROQ_API_KEY = 'test-key';
@@ -45,6 +52,7 @@ describe('Article simplification requests and success (HTTP)', () => {
       const response = await request(testApp.server)
         .post(path)
         .send({ text: ' Space is vast. ', transformationType })
+        .expect(assertResponse)
         .expect(201);
       expect(response.body).toMatchObject({
         title: 'Untitled article',
@@ -63,6 +71,85 @@ describe('Article simplification requests and success (HTTP)', () => {
       );
     },
   );
+
+  it('preserves null optional inputs and applies the existing service defaults', async () => {
+    testApp.provider.completeStructured.mockResolvedValueOnce({
+      adaptedBlocks: [{ type: 'heading', level: 1, text: 'Space' }],
+      questions,
+    });
+    const response = await request(testApp.server)
+      .post(path)
+      .send({
+        text: 'Space is vast.',
+        articleId: null,
+        blocks: null,
+        level: null,
+        title: null,
+        transformationType: null,
+      })
+      .expect(201)
+      .expect(assertResponse);
+    expect(response.body).toMatchObject({
+      level: 'A2',
+      title: 'Untitled article',
+      transformationType: 'summary',
+    });
+  });
+
+  it('serializes all cached block variants with literal discriminants', async () => {
+    const blocks = [
+      { type: 'heading', level: 2, text: 'Space' },
+      {
+        type: 'paragraph',
+        children: [
+          { type: 'word', text: 'Space', bold: true },
+          { type: 'text', text: '.' },
+        ],
+      },
+      {
+        type: 'list',
+        ordered: true,
+        items: [[{ type: 'word', text: 'Moon', italic: true }]],
+      },
+      {
+        type: 'table',
+        rows: [[{ text: 'Name', header: true }], [{ text: 'Earth' }]],
+      },
+      { type: 'image', src: 'https://example.test/space.png', alt: 'Space' },
+      {
+        type: 'formula',
+        display: true,
+        altText: 'E = mc2',
+        latex: 'E = mc^2',
+        svg: '<svg/>',
+        widthEx: 5,
+        heightEx: 2,
+      },
+    ];
+    testApp.prisma.articleSimplification.findUnique.mockResolvedValueOnce({
+      cacheKey: 'cached',
+      articleId: 42,
+      title: 'Space',
+      level: 'C1',
+      targetLength: 'adaptation',
+      targetPercent: null,
+      sourceHash: null,
+      originalLength: 14,
+      adaptedText: 'Space',
+      adaptedLength: 5,
+      adaptedBlocks: blocks,
+      questions: null,
+      createdAt: new Date('2026-10-29T12:00:00.000Z'),
+    });
+    const response = await request(testApp.server)
+      .post(path)
+      .send({ text: 'Space is vast.', level: 'C1' })
+      .expect(201)
+      .expect(assertResponse);
+    expect(response.body).toMatchObject({ level: 'C1', adaptedBlocks: blocks });
+    expect(response.body).not.toHaveProperty('questions');
+    expect(testApp.provider.completeStructured).not.toHaveBeenCalled();
+  });
 
   it('returns a cached response even without a provider key', async () => {
     delete process.env.GROQ_API_KEY;
@@ -84,6 +171,7 @@ describe('Article simplification requests and success (HTTP)', () => {
     await request(testApp.server)
       .post(path)
       .send({ text: 'Space is vast.', transformationType: 'adaptation' })
+      .expect(assertResponse)
       .expect(201, {
         title: 'Space',
         level: 'A2',
@@ -106,6 +194,7 @@ describe('Article simplification requests and success (HTTP)', () => {
     const response = await request(testApp.server)
       .post(path)
       .send(body)
+      .expect(assertResponse)
       .expect(400);
     expect(response.body).toMatchObject({
       statusCode: 400,

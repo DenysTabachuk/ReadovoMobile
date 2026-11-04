@@ -1,7 +1,7 @@
 import type {
   GenerateArticleVocabularyQuizRequest,
   GenerateArticleVocabularyQuizResponse,
-} from '../../types';
+} from '@/api/generated/transport';
 import { generateArticleQuizRequest } from '../../utils/generateArticleQuizRequest';
 
 export async function generateArticleVocabularyQuiz(

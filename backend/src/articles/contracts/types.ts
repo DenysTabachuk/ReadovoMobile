@@ -1,62 +1,41 @@
-export type WikipediaArticle = {
-  availableAdaptations?: ArticleAdaptationSummary[];
-  id: number;
-  title: string;
-  extract: string;
-  pageLength?: number;
-  url: string;
-  thumbnailUrl?: string;
-};
+import { type ArticleListQueryDto } from '../dto/article-list-query.dto';
+import { type SimplifyArticleResponseDto } from '../dto/simplify-article-response.dto';
+import { type ArticleAdaptationSummaryResponseDto } from '../dto/article-adaptation-summary-response.dto';
+import { type WikipediaArticleDetailResponseDto } from '../dto/get-wikipedia-article-detail-response.dto';
+import { type UserRecentArticleResponseDto } from '../dto/get-recent-articles-response.dto';
+import { type UserSavedArticleResponseDto } from '../dto/get-saved-articles-response.dto';
+import { type WikipediaArticleResponseDto } from '../dto/wikipedia-article-response.dto';
+import {
+  ARTICLE_CATEGORIES,
+  SIMPLIFICATION_LEVELS,
+  TRANSFORMATION_TYPES,
+  ARTICLE_PREVIEW_LENGTHS,
+  ARTICLE_SORT_OPTIONS,
+  ARTICLE_READY_LEVELS,
+  ARTICLE_READY_TRANSFORMATIONS,
+  ARTICLE_TARGET_LENGTHS,
+  ARTICLE_QUESTION_TYPES,
+  VOCABULARY_QUESTION_FORMATS,
+  VOCABULARY_TERM_KINDS,
+} from './constants';
+export type WikipediaArticle = WikipediaArticleResponseDto;
 
-export type UserSavedArticle = WikipediaArticle & {
-  savedAt: string;
-};
+export type UserSavedArticle = UserSavedArticleResponseDto;
 
-export type UserRecentArticle = WikipediaArticle & {
-  openedAt: string;
-};
+export type UserRecentArticle = UserRecentArticleResponseDto;
 
-export type GetWikipediaArticlesParams = {
-  category?: WikipediaArticleCategory;
-  excludeIds?: number[];
-  limit?: number;
-  previewLength?: WikipediaArticlePreviewLength;
-  preferImagesFirst?: boolean;
-  readyLevel?: ArticleReadyLevelFilter;
-  readyTransformationType?: ArticleReadyTransformationFilter;
-  recommended?: boolean;
-  search?: string;
-  sortBy?: WikipediaArticleSortOption;
-};
+export type GetWikipediaArticlesParams = ArticleListQueryDto;
 
-export type WikipediaArticlePreviewLength = 'all' | 'short' | 'medium' | 'long';
-export type WikipediaArticleSortOption =
-  'default' | 'length_desc' | 'length_asc';
-export type ArticleReadyLevelFilter = 'all' | 'A1' | 'A2' | 'B1' | 'B2';
+export type WikipediaArticlePreviewLength =
+  (typeof ARTICLE_PREVIEW_LENGTHS)[number];
+export type WikipediaArticleSortOption = (typeof ARTICLE_SORT_OPTIONS)[number];
+export type ArticleReadyLevelFilter = (typeof ARTICLE_READY_LEVELS)[number];
 export type ArticleReadyTransformationFilter =
-  'all' | 'adaptation' | 'summary' | 'both';
+  (typeof ARTICLE_READY_TRANSFORMATIONS)[number];
 
-export type WikipediaArticleCategory =
-  | 'all'
-  | 'biography'
-  | 'history'
-  | 'food'
-  | 'geography'
-  | 'science'
-  | 'space'
-  | 'sports'
-  | 'technology'
-  | 'nature'
-  | 'culture';
+export type WikipediaArticleCategory = (typeof ARTICLE_CATEGORIES)[number];
 
-export type WikipediaArticleDetail = {
-  blocks: ArticleBlock[];
-  content: string;
-  id: number;
-  title: string;
-  url: string;
-  thumbnailUrl?: string;
-};
+export type WikipediaArticleDetail = WikipediaArticleDetailResponseDto;
 
 export type ArticleBlock =
   | {
@@ -115,24 +94,22 @@ export type TableCell = {
   text: string;
 };
 
-export type ArticleSimplificationLevel = 'A1' | 'A2' | 'B1' | 'B2' | 'C1';
+export type ArticleSimplificationLevel = (typeof SIMPLIFICATION_LEVELS)[number];
 
-export type ArticleSimplificationTargetLength = 'short' | 'medium' | 'long';
-export type ArticleTextTransformationType = 'adaptation' | 'summary';
+export type ArticleSimplificationTargetLength =
+  (typeof ARTICLE_TARGET_LENGTHS)[number];
+export type ArticleTextTransformationType =
+  (typeof TRANSFORMATION_TYPES)[number];
 export type ArticleQuizSourceCoverage = 'complete' | 'representative_excerpts';
 
-export type ArticleAdaptationSummary = {
-  level: ArticleSimplificationLevel;
-  transformationType: ArticleTextTransformationType;
-};
+export type ArticleAdaptationSummary = ArticleAdaptationSummaryResponseDto;
 
 export type ArticleAdaptationsByArticleId = Record<
   string,
   ArticleAdaptationSummary[]
 >;
 
-export type ArticleQuizQuestionType =
-  'single_choice' | 'multiple_choice' | 'true_false';
+export type ArticleQuizQuestionType = (typeof ARTICLE_QUESTION_TYPES)[number];
 
 export type ArticleQuizQuestionOption = {
   id: string;
@@ -149,9 +126,10 @@ export type ArticleQuizQuestion = {
 };
 
 export type ArticleVocabularyQuizQuestionFormat =
-  'translation' | 'reverse_translation' | 'definition' | 'cloze' | 'synonym';
+  (typeof VOCABULARY_QUESTION_FORMATS)[number];
 
-export type ArticleVocabularyQuizTermKind = 'word' | 'phrase';
+export type ArticleVocabularyQuizTermKind =
+  (typeof VOCABULARY_TERM_KINDS)[number];
 
 export type ArticleVocabularyQuizQuestion = ArticleQuizQuestion & {
   format: ArticleVocabularyQuizQuestionFormat;
@@ -167,15 +145,7 @@ export type GenerateArticleVocabularyQuizResponse = {
   resolvedLevel: ArticleSimplificationLevel;
 };
 
-export type SimplifyArticleResponse = {
-  adaptedBlocks: ArticleBlock[];
-  adaptedLength: number;
-  level: ArticleSimplificationLevel;
-  originalLength: number;
-  questions?: ArticleQuizQuestion[];
-  transformationType: ArticleTextTransformationType;
-  title: string;
-};
+export type SimplifyArticleResponse = SimplifyArticleResponseDto;
 
 export type SimplifiedArticleCacheRow = {
   adapted_blocks?: ArticleBlock[];

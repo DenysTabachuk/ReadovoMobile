@@ -5,7 +5,8 @@ the five mascot operations under `/mascot/profile/me`, the five streak operation
 under `/streak/profile/me`, and the three operations under
 `/quiz-sessions/{sessionId}`, plus the seven notification operations under
 `/notifications`, the nine credential operations under `/auth`, and the eight dictionary operations
-under `/api/dictionary`. Articles and the root endpoint are not covered yet.
+under `/api/dictionary`, plus the twelve article operations under `/articles`,
+`/api/articles` and `/api/users/me/articles`. Only the root endpoint is not covered yet.
 The migration status and remaining work are tracked in
 [the migration task](tasks/openapi-contract-generation.md).
 
@@ -302,6 +303,48 @@ checks, HTTP client, hooks and session handling remain independently maintained.
 Offline preview skips the embedding service constructor and lifecycle hooks;
 export never loads the TensorFlow model. The Swagger HTTP test replaces that
 provider to avoid downloads when it initializes the documentation-only app.
+
+Articles discovery, detail, adaptation availability and simplification remain
+public. Saved/recent library operations and both quiz-generation routes require
+`ApiUserAuth`. GET/DELETE responses are HTTP **200**; all article POST successes
+retain **201**. Saved/recent writes return the updated list, not a single article.
+`savedAt`/`openedAt` are required ISO date-time strings. Unavailable thumbnails,
+page lengths, adaptation lists and quiz explanations are omitted rather than null.
+
+Article content is a discriminated union of heading, paragraph, list, table,
+formula and image blocks. Explicit discriminator mappings preserve wire literals
+such as `heading`, rather than DTO/schema class names. Nested inline `text`/`word`
+nodes, table cells, formula SVG/MathML/LaTeX and optional styling retain their
+existing shapes. AI output contracts and parser domain models remain independently
+owned; generated transport types do not replace their runtime validation.
+
+Article list query enums and numeric limits are backend-owned. ID lists use
+comma-separated query values (`style: form`, `explode: false`), with deduplication
+before validation. Repeated string query values fail the existing integer-array
+validation. Detail accepts only `languageCode=en`, defaulting to English. Discovery
+limits are 1?50; omission retains the service default of 20. Adaptation lookups
+accept 1?100 positive IDs and return a map of article ID strings to availability
+arrays. Global DTO validation rejects unknown query/body fields where a DTO exists.
+
+Simplification accepts nullable optional article ID, blocks, level, title and
+transformation type. Null/omitted level and transformation type retain the existing
+A2/summary defaults. Blank/null/omitted titles use the existing fallback. Source
+`blocks` currently validates only the array container, so its generated request
+items remain `unknown`; this batch does not claim nested runtime validation.
+Response blocks are fully described by the content union. Nullable request enums
+include null explicitly without weakening the shared non-null response enums.
+
+Reading quiz input requires level and target length; vocabulary quiz level is
+optional/nullable. Both accept A1?C1 on the backend. The current frontend picker
+remains A1?B2 through a local `Exclude` type, while returned C1 data stays typed.
+Quiz-generation responses expose session IDs and public questions, with no answer
+keys, explanations or vocabulary words. Attempt feedback continues to supply those
+through the existing quiz contract. Simplification may include answer-bearing
+summary questions, described separately as `ArticleQuizAnswerKeyQuestion`.
+HTTP clients, hooks, auth/session behavior and the existing quiz-response decoder
+remain unchanged apart from generated type consumption. Offline preview skips
+Groq client construction, tokenizer allocation and formula renderer initialization;
+no article requests or AI jobs run during export.
 
 Generated TypeScript is compile-time information, **not runtime validation**.
 Axios generics do not validate JSON. The existing API error decoder and its safe

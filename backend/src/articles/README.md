@@ -27,8 +27,14 @@ changing the HTTP boundary.
 
 ### `contracts/`
 
-HTTP DTOs and shared domain types. This is the only folder intended to be
-imported by other backend domains when an article contract is required.
+Shared domain types and AI output contracts. Public backend composition contracts
+belong here; consumers must not import private implementation helpers.
+
+### `dto/`
+
+Operation-specific HTTP request DTOs and serialized response schemas. Swagger
+metadata describes the wire contract; class-validator retains runtime input
+validation. Frontend transport types are generated from the offline OpenAPI export.
 
 ### `discovery/`
 

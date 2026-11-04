@@ -1,3 +1,4 @@
+import type { SimplifyArticleResponse } from '@/api/generated/transport';
 import type { ArticleTransformationDetails } from '../../../../../../../../types';
 
 type TransformationStatus = {
@@ -7,7 +8,7 @@ type TransformationStatus = {
     | 'article.originalStateWithAdaptation'
     | 'article.originalStateWithSummary';
   values: {
-    level: ArticleTransformationDetails['selectedLevel'];
+    level: SimplifyArticleResponse['level'];
     adaptedLength?: number;
     originalLength?: number;
   };

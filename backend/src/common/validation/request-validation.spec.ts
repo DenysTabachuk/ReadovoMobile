@@ -6,10 +6,8 @@ import { validate } from 'class-validator';
 
 import { CompleteQuizDto } from '../../quiz/dto/complete-quiz.dto';
 import { SubmitQuizAnswerDto } from '../../quiz/dto/submit-quiz-answer.dto';
-import {
-  ArticleDetailQueryDto,
-  ArticleListQueryDto,
-} from '../../articles/contracts/dto';
+import { ArticleDetailQueryDto } from '../../articles/dto/article-detail-query.dto';
+import { ArticleListQueryDto } from '../../articles/dto/article-list-query.dto';
 import { RegisterUserDto } from '../../auth/dto/register-user.dto';
 import { CreateDictionaryWordDto } from '../../dictionary/dto/create-dictionary-word.dto';
 import { DictionaryWordParamsDto } from '../../dictionary/dto/dictionary-word-params.dto';

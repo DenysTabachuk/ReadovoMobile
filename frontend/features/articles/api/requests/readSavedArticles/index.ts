@@ -1,9 +1,9 @@
 import { api } from '@/features/auth';
 
-import type { SavedArticle } from '../../../savedArticles/types';
+import type { UserSavedArticle } from '@/api/generated/transport';
 
-export async function readSavedArticles(): Promise<SavedArticle[]> {
-  const response = await api.get<SavedArticle[]>(
+export async function readSavedArticles(): Promise<UserSavedArticle[]> {
+  const response = await api.get<UserSavedArticle[]>(
     `/api/users/me/articles/saved`,
   );
 

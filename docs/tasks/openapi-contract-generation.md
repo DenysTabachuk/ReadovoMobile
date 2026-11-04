@@ -1,7 +1,7 @@
 # Task: OpenAPI contract and frontend type generation
 
-Status: translations, achievements, mascot, streak, quiz sessions, notifications
-and auth reviewed; dictionary migration implemented for review,
+Status: translations, achievements, mascot, streak, quiz sessions, notifications,
+auth and dictionary reviewed; articles migration implemented for review,
 following the implemented
 [API error contract](../api-error-contract.md). The pilot includes Swagger UI,
 offline schema export, generated transport types and CI/staged freshness checks.
@@ -19,8 +19,8 @@ error-only generator. Contributor workflow: [OpenAPI contract](../openapi-contra
   and password reset using real services/validation with mocked persistence,
   provider and mail boundaries. Actual success/error bodies are checked against
   exported schemas. Existing mixed auth test suites remain outside this batch.
-- Remaining migration after dictionary: articles (twelve operations) and root
-  `GET /` (one operation). Review this dictionary batch before continuing.
+- Remaining migration after articles: root `GET /` (one operation). Review this
+  articles batch before continuing.
   Keep this task until complete API coverage is reviewed.
 - Auth verification (2026-11-03): backend CI passed (92 suites / 784 tests),
   followed by the additional auth schema/security test and its lint/format checks
@@ -414,6 +414,52 @@ error-only generator. Contributor workflow: [OpenAPI contract](../openapi-contra
 - The final index is empty, so `check:staged` has no commit snapshot to validate;
   an empty run is not recorded as a pass. Keep this task until articles, root
   coverage and the complete migration are reviewed.
+
+## Articles migration (2026-11-03)
+
+- Started from dictionary commit `f51475b` with a clean working tree and empty
+  index. No user staging was changed and no commit is created in this batch.
+- All twelve routes now describe their existing status, security and reachable
+  errors. Five library operations and two quiz generators use `ApiUserAuth`;
+  discovery, detail, availability and simplification remain public.
+- Split the aggregate request DTO into operation-specific files under `dto/`.
+  Response DTOs own serialized previews, detail, library dates, adaptations and
+  generated payloads. Domain parser blocks and internal answer-bearing AI models
+  remain local; DTOs implement their relevant shapes. AI/runtime decoders remain.
+- Explicit block/inline discriminator mappings preserve wire literals. Session
+  question schemas omit keys and vocabulary data; simplification answer-bearing
+  questions have a separate schema. Cached C1 blocks and all six block variants
+  are checked through actual HTTP serialization.
+- Frontend requests import named generated types directly. Feature exports and
+  saved/recent aliases no longer duplicate transport fields. Axios generics replace
+  assertions. The picker retains its A1?B2 UI subset, while display/key utilities
+  accept returned C1 values. Vocabulary save UI composes generated attempt-feedback
+  fields with the public question ID. Client/session/hooks/decoder behavior stays.
+- Metadata/request-schema tests and existing capability HTTP suites verify actual
+  success/error bodies, nullable/optional inputs, comma-separated query rules,
+  token failures, statuses, answer-key omission and public access. Current-user
+  mocks now return valid empty arrays rather than invalid object payloads. The
+  frontend language fixture now uses the only supported value, `en`.
+- The canonical coverage list imports the real module. Export tests verify skipped
+  Groq/tokenizer/formula initialization, deterministic output, fresh-process
+  isolation and Swagger UI/export equality. Existing documented paths and schemas
+  were compared with the previous artifact and remain unchanged.
+- Review follow-ups outside this batch: source `blocks` has only container-level
+  DTO validation, and the existing persisted simplification cache uses assertions
+  rather than validating nested stored blocks/levels/questions. Strengthening
+  those boundaries needs a separate runtime-validation change. The existing
+  `fetchRandomWikipediaArticles` wrapper calls ordinary discovery with its normal
+  recommendation defaults rather than the backend random route; behavior is kept.
+- Verification: backend CI passed (95 suites / 814 tests), including final
+  typecheck, lint, formatting, HTTP/schema tests, offline isolation/UI parity and
+  freshness. Frontend CI passed (141 suites / 727 tests), including generated
+  types, request/session/lifecycle tests and the C1 display/key regression cases.
+  Backend build, root `contracts:check`, instruction formatting and all changed
+  Markdown formatting passed. E2E passed four tests; 17 database-backed cases
+  remain skipped without `QUIZ_TEST_DATABASE_URL`.
+- The index remains empty. `check:staged` has no commit snapshot to validate and
+  an empty run is not treated as a pass. Keep this task until root coverage and
+  the complete migration have been reviewed.
 
 ## Goal
 

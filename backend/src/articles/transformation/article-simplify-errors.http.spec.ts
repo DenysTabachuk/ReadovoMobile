@@ -1,3 +1,4 @@
+import { createArticlesResponseAssertion } from '../testing/create-articles-response-assertion';
 import { Logger } from '@nestjs/common';
 import request from 'supertest';
 
@@ -13,6 +14,12 @@ const body = { text: 'Space is vast.', transformationType: 'adaptation' };
 describe('Article simplification errors (HTTP)', () => {
   let testApp: ArticleSimplifyHttpTestApp;
   let previousKey: string | undefined;
+  let assertResponse: Awaited<
+    ReturnType<typeof createArticlesResponseAssertion>
+  >;
+  beforeAll(async () => {
+    assertResponse = await createArticlesResponseAssertion();
+  });
   beforeEach(async () => {
     previousKey = process.env.GROQ_API_KEY;
     process.env.GROQ_API_KEY = 'test-key';
@@ -27,11 +34,15 @@ describe('Article simplification errors (HTTP)', () => {
 
   it('uses a generic 500 when configuration is missing', async () => {
     delete process.env.GROQ_API_KEY;
-    await request(testApp.server).post(path).send(body).expect(500, {
-      statusCode: 500,
-      code: 'INTERNAL_ERROR',
-      message: 'Internal server error.',
-    });
+    await request(testApp.server)
+      .post(path)
+      .send(body)
+      .expect(assertResponse)
+      .expect(500, {
+        statusCode: 500,
+        code: 'INTERNAL_ERROR',
+        message: 'Internal server error.',
+      });
     expect(testApp.provider.completeStructured).not.toHaveBeenCalled();
   });
 
@@ -43,11 +54,15 @@ describe('Article simplification errors (HTTP)', () => {
     async (error) => {
       const log = jest.spyOn(Logger.prototype, 'error');
       testApp.provider.completeStructured.mockRejectedValueOnce(error);
-      await request(testApp.server).post(path).send(body).expect(502, {
-        statusCode: 502,
-        code: 'ARTICLES_SIMPLIFICATION_FAILED',
-        message: 'Failed to simplify article.',
-      });
+      await request(testApp.server)
+        .post(path)
+        .send(body)
+        .expect(assertResponse)
+        .expect(502, {
+          statusCode: 502,
+          code: 'ARTICLES_SIMPLIFICATION_FAILED',
+          message: 'Failed to simplify article.',
+        });
       expect(JSON.stringify(log.mock.calls)).not.toContain(
         'PRIVATE_PROVIDER_DIAGNOSTICS',
       );
@@ -63,11 +78,15 @@ describe('Article simplification errors (HTTP)', () => {
       adaptedBlocks: [],
       questions: null,
     });
-    await request(testApp.server).post(path).send(body).expect(502, {
-      statusCode: 502,
-      code: 'ARTICLES_SIMPLIFICATION_FAILED',
-      message: 'Failed to simplify article.',
-    });
+    await request(testApp.server)
+      .post(path)
+      .send(body)
+      .expect(assertResponse)
+      .expect(502, {
+        statusCode: 502,
+        code: 'ARTICLES_SIMPLIFICATION_FAILED',
+        message: 'Failed to simplify article.',
+      });
     expect(testApp.provider.completeStructured).toHaveBeenCalledTimes(2);
     expect(testApp.prisma.articleSimplification.upsert).not.toHaveBeenCalled();
   });
@@ -76,11 +95,15 @@ describe('Article simplification errors (HTTP)', () => {
     testApp.prisma.articleSimplification.findUnique.mockRejectedValueOnce(
       new Error('private DB read failure'),
     );
-    await request(testApp.server).post(path).send(body).expect(500, {
-      statusCode: 500,
-      code: 'INTERNAL_ERROR',
-      message: 'Internal server error.',
-    });
+    await request(testApp.server)
+      .post(path)
+      .send(body)
+      .expect(assertResponse)
+      .expect(500, {
+        statusCode: 500,
+        code: 'INTERNAL_ERROR',
+        message: 'Internal server error.',
+      });
     expect(testApp.provider.completeStructured).not.toHaveBeenCalled();
   });
 
@@ -92,10 +115,14 @@ describe('Article simplification errors (HTTP)', () => {
     testApp.prisma.articleSimplification.upsert.mockRejectedValueOnce(
       new Error('private DB write failure'),
     );
-    await request(testApp.server).post(path).send(body).expect(502, {
-      statusCode: 502,
-      code: 'ARTICLES_SIMPLIFICATION_FAILED',
-      message: 'Failed to simplify article.',
-    });
+    await request(testApp.server)
+      .post(path)
+      .send(body)
+      .expect(assertResponse)
+      .expect(502, {
+        statusCode: 502,
+        code: 'ARTICLES_SIMPLIFICATION_FAILED',
+        message: 'Failed to simplify article.',
+      });
   });
 });

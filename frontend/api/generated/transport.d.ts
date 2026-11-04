@@ -21,6 +21,70 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/articles/adaptations': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['getArticleAdaptations'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/articles/quiz': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['generateArticleQuiz'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/articles/simplify': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['simplifyArticle'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/articles/vocabulary-quiz': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['generateArticleVocabularyQuiz'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/dictionary/embedding': {
     parameters: {
       query?: never;
@@ -144,6 +208,102 @@ export interface paths {
     put?: never;
     /** Translate a selected word with optional sentence context */
     post: operations['translateWord'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/users/me/articles/recent': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['getRecentArticles'];
+    put?: never;
+    post: operations['recordRecentArticle'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/users/me/articles/saved': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['getSavedArticles'];
+    put?: never;
+    post: operations['saveArticleForLater'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/users/me/articles/saved/{articleId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete: operations['removeSavedArticle'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/articles': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['getWikipediaArticles'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/articles/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['getWikipediaArticleDetail'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/articles/random': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['getRandomWikipediaArticles'];
+    put?: never;
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -660,6 +820,163 @@ export interface components {
        */
       date: string;
     };
+    ArticleAdaptationsByArticleId: {
+      [key: string]: components['schemas']['ArticleAdaptationSummary'][];
+    };
+    ArticleAdaptationsQuery: {
+      /** @description Comma-separated positive integers, deduplicated before validation. Empty input is omitted; repeated string query values fail validation. */
+      articleIds: number[];
+      /**
+       * @description Strings are trimmed and normalized before validation.
+       * @enum {string}
+       */
+      transformationType?: 'all' | 'adaptation' | 'summary';
+    };
+    ArticleAdaptationSummary: {
+      level: components['schemas']['ArticleSimplificationLevel'];
+      transformationType: components['schemas']['ArticleTextTransformationType'];
+    };
+    ArticleAdaptationSummaryInput: {
+      level: components['schemas']['ArticleSimplificationLevel'];
+      transformationType: components['schemas']['ArticleTextTransformationType'];
+    };
+    ArticleBlock:
+      | components['schemas']['ArticleHeadingBlock']
+      | components['schemas']['ArticleParagraphBlock']
+      | components['schemas']['ArticleListBlock']
+      | components['schemas']['ArticleTableBlock']
+      | components['schemas']['ArticleImageBlock']
+      | components['schemas']['FormulaBlock'];
+    ArticleDetailQuery: {
+      /**
+       * @description Strings are trimmed and normalized before validation.
+       * @default en
+       * @enum {string}
+       */
+      languageCode?: 'en';
+    };
+    ArticleHeadingBlock: {
+      /** @enum {integer} */
+      level: 1 | 2 | 3;
+      text: string;
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'heading';
+    };
+    ArticleImageBlock: {
+      alt?: string;
+      caption?: string;
+      src: string;
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'image';
+    };
+    ArticleListBlock: {
+      items: components['schemas']['InlineNode'][][];
+      ordered: boolean;
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'list';
+    };
+    ArticleParagraphBlock: {
+      children: components['schemas']['InlineNode'][];
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'paragraph';
+    };
+    ArticleQuizAnswerKeyQuestion: {
+      correctOptionIds: string[];
+      explanation?: string;
+      id: string;
+      options: components['schemas']['ArticleQuizQuestionOption'][];
+      prompt: string;
+      type: components['schemas']['ArticleQuizQuestionType'];
+    };
+    ArticleQuizQuestion: {
+      id: string;
+      options: components['schemas']['ArticleQuizQuestionOption'][];
+      prompt: string;
+      type: components['schemas']['ArticleQuizQuestionType'];
+    };
+    ArticleQuizQuestionOption: {
+      id: string;
+      text: string;
+    };
+    /** @enum {string} */
+    ArticleQuizQuestionType: 'single_choice' | 'multiple_choice' | 'true_false';
+    /**
+     * @description Strings are trimmed and normalized before validation.
+     * @enum {string}
+     */
+    ArticleReadyLevelFilter: 'all' | 'A1' | 'A2' | 'B1' | 'B2';
+    /**
+     * @description Strings are trimmed and normalized before validation.
+     * @enum {string}
+     */
+    ArticleReadyTransformationFilter: 'all' | 'adaptation' | 'summary' | 'both';
+    /** @enum {string} */
+    ArticleSimplificationLevel: 'A1' | 'A2' | 'B1' | 'B2' | 'C1';
+    /**
+     * @description Strings are trimmed and normalized before validation.
+     * @enum {string}
+     */
+    ArticleSimplificationTargetLength: 'short' | 'medium' | 'long';
+    ArticleTableBlock: {
+      rows: components['schemas']['TableCell'][][];
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'table';
+    };
+    ArticleTextNode: {
+      bold?: boolean;
+      italic?: boolean;
+      text: string;
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'text';
+    };
+    /** @enum {string} */
+    ArticleTextTransformationType: 'adaptation' | 'summary';
+    ArticleVocabularyQuizQuestion: {
+      format: components['schemas']['ArticleVocabularyQuizQuestionFormat'];
+      id: string;
+      options: components['schemas']['ArticleQuizQuestionOption'][];
+      prompt: string;
+      termKind: components['schemas']['ArticleVocabularyQuizTermKind'];
+      /** @enum {string} */
+      type: 'single_choice';
+    };
+    /** @enum {string} */
+    ArticleVocabularyQuizQuestionFormat:
+      | 'translation'
+      | 'reverse_translation'
+      | 'definition'
+      | 'cloze'
+      | 'synonym';
+    /** @enum {string} */
+    ArticleVocabularyQuizTermKind: 'word' | 'phrase';
+    ArticleWordNode: {
+      bold?: boolean;
+      italic?: boolean;
+      text: string;
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'word';
+    };
     AuthEmailRequest: {
       /**
        * Format: email
@@ -768,6 +1085,72 @@ export interface components {
     };
     /** @enum {string} */
     DictionaryWordProgress: 'new' | 'in_progress' | 'learned';
+    FetchWikipediaArticlesParams: {
+      /** @description Strings are trimmed and normalized before validation. */
+      category?: components['schemas']['WikipediaArticleCategory'];
+      /** @description Comma-separated positive integers, deduplicated before validation. Empty input is omitted; repeated string query values fail validation. */
+      excludeIds?: number[];
+      /** @description Optional integer; omission uses the service default of 20. */
+      limit?: number;
+      preferImagesFirst?: boolean;
+      /** @description Strings are trimmed and normalized before validation. */
+      previewLength?: components['schemas']['WikipediaArticlePreviewLength'];
+      /** @description Strings are trimmed and normalized before validation. */
+      readyLevel?: components['schemas']['ArticleReadyLevelFilter'];
+      /** @description Strings are trimmed and normalized before validation. */
+      readyTransformationType?: components['schemas']['ArticleReadyTransformationFilter'];
+      recommended?: boolean;
+      /** @description Strings are trimmed and normalized before validation. */
+      search?: string;
+      /** @description Strings are trimmed and normalized before validation. */
+      sortBy?: components['schemas']['WikipediaArticleSortOption'];
+    };
+    FormulaBlock: {
+      altText: string;
+      display: boolean;
+      heightEx?: number;
+      latex?: string;
+      mathml?: string;
+      svg?: string;
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'formula';
+      widthEx?: number;
+    };
+    GenerateArticleQuizRequest: {
+      /** @description Strings are trimmed and normalized before validation. */
+      level: components['schemas']['ArticleSimplificationLevel'];
+      /** @description Strings are trimmed and normalized before validation. */
+      targetLength: components['schemas']['ArticleSimplificationTargetLength'];
+      /** @description Strings are trimmed and normalized before validation. */
+      text: string;
+      /** @description Strings are trimmed and normalized before validation. */
+      title?: string | null;
+    };
+    GenerateArticleQuizResponse: {
+      questions: components['schemas']['ArticleQuizQuestion'][];
+      /** Format: uuid */
+      sessionId: string;
+    };
+    GenerateArticleVocabularyQuizRequest: {
+      /**
+       * @description Strings are trimmed and normalized before validation.
+       * @enum {string|null}
+       */
+      level?: 'A1' | 'A2' | 'B1' | 'B2' | 'C1' | null;
+      /** @description Strings are trimmed and normalized before validation. */
+      text: string;
+      /** @description Strings are trimmed and normalized before validation. */
+      title?: string | null;
+    };
+    GenerateArticleVocabularyQuizResponse: {
+      questions: components['schemas']['ArticleVocabularyQuizQuestion'][];
+      resolvedLevel: components['schemas']['ArticleSimplificationLevel'];
+      /** Format: uuid */
+      sessionId: string;
+    };
     GenerateDictionaryEmbeddingRequest: {
       /** @description Trimmed embedding text. */
       text: string;
@@ -776,6 +1159,9 @@ export interface components {
       /** @description Google ID token, trimmed before validation. Identity is verified with the provider. */
       idToken: string;
     };
+    InlineNode:
+      | components['schemas']['ArticleTextNode']
+      | components['schemas']['ArticleWordNode'];
     LearningReminderDispatchResponse: {
       checkedCount: number;
       sentCount: number;
@@ -895,6 +1281,17 @@ export interface components {
       /** Format: uuid */
       sessionId: string;
     };
+    SaveArticleRequest: {
+      availableAdaptations?:
+        components['schemas']['ArticleAdaptationSummaryInput'][] | null;
+      extract: string;
+      id: number;
+      pageLength?: number | null;
+      thumbnailUrl?: string | null;
+      /** @description Strings are trimmed and normalized before validation. */
+      title: string;
+      url: string;
+    };
     SendTestPushRequest: {
       /** @description Trimmed. Null, omission or an empty string uses the default message. */
       body?: string | null;
@@ -913,6 +1310,34 @@ export interface components {
       word: string;
       /** @description Omitted, null or empty lists use no candidates. Candidates must contain non-whitespace text. */
       wordList?: string[] | null;
+    };
+    SimplifyArticleRequest: {
+      articleId?: number | null;
+      /** @description Optional source blocks. Only the array container is DTO-validated; nested block data is not validated at this boundary. */
+      blocks?: unknown[] | null;
+      /**
+       * @description Strings are trimmed and normalized before validation.
+       * @enum {string|null}
+       */
+      level?: 'A1' | 'A2' | 'B1' | 'B2' | 'C1' | null;
+      /** @description Strings are trimmed and normalized before validation. */
+      text: string;
+      /** @description Strings are trimmed and normalized before validation. */
+      title?: string | null;
+      /**
+       * @description Strings are trimmed and normalized before validation.
+       * @enum {string|null}
+       */
+      transformationType?: 'adaptation' | 'summary' | null;
+    };
+    SimplifyArticleResponse: {
+      adaptedBlocks: components['schemas']['ArticleBlock'][];
+      adaptedLength: number;
+      level: components['schemas']['ArticleSimplificationLevel'];
+      originalLength: number;
+      questions?: components['schemas']['ArticleQuizAnswerKeyQuestion'][];
+      title: string;
+      transformationType: components['schemas']['ArticleTextTransformationType'];
     };
     StreakAchievement: {
       /** Format: date-time */
@@ -986,6 +1411,10 @@ export interface components {
       newlyUnlockedAchievementIds: string[];
       vocabularyWord?: components['schemas']['QuizVocabularyWord'];
     };
+    TableCell: {
+      header?: boolean;
+      text: string;
+    };
     /** @description Unknown body properties are rejected by global DTO validation. */
     TranslateWordRequest: {
       /** @description Sentence context. Strings are trimmed; null is preserved. */
@@ -1045,6 +1474,28 @@ export interface components {
        */
       learningReminderTime?: string | null;
     };
+    UserRecentArticle: {
+      availableAdaptations?: components['schemas']['ArticleAdaptationSummary'][];
+      extract: string;
+      id: number;
+      /** Format: date-time */
+      openedAt: string;
+      pageLength?: number;
+      thumbnailUrl?: string;
+      title: string;
+      url: string;
+    };
+    UserSavedArticle: {
+      availableAdaptations?: components['schemas']['ArticleAdaptationSummary'][];
+      extract: string;
+      id: number;
+      pageLength?: number;
+      /** Format: date-time */
+      savedAt: string;
+      thumbnailUrl?: string;
+      title: string;
+      url: string;
+    };
     VerificationCodeDeliveryResponse: {
       /** Format: email */
       email: string;
@@ -1065,6 +1516,49 @@ export interface components {
       email: string;
       resetToken: string;
     };
+    WikipediaArticle: {
+      availableAdaptations?: components['schemas']['ArticleAdaptationSummary'][];
+      extract: string;
+      id: number;
+      pageLength?: number;
+      thumbnailUrl?: string;
+      title: string;
+      url: string;
+    };
+    /**
+     * @description Strings are trimmed and normalized before validation.
+     * @enum {string}
+     */
+    WikipediaArticleCategory:
+      | 'all'
+      | 'biography'
+      | 'culture'
+      | 'food'
+      | 'geography'
+      | 'history'
+      | 'nature'
+      | 'science'
+      | 'space'
+      | 'sports'
+      | 'technology';
+    WikipediaArticleDetail: {
+      blocks: components['schemas']['ArticleBlock'][];
+      content: string;
+      id: number;
+      thumbnailUrl?: string;
+      title: string;
+      url: string;
+    };
+    /**
+     * @description Strings are trimmed and normalized before validation.
+     * @enum {string}
+     */
+    WikipediaArticlePreviewLength: 'all' | 'short' | 'medium' | 'long';
+    /**
+     * @description Strings are trimmed and normalized before validation.
+     * @enum {string}
+     */
+    WikipediaArticleSortOption: 'default' | 'length_desc' | 'length_asc';
   };
   responses: never;
   parameters: never;
@@ -1078,6 +1572,47 @@ export type AchievementsProfileResponse =
 export type AchievementStatus = components['schemas']['AchievementStatus'];
 export type ApplyStreakFreezeRequest =
   components['schemas']['ApplyStreakFreezeRequest'];
+export type ArticleAdaptationsByArticleId =
+  components['schemas']['ArticleAdaptationsByArticleId'];
+export type ArticleAdaptationsQuery =
+  components['schemas']['ArticleAdaptationsQuery'];
+export type ArticleAdaptationSummary =
+  components['schemas']['ArticleAdaptationSummary'];
+export type ArticleAdaptationSummaryInput =
+  components['schemas']['ArticleAdaptationSummaryInput'];
+export type ArticleBlock = components['schemas']['ArticleBlock'];
+export type ArticleDetailQuery = components['schemas']['ArticleDetailQuery'];
+export type ArticleHeadingBlock = components['schemas']['ArticleHeadingBlock'];
+export type ArticleImageBlock = components['schemas']['ArticleImageBlock'];
+export type ArticleListBlock = components['schemas']['ArticleListBlock'];
+export type ArticleParagraphBlock =
+  components['schemas']['ArticleParagraphBlock'];
+export type ArticleQuizAnswerKeyQuestion =
+  components['schemas']['ArticleQuizAnswerKeyQuestion'];
+export type ArticleQuizQuestion = components['schemas']['ArticleQuizQuestion'];
+export type ArticleQuizQuestionOption =
+  components['schemas']['ArticleQuizQuestionOption'];
+export type ArticleQuizQuestionType =
+  components['schemas']['ArticleQuizQuestionType'];
+export type ArticleReadyLevelFilter =
+  components['schemas']['ArticleReadyLevelFilter'];
+export type ArticleReadyTransformationFilter =
+  components['schemas']['ArticleReadyTransformationFilter'];
+export type ArticleSimplificationLevel =
+  components['schemas']['ArticleSimplificationLevel'];
+export type ArticleSimplificationTargetLength =
+  components['schemas']['ArticleSimplificationTargetLength'];
+export type ArticleTableBlock = components['schemas']['ArticleTableBlock'];
+export type ArticleTextNode = components['schemas']['ArticleTextNode'];
+export type ArticleTextTransformationType =
+  components['schemas']['ArticleTextTransformationType'];
+export type ArticleVocabularyQuizQuestion =
+  components['schemas']['ArticleVocabularyQuizQuestion'];
+export type ArticleVocabularyQuizQuestionFormat =
+  components['schemas']['ArticleVocabularyQuizQuestionFormat'];
+export type ArticleVocabularyQuizTermKind =
+  components['schemas']['ArticleVocabularyQuizTermKind'];
+export type ArticleWordNode = components['schemas']['ArticleWordNode'];
 export type AuthEmailRequest = components['schemas']['AuthEmailRequest'];
 export type AuthSessionResponse = components['schemas']['AuthSessionResponse'];
 export type AuthUser = components['schemas']['AuthUser'];
@@ -1102,9 +1637,21 @@ export type DictionaryTestQuestionOption =
 export type DictionaryWord = components['schemas']['DictionaryWord'];
 export type DictionaryWordProgress =
   components['schemas']['DictionaryWordProgress'];
+export type FetchWikipediaArticlesParams =
+  components['schemas']['FetchWikipediaArticlesParams'];
+export type FormulaBlock = components['schemas']['FormulaBlock'];
+export type GenerateArticleQuizRequest =
+  components['schemas']['GenerateArticleQuizRequest'];
+export type GenerateArticleQuizResponse =
+  components['schemas']['GenerateArticleQuizResponse'];
+export type GenerateArticleVocabularyQuizRequest =
+  components['schemas']['GenerateArticleVocabularyQuizRequest'];
+export type GenerateArticleVocabularyQuizResponse =
+  components['schemas']['GenerateArticleVocabularyQuizResponse'];
 export type GenerateDictionaryEmbeddingRequest =
   components['schemas']['GenerateDictionaryEmbeddingRequest'];
 export type GoogleLoginRequest = components['schemas']['GoogleLoginRequest'];
+export type InlineNode = components['schemas']['InlineNode'];
 export type LearningReminderDispatchResponse =
   components['schemas']['LearningReminderDispatchResponse'];
 export type LearningReminderPreferencesResponse =
@@ -1133,11 +1680,16 @@ export type ResetPasswordRequest =
 export type ResetPasswordResponse =
   components['schemas']['ResetPasswordResponse'];
 export type RetakeQuizResponse = components['schemas']['RetakeQuizResponse'];
+export type SaveArticleRequest = components['schemas']['SaveArticleRequest'];
 export type SendTestPushRequest = components['schemas']['SendTestPushRequest'];
 export type SendTestPushResponse =
   components['schemas']['SendTestPushResponse'];
 export type SimilarDictionaryWordsRequest =
   components['schemas']['SimilarDictionaryWordsRequest'];
+export type SimplifyArticleRequest =
+  components['schemas']['SimplifyArticleRequest'];
+export type SimplifyArticleResponse =
+  components['schemas']['SimplifyArticleResponse'];
 export type StreakAchievement = components['schemas']['StreakAchievement'];
 export type StreakAchievementMilestone =
   components['schemas']['StreakAchievementMilestone'];
@@ -1154,6 +1706,7 @@ export type SubmitQuizAnswerRequest =
   components['schemas']['SubmitQuizAnswerRequest'];
 export type SubmitQuizAnswerResponse =
   components['schemas']['SubmitQuizAnswerResponse'];
+export type TableCell = components['schemas']['TableCell'];
 export type TranslateWordRequest =
   components['schemas']['TranslateWordRequest'];
 export type TranslateWordResponse =
@@ -1162,12 +1715,23 @@ export type UpdateDictionaryWordProgressRequest =
   components['schemas']['UpdateDictionaryWordProgressRequest'];
 export type UpdateLearningReminderPreferencesRequest =
   components['schemas']['UpdateLearningReminderPreferencesRequest'];
+export type UserRecentArticle = components['schemas']['UserRecentArticle'];
+export type UserSavedArticle = components['schemas']['UserSavedArticle'];
 export type VerificationCodeDeliveryResponse =
   components['schemas']['VerificationCodeDeliveryResponse'];
 export type VerifyAuthCodeRequest =
   components['schemas']['VerifyAuthCodeRequest'];
 export type VerifyPasswordResetCodeResponse =
   components['schemas']['VerifyPasswordResetCodeResponse'];
+export type WikipediaArticle = components['schemas']['WikipediaArticle'];
+export type WikipediaArticleCategory =
+  components['schemas']['WikipediaArticleCategory'];
+export type WikipediaArticleDetail =
+  components['schemas']['WikipediaArticleDetail'];
+export type WikipediaArticlePreviewLength =
+  components['schemas']['WikipediaArticlePreviewLength'];
+export type WikipediaArticleSortOption =
+  components['schemas']['WikipediaArticleSortOption'];
 export type $defs = Record<string, never>;
 export interface operations {
   getAchievementsProfile: {
@@ -1325,6 +1889,776 @@ export interface operations {
                 message: 'Request rejected.';
                 /** @enum {integer} */
                 statusCode: 500;
+              };
+        };
+      };
+      /** @description Other rejected requests retain their HTTP error status. Infrastructure errors may have a different body. */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** @enum {string} */
+            code: 'REQUEST_REJECTED';
+            /** @enum {string} */
+            message: 'Request rejected.';
+            statusCode: number;
+          };
+        };
+      };
+    };
+  };
+  getArticleAdaptations: {
+    parameters: {
+      query: {
+        /** @description Comma-separated positive integers, deduplicated before validation. Empty input is omitted; repeated string query values fail validation. */
+        articleIds: number[];
+        /** @description Strings are trimmed and normalized before validation. */
+        transformationType?: 'all' | 'adaptation' | 'summary';
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ArticleAdaptationsByArticleId'];
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'VALIDATION_FAILED';
+                details: {
+                  fields: {
+                    path: (string | number)[];
+                    /** @enum {string} */
+                    rule:
+                      | 'VALUE_REQUIRED'
+                      | 'STRING_REQUIRED'
+                      | 'INTEGER_REQUIRED'
+                      | 'BOOLEAN_REQUIRED'
+                      | 'ARRAY_REQUIRED'
+                      | 'EMAIL_INVALID'
+                      | 'UUID_INVALID'
+                      | 'URL_INVALID'
+                      | 'TIMEZONE_INVALID'
+                      | 'DATE_INVALID'
+                      | 'STRING_TOO_SHORT'
+                      | 'STRING_TOO_LONG'
+                      | 'NUMBER_TOO_SMALL'
+                      | 'NUMBER_TOO_LARGE'
+                      | 'ARRAY_TOO_LARGE'
+                      | 'ARRAY_EMPTY'
+                      | 'VALUE_NOT_ALLOWED'
+                      | 'FORMAT_INVALID'
+                      | 'FIELDS_DO_NOT_MATCH'
+                      | 'PROPERTY_NOT_ALLOWED'
+                      | 'VALUE_INVALID';
+                  }[];
+                };
+                /** @enum {string} */
+                message: 'Request validation failed.';
+                /** @enum {integer} */
+                statusCode: 400;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_MALFORMED';
+                /** @enum {string} */
+                message: 'Malformed request body.';
+                /** @enum {integer} */
+                statusCode: 400;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 400;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_TOO_LARGE';
+                /** @enum {string} */
+                message: 'Request body is too large.';
+                /** @enum {integer} */
+                statusCode: 413;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 413;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'INTERNAL_ERROR';
+                /** @enum {string} */
+                message: 'Internal server error.';
+                /** @enum {integer} */
+                statusCode: 500;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 500;
+              };
+        };
+      };
+      /** @description Other rejected requests retain their HTTP error status. Infrastructure errors may have a different body. */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** @enum {string} */
+            code: 'REQUEST_REJECTED';
+            /** @enum {string} */
+            message: 'Request rejected.';
+            statusCode: number;
+          };
+        };
+      };
+    };
+  };
+  generateArticleQuiz: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['GenerateArticleQuizRequest'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['GenerateArticleQuizResponse'];
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'VALIDATION_FAILED';
+                details: {
+                  fields: {
+                    path: (string | number)[];
+                    /** @enum {string} */
+                    rule:
+                      | 'VALUE_REQUIRED'
+                      | 'STRING_REQUIRED'
+                      | 'INTEGER_REQUIRED'
+                      | 'BOOLEAN_REQUIRED'
+                      | 'ARRAY_REQUIRED'
+                      | 'EMAIL_INVALID'
+                      | 'UUID_INVALID'
+                      | 'URL_INVALID'
+                      | 'TIMEZONE_INVALID'
+                      | 'DATE_INVALID'
+                      | 'STRING_TOO_SHORT'
+                      | 'STRING_TOO_LONG'
+                      | 'NUMBER_TOO_SMALL'
+                      | 'NUMBER_TOO_LARGE'
+                      | 'ARRAY_TOO_LARGE'
+                      | 'ARRAY_EMPTY'
+                      | 'VALUE_NOT_ALLOWED'
+                      | 'FORMAT_INVALID'
+                      | 'FIELDS_DO_NOT_MATCH'
+                      | 'PROPERTY_NOT_ALLOWED'
+                      | 'VALUE_INVALID';
+                  }[];
+                };
+                /** @enum {string} */
+                message: 'Request validation failed.';
+                /** @enum {integer} */
+                statusCode: 400;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_MALFORMED';
+                /** @enum {string} */
+                message: 'Malformed request body.';
+                /** @enum {integer} */
+                statusCode: 400;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 400;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'AUTH_AUTHENTICATION_REQUIRED';
+                /** @enum {string} */
+                message: 'Authentication is required.';
+                /** @enum {integer} */
+                statusCode: 401;
+              }
+            | {
+                /** @enum {string} */
+                code: 'AUTH_ACCESS_TOKEN_INVALID';
+                /** @enum {string} */
+                message: 'Access token is invalid.';
+                /** @enum {integer} */
+                statusCode: 401;
+              }
+            | {
+                /** @enum {string} */
+                code: 'AUTH_ACCESS_TOKEN_EXPIRED';
+                /** @enum {string} */
+                message: 'Access token has expired.';
+                /** @enum {integer} */
+                statusCode: 401;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 401;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_TOO_LARGE';
+                /** @enum {string} */
+                message: 'Request body is too large.';
+                /** @enum {integer} */
+                statusCode: 413;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 413;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'INTERNAL_ERROR';
+                /** @enum {string} */
+                message: 'Internal server error.';
+                /** @enum {integer} */
+                statusCode: 500;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 500;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      502: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'ARTICLES_QUIZ_GENERATION_FAILED';
+                /** @enum {string} */
+                message: 'Failed to generate article quiz.';
+                /** @enum {integer} */
+                statusCode: 502;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 502;
+              };
+        };
+      };
+      /** @description Other rejected requests retain their HTTP error status. Infrastructure errors may have a different body. */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** @enum {string} */
+            code: 'REQUEST_REJECTED';
+            /** @enum {string} */
+            message: 'Request rejected.';
+            statusCode: number;
+          };
+        };
+      };
+    };
+  };
+  simplifyArticle: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SimplifyArticleRequest'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SimplifyArticleResponse'];
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'VALIDATION_FAILED';
+                details: {
+                  fields: {
+                    path: (string | number)[];
+                    /** @enum {string} */
+                    rule:
+                      | 'VALUE_REQUIRED'
+                      | 'STRING_REQUIRED'
+                      | 'INTEGER_REQUIRED'
+                      | 'BOOLEAN_REQUIRED'
+                      | 'ARRAY_REQUIRED'
+                      | 'EMAIL_INVALID'
+                      | 'UUID_INVALID'
+                      | 'URL_INVALID'
+                      | 'TIMEZONE_INVALID'
+                      | 'DATE_INVALID'
+                      | 'STRING_TOO_SHORT'
+                      | 'STRING_TOO_LONG'
+                      | 'NUMBER_TOO_SMALL'
+                      | 'NUMBER_TOO_LARGE'
+                      | 'ARRAY_TOO_LARGE'
+                      | 'ARRAY_EMPTY'
+                      | 'VALUE_NOT_ALLOWED'
+                      | 'FORMAT_INVALID'
+                      | 'FIELDS_DO_NOT_MATCH'
+                      | 'PROPERTY_NOT_ALLOWED'
+                      | 'VALUE_INVALID';
+                  }[];
+                };
+                /** @enum {string} */
+                message: 'Request validation failed.';
+                /** @enum {integer} */
+                statusCode: 400;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_MALFORMED';
+                /** @enum {string} */
+                message: 'Malformed request body.';
+                /** @enum {integer} */
+                statusCode: 400;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 400;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_TOO_LARGE';
+                /** @enum {string} */
+                message: 'Request body is too large.';
+                /** @enum {integer} */
+                statusCode: 413;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 413;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'INTERNAL_ERROR';
+                /** @enum {string} */
+                message: 'Internal server error.';
+                /** @enum {integer} */
+                statusCode: 500;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 500;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      502: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'ARTICLES_SIMPLIFICATION_FAILED';
+                /** @enum {string} */
+                message: 'Failed to simplify article.';
+                /** @enum {integer} */
+                statusCode: 502;
+              }
+            | {
+                /** @enum {string} */
+                code: 'ARTICLES_ADAPTATION_UNAVAILABLE';
+                /** @enum {string} */
+                message: 'Article adaptation is unavailable.';
+                /** @enum {integer} */
+                statusCode: 502;
+              }
+            | {
+                /** @enum {string} */
+                code: 'ARTICLES_SUMMARY_UNAVAILABLE';
+                /** @enum {string} */
+                message: 'Article summary is unavailable.';
+                /** @enum {integer} */
+                statusCode: 502;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 502;
+              };
+        };
+      };
+      /** @description Other rejected requests retain their HTTP error status. Infrastructure errors may have a different body. */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** @enum {string} */
+            code: 'REQUEST_REJECTED';
+            /** @enum {string} */
+            message: 'Request rejected.';
+            statusCode: number;
+          };
+        };
+      };
+    };
+  };
+  generateArticleVocabularyQuiz: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['GenerateArticleVocabularyQuizRequest'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['GenerateArticleVocabularyQuizResponse'];
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'VALIDATION_FAILED';
+                details: {
+                  fields: {
+                    path: (string | number)[];
+                    /** @enum {string} */
+                    rule:
+                      | 'VALUE_REQUIRED'
+                      | 'STRING_REQUIRED'
+                      | 'INTEGER_REQUIRED'
+                      | 'BOOLEAN_REQUIRED'
+                      | 'ARRAY_REQUIRED'
+                      | 'EMAIL_INVALID'
+                      | 'UUID_INVALID'
+                      | 'URL_INVALID'
+                      | 'TIMEZONE_INVALID'
+                      | 'DATE_INVALID'
+                      | 'STRING_TOO_SHORT'
+                      | 'STRING_TOO_LONG'
+                      | 'NUMBER_TOO_SMALL'
+                      | 'NUMBER_TOO_LARGE'
+                      | 'ARRAY_TOO_LARGE'
+                      | 'ARRAY_EMPTY'
+                      | 'VALUE_NOT_ALLOWED'
+                      | 'FORMAT_INVALID'
+                      | 'FIELDS_DO_NOT_MATCH'
+                      | 'PROPERTY_NOT_ALLOWED'
+                      | 'VALUE_INVALID';
+                  }[];
+                };
+                /** @enum {string} */
+                message: 'Request validation failed.';
+                /** @enum {integer} */
+                statusCode: 400;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_MALFORMED';
+                /** @enum {string} */
+                message: 'Malformed request body.';
+                /** @enum {integer} */
+                statusCode: 400;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 400;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'AUTH_AUTHENTICATION_REQUIRED';
+                /** @enum {string} */
+                message: 'Authentication is required.';
+                /** @enum {integer} */
+                statusCode: 401;
+              }
+            | {
+                /** @enum {string} */
+                code: 'AUTH_ACCESS_TOKEN_INVALID';
+                /** @enum {string} */
+                message: 'Access token is invalid.';
+                /** @enum {integer} */
+                statusCode: 401;
+              }
+            | {
+                /** @enum {string} */
+                code: 'AUTH_ACCESS_TOKEN_EXPIRED';
+                /** @enum {string} */
+                message: 'Access token has expired.';
+                /** @enum {integer} */
+                statusCode: 401;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 401;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_TOO_LARGE';
+                /** @enum {string} */
+                message: 'Request body is too large.';
+                /** @enum {integer} */
+                statusCode: 413;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 413;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'INTERNAL_ERROR';
+                /** @enum {string} */
+                message: 'Internal server error.';
+                /** @enum {integer} */
+                statusCode: 500;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 500;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      502: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'ARTICLES_VOCABULARY_QUIZ_GENERATION_FAILED';
+                /** @enum {string} */
+                message: 'Failed to generate article vocabulary quiz.';
+                /** @enum {integer} */
+                statusCode: 502;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 502;
               };
         };
       };
@@ -3010,6 +4344,1584 @@ export interface operations {
                 code: 'TRANSLATIONS_UNAVAILABLE';
                 /** @enum {string} */
                 message: 'Translation is unavailable.';
+                /** @enum {integer} */
+                statusCode: 502;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 502;
+              };
+        };
+      };
+      /** @description Other rejected requests retain their HTTP error status. Infrastructure errors may have a different body. */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** @enum {string} */
+            code: 'REQUEST_REJECTED';
+            /** @enum {string} */
+            message: 'Request rejected.';
+            statusCode: number;
+          };
+        };
+      };
+    };
+  };
+  getRecentArticles: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['UserRecentArticle'][];
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_MALFORMED';
+                /** @enum {string} */
+                message: 'Malformed request body.';
+                /** @enum {integer} */
+                statusCode: 400;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 400;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'AUTH_AUTHENTICATION_REQUIRED';
+                /** @enum {string} */
+                message: 'Authentication is required.';
+                /** @enum {integer} */
+                statusCode: 401;
+              }
+            | {
+                /** @enum {string} */
+                code: 'AUTH_ACCESS_TOKEN_INVALID';
+                /** @enum {string} */
+                message: 'Access token is invalid.';
+                /** @enum {integer} */
+                statusCode: 401;
+              }
+            | {
+                /** @enum {string} */
+                code: 'AUTH_ACCESS_TOKEN_EXPIRED';
+                /** @enum {string} */
+                message: 'Access token has expired.';
+                /** @enum {integer} */
+                statusCode: 401;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 401;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'ARTICLES_USER_NOT_FOUND';
+                /** @enum {string} */
+                message: 'User not found.';
+                /** @enum {integer} */
+                statusCode: 404;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 404;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_TOO_LARGE';
+                /** @enum {string} */
+                message: 'Request body is too large.';
+                /** @enum {integer} */
+                statusCode: 413;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 413;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'INTERNAL_ERROR';
+                /** @enum {string} */
+                message: 'Internal server error.';
+                /** @enum {integer} */
+                statusCode: 500;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 500;
+              };
+        };
+      };
+      /** @description Other rejected requests retain their HTTP error status. Infrastructure errors may have a different body. */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** @enum {string} */
+            code: 'REQUEST_REJECTED';
+            /** @enum {string} */
+            message: 'Request rejected.';
+            statusCode: number;
+          };
+        };
+      };
+    };
+  };
+  recordRecentArticle: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SaveArticleRequest'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['UserRecentArticle'][];
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'VALIDATION_FAILED';
+                details: {
+                  fields: {
+                    path: (string | number)[];
+                    /** @enum {string} */
+                    rule:
+                      | 'VALUE_REQUIRED'
+                      | 'STRING_REQUIRED'
+                      | 'INTEGER_REQUIRED'
+                      | 'BOOLEAN_REQUIRED'
+                      | 'ARRAY_REQUIRED'
+                      | 'EMAIL_INVALID'
+                      | 'UUID_INVALID'
+                      | 'URL_INVALID'
+                      | 'TIMEZONE_INVALID'
+                      | 'DATE_INVALID'
+                      | 'STRING_TOO_SHORT'
+                      | 'STRING_TOO_LONG'
+                      | 'NUMBER_TOO_SMALL'
+                      | 'NUMBER_TOO_LARGE'
+                      | 'ARRAY_TOO_LARGE'
+                      | 'ARRAY_EMPTY'
+                      | 'VALUE_NOT_ALLOWED'
+                      | 'FORMAT_INVALID'
+                      | 'FIELDS_DO_NOT_MATCH'
+                      | 'PROPERTY_NOT_ALLOWED'
+                      | 'VALUE_INVALID';
+                  }[];
+                };
+                /** @enum {string} */
+                message: 'Request validation failed.';
+                /** @enum {integer} */
+                statusCode: 400;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_MALFORMED';
+                /** @enum {string} */
+                message: 'Malformed request body.';
+                /** @enum {integer} */
+                statusCode: 400;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 400;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'AUTH_AUTHENTICATION_REQUIRED';
+                /** @enum {string} */
+                message: 'Authentication is required.';
+                /** @enum {integer} */
+                statusCode: 401;
+              }
+            | {
+                /** @enum {string} */
+                code: 'AUTH_ACCESS_TOKEN_INVALID';
+                /** @enum {string} */
+                message: 'Access token is invalid.';
+                /** @enum {integer} */
+                statusCode: 401;
+              }
+            | {
+                /** @enum {string} */
+                code: 'AUTH_ACCESS_TOKEN_EXPIRED';
+                /** @enum {string} */
+                message: 'Access token has expired.';
+                /** @enum {integer} */
+                statusCode: 401;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 401;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'ARTICLES_USER_NOT_FOUND';
+                /** @enum {string} */
+                message: 'User not found.';
+                /** @enum {integer} */
+                statusCode: 404;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 404;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_TOO_LARGE';
+                /** @enum {string} */
+                message: 'Request body is too large.';
+                /** @enum {integer} */
+                statusCode: 413;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 413;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'INTERNAL_ERROR';
+                /** @enum {string} */
+                message: 'Internal server error.';
+                /** @enum {integer} */
+                statusCode: 500;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 500;
+              };
+        };
+      };
+      /** @description Other rejected requests retain their HTTP error status. Infrastructure errors may have a different body. */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** @enum {string} */
+            code: 'REQUEST_REJECTED';
+            /** @enum {string} */
+            message: 'Request rejected.';
+            statusCode: number;
+          };
+        };
+      };
+    };
+  };
+  getSavedArticles: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['UserSavedArticle'][];
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_MALFORMED';
+                /** @enum {string} */
+                message: 'Malformed request body.';
+                /** @enum {integer} */
+                statusCode: 400;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 400;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'AUTH_AUTHENTICATION_REQUIRED';
+                /** @enum {string} */
+                message: 'Authentication is required.';
+                /** @enum {integer} */
+                statusCode: 401;
+              }
+            | {
+                /** @enum {string} */
+                code: 'AUTH_ACCESS_TOKEN_INVALID';
+                /** @enum {string} */
+                message: 'Access token is invalid.';
+                /** @enum {integer} */
+                statusCode: 401;
+              }
+            | {
+                /** @enum {string} */
+                code: 'AUTH_ACCESS_TOKEN_EXPIRED';
+                /** @enum {string} */
+                message: 'Access token has expired.';
+                /** @enum {integer} */
+                statusCode: 401;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 401;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'ARTICLES_USER_NOT_FOUND';
+                /** @enum {string} */
+                message: 'User not found.';
+                /** @enum {integer} */
+                statusCode: 404;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 404;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_TOO_LARGE';
+                /** @enum {string} */
+                message: 'Request body is too large.';
+                /** @enum {integer} */
+                statusCode: 413;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 413;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'INTERNAL_ERROR';
+                /** @enum {string} */
+                message: 'Internal server error.';
+                /** @enum {integer} */
+                statusCode: 500;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 500;
+              };
+        };
+      };
+      /** @description Other rejected requests retain their HTTP error status. Infrastructure errors may have a different body. */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** @enum {string} */
+            code: 'REQUEST_REJECTED';
+            /** @enum {string} */
+            message: 'Request rejected.';
+            statusCode: number;
+          };
+        };
+      };
+    };
+  };
+  saveArticleForLater: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SaveArticleRequest'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['UserSavedArticle'][];
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'VALIDATION_FAILED';
+                details: {
+                  fields: {
+                    path: (string | number)[];
+                    /** @enum {string} */
+                    rule:
+                      | 'VALUE_REQUIRED'
+                      | 'STRING_REQUIRED'
+                      | 'INTEGER_REQUIRED'
+                      | 'BOOLEAN_REQUIRED'
+                      | 'ARRAY_REQUIRED'
+                      | 'EMAIL_INVALID'
+                      | 'UUID_INVALID'
+                      | 'URL_INVALID'
+                      | 'TIMEZONE_INVALID'
+                      | 'DATE_INVALID'
+                      | 'STRING_TOO_SHORT'
+                      | 'STRING_TOO_LONG'
+                      | 'NUMBER_TOO_SMALL'
+                      | 'NUMBER_TOO_LARGE'
+                      | 'ARRAY_TOO_LARGE'
+                      | 'ARRAY_EMPTY'
+                      | 'VALUE_NOT_ALLOWED'
+                      | 'FORMAT_INVALID'
+                      | 'FIELDS_DO_NOT_MATCH'
+                      | 'PROPERTY_NOT_ALLOWED'
+                      | 'VALUE_INVALID';
+                  }[];
+                };
+                /** @enum {string} */
+                message: 'Request validation failed.';
+                /** @enum {integer} */
+                statusCode: 400;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_MALFORMED';
+                /** @enum {string} */
+                message: 'Malformed request body.';
+                /** @enum {integer} */
+                statusCode: 400;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 400;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'AUTH_AUTHENTICATION_REQUIRED';
+                /** @enum {string} */
+                message: 'Authentication is required.';
+                /** @enum {integer} */
+                statusCode: 401;
+              }
+            | {
+                /** @enum {string} */
+                code: 'AUTH_ACCESS_TOKEN_INVALID';
+                /** @enum {string} */
+                message: 'Access token is invalid.';
+                /** @enum {integer} */
+                statusCode: 401;
+              }
+            | {
+                /** @enum {string} */
+                code: 'AUTH_ACCESS_TOKEN_EXPIRED';
+                /** @enum {string} */
+                message: 'Access token has expired.';
+                /** @enum {integer} */
+                statusCode: 401;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 401;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'ARTICLES_USER_NOT_FOUND';
+                /** @enum {string} */
+                message: 'User not found.';
+                /** @enum {integer} */
+                statusCode: 404;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 404;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_TOO_LARGE';
+                /** @enum {string} */
+                message: 'Request body is too large.';
+                /** @enum {integer} */
+                statusCode: 413;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 413;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'INTERNAL_ERROR';
+                /** @enum {string} */
+                message: 'Internal server error.';
+                /** @enum {integer} */
+                statusCode: 500;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 500;
+              };
+        };
+      };
+      /** @description Other rejected requests retain their HTTP error status. Infrastructure errors may have a different body. */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** @enum {string} */
+            code: 'REQUEST_REJECTED';
+            /** @enum {string} */
+            message: 'Request rejected.';
+            statusCode: number;
+          };
+        };
+      };
+    };
+  };
+  removeSavedArticle: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        articleId: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['UserSavedArticle'][];
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'VALIDATION_FAILED';
+                details: {
+                  fields: {
+                    path: (string | number)[];
+                    /** @enum {string} */
+                    rule:
+                      | 'VALUE_REQUIRED'
+                      | 'STRING_REQUIRED'
+                      | 'INTEGER_REQUIRED'
+                      | 'BOOLEAN_REQUIRED'
+                      | 'ARRAY_REQUIRED'
+                      | 'EMAIL_INVALID'
+                      | 'UUID_INVALID'
+                      | 'URL_INVALID'
+                      | 'TIMEZONE_INVALID'
+                      | 'DATE_INVALID'
+                      | 'STRING_TOO_SHORT'
+                      | 'STRING_TOO_LONG'
+                      | 'NUMBER_TOO_SMALL'
+                      | 'NUMBER_TOO_LARGE'
+                      | 'ARRAY_TOO_LARGE'
+                      | 'ARRAY_EMPTY'
+                      | 'VALUE_NOT_ALLOWED'
+                      | 'FORMAT_INVALID'
+                      | 'FIELDS_DO_NOT_MATCH'
+                      | 'PROPERTY_NOT_ALLOWED'
+                      | 'VALUE_INVALID';
+                  }[];
+                };
+                /** @enum {string} */
+                message: 'Request validation failed.';
+                /** @enum {integer} */
+                statusCode: 400;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_MALFORMED';
+                /** @enum {string} */
+                message: 'Malformed request body.';
+                /** @enum {integer} */
+                statusCode: 400;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 400;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'AUTH_AUTHENTICATION_REQUIRED';
+                /** @enum {string} */
+                message: 'Authentication is required.';
+                /** @enum {integer} */
+                statusCode: 401;
+              }
+            | {
+                /** @enum {string} */
+                code: 'AUTH_ACCESS_TOKEN_INVALID';
+                /** @enum {string} */
+                message: 'Access token is invalid.';
+                /** @enum {integer} */
+                statusCode: 401;
+              }
+            | {
+                /** @enum {string} */
+                code: 'AUTH_ACCESS_TOKEN_EXPIRED';
+                /** @enum {string} */
+                message: 'Access token has expired.';
+                /** @enum {integer} */
+                statusCode: 401;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 401;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'ARTICLES_USER_NOT_FOUND';
+                /** @enum {string} */
+                message: 'User not found.';
+                /** @enum {integer} */
+                statusCode: 404;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 404;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_TOO_LARGE';
+                /** @enum {string} */
+                message: 'Request body is too large.';
+                /** @enum {integer} */
+                statusCode: 413;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 413;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'INTERNAL_ERROR';
+                /** @enum {string} */
+                message: 'Internal server error.';
+                /** @enum {integer} */
+                statusCode: 500;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 500;
+              };
+        };
+      };
+      /** @description Other rejected requests retain their HTTP error status. Infrastructure errors may have a different body. */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** @enum {string} */
+            code: 'REQUEST_REJECTED';
+            /** @enum {string} */
+            message: 'Request rejected.';
+            statusCode: number;
+          };
+        };
+      };
+    };
+  };
+  getWikipediaArticles: {
+    parameters: {
+      query?: {
+        /** @description Strings are trimmed and normalized before validation. */
+        category?: components['schemas']['WikipediaArticleCategory'];
+        /** @description Comma-separated positive integers, deduplicated before validation. Empty input is omitted; repeated string query values fail validation. */
+        excludeIds?: number[];
+        /** @description Optional integer; omission uses the service default of 20. */
+        limit?: number;
+        preferImagesFirst?: boolean;
+        /** @description Strings are trimmed and normalized before validation. */
+        previewLength?: components['schemas']['WikipediaArticlePreviewLength'];
+        /** @description Strings are trimmed and normalized before validation. */
+        readyLevel?: components['schemas']['ArticleReadyLevelFilter'];
+        /** @description Strings are trimmed and normalized before validation. */
+        readyTransformationType?: components['schemas']['ArticleReadyTransformationFilter'];
+        recommended?: boolean;
+        /** @description Strings are trimmed and normalized before validation. */
+        search?: string;
+        /** @description Strings are trimmed and normalized before validation. */
+        sortBy?: components['schemas']['WikipediaArticleSortOption'];
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['WikipediaArticle'][];
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'VALIDATION_FAILED';
+                details: {
+                  fields: {
+                    path: (string | number)[];
+                    /** @enum {string} */
+                    rule:
+                      | 'VALUE_REQUIRED'
+                      | 'STRING_REQUIRED'
+                      | 'INTEGER_REQUIRED'
+                      | 'BOOLEAN_REQUIRED'
+                      | 'ARRAY_REQUIRED'
+                      | 'EMAIL_INVALID'
+                      | 'UUID_INVALID'
+                      | 'URL_INVALID'
+                      | 'TIMEZONE_INVALID'
+                      | 'DATE_INVALID'
+                      | 'STRING_TOO_SHORT'
+                      | 'STRING_TOO_LONG'
+                      | 'NUMBER_TOO_SMALL'
+                      | 'NUMBER_TOO_LARGE'
+                      | 'ARRAY_TOO_LARGE'
+                      | 'ARRAY_EMPTY'
+                      | 'VALUE_NOT_ALLOWED'
+                      | 'FORMAT_INVALID'
+                      | 'FIELDS_DO_NOT_MATCH'
+                      | 'PROPERTY_NOT_ALLOWED'
+                      | 'VALUE_INVALID';
+                  }[];
+                };
+                /** @enum {string} */
+                message: 'Request validation failed.';
+                /** @enum {integer} */
+                statusCode: 400;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_MALFORMED';
+                /** @enum {string} */
+                message: 'Malformed request body.';
+                /** @enum {integer} */
+                statusCode: 400;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 400;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_TOO_LARGE';
+                /** @enum {string} */
+                message: 'Request body is too large.';
+                /** @enum {integer} */
+                statusCode: 413;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 413;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'INTERNAL_ERROR';
+                /** @enum {string} */
+                message: 'Internal server error.';
+                /** @enum {integer} */
+                statusCode: 500;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 500;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      502: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'ARTICLES_WIKIPEDIA_REQUEST_FAILED';
+                /** @enum {string} */
+                message: 'Failed to fetch Wikipedia content.';
+                /** @enum {integer} */
+                statusCode: 502;
+              }
+            | {
+                /** @enum {string} */
+                code: 'ARTICLES_WIKIPEDIA_INVALID_RESPONSE';
+                /** @enum {string} */
+                message: 'Wikipedia response is invalid.';
+                /** @enum {integer} */
+                statusCode: 502;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 502;
+              };
+        };
+      };
+      /** @description Other rejected requests retain their HTTP error status. Infrastructure errors may have a different body. */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** @enum {string} */
+            code: 'REQUEST_REJECTED';
+            /** @enum {string} */
+            message: 'Request rejected.';
+            statusCode: number;
+          };
+        };
+      };
+    };
+  };
+  getWikipediaArticleDetail: {
+    parameters: {
+      query?: {
+        /** @description Strings are trimmed and normalized before validation. */
+        languageCode?: 'en';
+      };
+      header?: never;
+      path: {
+        id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['WikipediaArticleDetail'];
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'VALIDATION_FAILED';
+                details: {
+                  fields: {
+                    path: (string | number)[];
+                    /** @enum {string} */
+                    rule:
+                      | 'VALUE_REQUIRED'
+                      | 'STRING_REQUIRED'
+                      | 'INTEGER_REQUIRED'
+                      | 'BOOLEAN_REQUIRED'
+                      | 'ARRAY_REQUIRED'
+                      | 'EMAIL_INVALID'
+                      | 'UUID_INVALID'
+                      | 'URL_INVALID'
+                      | 'TIMEZONE_INVALID'
+                      | 'DATE_INVALID'
+                      | 'STRING_TOO_SHORT'
+                      | 'STRING_TOO_LONG'
+                      | 'NUMBER_TOO_SMALL'
+                      | 'NUMBER_TOO_LARGE'
+                      | 'ARRAY_TOO_LARGE'
+                      | 'ARRAY_EMPTY'
+                      | 'VALUE_NOT_ALLOWED'
+                      | 'FORMAT_INVALID'
+                      | 'FIELDS_DO_NOT_MATCH'
+                      | 'PROPERTY_NOT_ALLOWED'
+                      | 'VALUE_INVALID';
+                  }[];
+                };
+                /** @enum {string} */
+                message: 'Request validation failed.';
+                /** @enum {integer} */
+                statusCode: 400;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_MALFORMED';
+                /** @enum {string} */
+                message: 'Malformed request body.';
+                /** @enum {integer} */
+                statusCode: 400;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 400;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_TOO_LARGE';
+                /** @enum {string} */
+                message: 'Request body is too large.';
+                /** @enum {integer} */
+                statusCode: 413;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 413;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'INTERNAL_ERROR';
+                /** @enum {string} */
+                message: 'Internal server error.';
+                /** @enum {integer} */
+                statusCode: 500;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 500;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      502: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'ARTICLES_WIKIPEDIA_REQUEST_FAILED';
+                /** @enum {string} */
+                message: 'Failed to fetch Wikipedia content.';
+                /** @enum {integer} */
+                statusCode: 502;
+              }
+            | {
+                /** @enum {string} */
+                code: 'ARTICLES_WIKIPEDIA_INVALID_RESPONSE';
+                /** @enum {string} */
+                message: 'Wikipedia response is invalid.';
+                /** @enum {integer} */
+                statusCode: 502;
+              }
+            | {
+                /** @enum {string} */
+                code: 'ARTICLES_WIKIPEDIA_HTML_REQUEST_FAILED';
+                /** @enum {string} */
+                message: 'Failed to fetch Wikipedia article HTML.';
+                /** @enum {integer} */
+                statusCode: 502;
+              }
+            | {
+                /** @enum {string} */
+                code: 'ARTICLES_WIKIPEDIA_ARTICLE_UNAVAILABLE';
+                /** @enum {string} */
+                message: 'Wikipedia article is unavailable.';
+                /** @enum {integer} */
+                statusCode: 502;
+              }
+            | {
+                /** @enum {string} */
+                code: 'ARTICLES_WIKIPEDIA_CONTENT_UNAVAILABLE';
+                /** @enum {string} */
+                message: 'Wikipedia article content is unavailable.';
+                /** @enum {integer} */
+                statusCode: 502;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 502;
+              };
+        };
+      };
+      /** @description Other rejected requests retain their HTTP error status. Infrastructure errors may have a different body. */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** @enum {string} */
+            code: 'REQUEST_REJECTED';
+            /** @enum {string} */
+            message: 'Request rejected.';
+            statusCode: number;
+          };
+        };
+      };
+    };
+  };
+  getRandomWikipediaArticles: {
+    parameters: {
+      query?: {
+        /** @description Optional integer; omission uses the service default of 20. */
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['WikipediaArticle'][];
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'VALIDATION_FAILED';
+                details: {
+                  fields: {
+                    path: (string | number)[];
+                    /** @enum {string} */
+                    rule:
+                      | 'VALUE_REQUIRED'
+                      | 'STRING_REQUIRED'
+                      | 'INTEGER_REQUIRED'
+                      | 'BOOLEAN_REQUIRED'
+                      | 'ARRAY_REQUIRED'
+                      | 'EMAIL_INVALID'
+                      | 'UUID_INVALID'
+                      | 'URL_INVALID'
+                      | 'TIMEZONE_INVALID'
+                      | 'DATE_INVALID'
+                      | 'STRING_TOO_SHORT'
+                      | 'STRING_TOO_LONG'
+                      | 'NUMBER_TOO_SMALL'
+                      | 'NUMBER_TOO_LARGE'
+                      | 'ARRAY_TOO_LARGE'
+                      | 'ARRAY_EMPTY'
+                      | 'VALUE_NOT_ALLOWED'
+                      | 'FORMAT_INVALID'
+                      | 'FIELDS_DO_NOT_MATCH'
+                      | 'PROPERTY_NOT_ALLOWED'
+                      | 'VALUE_INVALID';
+                  }[];
+                };
+                /** @enum {string} */
+                message: 'Request validation failed.';
+                /** @enum {integer} */
+                statusCode: 400;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_MALFORMED';
+                /** @enum {string} */
+                message: 'Malformed request body.';
+                /** @enum {integer} */
+                statusCode: 400;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 400;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_TOO_LARGE';
+                /** @enum {string} */
+                message: 'Request body is too large.';
+                /** @enum {integer} */
+                statusCode: 413;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 413;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'INTERNAL_ERROR';
+                /** @enum {string} */
+                message: 'Internal server error.';
+                /** @enum {integer} */
+                statusCode: 500;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 500;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      502: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'ARTICLES_WIKIPEDIA_REQUEST_FAILED';
+                /** @enum {string} */
+                message: 'Failed to fetch Wikipedia content.';
+                /** @enum {integer} */
+                statusCode: 502;
+              }
+            | {
+                /** @enum {string} */
+                code: 'ARTICLES_WIKIPEDIA_INVALID_RESPONSE';
+                /** @enum {string} */
+                message: 'Wikipedia response is invalid.';
                 /** @enum {integer} */
                 statusCode: 502;
               }

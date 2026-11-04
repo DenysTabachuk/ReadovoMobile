@@ -1,3 +1,4 @@
+import { createArticlesResponseAssertion } from './testing/create-articles-response-assertion';
 import { type INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import type { Server } from 'node:http';
@@ -85,14 +86,20 @@ describe('Articles current-user contract (HTTP)', () => {
   let app: INestApplication<Server>;
   let jwt: JwtService;
   const createService = () => ({
-    getSavedArticles: jest.fn().mockResolvedValue({}),
-    saveArticleForUser: jest.fn().mockResolvedValue({}),
-    removeSavedArticleForUser: jest.fn().mockResolvedValue({}),
-    getRecentArticles: jest.fn().mockResolvedValue({}),
-    recordRecentArticleForUser: jest.fn().mockResolvedValue({}),
+    getSavedArticles: jest.fn().mockResolvedValue([]),
+    saveArticleForUser: jest.fn().mockResolvedValue([]),
+    removeSavedArticleForUser: jest.fn().mockResolvedValue([]),
+    getRecentArticles: jest.fn().mockResolvedValue([]),
+    recordRecentArticleForUser: jest.fn().mockResolvedValue([]),
   });
   let service: ReturnType<typeof createService>;
 
+  let assertResponse: Awaited<
+    ReturnType<typeof createArticlesResponseAssertion>
+  >;
+  beforeAll(async () => {
+    assertResponse = await createArticlesResponseAssertion();
+  });
   beforeEach(async () => {
     service = createService();
     const module = await Test.createTestingModule({
@@ -138,6 +145,7 @@ describe('Articles current-user contract (HTTP)', () => {
           )
           .set('Authorization', `Bearer ${accessToken}`)
           .send(route.body)
+          .expect(assertResponse)
           .expect(route.status);
         expect(service[route.operation]).toHaveBeenLastCalledWith(
           id,
@@ -168,6 +176,7 @@ describe('Articles current-user contract (HTTP)', () => {
           [route.method](route.path)
           .set('Authorization', `Bearer ${token}`)
           .send(route.body)
+          .expect(assertResponse)
           .expect(401);
       }
       expect(service[route.operation]).not.toHaveBeenCalled();
@@ -190,6 +199,7 @@ describe('Articles current-user contract (HTTP)', () => {
         [route.method](route.path)
         .set('Authorization', `Bearer ${accessToken}`)
         .send({ ...route.body, userId: ownerIds[1] })
+        .expect(assertResponse)
         .expect(400);
       expect(response.body).toMatchObject({ code: 'VALIDATION_FAILED' });
       expect(service[route.operation]).not.toHaveBeenCalled();

@@ -1,3 +1,4 @@
+import { createArticlesResponseAssertion } from '../testing/create-articles-response-assertion';
 import request from 'supertest';
 
 import {
@@ -18,6 +19,12 @@ const basePath = `/api/users/me/articles`;
 
 describe('Article library errors and access (HTTP)', () => {
   let testApp: ArticleLibraryHttpTestApp;
+  let assertResponse: Awaited<
+    ReturnType<typeof createArticlesResponseAssertion>
+  >;
+  beforeAll(async () => {
+    assertResponse = await createArticlesResponseAssertion();
+  });
   beforeEach(async () => {
     testApp = await createArticleLibraryHttpApp();
   });
@@ -33,6 +40,7 @@ describe('Article library errors and access (HTTP)', () => {
         [method](`${basePath}/${suffix}`)
         .set('Authorization', testApp.authorization)
         .send(method === 'post' ? LIBRARY_TEST_ARTICLE : {})
+        .expect(assertResponse)
         .expect(404, {
           statusCode: 404,
           code: 'ARTICLES_USER_NOT_FOUND',
@@ -55,6 +63,7 @@ describe('Article library errors and access (HTTP)', () => {
       await request(testApp.server)
         [method](`${basePath}/${suffix}`)
         .send(method === 'post' ? LIBRARY_TEST_ARTICLE : {})
+        .expect(assertResponse)
         .expect(401, {
           statusCode: 401,
           code: 'AUTH_AUTHENTICATION_REQUIRED',
@@ -78,6 +87,7 @@ describe('Article library errors and access (HTTP)', () => {
         [method](`${basePath}/${suffix}`)
         .set('Authorization', testApp.authorization)
         .send(method === 'post' ? LIBRARY_TEST_ARTICLE : {})
+        .expect(assertResponse)
         .expect(404, {
           statusCode: 404,
           code: 'ARTICLES_USER_NOT_FOUND',
@@ -93,6 +103,7 @@ describe('Article library errors and access (HTTP)', () => {
     await request(testApp.server)
       .get(`${basePath}/saved`)
       .set('Authorization', testApp.authorization)
+      .expect(assertResponse)
       .expect(500, {
         statusCode: 500,
         code: 'INTERNAL_ERROR',

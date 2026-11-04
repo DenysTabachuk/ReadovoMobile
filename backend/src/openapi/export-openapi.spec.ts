@@ -10,6 +10,9 @@ import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '../auth/jwt.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { DictionaryEmbeddingService } from '../dictionary/dictionary-embedding.service';
+import { AiTokenCounter } from '../articles/infrastructure/ai-token-counter';
+import { GroqTextClient } from '../articles/infrastructure/groq-text.client';
+import { ArticleFormulaRenderer } from '../articles/discovery/article-formula-renderer';
 import { exportOpenApi } from './export-openapi';
 
 type HttpServiceAccessor = {
@@ -61,6 +64,10 @@ describe('Offline OpenAPI export', () => {
     expect(second).toEqual(first);
     expect(Object.keys(first.paths).sort()).toEqual([
       '/achievements/profile/me',
+      '/api/articles/adaptations',
+      '/api/articles/quiz',
+      '/api/articles/simplify',
+      '/api/articles/vocabulary-quiz',
       '/api/dictionary/embedding',
       '/api/dictionary/me/test',
       '/api/dictionary/me/words',
@@ -69,6 +76,12 @@ describe('Offline OpenAPI export', () => {
       '/api/dictionary/quiz-options',
       '/api/dictionary/similar-words',
       '/api/translations/word',
+      '/api/users/me/articles/recent',
+      '/api/users/me/articles/saved',
+      '/api/users/me/articles/saved/{articleId}',
+      '/articles',
+      '/articles/random',
+      '/articles/{id}',
       '/auth/google',
       '/auth/login',
       '/auth/refresh',
@@ -129,6 +142,18 @@ describe('Offline OpenAPI export', () => {
     expect(embeddings).toBeInstanceOf(DictionaryEmbeddingService);
     expect(Object.hasOwn(embeddings, 'embeddingCache')).toBe(false);
     expect(Object.hasOwn(embeddings, 'modelPromise')).toBe(false);
+    expect(
+      Object.hasOwn(app.get<AiTokenCounter>(AiTokenCounter), 'encoding'),
+    ).toBe(false);
+    expect(
+      Object.hasOwn(app.get<GroqTextClient>(GroqTextClient), 'clientsByApiKey'),
+    ).toBe(false);
+    expect(
+      Object.hasOwn(
+        app.get<ArticleFormulaRenderer>(ArticleFormulaRenderer),
+        'mathJaxPromise',
+      ),
+    ).toBe(false);
     const notificationsService =
       app.get<NotificationsService>(NotificationsService);
     expect(Object.hasOwn(notificationsService, 'messaging')).toBe(false);

@@ -47,6 +47,18 @@ describe('resolveTransformationStatus', () => {
       });
     },
   );
+  it('preserves a C1 level returned by the backend', () => {
+    expect(
+      resolveTransformationStatus({
+        displayedArticle: { ...article, level: 'C1' },
+        latestGeneratedArticle: null,
+        selectedLevel: 'A2',
+      }),
+    ).toEqual({
+      key: 'article.adaptedState',
+      values: { level: 'C1', adaptedLength: 10, originalLength: 30 },
+    });
+  });
   it('omits status without a version at the selected level', () => {
     expect(
       resolveTransformationStatus({
