@@ -29,7 +29,7 @@ import { Spacing } from '@/constants/spacing';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 
-import { styles } from './styles';
+import { createStyles } from './styles';
 
 type ArticleImageBlockProps = {
   alt?: string;
@@ -91,6 +91,10 @@ export function ArticleImageBlock({
       : insets.bottom;
   const viewerBackgroundColor = Colors[colorScheme].background;
   const viewerForegroundColor = isDarkTheme ? '#ffffff' : '#11181C';
+  const styles = useMemo(
+    () => createStyles(viewerForegroundColor, fallbackBackgroundColor),
+    [viewerForegroundColor, fallbackBackgroundColor],
+  );
   const viewerCloseButtonColor = isDarkTheme
     ? 'rgba(0, 0, 0, 0.48)'
     : 'rgba(255, 255, 255, 0.82)';
@@ -243,11 +247,7 @@ export function ArticleImageBlock({
   if (!src || hasLoadError) {
     return (
       <ThemedView style={styles.container}>
-        <ThemedView
-          darkColor={fallbackBackgroundColor}
-          lightColor={fallbackBackgroundColor}
-          style={[styles.fallback, { borderColor }]}
-        >
+        <ThemedView style={[styles.fallback, { borderColor }]}>
           <ThemedText style={styles.fallbackTitle} type="bodyStrong">
             {t('article.imageUnavailable')}
           </ThemedText>
@@ -322,12 +322,7 @@ export function ArticleImageBlock({
               </View>
             ) : null}
             {viewerLoadError ? (
-              <ThemedText
-                darkColor={viewerForegroundColor}
-                lightColor={viewerForegroundColor}
-                style={styles.viewerFallbackTitle}
-                type="bodyStrong"
-              >
+              <ThemedText style={styles.viewerFallbackTitle} type="bodyStrong">
                 {t('article.imageUnavailable')}
               </ThemedText>
             ) : (
@@ -347,8 +342,6 @@ export function ArticleImageBlock({
             )}
             {caption ? (
               <ThemedText
-                darkColor={viewerForegroundColor}
-                lightColor={viewerForegroundColor}
                 numberOfLines={3}
                 style={[
                   styles.viewerCaption,

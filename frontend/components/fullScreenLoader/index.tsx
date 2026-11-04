@@ -1,18 +1,17 @@
 import { ActivityIndicator, View } from 'react-native';
 
 import { ScreenContainer } from '@/components/screenContainer';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useTheme } from '@/hooks/use-theme';
 
 import { styles } from './styles';
 
 export function FullScreenLoader() {
-  const colorScheme = useColorScheme();
+  const { colors } = useTheme();
 
   return (
     <ScreenContainer>
       <View style={styles.loader}>
-        <ActivityIndicator color={Colors[colorScheme].tint} size="large" />
+        <ActivityIndicator color={colors.accent} size="large" />
       </View>
     </ScreenContainer>
   );

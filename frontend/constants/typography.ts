@@ -50,7 +50,6 @@ export const Typography = {
     lineHeight: 34,
   },
   link: {
-    color: '#0a7ea4',
     fontSize: 16,
     lineHeight: 30,
   },

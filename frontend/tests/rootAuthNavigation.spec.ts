@@ -101,6 +101,7 @@ jest.mock('@/features/auth', () => ({
 jest.mock('@/providers/preferencesProvider', () => ({
   PreferencesProvider: ({ children }: PropsWithChildren) => children,
   usePreferences: () => ({
+    colorScheme: 'light',
     isLoadingPreferences: mockLoadingPreferences,
     hasCompletedOnboarding: mockCompletedOnboarding,
   }),

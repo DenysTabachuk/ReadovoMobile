@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import {
   type PressableProps,
   type StyleProp,
@@ -8,9 +9,9 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
-import { useThemeColor } from '@/hooks/use-theme-color';
+import { useTheme } from '@/hooks/use-theme';
 
-import { styles } from './styles';
+import { createStyles } from './styles';
 
 type CtaAction = Omit<PressableProps, 'children' | 'style'> & {
   label: string;
@@ -27,29 +28,6 @@ type CtaProps = {
   secondaryAction?: CtaAction;
 };
 
-function renderAction(
-  action: CtaAction,
-  fallbackVariant: 'primary' | 'secondary',
-  fullWidth: boolean,
-) {
-  const { label, textStyle, ...buttonProps } = action;
-
-  return (
-    <Button
-      {...buttonProps}
-      style={[
-        styles.button,
-        fullWidth ? styles.buttonFullWidth : null,
-        buttonProps.style,
-      ]}
-      textStyle={[styles.label, textStyle]}
-      variant={buttonProps.variant ?? fallbackVariant}
-    >
-      {label}
-    </Button>
-  );
-}
-
 export function Cta({
   layout = 'horizontal',
   primaryAction,
@@ -57,15 +35,32 @@ export function Cta({
   withBackground = false,
   bottomOffset,
 }: CtaProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
-  const backgroundColor = useThemeColor(
-    { dark: '#151718', light: '#ffffff' },
-    'background',
-  );
-  const borderTopColor = useThemeColor(
-    { dark: '#2b2d2f', light: '#e6e8eb' },
-    'icon',
-  );
+
+  function renderAction(
+    action: CtaAction,
+    fallbackVariant: 'primary' | 'secondary',
+    fullWidth: boolean,
+  ) {
+    const { label, textStyle, ...buttonProps } = action;
+
+    return (
+      <Button
+        {...buttonProps}
+        style={[
+          styles.button,
+          fullWidth ? styles.buttonFullWidth : null,
+          buttonProps.style,
+        ]}
+        textStyle={[styles.label, textStyle]}
+        variant={buttonProps.variant ?? fallbackVariant}
+      >
+        {label}
+      </Button>
+    );
+  }
 
   if (!primaryAction && !secondaryAction) {
     return null;
@@ -94,8 +89,6 @@ export function Cta({
             ? [
                 styles.actionsWithBackground,
                 {
-                  backgroundColor,
-                  borderTopColor,
                   paddingBottom: backgroundBottomPadding,
                 },
               ]

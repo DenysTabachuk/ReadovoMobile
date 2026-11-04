@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useMemo, type ReactNode } from 'react';
 import * as NavigationBar from 'expo-navigation-bar';
 import {
   Modal,
@@ -13,13 +13,11 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { ThemedTextProps } from '@/components/themedText';
-import { Colors } from '@/constants/theme';
 import { Spacing } from '@/constants/spacing';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { useThemeColor } from '@/hooks/use-theme-color';
+import { useTheme } from '@/hooks/use-theme';
 
 import { SheetHeader } from './components/sheetHeader';
-import { styles } from './styles';
+import { createStyles } from './styles';
 
 type ModalSheetProps = {
   children: ReactNode;
@@ -49,8 +47,8 @@ export function ModalSheet({
   title,
   titleType = 'sectionTitle',
 }: ModalSheetProps) {
-  const colorScheme = useColorScheme() ?? 'light';
-  const backgroundColor = useThemeColor({}, 'background');
+  const { theme: colorScheme, colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
   const footerBottomInset =
     Platform.OS === 'android'
@@ -60,7 +58,7 @@ export function ModalSheet({
     Platform.OS === 'android'
       ? Math.max(insets.bottom, Spacing.md)
       : insets.bottom;
-  const appBackgroundColor = Colors[colorScheme].background;
+  const appBackgroundColor = colors.background;
 
   useEffect(() => {
     if (Platform.OS !== 'android' || !open) {
@@ -85,16 +83,7 @@ export function ModalSheet({
     >
       <View style={styles.backdrop}>
         <Pressable onPress={onClose} style={styles.closeArea} />
-        <View
-          style={[
-            styles.card,
-            {
-              backgroundColor,
-              paddingBottom: Spacing.xLg,
-            },
-            sheetStyle,
-          ]}
-        >
+        <View style={[styles.card, sheetStyle]}>
           {showHandle ? <View style={styles.handle} /> : null}
 
           <View style={[styles.content, contentStyle]}>

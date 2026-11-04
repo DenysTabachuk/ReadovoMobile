@@ -10,9 +10,9 @@ import { Animated, Pressable, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Spacing } from '@/constants/spacing';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useTheme } from '@/hooks/use-theme';
 
-import { styles } from './styles';
+import { createStyles } from './styles';
 
 type ScrollableRef =
   | {
@@ -48,8 +48,8 @@ export function ScrollToTopButton({
   accessibilityLabel = 'Scroll to top',
 }: ScrollToTopButtonProps) {
   const insets = useSafeAreaInsets();
-  const colorScheme = useColorScheme();
-  const buttonColor = colorScheme === 'dark' ? '#7d4ef6' : '#6f3ff0';
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const animation = useRef(new Animated.Value(0)).current;
   const isVisible = scrollOffsetY > threshold;
 
@@ -119,13 +119,14 @@ export function ScrollToTopButton({
         style={[
           styles.button,
           {
-            backgroundColor: buttonColor,
             height: size,
             width: size,
           },
         ]}
       >
-        {icon ?? <Ionicons color="#ffffff" name="arrow-up" size={24} />}
+        {icon ?? (
+          <Ionicons color={colors.onFloatingAction} name="arrow-up" size={24} />
+        )}
       </Pressable>
     </Animated.View>
   );

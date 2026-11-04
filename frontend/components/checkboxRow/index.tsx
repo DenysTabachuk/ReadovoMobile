@@ -3,6 +3,8 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { ThemedText } from '@/components/themedText';
 
+import { useTheme } from '@/hooks/use-theme';
+
 import { styles } from './styles';
 
 type CheckboxRowProps = {
@@ -34,12 +36,17 @@ export function CheckboxRow({ checked, label, onPress }: CheckboxRowProps) {
 
 export function CheckboxIndicator({
   checked,
-  checkedColor = '#0a7ea4',
-  uncheckedColor = '#6f8f99',
+  checkedColor,
+  uncheckedColor,
 }: CheckboxIndicatorProps) {
+  const { colors } = useTheme();
   return (
     <Ionicons
-      color={checked ? checkedColor : uncheckedColor}
+      color={
+        checked
+          ? (checkedColor ?? colors.primary)
+          : (uncheckedColor ?? colors.checkboxBorder)
+      }
       name={checked ? 'checkbox' : 'square-outline'}
       size={22}
     />
