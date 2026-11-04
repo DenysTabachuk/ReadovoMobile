@@ -2,7 +2,7 @@
 
 Status: backend error codes, shared boundaries, minimal frontend code extraction,
 auth/session decisions and feature presentation are implemented. OpenAPI/type
-generation is being piloted in a [separate task](tasks/openapi-contract-generation.md).
+generation covers all controller operations; see the [contract workflow](openapi-contract.md).
 Legacy Mock API migration/removal is excluded by the user's decision.
 
 ## Response and ownership
@@ -42,18 +42,17 @@ or the catalogue. Callers pass a definition to the shared exception class:
 `REQUEST_REJECTED` is a shared template with no fixed status; the filter supplies
 the original exception's HTTP status. Validation definitions require field details.
 
-Cross-project schema/type generation is tracked in
-[OpenAPI contract generation](tasks/openapi-contract-generation.md), which covers the
-entire HTTP API. The translations pilot uses the [OpenAPI workflow](openapi-contract.md).
+Cross-project schema/type generation covers the entire controller API through
+the [OpenAPI workflow](openapi-contract.md).
 Do not introduce a separate `contracts/api-errors.json` generator.
 OpenAPI error schemas must use these module-owned
-definitions, validation details and allowed statuses. Generated files will remain
+definitions, validation details and allowed statuses. Generated files remain
 read-only, with freshness checks in CI.
 
 Frontend presentation uses small feature-owned code/status/message-key maps for
 supported behaviors. Handwritten client types do not claim to exhaust all backend
-codes. Unknown codes receive safe fallback behavior. Replace duplicated transport
-metadata when the OpenAPI task reaches the corresponding module.
+codes. Unknown codes receive safe fallback behavior. Transport types come from
+OpenAPI; feature-specific presentation and runtime decoding remain client-owned.
 
 Backend API owners maintain serialization and common codes; feature owners maintain
 domain entries, endpoint tests and presentation maps together. Adding a code is
@@ -912,8 +911,8 @@ recorded at release; repository package versions do not establish rollout state.
 - Legacy Mock API changes were explicitly skipped. Its eventual removal is a
   separate change; this migration does not claim those fixtures support the new
   code contract. Unit-test network/SDK mocks remain in use.
-- OpenAPI/type generation is tracked separately in
-  [OpenAPI contract generation](tasks/openapi-contract-generation.md) and is not a
-  prerequisite for current client decoding. Do not add an error-only generator.
+- OpenAPI/type generation is complete; the [contract workflow](openapi-contract.md)
+  documents generated artifacts and freshness checks. Runtime client decoding
+  remains independently maintained. Do not add an error-only generator.
 - Existing SMTP fallback logs verification codes with email addresses. Track a
   separate credential-logging fix; preserve successful response semantics here.

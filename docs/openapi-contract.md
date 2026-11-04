@@ -1,14 +1,13 @@
 # OpenAPI contract and frontend transport types
 
-The document covers `POST /api/translations/word`, `GET /achievements/profile/me`,
-the five mascot operations under `/mascot/profile/me`, the five streak operations
-under `/streak/profile/me`, and the three operations under
-`/quiz-sessions/{sessionId}`, plus the seven notification operations under
-`/notifications`, the nine credential operations under `/auth`, and the eight dictionary operations
-under `/api/dictionary`, plus the twelve article operations under `/articles`,
-`/api/articles` and `/api/users/me/articles`. Only the root endpoint is not covered yet.
-The migration status and remaining work are tracked in
-[the migration task](tasks/openapi-contract-generation.md).
+The canonical document covers all 51 application controller operations:
+translations, achievements, mascot, streak, quiz sessions, notifications,
+auth, dictionary and articles. It includes three development notification
+diagnostics operations. Production registers 48 operations and omits those
+three diagnostics from its runtime Swagger document. Swagger UI assets and the
+raw document are served separately by `SwaggerModule`.
+The transport-type migration is complete. Backend DTO metadata owns the contract;
+frontend consumers use the checked-in generated types.
 
 ## Viewing the API
 
@@ -46,9 +45,8 @@ response checks, token storage/session guards and existing UI decoders remain.
 Backend modules own request DTOs, path/query parameters, success schemas, error
 definitions, statuses and authorization. Existing NestJS/class-validator validation
 remains authoritative at runtime. Explicit Swagger decorators describe DTOs and
-serialized responses; this pilot does not depend on the Swagger CLI plugin or file
-suffix discovery. Legacy `dto.ts` filenames in other modules can also be described
-with explicit decorators when those modules enter coverage.
+serialized responses; generation does not depend on the Swagger CLI plugin or
+file suffix discovery.
 
 - `backend/src/translations/dto/translate-word.dto.ts`: accepted request body and validation.
 - `backend/src/translations/dto/translate-word-response.dto.ts`: serialized success body.
@@ -103,6 +101,17 @@ and creates a Nest application with `preview: true`; it does not duplicate contr
 lists or substitute service bindings. Preview skips DI constructors and factories
 by default. Export does not import `AppModule`, call `app.init()` or listen on a port.
 No database, provider credentials, mail, push or jobs are needed.
+
+The unused NestJS root greeting (`GET /`) was removed. Requests to `/` receive
+HTTP **404** with the shared `ROUTE_NOT_FOUND` JSON error. The frontend has no
+caller, and no replacement health endpoint is registered.
+
+`openapi/api-coverage.spec.ts` scans the real development/production application
+in preview mode without the coverage allowlist and compares every registered
+controller path/method with the canonical export. It checks unique operation IDs,
+explicit security and documented success content. The separate fresh-process
+export isolation test still prohibits importing `AppModule`, environment-file or
+secret reads, network/listening and background intervals.
 
 The export root also registers the real global `PrismaModule` to satisfy feature
 module dependencies. Preview skips its database adapter constructor and lifecycle
@@ -353,4 +362,18 @@ translation provider responses. Existing transport tests may intentionally retur
 malformed bodies to exercise this boundary. UI must not display diagnostic server
 messages directly. Infrastructure failures can have a different body and need the
 same defensive fallback. Generating runtime validators, clients or hooks is outside
-this pilot.
+this migration.
+
+## Separate runtime follow-ups
+
+Transport migration is complete at the controller boundary. Existing runtime
+improvements remain separate changes:
+
+- Validate nested source `blocks` and stored simplification blocks, levels and
+  questions rather than relying on the current container checks/assertions.
+- Resolve whether `fetchRandomWikipediaArticles` should call the random route or
+  intentionally retain normal discovery/recommendation behavior.
+- Consolidate the dictionary repository's repeated learning-answer threshold with
+  its existing service policy.
+
+These follow-ups do not require changing generated transport declarations by hand.

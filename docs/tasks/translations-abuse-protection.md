@@ -58,4 +58,4 @@ establish that abuse has occurred or that provider usage is unlimited.
   to its appropriate owner.
 
 Related: [application abuse-risk audit](application-abuse-risk-audit.md) and
-[OpenAPI migration](openapi-contract-generation.md).
+[OpenAPI contract workflow](../openapi-contract.md).

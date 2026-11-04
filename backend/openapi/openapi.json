@@ -2614,7 +2614,7 @@
   },
   "info": {
     "contact": {},
-    "description": "Partial API coverage: auth, translations, achievements, mascot, streak, quiz sessions, notifications, dictionary and articles. Other modules are not yet documented.",
+    "description": "Auth, translations, achievements, mascot, streak, quiz sessions, notifications, dictionary and articles. Development diagnostics are included in the canonical contract and omitted from production runtime documentation.",
     "title": "Readovo HTTP API",
     "version": "1.0.0"
   },

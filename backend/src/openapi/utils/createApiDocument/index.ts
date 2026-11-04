@@ -25,7 +25,7 @@ export function createApiDocument(
   const config = new DocumentBuilder()
     .setTitle('Readovo HTTP API')
     .setDescription(
-      'Partial API coverage: auth, translations, achievements, mascot, streak, quiz sessions, notifications, dictionary and articles. Other modules are not yet documented.',
+      'Auth, translations, achievements, mascot, streak, quiz sessions, notifications, dictionary and articles. Development diagnostics are included in the canonical contract and omitted from production runtime documentation.',
     )
     // TODO: Define API contract versioning rules and choose the version's source
     // (explicit contract version or backend release version). Keep the pilot stable.
