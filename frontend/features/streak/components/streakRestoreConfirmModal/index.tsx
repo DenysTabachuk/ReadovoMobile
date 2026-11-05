@@ -1,5 +1,4 @@
 import { useMemo } from 'react';
-import { palette } from '@/constants/palette';
 import { useTheme } from '@/hooks/use-theme';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
@@ -111,7 +110,7 @@ export function StreakRestoreConfirmModal({
               pressed ? styles.buttonPressed : null,
             ]}
           >
-            <Ionicons color={palette.white} name="refresh" size={18} />
+            <Ionicons color={colors.onPrimary} name="refresh" size={18} />
             <ThemedText type="bodyStrong" style={styles.primaryText}>
               {isRestoring
                 ? t('streak.restore.restoring')

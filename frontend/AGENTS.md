@@ -76,6 +76,28 @@ full requirements, examples, documentation template, and edge cases.
 - Follow the shared [constants and magic values rule](../AGENTS.md#constants-and-magic-values-frontend-and-backend).
   Prefer existing theme tokens; keep obvious, single-use StyleSheet values inline.
 
+## Theme and colors
+
+- Use `useTheme()` from `hooks/use-theme` for `{ theme, colors, isDark }`.
+  PreferencesProvider owns the saved System/Light/Dark choice and system changes;
+  do not add another theme provider or read OS appearance directly in consumers.
+- Use shared semantic roles from `constants/theme.ts` for UI colors. Keep matching
+  foreground/background pairs (`primary`/`onPrimary`, `accentSolid`/`onAccentSolid`,
+  feedback solid roles and their `on*` roles). Do not select colors with local
+  light/dark tables or fixed accesses to one theme.
+- Keep opaque hex values in the compact hundred-step `constants/palette.ts`.
+  Direct palette access needs an actual decorative, shadow or brand purpose;
+  see the [theme conventions](../docs/frontend-conventions.md#theme-and-colors)
+  for the supported exceptions. Compose alpha with `utils/withOpacity` inside
+  semantic overlay tokens or owned decorative effects, not alpha palette entries.
+- Keep theme-dependent rules in the owner's `styles.ts` factory, memoized by
+  resolved colors. Native color props and animation/runtime values stay at their
+  runtime owner. Preserve caller overrides; avoid aliases that only rename a token.
+- Theme selection stays disabled during saving. Retain the provider's immediate
+  in-progress guard, commit only successful saves and handle failures at the UI
+  owner without showing late feedback after unmount. Native appearance and assets
+  may depend on `theme`/`isDark`; ordinary color choices use semantic roles.
+
 ## Localization
 
 - All app-owned text presented to users must come from translation keys, including

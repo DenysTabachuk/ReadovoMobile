@@ -21,6 +21,7 @@ const lightColors = {
   link: palette.cyan600,
   // Visual emphasis shared by badges, highlighted panels and accent actions.
   accentSolid: palette.purple600,
+  onAccentSolid: palette.white,
   accentSurface: palette.purple100,
   accentBorder: palette.purple200,
   onAccentSurface: palette.purple800,
@@ -74,6 +75,7 @@ export const themeColors = {
     interactive: palette.cyan300,
     link: palette.cyan300,
     accentSolid: palette.purple500,
+    onAccentSolid: palette.white,
     accentSurface: palette.purple900,
     accentBorder: palette.purple700,
     onAccentSurface: palette.purple200,
@@ -113,24 +115,6 @@ export const themeColors = {
     textHighlight: withOpacity(palette.yellow500, 0.22),
   },
 } satisfies Record<Theme, ThemeColors>;
-
-// Temporary compatibility API; removed in stage 3 after the consumer audit.
-export const Colors = {
-  light: {
-    ...themeColors.light,
-    tint: themeColors.light.interactive,
-    icon: themeColors.light.textSecondary,
-    tabIconDefault: themeColors.light.textSecondary,
-    tabIconSelected: themeColors.light.interactive,
-  },
-  dark: {
-    ...themeColors.dark,
-    tint: themeColors.dark.interactive,
-    icon: themeColors.dark.textSecondary,
-    tabIconDefault: themeColors.dark.textSecondary,
-    tabIconSelected: themeColors.dark.interactive,
-  },
-};
 
 export const Fonts = Platform.select({
   ios: {

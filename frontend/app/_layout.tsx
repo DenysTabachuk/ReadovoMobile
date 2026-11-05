@@ -57,29 +57,26 @@ function RootLayoutContent() {
   const { t } = useTranslation();
   const { isAuthenticated, currentUser, sessionVersion, isHydratingAuth } =
     useAuth();
-  const { theme: colorScheme, colors } = useTheme();
+  const { theme, colors, isDark } = useTheme();
   const {
     isLoadingPreferences,
     hydrateLearningReminderPreferences,
     learningReminderEnabled,
     learningReminderTime,
   } = usePreferences();
-  const backgroundColor = colors.background;
 
   useEffect(() => {
-    void SystemUI.setBackgroundColorAsync(backgroundColor);
-  }, [backgroundColor]);
+    void SystemUI.setBackgroundColorAsync(colors.background);
+  }, [colors.background]);
 
   useEffect(() => {
     if (Platform.OS !== 'android') {
       return;
     }
 
-    void NavigationBar.setBackgroundColorAsync(backgroundColor);
-    void NavigationBar.setButtonStyleAsync(
-      colorScheme === 'dark' ? 'light' : 'dark',
-    );
-  }, [backgroundColor, colorScheme]);
+    void NavigationBar.setBackgroundColorAsync(colors.background);
+    void NavigationBar.setButtonStyleAsync(isDark ? 'light' : 'dark');
+  }, [colors.background, isDark]);
 
   useEffect(() => {
     if (!isAuthenticated || !currentUser?.id) {
@@ -141,17 +138,21 @@ function RootLayoutContent() {
   ]);
 
   return (
-    <GestureHandlerRootView style={{ backgroundColor, flex: 1 }}>
-      <View style={{ backgroundColor, flex: 1 }}>
+    <GestureHandlerRootView
+      style={{ backgroundColor: colors.background, flex: 1 }}
+    >
+      <View style={{ backgroundColor: colors.background, flex: 1 }}>
         <SafeAreaProvider>
-          <ThemeProvider value={navigationThemes[colorScheme]}>
+          <ThemeProvider value={navigationThemes[theme]}>
             <BannerProvider>
               {isHydratingAuth || isLoadingPreferences ? (
                 <FullScreenLoader />
               ) : (
                 <Stack
                   key={sessionVersion}
-                  screenOptions={{ contentStyle: { backgroundColor } }}
+                  screenOptions={{
+                    contentStyle: { backgroundColor: colors.background },
+                  }}
                 >
                   <Stack.Protected guard={!isAuthenticated}>
                     <Stack.Screen
@@ -203,8 +204,8 @@ function RootLayoutContent() {
                 </Stack>
               )}
               <StatusBar
-                backgroundColor={backgroundColor}
-                style={colorScheme === 'dark' ? 'light' : 'dark'}
+                backgroundColor={colors.background}
+                style={isDark ? 'light' : 'dark'}
                 translucent={false}
               />
             </BannerProvider>

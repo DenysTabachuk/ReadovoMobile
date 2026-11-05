@@ -1,5 +1,4 @@
 import { useMemo } from 'react';
-import { palette } from '@/constants/palette';
 import { useTheme } from '@/hooks/use-theme';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
@@ -79,7 +78,11 @@ export function StreakFreezeCard({
             pressed ? styles.buyButtonPressed : null,
           ]}
         >
-          <Ionicons color={palette.white} name="add-circle-outline" size={16} />
+          <Ionicons
+            color={colors.onInfoSolid}
+            name="add-circle-outline"
+            size={16}
+          />
           <ThemedText type="bodyStrong" style={styles.buyButtonText}>
             {buyButtonLabel}
           </ThemedText>

@@ -20,7 +20,7 @@ export const createStyles = (colors: ThemeColors) => {
       paddingVertical: Spacing.sm,
     },
     ctaText: {
-      color: colors.onPrimary,
+      color: colors.onAccentSolid,
       fontSize: 14,
     },
     headerRow: {

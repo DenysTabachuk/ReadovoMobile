@@ -62,7 +62,7 @@ export function VerificationCodeModal({
   verifyingLabel,
 }: VerificationCodeModalProps) {
   const inputRef = useRef<TextInput>(null);
-  const { colors } = useTheme();
+  const { theme, colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const codeDigits = useMemo(
     () =>
@@ -160,6 +160,7 @@ export function VerificationCodeModal({
             autoComplete="one-time-code"
             caretHidden
             editable={!isBusy}
+            keyboardAppearance={theme}
             keyboardType="number-pad"
             maxLength={verificationCodeLength}
             onChangeText={handleChangeCode}

@@ -47,7 +47,7 @@ export function ModalSheet({
   title,
   titleType = 'sectionTitle',
 }: ModalSheetProps) {
-  const { theme: colorScheme, colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
   const footerBottomInset =
@@ -58,18 +58,15 @@ export function ModalSheet({
     Platform.OS === 'android'
       ? Math.max(insets.bottom, Spacing.md)
       : insets.bottom;
-  const appBackgroundColor = colors.background;
 
   useEffect(() => {
     if (Platform.OS !== 'android' || !open) {
       return;
     }
 
-    void NavigationBar.setBackgroundColorAsync(appBackgroundColor);
-    void NavigationBar.setButtonStyleAsync(
-      colorScheme === 'dark' ? 'light' : 'dark',
-    );
-  }, [appBackgroundColor, colorScheme, open]);
+    void NavigationBar.setBackgroundColorAsync(colors.background);
+    void NavigationBar.setButtonStyleAsync(isDark ? 'light' : 'dark');
+  }, [colors.background, isDark, open]);
 
   return (
     <Modal

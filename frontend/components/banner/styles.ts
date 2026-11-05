@@ -91,13 +91,16 @@ export const createStyles = (colors: ThemeColors) => {
       minWidth: 0,
     },
     warningText: { color: colors.onWarningSolid },
+    successText: { color: colors.onSuccessSolid },
+    errorText: { color: colors.onDangerSolid },
+    infoText: { color: colors.onInfoSolid },
     title: {
       ...Typography.bodyStrong,
-      color: colors.onPrimary,
+      color: colors.text,
     },
     description: {
       ...Typography.body,
-      color: colors.onPrimary,
+      color: colors.text,
     },
     achievementTitle: {
       ...Typography.bodyStrong,

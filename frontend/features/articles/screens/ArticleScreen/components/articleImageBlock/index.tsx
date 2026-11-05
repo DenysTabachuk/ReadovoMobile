@@ -49,8 +49,7 @@ export function ArticleImageBlock({
 }: ArticleImageBlockProps) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
-  const { theme, colors } = useTheme();
-  const isDarkTheme = theme === 'dark';
+  const { colors, isDark } = useTheme();
   const [hasLoadError, setHasLoadError] = useState(false);
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerLoadError, setViewerLoadError] = useState(false);
@@ -203,13 +202,13 @@ export function ArticleImageBlock({
     }
 
     void NavigationBar.setBackgroundColorAsync(colors.background);
-    void NavigationBar.setButtonStyleAsync(isDarkTheme ? 'light' : 'dark');
+    void NavigationBar.setButtonStyleAsync(isDark ? 'light' : 'dark');
 
     return () => {
       void NavigationBar.setBackgroundColorAsync(colors.background);
-      void NavigationBar.setButtonStyleAsync(isDarkTheme ? 'light' : 'dark');
+      void NavigationBar.setButtonStyleAsync(isDark ? 'light' : 'dark');
     };
-  }, [colors.background, isDarkTheme, viewerOpen]);
+  }, [colors.background, isDark, viewerOpen]);
 
   const handleOpenViewer = useCallback(() => {
     setViewerLoadError(false);

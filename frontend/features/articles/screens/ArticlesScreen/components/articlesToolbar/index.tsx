@@ -62,7 +62,7 @@ export function ArticlesToolbar({
   onChangePersonalFilter,
   onToggleFiltersCollapsed,
 }: ArticlesToolbarProps) {
-  const { colors } = useTheme();
+  const { theme, colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const { t } = useTranslation();
 
@@ -121,10 +121,11 @@ export function ArticlesToolbar({
 
   return (
     <View style={styles.container}>
-      <View style={[styles.searchInputContainer, {}]}>
+      <View style={styles.searchInputContainer}>
         <TextInput
           autoCapitalize="none"
           autoCorrect={false}
+          keyboardAppearance={theme}
           onChangeText={onChangeSearchValue}
           placeholder={t('articles.searchPlaceholder')}
           placeholderTextColor={colors.placeholder}

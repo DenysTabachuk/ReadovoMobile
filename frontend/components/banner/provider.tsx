@@ -19,13 +19,25 @@ import {
   HIDDEN_OFFSET,
 } from './constants';
 import { BannerContext } from './context';
-import { type ShowBannerOptions } from './types';
+import { type BannerVariant, type ShowBannerOptions } from './types';
 import { ThemedText } from '@/components/themedText';
 import { createStyles } from './styles';
 
 type BannerProviderProps = {
   children: ReactNode;
 };
+
+const VARIANT_TEXT_STYLE_KEYS = {
+  success: 'successText',
+  error: 'errorText',
+  info: 'infoText',
+  reward: 'warningText',
+  streak: 'streakText',
+  achievement: 'streakText',
+} as const satisfies Record<
+  BannerVariant,
+  keyof ReturnType<typeof createStyles>
+>;
 
 export function BannerProvider({ children }: BannerProviderProps) {
   const [banner, setBanner] = useState<ShowBannerOptions | null>(null);
@@ -193,6 +205,7 @@ function BannerContent({ banner }: { banner: ShowBannerOptions }) {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const variantTextStyle = styles[VARIANT_TEXT_STYLE_KEYS[banner.variant]];
 
   if (banner.variant === 'achievement' && banner.achievement) {
     return (
@@ -263,24 +276,11 @@ function BannerContent({ banner }: { banner: ShowBannerOptions }) {
         />
       ) : null}
       <View style={styles.textContent}>
-        <ThemedText
-          type="bodyStrong"
-          style={[
-            styles.title,
-            shouldShowStreakIcon ? styles.streakText : null,
-            shouldShowRewardIcon ? styles.warningText : null,
-          ]}
-        >
+        <ThemedText type="bodyStrong" style={[styles.title, variantTextStyle]}>
           {banner.title}
         </ThemedText>
         {banner.description ? (
-          <ThemedText
-            style={[
-              styles.description,
-              shouldShowStreakIcon ? styles.streakText : null,
-              shouldShowRewardIcon ? styles.warningText : null,
-            ]}
-          >
+          <ThemedText style={[styles.description, variantTextStyle]}>
             {banner.description}
           </ThemedText>
         ) : null}

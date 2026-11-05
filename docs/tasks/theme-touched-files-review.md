@@ -1,7 +1,7 @@
-# Theme migration: touched-file review
+# Frontend review follow-ups
 
-This is a read-only review requested during stage 2. The findings below have not
-been implemented as part of the palette refinement.
+These remaining findings came from the read-only review during theme migration.
+They are separate work; the theme implementation does not depend on this cleanup.
 
 ## User-visible issues
 
@@ -12,9 +12,6 @@ been implemented as part of the palette refinement.
 - `features/streak/components/streakCard/index.tsx` also has hardcoded Ukrainian
   copy, but repository searches found no callers. Decide whether to retain this
   dormant component before translating it and its weekday labels.
-- Raw TextInput instances in VerificationCodeModal and the articles toolbar do
-  not set `keyboardAppearance`, unlike FormTextInput. Verify iOS behavior with an
-  app theme opposite to the OS theme before choosing the correction.
 - LanguageOption discards the promise returned by language selection. The
   preferences provider changes i18n before persisting the language. A storage
   failure can therefore leave language state/storage inconsistent and produce an
@@ -33,14 +30,10 @@ been implemented as part of the palette refinement.
   location is `components/banner/components/banner/index.tsx`, with its owned
   styles moved alongside it. Replacing the public barrel with the visual component
   would obscure the existing module boundary.
-- Several migrated components retain duplicated `useTheme()` calls, one for
-  `theme` and one for `colors` (for example StreakAchievementCard). Destructure
-  both from one call when doing the next focused cleanup. Theme-dependent asset
-  choices such as filled/outline icons can still use `isDark`.
 
 ## Review boundary
 
-The palette refinement removes local theme tables and merges their color rules
-into the corresponding styles. It does not authorize a general localization,
-component API or naming migration. Review the findings above before implementing
-that additional work.
+Stage 3 addressed raw verification/search keyboard appearance and duplicated theme
+hook calls. Native keyboard rendering still needs device review. The findings
+above remain open and do not authorize a general localization, component API or
+naming migration. Keep this follow-up document until that separate work is done.

@@ -17,11 +17,9 @@ export function StreakAchievementCard({
   achievement,
   progressValue,
 }: StreakAchievementCardProps) {
-  const { theme } = useTheme();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
-  const isDark = theme === 'dark';
   const isUnlocked = achievement.isUnlocked;
   const ratio = Math.min(progressValue / achievement.milestone, 1);
 

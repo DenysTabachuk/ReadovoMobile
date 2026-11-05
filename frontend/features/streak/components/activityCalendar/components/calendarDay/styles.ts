@@ -44,7 +44,9 @@ export const createStyles = (colors: ThemeColors) => {
     dayRestored: {
       backgroundColor: colors.highlight,
     },
-    filledDayText: { color: colors.onPrimary },
+    completedDayText: { color: colors.onAccentSolid },
+    missedDayText: { color: colors.onDangerSolid },
+    frozenDayText: { color: colors.onInfoSolid },
     restoredDayText: { color: colors.onHighlight },
     dayText: {
       fontSize: 12,
