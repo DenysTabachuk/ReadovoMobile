@@ -13,8 +13,8 @@ this task retains the active StreakAchievementCard localization work.
 ## Scope
 
 - Confirm the actual render/import paths for active streak components. See the
-  [completed unused-code audit](../unused-code-audit.md#completed-audit-2026-11-05)
-  for the dormant StreakCard removal decision.
+  [unused-code review guidance](../unused-code-audit.md#reviewing-findings).
+  The dormant StreakCard removal decision is already complete.
 - Replace app-owned visible/accessibility copy in active streak components with
   translation keys in Ukrainian and English. Use interpolation and pluralization
   for milestone days and rewards rather than concatenated sentences.
