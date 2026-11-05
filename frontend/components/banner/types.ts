@@ -5,7 +5,7 @@ import { type ImageSourcePropType } from 'react-native';
 export type BannerVariant =
   'success' | 'error' | 'info' | 'reward' | 'achievement' | 'streak';
 
-export type AchievementBannerDetails = {
+type AchievementBannerDetails = {
   badge?: ImageSourcePropType;
   coinsReward: number;
   icon?: ComponentProps<typeof Ionicons>['name'];

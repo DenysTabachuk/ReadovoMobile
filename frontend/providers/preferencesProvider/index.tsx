@@ -33,8 +33,6 @@ export type {
   ThemePreference,
 } from './types';
 
-export { DEFAULT_LEARNING_REMINDER_TIME } from './constants';
-
 type PreferencesContextValue = {
   colorScheme: Exclude<ThemePreference, 'system'>;
   hasCompletedOnboarding: boolean;

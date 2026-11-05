@@ -9,7 +9,7 @@ export type ValidationField = {
   rule: ValidationRule;
 };
 
-export type ValidationDetails = { fields: ValidationField[] };
+type ValidationDetails = { fields: ValidationField[] };
 
 // The definition's literal code determines whether field details are required.
 type ExceptionDetails<Code extends string> = Code extends 'VALIDATION_FAILED'

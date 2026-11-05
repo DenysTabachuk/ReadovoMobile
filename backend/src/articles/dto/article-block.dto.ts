@@ -8,10 +8,7 @@ import {
 } from '@nestjs/swagger';
 
 @ApiSchema({ name: 'ArticleTextNode' })
-export class ArticleTextNodeDto implements Extract<
-  InlineNode,
-  { type: 'text' }
-> {
+class ArticleTextNodeDto implements Extract<InlineNode, { type: 'text' }> {
   @ApiProperty({ enum: ['text'] })
   declare type: 'text';
   @ApiProperty({ type: 'string' })
@@ -23,10 +20,7 @@ export class ArticleTextNodeDto implements Extract<
 }
 
 @ApiSchema({ name: 'ArticleWordNode' })
-export class ArticleWordNodeDto implements Extract<
-  InlineNode,
-  { type: 'word' }
-> {
+class ArticleWordNodeDto implements Extract<InlineNode, { type: 'word' }> {
   @ApiProperty({ enum: ['word'] })
   declare type: 'word';
   @ApiProperty({ type: 'string' })
@@ -53,7 +47,7 @@ const inlineNodeSchema = {
 };
 @ApiExtraModels(ArticleTextNodeDto, ArticleWordNodeDto)
 @ApiSchema(inlineNodeSchema)
-export class InlineNodeDto {}
+class InlineNodeDto {}
 
 @ApiSchema({ name: 'TableCell' })
 export class TableCellDto {
@@ -64,7 +58,7 @@ export class TableCellDto {
 }
 
 @ApiSchema({ name: 'ArticleHeadingBlock' })
-export class ArticleHeadingBlockDto implements Extract<
+class ArticleHeadingBlockDto implements Extract<
   ArticleBlock,
   { type: 'heading' }
 > {
@@ -77,7 +71,7 @@ export class ArticleHeadingBlockDto implements Extract<
 }
 
 @ApiSchema({ name: 'ArticleParagraphBlock' })
-export class ArticleParagraphBlockDto implements Extract<
+class ArticleParagraphBlockDto implements Extract<
   ArticleBlock,
   { type: 'paragraph' }
 > {
@@ -88,10 +82,7 @@ export class ArticleParagraphBlockDto implements Extract<
 }
 
 @ApiSchema({ name: 'ArticleListBlock' })
-export class ArticleListBlockDto implements Extract<
-  ArticleBlock,
-  { type: 'list' }
-> {
+class ArticleListBlockDto implements Extract<ArticleBlock, { type: 'list' }> {
   @ApiProperty({ enum: ['list'] })
   declare type: 'list';
   @ApiProperty({
@@ -104,10 +95,7 @@ export class ArticleListBlockDto implements Extract<
 }
 
 @ApiSchema({ name: 'ArticleTableBlock' })
-export class ArticleTableBlockDto implements Extract<
-  ArticleBlock,
-  { type: 'table' }
-> {
+class ArticleTableBlockDto implements Extract<ArticleBlock, { type: 'table' }> {
   @ApiProperty({ enum: ['table'] })
   declare type: 'table';
   @ApiProperty({
@@ -118,10 +106,7 @@ export class ArticleTableBlockDto implements Extract<
 }
 
 @ApiSchema({ name: 'ArticleImageBlock' })
-export class ArticleImageBlockDto implements Extract<
-  ArticleBlock,
-  { type: 'image' }
-> {
+class ArticleImageBlockDto implements Extract<ArticleBlock, { type: 'image' }> {
   @ApiProperty({ enum: ['image'] })
   declare type: 'image';
   @ApiPropertyOptional({ type: 'string' })
@@ -133,7 +118,7 @@ export class ArticleImageBlockDto implements Extract<
 }
 
 @ApiSchema({ name: 'FormulaBlock' })
-export class ArticleFormulaBlockDto implements Extract<
+class ArticleFormulaBlockDto implements Extract<
   ArticleBlock,
   { type: 'formula' }
 > {

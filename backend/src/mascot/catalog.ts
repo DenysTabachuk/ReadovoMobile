@@ -1,6 +1,6 @@
 import { type MascotCatalogItem } from './types';
 
-export const mascotCatalog: MascotCatalogItem[] = [
+const mascotCatalog: MascotCatalogItem[] = [
   {
     id: 'pirate-hat',
     price: 300,

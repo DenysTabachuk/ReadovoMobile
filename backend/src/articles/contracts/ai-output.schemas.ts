@@ -9,7 +9,7 @@ export const AI_SCHEMA_NAMES = {
 const NullableBooleanSchema = z.boolean().nullable();
 const NullableStringSchema = z.string().nullable();
 
-export const AiInlineNodeSchema = z.union([
+const AiInlineNodeSchema = z.union([
   z
     .object({
       bold: NullableBooleanSchema,
@@ -35,7 +35,7 @@ const AiTableCellSchema = z
   })
   .strict();
 
-export const AiArticleBlockSchema = z.union([
+const AiArticleBlockSchema = z.union([
   z
     .object({
       level: z.union([z.literal(1), z.literal(2), z.literal(3)]),
@@ -79,7 +79,7 @@ const AiQuestionOptionSchema = z
   })
   .strict();
 
-export const AiQuizQuestionSchema = z
+const AiQuizQuestionSchema = z
   .object({
     correctOptionIds: z.array(z.string()),
     explanation: NullableStringSchema,
@@ -103,7 +103,7 @@ export const ReadingQuizOutputSchema = z
   })
   .strict();
 
-export const AiVocabularyQuizQuestionSchema = z
+const AiVocabularyQuizQuestionSchema = z
   .object({
     correctOptionIds: z.array(z.string()),
     explanation: NullableStringSchema,

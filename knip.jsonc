@@ -1,0 +1,54 @@
+{
+  "$schema": "https://unpkg.com/knip@6.44.1/schema.json",
+  // These are analyzer workspaces, not npm workspaces. Each keeps its own lockfile.
+  // Paths below are relative to the owning package. project lists files to inspect;
+  // entry lists files loaded externally (for example, backend startup and tests).
+  // A trailing ! on a glob includes it in the optional --production analysis too.
+  "workspaces": {
+    ".": {
+      "project": ["scripts/**/*.{js,cjs,mjs,ts}", "*.mjs"],
+    },
+    "frontend": {
+      // Knip assumes expo-updates unless updates.enabled is false. This app does
+      // not configure/import that optional package; do not add it to silence Knip.
+      "ignoreDependencies": ["expo-updates"],
+      // Expo Router supplies app/** routes. Jest supplies tests and their imports.
+      // Follow Knip's documented Metro approach for native platform variants:
+      // https://knip.dev/reference/plugins/metro#note
+      // Adapt the default src/** pattern to our layout and native-only targets.
+      // Entry variants require a separate consumer check before deleting a family.
+      "metro": {
+        "entry": ["**/*.{ios,android,native}.{js,jsx,json,ts,tsx}!"],
+      },
+      "project": [
+        "{app,api,components,constants,devtools,features,hooks,localization,providers,utils}/**/*.{js,jsx,ts,tsx}!",
+        "scripts/**/*.{js,cjs,mjs,ts}",
+        "tests/**/*.{ts,tsx}",
+        "*.{js,cjs,mjs,ts}",
+      ],
+      "expo": true,
+      "expo-router": true,
+    },
+    "backend": {
+      "ignoreDependencies": [
+        // Required by ignored generated Prisma source: @prisma/client/runtime/client.
+        "@prisma/client",
+        // article-formula-renderer.ts loads mathjax/node-main.cjs via createRequire.
+        "mathjax",
+      ],
+      // Knip's Jest defaults do not translate the testRegex e2e filename suffix.
+      "entry": ["src/main.ts!", "prisma7.config.ts", "test/**/*.e2e-spec.ts"],
+      "project": [
+        "src/**/*.ts!",
+        "test/**/*.ts",
+        "scripts/**/*.{cjs,mjs}",
+        "*.{ts,mjs}",
+        "prisma/**/*.prisma",
+      ],
+      "nest": true,
+      "jest": { "config": ["package.json", "test/jest-e2e.json"] },
+      // Analyze the config as source, without executing dotenv/config or env().
+      "prisma": { "config": [], "entry": ["prisma/schema.prisma"] },
+    },
+  },
+}

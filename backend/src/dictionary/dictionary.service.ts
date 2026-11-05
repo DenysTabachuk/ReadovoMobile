@@ -29,7 +29,7 @@ function getGroqModel(): string {
 }
 const GROQ_REQUEST_TIMEOUT_MS = 180000;
 const MAX_DICTIONARY_TEST_COMPLETION_TOKENS = 6000;
-export const REQUIRED_CORRECT_ANSWERS_TO_LEARN = 5;
+const REQUIRED_CORRECT_ANSWERS_TO_LEARN = 5;
 
 type GeneratedDictionaryTestQuestion = {
   clozePrompt?: string;

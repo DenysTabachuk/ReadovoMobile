@@ -27,5 +27,3 @@ if (__DEV__ && isSupportedPlatform) {
   console.log(`[Reactotron] connecting to ${host}:9090`);
   reactotron.clear?.();
 }
-
-export { reactotron };

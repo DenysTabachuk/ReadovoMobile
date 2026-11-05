@@ -56,7 +56,7 @@ export type AuthenticatedUser = {
   id: string;
 };
 
-export type AuthSession = AuthSessionResponseDto;
+type AuthSession = AuthSessionResponseDto;
 export type RegisterUserResponse = VerificationCodeDeliveryResponseDto;
 
 export type LoginUserResponse = AuthSession;

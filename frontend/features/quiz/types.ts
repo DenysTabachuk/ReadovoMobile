@@ -1,9 +1,8 @@
 import type { SubmitQuizAnswerResponse } from '@/api/generated/transport';
 
-export type QuizQuestionType =
-  'single_choice' | 'multiple_choice' | 'true_false';
+type QuizQuestionType = 'single_choice' | 'multiple_choice' | 'true_false';
 
-export type QuizOption = {
+type QuizOption = {
   id: string;
   text: string;
 };
