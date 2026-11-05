@@ -11,10 +11,28 @@
     "continue": "Продовжити"
   },
   "tabs": {
-    "articles": "Статті",
+    "learning": "Навчання",
     "dictionary": "Словник",
     "settings": "Налаштування",
     "profile": "Профіль"
+  },
+  "learning": {
+    "title": "Навчання",
+    "description": "Трохи прогресу щодня.",
+    "chooseActivity": "Що хочете потренувати?",
+    "comingSoon": "Скоро",
+    "vocabulary": {
+      "title": "Лексика",
+      "description": "Вивчайте слова з картинками"
+    },
+    "grammar": {
+      "title": "Граматика",
+      "description": "Зрозумійте правило й застосуйте його."
+    },
+    "reading": {
+      "title": "Читання",
+      "description": "Відкрийте для себе щось цікаве"
+    }
   },
   "about": {
     "title": "Readovo",

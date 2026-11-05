@@ -36,11 +36,11 @@ export default function TabLayout() {
       }}
     >
       <Tabs.Screen
-        name="index"
+        name="(learning)"
         options={{
-          title: t('tabs.articles'),
+          title: t('tabs.learning'),
           tabBarIcon: ({ color }) => (
-            <IconSymbol size={24} name="newspaper.fill" color={color} />
+            <IconSymbol size={24} name="book.fill" color={color} />
           ),
         }}
       />

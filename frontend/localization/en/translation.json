@@ -11,10 +11,28 @@
     "continue": "Continue"
   },
   "tabs": {
-    "articles": "Articles",
+    "learning": "Learning",
     "dictionary": "Dictionary",
     "settings": "Settings",
     "profile": "Profile"
+  },
+  "learning": {
+    "title": "Learning",
+    "description": "A little progress, every day.",
+    "chooseActivity": "What would you like to practise?",
+    "comingSoon": "Coming soon",
+    "vocabulary": {
+      "title": "Vocabulary",
+      "description": "Learn words with pictures"
+    },
+    "grammar": {
+      "title": "Grammar",
+      "description": "Understand it. Try it. Use it."
+    },
+    "reading": {
+      "title": "Reading",
+      "description": "Discover something interesting"
+    }
   },
   "about": {
     "title": "Readovo",
