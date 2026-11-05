@@ -488,10 +488,10 @@ public streak activity endpoint are removed. Unverified legacy offline events
 are left unread and cannot earn rewards. Retrying saved sessions is supported;
 a durable offline completion queue is separate work.
 
-In local mock mode, quiz generation/completion, dictionary, achievements and streak
-requests proxy to the local backend (`MOCK_PROXY_TARGET`, default
-`http://localhost:3000`). Start PostgreSQL and the migrated backend alongside
-`npm run mock:api`; there is no second mock reward policy.
+For local development, start PostgreSQL and the migrated backend, then use the
+frontend's local API mode to access the backend directly. The separate development
+mock server has been removed; quiz generation/completion, dictionary, achievements
+and streak requests use the authoritative backend.
 
 `backend/test/quiz-rewards.e2e-spec.ts` verifies real PostgreSQL concurrency,
 rollback, replay, ownership, grading, review deduplication, cascades and retakes.

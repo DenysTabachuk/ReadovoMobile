@@ -1,6 +1,9 @@
 # TODO: remove the development mock API server
 
-Status: planned.
+Status: server removal completed at the user's request during the unused-code
+audit. The mock-api directory, root startup command and exclusive json-server
+dependency have been removed. Frontend mock detection and achievement preview
+cleanup remain planned; this task is not complete.
 
 ## Problem
 
