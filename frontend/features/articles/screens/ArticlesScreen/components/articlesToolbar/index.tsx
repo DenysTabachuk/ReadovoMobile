@@ -1,5 +1,7 @@
+import { useTheme } from '@/hooks/use-theme';
+import { useMemo, useCallback, useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
-import { useCallback, useEffect, useState } from 'react';
+
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, TextInput, View } from 'react-native';
 import Animated, {
@@ -12,14 +14,14 @@ import { ArticleContentFilters } from './components/articleContentFilters';
 import { ArticleQuickFilters } from './components/articleQuickFilters';
 import { PersonalArticlesFilter } from './components/personalArticlesFilter';
 import { RecommendedArticlesFilter } from './components/recommendedArticlesFilter';
-import { useArticlesFilterTheme } from './hooks/useArticlesFilterTheme';
+
 import type { ArticlesToolbarProps } from './types';
 import { countActiveArticleFilters } from './utils/countActiveArticleFilters';
 
 import { ThemedText } from '@/components/themedText';
 import { Spacing } from '@/constants/spacing';
 
-import { styles } from './styles';
+import { createStyles } from './styles';
 export type {
   ArticleCategoryFilter,
   ArticlePersonalFilter,
@@ -60,17 +62,10 @@ export function ArticlesToolbar({
   onChangePersonalFilter,
   onToggleFiltersCollapsed,
 }: ArticlesToolbarProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { t } = useTranslation();
-  const {
-    borderColor,
-    cardColor,
-    sectionCardColor,
-    tintColor,
-    textColor,
-    placeholderColor,
-    mutedTextColor,
-    clearIconColor,
-  } = useArticlesFilterTheme();
+
   const [filtersContentHeight, setFiltersContentHeight] = useState(0);
   const filtersProgress = useSharedValue(0);
   const activeFiltersCount = countActiveArticleFilters({
@@ -126,28 +121,16 @@ export function ArticlesToolbar({
 
   return (
     <View style={styles.container}>
-      <View
-        style={[
-          styles.searchInputContainer,
-          {
-            borderColor,
-          },
-        ]}
-      >
+      <View style={[styles.searchInputContainer, {}]}>
         <TextInput
           autoCapitalize="none"
           autoCorrect={false}
           onChangeText={onChangeSearchValue}
           placeholder={t('articles.searchPlaceholder')}
-          placeholderTextColor={placeholderColor}
+          placeholderTextColor={colors.placeholder}
           returnKeyType="search"
-          selectionColor={tintColor}
-          style={[
-            styles.searchInput,
-            {
-              color: textColor,
-            },
-          ]}
+          selectionColor={colors.interactive}
+          style={[styles.searchInput, styles.bodyText]}
           value={searchValue}
         />
         {searchValue.length > 0 ? (
@@ -160,7 +143,11 @@ export function ArticlesToolbar({
               { opacity: pressed ? 0.64 : 1 },
             ]}
           >
-            <Ionicons color={placeholderColor} name="close-circle" size={22} />
+            <Ionicons
+              color={colors.placeholder}
+              name="close-circle"
+              size={22}
+            />
           </Pressable>
         ) : null}
       </View>
@@ -169,10 +156,7 @@ export function ArticlesToolbar({
         style={[
           styles.sheetContainer,
           animatedSheetContainerStyle,
-          {
-            backgroundColor: sectionCardColor,
-            borderColor,
-          },
+          styles.filterSurface,
         ]}
       >
         <Animated.View
@@ -230,13 +214,13 @@ export function ArticlesToolbar({
             onPress={onToggleFiltersCollapsed}
           >
             <View style={styles.sheetTitleRow}>
-              <ThemedText type="bodyStrong" style={{ color: textColor }}>
+              <ThemedText type="bodyStrong" style={styles.bodyText}>
                 {isFiltersCollapsed
                   ? t('articles.showFilters')
                   : t('articles.hideFilters')}
               </ThemedText>
               <Ionicons
-                color={mutedTextColor}
+                color={colors.textSecondary}
                 name={isFiltersCollapsed ? 'chevron-down' : 'chevron-up'}
                 size={16}
               />
@@ -247,7 +231,7 @@ export function ArticlesToolbar({
 
       <View style={styles.resultsRow}>
         <View style={styles.resultsStatus}>
-          <ThemedText type="body" style={{ color: mutedTextColor }}>
+          <ThemedText type="body" style={styles.mutedText}>
             {personalFilter !== null
               ? t('articles.personalResults', { count: resultCount })
               : isSearchActive
@@ -255,10 +239,10 @@ export function ArticlesToolbar({
                 : t('articles.randomResults', { count: resultCount })}
           </ThemedText>
           {isRefreshingResults ? (
-            <ActivityIndicator color={tintColor} size="small" />
+            <ActivityIndicator color={colors.interactive} size="small" />
           ) : null}
           {hasActiveFilters ? (
-            <ThemedText type="body" style={{ color: mutedTextColor }}>
+            <ThemedText type="body" style={styles.mutedText}>
               {t('articles.activeFiltersCount', { count: activeFiltersCount })}
             </ThemedText>
           ) : null}
@@ -269,20 +253,17 @@ export function ArticlesToolbar({
             onPress={onClearFilters}
             style={({ pressed }) => [
               styles.clearButton,
-              {
-                backgroundColor: cardColor,
-                borderColor,
-                opacity: pressed ? 0.72 : 1,
-              },
+              styles.controlSurface,
+              pressed ? styles.chipPressed : null,
             ]}
           >
             <View style={styles.clearButtonContent}>
               <Ionicons
-                color={clearIconColor}
+                color={colors.interactive}
                 name="close-circle-outline"
                 size={16}
               />
-              <ThemedText type="bodyStrong" style={{ color: mutedTextColor }}>
+              <ThemedText type="bodyStrong" style={styles.mutedText}>
                 {t('articles.clearFilters')}
               </ThemedText>
             </View>

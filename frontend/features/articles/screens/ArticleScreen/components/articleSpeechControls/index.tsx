@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import {
   Pressable,
@@ -10,13 +11,20 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import { ThemedText } from '@/components/themedText';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { useThemeColor } from '@/hooks/use-theme-color';
+import { useTheme } from '@/hooks/use-theme';
 
-import { styles } from './styles';
+import { createStyles } from './styles';
 
 type ArticleSpeechStatus = 'idle' | 'paused' | 'playing';
+
+type SpeechIconButtonProps = {
+  accessibilityLabel: string;
+  disabled?: boolean;
+  iconName: keyof typeof Ionicons.glyphMap;
+  onPress: () => void;
+  tintColor: string;
+  variant?: 'primary' | 'secondary';
+};
 
 type ArticleSpeechControlsProps = {
   disabled?: boolean;
@@ -40,9 +48,8 @@ export function ArticleSpeechControls({
   status,
 }: ArticleSpeechControlsProps) {
   const { t } = useTranslation();
-  const colorScheme = useColorScheme();
-  const iconColor = useThemeColor({}, 'icon');
-  const tintColor = Colors[colorScheme ?? 'light'].tint;
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const isPlaying = status === 'playing';
   const isIdle = status === 'idle';
   const progressWidth: DimensionValue = `${Math.round(Math.max(0, Math.min(1, progress)) * 100)}%`;
@@ -70,7 +77,7 @@ export function ArticleSpeechControls({
             disabled={disabled}
             iconName={isPlaying ? 'pause' : 'play'}
             onPress={onTogglePlayPause}
-            tintColor={tintColor}
+            tintColor={colors.interactive}
             variant="primary"
           />
           <SpeechIconButton
@@ -78,27 +85,19 @@ export function ArticleSpeechControls({
             disabled={disabled}
             iconName="refresh"
             onPress={onRestart}
-            tintColor={iconColor}
+            tintColor={colors.textSecondary}
           />
           <SpeechIconButton
             accessibilityLabel={t('article.speech.stopAction')}
             disabled={disabled || isIdle}
             iconName="stop"
             onPress={onStop}
-            tintColor={iconColor}
+            tintColor={colors.textSecondary}
           />
         </View>
       </View>
       <View style={styles.progressTrack}>
-        <View
-          style={[
-            styles.progressFill,
-            {
-              backgroundColor: tintColor,
-              width: progressWidth,
-            },
-          ]}
-        />
+        <View style={[styles.progressFill, { width: progressWidth }]} />
       </View>
     </View>
   );
@@ -111,14 +110,9 @@ function SpeechIconButton({
   onPress,
   tintColor,
   variant = 'secondary',
-}: {
-  accessibilityLabel: string;
-  disabled?: boolean;
-  iconName: keyof typeof Ionicons.glyphMap;
-  onPress: () => void;
-  tintColor: string;
-  variant?: 'primary' | 'secondary';
-}) {
+}: SpeechIconButtonProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   return (
     <Pressable
       accessibilityLabel={accessibilityLabel}
@@ -134,7 +128,7 @@ function SpeechIconButton({
       ]}
     >
       <Ionicons
-        color={variant === 'primary' ? '#ffffff' : tintColor}
+        color={variant === 'primary' ? colors.onPrimary : tintColor}
         name={iconName}
         size={20}
       />

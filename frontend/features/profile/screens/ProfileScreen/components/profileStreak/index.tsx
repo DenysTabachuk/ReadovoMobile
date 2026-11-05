@@ -1,3 +1,5 @@
+import { useMemo } from 'react';
+import { useTheme } from '@/hooks/use-theme';
 import { Pressable, ScrollView, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { isMockApiEnabled } from '@/api';
@@ -11,16 +13,17 @@ import {
   StreakFreezePurchaseModal,
   StreakRestoreConfirmModal,
 } from '@/features/streak';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useProfileStreak } from './hooks/useProfileStreak';
-import { styles } from './styles';
+import { createStyles } from './styles';
 
 const MOCK_ACHIEVEMENT_COINS_REWARD = 30;
 
 export function ProfileStreak() {
   const { t } = useTranslation();
   const { showBanner } = useBanner();
-  const isDarkTheme = useColorScheme() === 'dark';
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const shouldShowMockStreakAchievementAction = __DEV__ && isMockApiEnabled();
   const {
     streak,
@@ -100,17 +103,10 @@ export function ProfileStreak() {
           }}
           style={({ pressed }) => [
             styles.streakRetryButton,
-            isDarkTheme ? styles.streakRetryButtonDark : null,
             pressed ? styles.avatarButtonPressed : null,
           ]}
         >
-          <ThemedText
-            type="bodyStrong"
-            style={[
-              styles.streakRetryButtonText,
-              isDarkTheme ? styles.streakRetryButtonTextDark : null,
-            ]}
-          >
+          <ThemedText type="bodyStrong" style={[styles.streakRetryButtonText]}>
             {t('streak.debug.previewAchievement')}
           </ThemedText>
         </Pressable>

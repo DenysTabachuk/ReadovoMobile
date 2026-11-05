@@ -1,10 +1,10 @@
+import { useTheme } from '@/hooks/use-theme';
 import { useMemo } from 'react';
 import { Pressable, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { ThemedText } from '@/components/themedText';
 import { IconSymbol } from '@/components/iconSymbol';
-import { Colors } from '@/constants/theme';
 
 import { usePronunciation } from './hooks/usePronunciation';
 import { createStyles } from './styles';
@@ -16,10 +16,10 @@ type PronunciationButtonProps = {
 const PRONUNCIATION_ICON_SIZE = 18;
 
 export function PronunciationButton({ word }: PronunciationButtonProps) {
+  const { colors } = useTheme();
   const { t } = useTranslation();
   const { isSpeaking, pronounce } = usePronunciation(word);
-  const labelColor = Colors.light.tint;
-  const styles = useMemo(() => createStyles(labelColor), [labelColor]);
+  const styles = useMemo(() => createStyles(colors.link), [colors.link]);
 
   return (
     <Pressable
@@ -35,7 +35,7 @@ export function PronunciationButton({ word }: PronunciationButtonProps) {
     >
       <View style={styles.content}>
         <IconSymbol
-          color={labelColor}
+          color={colors.link}
           name="speaker.wave.2.fill"
           size={PRONUNCIATION_ICON_SIZE}
         />

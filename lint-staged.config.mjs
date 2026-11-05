@@ -1,6 +1,8 @@
 // Husky runs `npm run check:staged` before every commit. The --hide-all option
 // temporarily hides unstaged and untracked files, so these checks see only the
 // files selected with `git add`.
+// check:staged caps argument batches at 6000 characters to leave room for npm's
+// wrappers and quoted paths under Windows cmd.exe's 8191-character limit.
 export default {
   // Backend source files use the default Jest configuration rooted at src.
   "backend/src/**/*.ts": [

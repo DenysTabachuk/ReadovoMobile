@@ -1,35 +1,28 @@
+import { useMemo } from 'react';
+import { useTheme } from '@/hooks/use-theme';
 import { View } from 'react-native';
 import { ThemedText } from '@/components/themedText';
-import type { useColorScheme } from '@/hooks/use-color-scheme';
 import type { DictionaryWordProgress } from '../../../../../../api/types';
-import { getProgressBadgeColors } from '../../../../utils/getProgressBadgeColors';
-import { styles } from './styles';
+import { createStyles } from './styles';
 
 type ProgressStatusBadgeProps = {
-  colorScheme: ReturnType<typeof useColorScheme>;
   label: string;
   progress: DictionaryWordProgress;
 };
 
 export function ProgressStatusBadge({
-  colorScheme,
   label,
   progress,
 }: ProgressStatusBadgeProps) {
-  const progressColors = getProgressBadgeColors(progress, colorScheme);
+  const { colors } = useTheme();
+  const styles = useMemo(
+    () => createStyles(colors, progress),
+    [colors, progress],
+  );
 
   return (
-    <View
-      style={[
-        styles.progressBadge,
-        styles.progressFilterBadge,
-        { backgroundColor: progressColors.backgroundColor },
-      ]}
-    >
-      <ThemedText
-        type="bodyStrong"
-        style={[styles.progressText, { color: progressColors.textColor }]}
-      >
+    <View style={[styles.progressBadge, styles.progressFilterBadge]}>
+      <ThemedText type="bodyStrong" style={styles.progressText}>
         {label}
       </ThemedText>
     </View>

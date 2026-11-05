@@ -10,7 +10,7 @@ export const navigationThemes = {
     ...DefaultTheme,
     colors: {
       ...DefaultTheme.colors,
-      primary: themeColors.light.accent,
+      primary: themeColors.light.interactive,
       background: themeColors.light.background,
       card: themeColors.light.background,
       text: themeColors.light.text,
@@ -22,7 +22,7 @@ export const navigationThemes = {
     ...DarkTheme,
     colors: {
       ...DarkTheme.colors,
-      primary: themeColors.dark.accent,
+      primary: themeColors.dark.interactive,
       background: themeColors.dark.background,
       card: themeColors.dark.background,
       text: themeColors.dark.text,

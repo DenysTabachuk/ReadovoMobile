@@ -1,3 +1,4 @@
+import { useTheme } from '@/hooks/use-theme';
 import { useDictionaryMutationFeedback } from '../../hooks/useDictionaryMutationFeedback';
 import type {
   DictionaryFilter,
@@ -32,20 +33,20 @@ import { FloatingActionButton } from '@/components/floatingActionButton';
 import { ScreenContainer } from '@/components/screenContainer';
 import { SegmentedToggle } from '@/components/segmentedToggle';
 import { ThemedText } from '@/components/themedText';
-import { Colors } from '@/constants/theme';
 import {
   PronunciationButton,
   TranslationCards,
   useWordTranslation,
 } from '@/features/translations';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 
-import { styles } from './styles';
+import { createStyles } from './styles';
 
 export default function DictionaryScreen() {
+  const { colors } = useTheme();
   const { t } = useTranslation();
   const router = useRouter();
-  const colorScheme = useColorScheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const [openProgressMenuWordId, setOpenProgressMenuWordId] = useState<
     string | null
   >(null);
@@ -187,10 +188,7 @@ export default function DictionaryScreen() {
     return (
       <ScreenContainer>
         <View style={styles.centerState}>
-          <ActivityIndicator
-            color={Colors[colorScheme ?? 'light'].tint}
-            size="large"
-          />
+          <ActivityIndicator color={colors.interactive} size="large" />
           <ThemedText type="body">{t('dictionary.loading')}</ThemedText>
         </View>
       </ScreenContainer>
@@ -245,7 +243,6 @@ export default function DictionaryScreen() {
               selectedValue={activeFilter}
             />
             <ProgressFilterDropdown
-              colorScheme={colorScheme}
               label={t('dictionary.progressFilterLabel')}
               onClose={() => setIsProgressFilterOpen(false)}
               onOpen={() => setIsProgressFilterOpen(true)}
@@ -262,7 +259,7 @@ export default function DictionaryScreen() {
           <RefreshControl
             onRefresh={refetch}
             refreshing={isFetching && !isLoading}
-            tintColor={Colors[colorScheme ?? 'light'].tint}
+            tintColor={colors.interactive}
           />
         }
         renderItem={renderWord}

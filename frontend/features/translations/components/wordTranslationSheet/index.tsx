@@ -1,11 +1,10 @@
+import { useTheme } from '@/hooks/use-theme';
 import { ActivityIndicator, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/button';
 import { ModalSheet } from '@/components/modalSheet';
 import { ThemedText } from '@/components/themedText';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 import { getApiErrorMessageKey } from '@/api/utils/getApiErrorMessageKey';
 
 import { PronunciationButton } from '../pronunciationButton';
@@ -43,7 +42,7 @@ export function WordTranslationSheet({
   word,
 }: WordTranslationSheetProps) {
   const { t } = useTranslation();
-  const colorScheme = useColorScheme();
+  const { colors } = useTheme();
   const errorMessageKey = error ? getApiErrorMessageKey(error) : null;
 
   return (
@@ -71,7 +70,7 @@ export function WordTranslationSheet({
 
       {loading ? (
         <View style={styles.loadingState}>
-          <ActivityIndicator color={Colors[colorScheme ?? 'light'].tint} />
+          <ActivityIndicator color={colors.interactive} />
           <ThemedText type="body">{t('translation.loading')}</ThemedText>
         </View>
       ) : null}

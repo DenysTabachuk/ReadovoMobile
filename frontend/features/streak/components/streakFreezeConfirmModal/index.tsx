@@ -1,12 +1,13 @@
+import { useMemo } from 'react';
+import { useTheme } from '@/hooks/use-theme';
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { ModalSheet } from '@/components/modalSheet';
 import { ThemedText } from '@/components/themedText';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 
-import { styles } from './styles';
+import { createStyles } from './styles';
 
 type StreakFreezeConfirmModalProps = {
   date: string | null;
@@ -25,9 +26,10 @@ export function StreakFreezeConfirmModal({
   onConfirm,
   open,
 }: StreakFreezeConfirmModalProps) {
+  const { colors } = useTheme();
   const { t } = useTranslation();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const canConfirm = freezeTokens > 0 && !isApplying;
 
   return (
@@ -38,28 +40,13 @@ export function StreakFreezeConfirmModal({
       title={t('streak.freeze.modalTitle')}
     >
       <View style={styles.content}>
-        <View
-          style={[
-            styles.iconCircle,
-            isDark ? styles.iconCircleDark : styles.iconCircleLight,
-          ]}
-        >
-          <Ionicons color="#2d6bc9" name="snow" size={24} />
+        <View style={[styles.iconCircle]}>
+          <Ionicons color={colors.info} name="snow" size={24} />
         </View>
-        <ThemedText
-          style={[
-            styles.description,
-            isDark ? styles.descriptionDark : styles.descriptionLight,
-          ]}
-        >
+        <ThemedText style={[styles.description]}>
           {t('streak.freeze.modalDescription', { date })}
         </ThemedText>
-        <ThemedText
-          style={[
-            styles.tokensText,
-            isDark ? styles.tokensTextDark : styles.tokensTextLight,
-          ]}
-        >
+        <ThemedText style={[styles.tokensText]}>
           {t('streak.freeze.tokensAvailable', { count: freezeTokens })}
         </ThemedText>
 
@@ -69,16 +56,10 @@ export function StreakFreezeConfirmModal({
             onPress={onClose}
             style={({ pressed }) => [
               styles.secondaryButton,
-              isDark ? styles.secondaryButtonDark : styles.secondaryButtonLight,
               pressed ? styles.buttonPressed : null,
             ]}
           >
-            <ThemedText
-              type="bodyStrong"
-              style={
-                isDark ? styles.secondaryTextDark : styles.secondaryTextLight
-              }
-            >
+            <ThemedText type="bodyStrong" style={styles.secondaryText}>
               {t('streak.freeze.cancel')}
             </ThemedText>
           </Pressable>

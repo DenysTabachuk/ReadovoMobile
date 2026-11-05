@@ -1,7 +1,7 @@
 import { Button } from '@/components/button';
 import { ModalSheet } from '@/components/modalSheet';
 import { ThemedText } from '@/components/themedText';
-import { useThemeColor } from '@/hooks/use-theme-color';
+import { useTheme } from '@/hooks/use-theme';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, View } from 'react-native';
 import type { useArticleQuiz } from '../../../../hooks/useArticleQuiz';
@@ -11,7 +11,7 @@ type Props = { controller: ReturnType<typeof useArticleQuiz> };
 
 export function ArticleQuizPicker({ controller }: Props) {
   const { t } = useTranslation();
-  const tintColor = useThemeColor({}, 'tint');
+  const { colors } = useTheme();
   const {
     quizMutation,
     isQuizModePickerOpen,
@@ -28,7 +28,7 @@ export function ArticleQuizPicker({ controller }: Props) {
     >
       {quizMutation.isPending ? (
         <View style={styles.quizModalLoading}>
-          <ActivityIndicator color={tintColor} size="large" />
+          <ActivityIndicator color={colors.interactive} size="large" />
           <ThemedText type="body">{t('article.quiz.generating')}</ThemedText>
         </View>
       ) : (

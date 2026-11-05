@@ -1,3 +1,4 @@
+import { useTheme } from '@/hooks/use-theme';
 import {
   type ReactNode,
   useCallback,
@@ -20,8 +21,7 @@ import {
 import { BannerContext } from './context';
 import { type ShowBannerOptions } from './types';
 import { ThemedText } from '@/components/themedText';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { styles } from './styles';
+import { createStyles } from './styles';
 
 type BannerProviderProps = {
   children: ReactNode;
@@ -191,25 +191,16 @@ export function BannerProvider({ children }: BannerProviderProps) {
 
 function BannerContent({ banner }: { banner: ShowBannerOptions }) {
   const { t } = useTranslation();
-  const colorScheme = useColorScheme();
-  const achievementIconColor = colorScheme === 'dark' ? '#ffb347' : '#f2994a';
-  const isDarkTheme = colorScheme === 'dark';
-  const streakIconColor = isDarkTheme ? '#ffb067' : '#ff8a1f';
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   if (banner.variant === 'achievement' && banner.achievement) {
     return (
       <View style={styles.content}>
         {banner.achievement.icon ? (
-          <View
-            style={[
-              styles.achievementIconCircle,
-              colorScheme === 'dark'
-                ? styles.achievementIconCircleDark
-                : styles.achievementIconCircleLight,
-            ]}
-          >
+          <View style={[styles.achievementIconCircle]}>
             <Ionicons
-              color={achievementIconColor}
+              color={colors.warning}
               name={banner.achievement.icon}
               size={28}
             />
@@ -265,7 +256,7 @@ function BannerContent({ banner }: { banner: ShowBannerOptions }) {
       ) : null}
       {shouldShowStreakIcon ? (
         <Ionicons
-          color={streakIconColor}
+          color={colors.warning}
           name="flame"
           size={26}
           style={styles.streakIcon}
@@ -276,9 +267,8 @@ function BannerContent({ banner }: { banner: ShowBannerOptions }) {
           type="bodyStrong"
           style={[
             styles.title,
-            shouldShowStreakIcon && !isDarkTheme
-              ? styles.streakTextLight
-              : null,
+            shouldShowStreakIcon ? styles.streakText : null,
+            shouldShowRewardIcon ? styles.warningText : null,
           ]}
         >
           {banner.title}
@@ -287,9 +277,8 @@ function BannerContent({ banner }: { banner: ShowBannerOptions }) {
           <ThemedText
             style={[
               styles.description,
-              shouldShowStreakIcon && !isDarkTheme
-                ? styles.streakTextLight
-                : null,
+              shouldShowStreakIcon ? styles.streakText : null,
+              shouldShowRewardIcon ? styles.warningText : null,
             ]}
           >
             {banner.description}

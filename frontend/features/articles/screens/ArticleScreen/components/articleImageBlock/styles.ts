@@ -1,11 +1,9 @@
+import type { ThemeColors } from '@/constants/theme';
 import { StyleSheet } from 'react-native';
 
 import { Spacing } from '@/constants/spacing';
 
-export const createStyles = (
-  viewerForegroundColor: string,
-  fallbackBackgroundColor: string,
-) =>
+export const createStyles = (colors: ThemeColors) =>
   StyleSheet.create({
     caption: {
       opacity: 0.75,
@@ -14,7 +12,8 @@ export const createStyles = (
       gap: Spacing.sm,
     },
     fallback: {
-      backgroundColor: fallbackBackgroundColor,
+      borderColor: colors.borderSubtle,
+      backgroundColor: colors.surfaceMuted,
       borderRadius: 12,
       borderWidth: 1,
       gap: Spacing.xs,
@@ -37,12 +36,13 @@ export const createStyles = (
       width: '100%',
     },
     viewer: {
+      backgroundColor: colors.background,
       alignItems: 'center',
       flex: 1,
       justifyContent: 'center',
     },
     viewerCaption: {
-      color: viewerForegroundColor,
+      color: colors.text,
       bottom: Spacing.xLg,
       left: Spacing.xLg,
       opacity: 0.9,
@@ -52,7 +52,7 @@ export const createStyles = (
     },
     viewerCloseButton: {
       alignItems: 'center',
-      backgroundColor: 'rgba(0, 0, 0, 0.48)',
+      backgroundColor: colors.overlayControlSurface,
       borderRadius: 22,
       height: 44,
       justifyContent: 'center',
@@ -63,7 +63,7 @@ export const createStyles = (
       zIndex: 2,
     },
     viewerFallbackTitle: {
-      color: viewerForegroundColor,
+      color: colors.text,
       paddingHorizontal: Spacing.xLg,
       textAlign: 'center',
     },
@@ -85,6 +85,7 @@ export const createStyles = (
       top: 0,
     },
     viewerRoot: {
+      backgroundColor: colors.background,
       flex: 1,
     },
   });

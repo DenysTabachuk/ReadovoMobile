@@ -45,7 +45,7 @@ export function CheckboxIndicator({
       color={
         checked
           ? (checkedColor ?? colors.primary)
-          : (uncheckedColor ?? colors.checkboxBorder)
+          : (uncheckedColor ?? colors.borderStrong)
       }
       name={checked ? 'checkbox' : 'square-outline'}
       size={22}

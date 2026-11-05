@@ -1,12 +1,12 @@
+import { useMemo } from 'react';
+import { useTheme } from '@/hooks/use-theme';
 import { useTranslation } from 'react-i18next';
 import { Pressable, View, type GestureResponderEvent } from 'react-native';
 
 import { ThemedText } from '@/components/themedText';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 
-import { getProgressBadgeColors } from '../../../../utils/getProgressBadgeColors';
-import { styles as cardStyles } from '../../styles';
-import { styles } from './styles';
+import { createStyles as createCardStyles } from '../../styles';
+import { createStyles } from './styles';
 
 type ProgressMenuProps = {
   wordId: string;
@@ -19,10 +19,13 @@ export function ProgressMenu({
   isUpdatingProgress,
   onMoveBackToInProgress,
 }: ProgressMenuProps) {
+  const { colors } = useTheme();
   const { t } = useTranslation();
-  const colorScheme = useColorScheme();
-  const isDarkTheme = colorScheme === 'dark';
-  const inProgressColors = getProgressBadgeColors('in_progress', colorScheme);
+  const cardStyles = useMemo(
+    () => createCardStyles(colors, 'in_progress'),
+    [colors],
+  );
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const handleMoveBackToInProgress = (event: GestureResponderEvent) => {
     event.stopPropagation();
@@ -30,31 +33,16 @@ export function ProgressMenu({
   };
 
   return (
-    <View style={[styles.progressMenu, isDarkTheme && styles.progressMenuDark]}>
-      <ThemedText
-        style={[
-          styles.progressMenuHint,
-          isDarkTheme && styles.progressMenuHintDark,
-        ]}
-      >
+    <View style={[styles.progressMenu]}>
+      <ThemedText style={[styles.progressMenuHint]}>
         {t('dictionary.progressMenuHint')}
       </ThemedText>
       <Pressable
         disabled={isUpdatingProgress}
         onPress={handleMoveBackToInProgress}
-        style={[
-          cardStyles.progressBadge,
-          styles.progressMenuBadge,
-          { backgroundColor: inProgressColors.backgroundColor },
-        ]}
+        style={[cardStyles.progressBadge, styles.progressMenuBadge]}
       >
-        <ThemedText
-          type="bodyStrong"
-          style={[
-            cardStyles.progressText,
-            { color: inProgressColors.textColor },
-          ]}
-        >
+        <ThemedText type="bodyStrong" style={[cardStyles.progressText]}>
           {t('dictionary.progress.in_progress')}
         </ThemedText>
       </Pressable>

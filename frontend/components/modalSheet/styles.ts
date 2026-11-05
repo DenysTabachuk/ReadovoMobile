@@ -1,5 +1,5 @@
-import { StyleSheet } from 'react-native';
 import type { ThemeColors } from '@/constants/theme';
+import { StyleSheet } from 'react-native';
 
 import { Spacing } from '@/constants/spacing';
 
@@ -32,7 +32,7 @@ export const createStyles = (colors: ThemeColors) =>
       paddingTop: Spacing.xs,
     },
     handle: {
-      backgroundColor: colors.handle,
+      backgroundColor: colors.borderStrong,
       alignSelf: 'center',
       borderRadius: 999,
       height: 4,

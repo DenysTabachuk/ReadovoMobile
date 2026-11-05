@@ -11,7 +11,7 @@ export function FullScreenLoader() {
   return (
     <ScreenContainer>
       <View style={styles.loader}>
-        <ActivityIndicator color={colors.accent} size="large" />
+        <ActivityIndicator color={colors.interactive} size="large" />
       </View>
     </ScreenContainer>
   );

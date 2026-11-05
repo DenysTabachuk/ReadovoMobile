@@ -12,12 +12,14 @@ type SegmentedToggleOption<T extends string> = {
 };
 
 type SegmentedToggleProps<T extends string> = {
+  disabled?: boolean;
   onChange: (value: T) => void;
   options: SegmentedToggleOption<T>[];
   selectedValue: T;
 };
 
 export function SegmentedToggle<T extends string>({
+  disabled = false,
   onChange,
   options,
   selectedValue,
@@ -32,9 +34,16 @@ export function SegmentedToggle<T extends string>({
 
         return (
           <Pressable
+            accessibilityRole="radio"
+            accessibilityState={{ selected: isActive, disabled }}
+            disabled={disabled}
             key={option.value}
-            onPress={() => onChange(option.value)}
-            style={[styles.option, isActive ? styles.activeOption : null]}
+            onPress={disabled ? undefined : () => onChange(option.value)}
+            style={[
+              styles.option,
+              isActive ? styles.activeOption : null,
+              disabled ? styles.disabledOption : null,
+            ]}
           >
             <ThemedText
               style={[

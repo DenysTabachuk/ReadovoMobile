@@ -1,13 +1,14 @@
-import { type ReactNode } from 'react';
+import { useTheme } from '@/hooks/use-theme';
+import { type ReactNode, useMemo } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Animated, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Spacing } from '@/constants/spacing';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 
 import { type ShowBannerOptions } from './types';
-import { styles } from './styles';
+import { createStyles } from './styles';
+import { achievementGradients } from '@/constants/gradients';
 
 type BannerProps = {
   children: ReactNode;
@@ -25,9 +26,9 @@ export function Banner({
   variant,
 }: BannerProps) {
   const insets = useSafeAreaInsets();
-  const colorScheme = useColorScheme();
-  const isDarkTheme = colorScheme === 'dark';
-  const variantStyle = resolveVariantStyle(variant, isDarkTheme);
+  const { colors, theme } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  const variantStyle = resolveVariantStyle(variant, styles);
 
   return (
     <Animated.View
@@ -48,11 +49,7 @@ export function Banner({
       >
         {variant === 'achievement' ? (
           <LinearGradient
-            colors={
-              isDarkTheme
-                ? ['#211339', '#3a2461', '#5b36ad']
-                : ['#f3edff', '#e4d7ff', '#c9b2ff']
-            }
+            colors={achievementGradients[theme]}
             end={{ x: 1, y: 1 }}
             pointerEvents="none"
             start={{ x: 0, y: 0 }}
@@ -67,7 +64,7 @@ export function Banner({
 
 function resolveVariantStyle(
   variant: ShowBannerOptions['variant'],
-  isDarkTheme: boolean,
+  styles: ReturnType<typeof createStyles>,
 ) {
   if (variant === 'success') {
     return styles.success;
@@ -86,7 +83,7 @@ function resolveVariantStyle(
   }
 
   if (variant === 'streak') {
-    return isDarkTheme ? styles.streakDark : styles.streakLight;
+    return styles.streak;
   }
 
   return styles.error;

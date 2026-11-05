@@ -33,7 +33,7 @@ export function FormTextInput({
   style,
   ...props
 }: FormTextInputProps) {
-  const { colors } = useTheme();
+  const { theme, colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const [isFocused, setIsFocused] = useState(false);
 
@@ -45,6 +45,7 @@ export function FormTextInput({
 
       <View style={styles.inputWrap}>
         <TextInput
+          keyboardAppearance={theme}
           onBlur={(event) => {
             setIsFocused(false);
             onBlur?.(event);
@@ -54,7 +55,7 @@ export function FormTextInput({
             onFocus?.(event);
           }}
           placeholderTextColor={placeholderTextColor ?? colors.placeholder}
-          selectionColor={selectionColor ?? colors.accent}
+          selectionColor={selectionColor ?? colors.interactive}
           style={[
             styles.input,
             isFocused && styles.inputFocused,

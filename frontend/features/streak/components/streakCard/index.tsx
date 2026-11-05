@@ -1,12 +1,14 @@
+import { useMemo } from 'react';
+import { palette } from '@/constants/palette';
+import { useTheme } from '@/hooks/use-theme';
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, View } from 'react-native';
 
 import { ThemedText } from '@/components/themedText';
 import { weekDayLabels } from '../../constants';
 import { type StreakState } from '../../types';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 
-import { styles } from './styles';
+import { createStyles } from './styles';
 
 type StreakCardProps = {
   onPressCta?: () => void;
@@ -54,65 +56,41 @@ function getCtaText(streak: StreakState): string {
 }
 
 export function StreakCard({ streak, onPressCta }: StreakCardProps) {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const progressTarget = streak.nextMilestone;
   const progressRatio = Math.min(streak.currentStreak / progressTarget, 1);
 
   return (
-    <View style={[styles.card, isDark ? styles.cardDark : styles.cardLight]}>
+    <View style={[styles.card]}>
       <View style={styles.headerRow}>
         <View>
           <View style={styles.valueRow}>
-            <Ionicons
-              color={isDark ? '#f2994a' : '#d97706'}
-              name="flame"
-              size={20}
-            />
+            <Ionicons color={colors.warning} name="flame" size={20} />
             <ThemedText
               type="sectionTitle"
-              style={[
-                styles.streakValue,
-                isDark ? styles.textOnDark : styles.textOnLight,
-              ]}
+              style={[styles.streakValue, styles.textOn]}
             >
               {streak.currentStreak}
             </ThemedText>
           </View>
-          <ThemedText
-            style={[
-              styles.subtitle,
-              isDark ? styles.subtleOnDark : styles.subtleOnLight,
-            ]}
-          >
+          <ThemedText style={[styles.subtitle, styles.subtleOn]}>
             днів поспіль
           </ThemedText>
         </View>
-        <ThemedText
-          style={[
-            styles.status,
-            isDark ? styles.statusDark : styles.statusLight,
-          ]}
-        >
-          {getStatusText(streak)}
-        </ThemedText>
+        <ThemedText style={[styles.status]}>{getStatusText(streak)}</ThemedText>
       </View>
 
       <View style={styles.weekRow}>
         {weekDayLabels.map((label, index) => (
           <View key={label} style={styles.weekItem}>
-            <ThemedText
-              style={[
-                styles.weekLabel,
-                isDark ? styles.subtleOnDark : styles.subtleOnLight,
-              ]}
-            >
+            <ThemedText style={[styles.weekLabel, styles.subtleOn]}>
               {label}
             </ThemedText>
             <View
               style={[
                 styles.weekDot,
-                isDark ? styles.weekDotDark : styles.weekDotLight,
                 index < Math.min(streak.currentStreak, 7)
                   ? styles.weekDotActive
                   : null,
@@ -122,30 +100,15 @@ export function StreakCard({ streak, onPressCta }: StreakCardProps) {
         ))}
       </View>
 
-      <ThemedText
-        style={[
-          styles.progressText,
-          isDark ? styles.subtleOnDark : styles.subtleOnLight,
-        ]}
-      >
+      <ThemedText style={[styles.progressText, styles.subtleOn]}>
         До наступного бонусу: {streak.nextBonusInDays} дні
       </ThemedText>
 
       <View style={styles.progressRow}>
-        <ThemedText
-          style={[
-            styles.progressCounter,
-            isDark ? styles.subtleOnDark : styles.subtleOnLight,
-          ]}
-        >
+        <ThemedText style={[styles.progressCounter, styles.subtleOn]}>
           {streak.currentStreak}/{progressTarget}
         </ThemedText>
-        <View
-          style={[
-            styles.progressTrack,
-            isDark ? styles.progressTrackDark : styles.progressTrackLight,
-          ]}
-        >
+        <View style={[styles.progressTrack]}>
           <View
             style={[
               styles.progressFill,
@@ -153,7 +116,7 @@ export function StreakCard({ streak, onPressCta }: StreakCardProps) {
             ]}
           />
         </View>
-        <Ionicons color="#7d4ef6" name="gift-outline" size={18} />
+        <Ionicons color={palette.purple500} name="gift-outline" size={18} />
       </View>
 
       <Pressable onPress={onPressCta} style={styles.ctaButton}>

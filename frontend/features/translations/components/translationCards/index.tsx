@@ -1,13 +1,13 @@
-import { useEffect, useRef, useState } from 'react';
+import { useMemo, useEffect, useRef, useState } from 'react';
+import { useTheme } from '@/hooks/use-theme';
+
 import { Animated, Pressable, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
 import { ThemedText } from '@/components/themedText';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 
-import { styles } from './styles';
+import { createStyles } from './styles';
 
 type TranslationCardsProps = {
   baseTranslation?: string;
@@ -29,7 +29,8 @@ export function TranslationCards({
   translation,
 }: TranslationCardsProps) {
   const { t } = useTranslation();
-  const colorScheme = useColorScheme();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [showContextualWordTranslation, setShowContextualWordTranslation] =
     useState(false);
   const [showTranslatedContext, setShowTranslatedContext] = useState(false);
@@ -88,7 +89,7 @@ export function TranslationCards({
       {canToggleWordTranslation ? (
         <View style={styles.wordHint}>
           <Ionicons
-            color={Colors[colorScheme ?? 'light'].icon}
+            color={colors.textSecondary}
             name="swap-horizontal-outline"
             size={14}
           />
@@ -134,7 +135,7 @@ export function TranslationCards({
           </Pressable>
           <View style={styles.contextHint}>
             <Ionicons
-              color={Colors[colorScheme ?? 'light'].icon}
+              color={colors.textSecondary}
               name="swap-horizontal-outline"
               size={14}
             />

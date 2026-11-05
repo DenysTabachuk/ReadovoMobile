@@ -5,9 +5,9 @@ import { ScrollView, useWindowDimensions, View } from 'react-native';
 import { ThemedText } from '@/components/themedText';
 import { Spacing } from '@/constants/spacing';
 import { Typography } from '@/constants/typography';
-import { useThemeColor } from '@/hooks/use-theme-color';
+import { useTheme } from '@/hooks/use-theme';
 
-import { styles } from './styles';
+import { createStyles } from './styles';
 
 type ArticleFormulaBlockProps = {
   altText: string;
@@ -25,15 +25,8 @@ export function ArticleFormulaBlock({
   widthEx,
 }: ArticleFormulaBlockProps) {
   const { width: windowWidth } = useWindowDimensions();
-  const borderColor = useThemeColor(
-    { light: 'rgba(17, 24, 28, 0.12)', dark: 'rgba(255, 255, 255, 0.16)' },
-    'icon',
-  );
-  const surfaceColor = useThemeColor(
-    { light: '#f5f7fa', dark: '#202425' },
-    'background',
-  );
-  const textColor = useThemeColor({}, 'text');
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const imageSource = useMemo(() => {
     if (!svg) {
       return null;
@@ -41,10 +34,10 @@ export function ArticleFormulaBlock({
 
     return {
       uri: `data:image/svg+xml;utf8,${encodeURIComponent(
-        svg.replaceAll('currentColor', textColor),
+        svg.replaceAll('currentColor', colors.text),
       )}`,
     };
-  }, [svg, textColor]);
+  }, [svg, colors.text]);
   const estimatedWidth = Math.max(
     Typography.paragraph.fontSize ?? 18,
     (widthEx ?? 10) * FORMULA_EX_UNIT_PX,
@@ -67,15 +60,7 @@ export function ArticleFormulaBlock({
       : estimatedHeight;
 
   return (
-    <View
-      style={[
-        styles.container,
-        {
-          backgroundColor: surfaceColor,
-          borderColor,
-        },
-      ]}
-    >
+    <View style={styles.container}>
       {imageSource ? (
         <ScrollView
           horizontal

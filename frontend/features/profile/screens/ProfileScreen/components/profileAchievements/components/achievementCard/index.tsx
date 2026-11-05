@@ -1,3 +1,6 @@
+import { useMemo } from 'react';
+import { achievementGradients } from '@/constants/gradients';
+import { useTheme } from '@/hooks/use-theme';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { View } from 'react-native';
@@ -8,23 +11,19 @@ import {
   getAchievementBadge,
   type AchievementStatus,
 } from '@/features/achievements';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 
 import { resolveAchievementProgress } from './utils/resolveAchievementProgress';
-import { styles } from './styles';
+import { createStyles } from './styles';
 
 type AchievementCardProps = {
   achievement: AchievementStatus;
 };
 
-const UNLOCKED_GRADIENT_COLORS = {
-  dark: ['#211339', '#3a2461', '#5b36ad'],
-  light: ['#f3edff', '#e4d7ff', '#c9b2ff'],
-} as const;
-
 export function AchievementCard({ achievement }: AchievementCardProps) {
+  const { colors, theme } = useTheme();
   const { t } = useTranslation();
-  const isDarkTheme = useColorScheme() === 'dark';
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const { isUnlocked } = achievement;
   const progress = resolveAchievementProgress(achievement);
 
@@ -39,7 +38,7 @@ export function AchievementCard({ achievement }: AchievementCardProps) {
     >
       {isUnlocked ? (
         <LinearGradient
-          colors={UNLOCKED_GRADIENT_COLORS[isDarkTheme ? 'dark' : 'light']}
+          colors={achievementGradients[theme]}
           end={{ x: 1, y: 1 }}
           pointerEvents="none"
           start={{ x: 0, y: 0 }}

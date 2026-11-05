@@ -1,9 +1,8 @@
+import { useTheme } from '@/hooks/use-theme';
 import { type ReactNode, useMemo, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 
 import { ThemedText } from '@/components/themedText';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 
 import {
   type QuizQuestion,
@@ -49,8 +48,7 @@ export function QuizRunner({
   onSubmitError,
   questions,
 }: QuizRunnerProps) {
-  const colorScheme = useColorScheme();
-  const isDarkTheme = colorScheme === 'dark';
+  const { colors } = useTheme();
   const [questionIndex, setQuestionIndex] = useState(0);
   const [selectedOptionIds, setSelectedOptionIds] = useState<string[]>([]);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -179,10 +177,7 @@ export function QuizRunner({
           selectedOptionIds={selectedOptionIds}
         />
         {isSubmitting ? (
-          <ActivityIndicator
-            color={Colors[colorScheme ?? 'light'].tint}
-            size="small"
-          />
+          <ActivityIndicator color={colors.interactive} size="small" />
         ) : null}
         {isSubmitted ? (
           <AnswerFeedback
@@ -191,7 +186,6 @@ export function QuizRunner({
             }
             feedbackText={submitResult?.feedbackText}
             isCorrect={isAnswerCorrect}
-            isDarkTheme={isDarkTheme}
           />
         ) : null}
       </View>

@@ -1,3 +1,6 @@
+import { useMemo } from 'react';
+import { palette } from '@/constants/palette';
+import { useTheme } from '@/hooks/use-theme';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { Pressable, View } from 'react-native';
@@ -5,9 +8,8 @@ import { useTranslation } from 'react-i18next';
 
 import { ModalSheet } from '@/components/modalSheet';
 import { ThemedText } from '@/components/themedText';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 
-import { styles } from './styles';
+import { createStyles } from './styles';
 
 type StreakRestoreConfirmModalProps = {
   coinBalance: number;
@@ -28,9 +30,10 @@ export function StreakRestoreConfirmModal({
   previousStreak,
   restorePrice,
 }: StreakRestoreConfirmModalProps) {
+  const { colors } = useTheme();
   const { t } = useTranslation();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const canConfirm = coinBalance >= restorePrice && !isRestoring;
 
   return (
@@ -41,27 +44,17 @@ export function StreakRestoreConfirmModal({
       title={t('streak.restore.title')}
     >
       <View style={styles.content}>
-        <View
-          style={[
-            styles.iconCircle,
-            isDark ? styles.iconCircleDark : styles.iconCircleLight,
-          ]}
-        >
-          <Ionicons color="#d97706" name="refresh" size={26} />
+        <View style={[styles.iconCircle]}>
+          <Ionicons color={colors.warning} name="refresh" size={26} />
         </View>
 
-        <ThemedText
-          style={[
-            styles.description,
-            isDark ? styles.descriptionDark : styles.descriptionLight,
-          ]}
-        >
+        <ThemedText style={[styles.description]}>
           {t('streak.restore.description', { count: previousStreak })}
         </ThemedText>
 
         <View style={styles.costRow}>
           <View style={styles.balanceItem}>
-            <ThemedText style={isDark ? styles.metaDark : styles.metaLight}>
+            <ThemedText style={styles.meta}>
               {t('streak.restore.cost')}
             </ThemedText>
             <View style={styles.coinRow}>
@@ -74,7 +67,7 @@ export function StreakRestoreConfirmModal({
             </View>
           </View>
           <View style={styles.balanceItem}>
-            <ThemedText style={isDark ? styles.metaDark : styles.metaLight}>
+            <ThemedText style={styles.meta}>
               {t('streak.restore.balance')}
             </ThemedText>
             <View style={styles.coinRow}>
@@ -101,16 +94,10 @@ export function StreakRestoreConfirmModal({
             onPress={onClose}
             style={({ pressed }) => [
               styles.secondaryButton,
-              isDark ? styles.secondaryButtonDark : styles.secondaryButtonLight,
               pressed ? styles.buttonPressed : null,
             ]}
           >
-            <ThemedText
-              type="bodyStrong"
-              style={
-                isDark ? styles.secondaryTextDark : styles.secondaryTextLight
-              }
-            >
+            <ThemedText type="bodyStrong" style={styles.secondaryText}>
               {t('streak.restore.cancel')}
             </ThemedText>
           </Pressable>
@@ -124,7 +111,7 @@ export function StreakRestoreConfirmModal({
               pressed ? styles.buttonPressed : null,
             ]}
           >
-            <Ionicons color="#ffffff" name="refresh" size={18} />
+            <Ionicons color={palette.white} name="refresh" size={18} />
             <ThemedText type="bodyStrong" style={styles.primaryText}>
               {isRestoring
                 ? t('streak.restore.restoring')

@@ -125,7 +125,7 @@ export function ScrollToTopButton({
         ]}
       >
         {icon ?? (
-          <Ionicons color={colors.onFloatingAction} name="arrow-up" size={24} />
+          <Ionicons color={colors.onPrimary} name="arrow-up" size={24} />
         )}
       </Pressable>
     </Animated.View>

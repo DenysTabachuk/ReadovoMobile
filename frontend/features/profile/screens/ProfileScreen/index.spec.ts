@@ -6,6 +6,7 @@ import { ProfileStreak } from './components/profileStreak';
 import ProfileScreen from '.';
 
 jest.mock('react-native', () => ({
+  Platform: { select: () => ({}) },
   View: 'div',
   ScrollView: 'section',
   Pressable: 'button',
@@ -49,8 +50,15 @@ jest.mock('@/features/streak', () => ({
 jest.mock('@/features/streak/api/requests/getStreakProfile', () => ({
   getStreakProfile: jest.fn(),
 }));
-jest.mock('@/hooks/use-color-scheme', () => ({
-  useColorScheme: () => 'light',
+jest.mock('@/hooks/use-theme', () => ({
+  useTheme: () => ({
+    theme: 'light',
+    isDark: false,
+    colors:
+      jest.requireActual<typeof import('@/constants/theme')>(
+        '@/constants/theme',
+      ).themeColors.light,
+  }),
 }));
 jest.mock('./components/profileAchievements', () => ({
   ProfileAchievements: () => null,

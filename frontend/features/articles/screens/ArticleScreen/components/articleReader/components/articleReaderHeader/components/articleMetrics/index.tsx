@@ -1,12 +1,12 @@
 import { ThemedText } from '@/components/themedText';
 import type { ArticleBlock } from '@/features/articles/api';
-import { useThemeColor } from '@/hooks/use-theme-color';
+import { useTheme } from '@/hooks/use-theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { View } from 'react-native';
 import { MetricComparison } from './components/metricComparison';
-import { styles } from './styles';
+import { createStyles } from './styles';
 import { compareArticleTextMetrics } from './utils/compareArticleTextMetrics';
 type Props = {
   originalText: string;
@@ -18,27 +18,16 @@ export function ArticleMetrics({ originalText, adaptedBlocks }: Props) {
     [originalText, adaptedBlocks],
   );
   const { t } = useTranslation();
-  const tintColor = useThemeColor({}, 'tint');
-  const metricsBackgroundColor = useThemeColor(
-    { dark: '#171c1d', light: '#f5f7fa' },
-    'background',
-  );
-  const metricsBorderColor = useThemeColor(
-    { dark: '#2d3336', light: '#d0d7de' },
-    'text',
-  );
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   return (
-    <View
-      style={[
-        styles.simplificationMetricsCard,
-        {
-          backgroundColor: metricsBackgroundColor,
-          borderColor: metricsBorderColor,
-        },
-      ]}
-    >
+    <View style={styles.simplificationMetricsCard}>
       <View style={styles.simplificationMetricsHeader}>
-        <Ionicons color={tintColor} name="analytics-outline" size={18} />
+        <Ionicons
+          color={colors.interactive}
+          name="analytics-outline"
+          size={18}
+        />
         <ThemedText type="bodyStrong">
           {t('article.simplificationMetrics.title', {
             defaultValue: 'What changed',

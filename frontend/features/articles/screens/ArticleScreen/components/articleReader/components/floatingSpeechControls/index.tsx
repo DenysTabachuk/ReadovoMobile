@@ -1,10 +1,9 @@
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { useEffect, useRef, useState } from 'react';
+import { useMemo, useEffect, useRef, useState } from 'react';
+import { useTheme } from '@/hooks/use-theme';
 import { Animated } from 'react-native';
 import type { useArticleSpeech } from '../../../../useArticleSpeech';
 import { ArticleSpeechControls } from '../../../articleSpeechControls';
-import { styles } from './styles';
+import { createStyles } from './styles';
 type Props = {
   articleSpeech: ReturnType<typeof useArticleSpeech>;
   visible: boolean;
@@ -22,7 +21,8 @@ export function FloatingSpeechControls({
   articleSpeech,
   visible: shouldShowFloatingSpeechControls,
 }: Props) {
-  const colorScheme = useColorScheme();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [
     isFloatingSpeechControlsRendered,
     setIsFloatingSpeechControlsRendered,
@@ -70,7 +70,6 @@ export function FloatingSpeechControls({
     <Animated.View
       style={[
         styles.floatingSpeechControls,
-        { backgroundColor: Colors[colorScheme ?? 'light'].background },
         {
           opacity: floatingSpeechControlsOpacity,
           transform: [{ translateY: floatingSpeechControlsTranslateY }],

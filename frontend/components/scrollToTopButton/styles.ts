@@ -1,14 +1,13 @@
-import { StyleSheet } from 'react-native';
-import type { ThemeColors } from '@/constants/theme';
-
 import { palette } from '@/constants/palette';
+import type { ThemeColors } from '@/constants/theme';
+import { StyleSheet } from 'react-native';
 
 import { Spacing } from '@/constants/spacing';
 
 export const createStyles = (colors: ThemeColors) =>
   StyleSheet.create({
     button: {
-      backgroundColor: colors.floatingAction,
+      backgroundColor: colors.accentSolid,
       alignItems: 'center',
       borderRadius: 999,
       justifyContent: 'center',

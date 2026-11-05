@@ -1,11 +1,12 @@
+import { useMemo } from 'react';
+import { useTheme } from '@/hooks/use-theme';
 import { Ionicons } from '@expo/vector-icons';
 import { View } from 'react-native';
 
 import { ThemedText } from '@/components/themedText';
 import { type StreakAchievement } from '../../types';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 
-import { styles } from './styles';
+import { createStyles } from './styles';
 
 type StreakAchievementCardProps = {
   achievement: StreakAchievement;
@@ -16,8 +17,11 @@ export function StreakAchievementCard({
   achievement,
   progressValue,
 }: StreakAchievementCardProps) {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
+  const { theme } = useTheme();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
+  const isDark = theme === 'dark';
   const isUnlocked = achievement.isUnlocked;
   const ratio = Math.min(progressValue / achievement.milestone, 1);
 
@@ -25,39 +29,23 @@ export function StreakAchievementCard({
     <View
       style={[
         styles.card,
-        isUnlocked
-          ? isDark
-            ? styles.unlockedCardDark
-            : styles.unlockedCardLight
-          : isDark
-            ? styles.lockedCardDark
-            : styles.lockedCardLight,
+        isUnlocked ? styles.unlockedCard : styles.lockedCard,
       ]}
     >
       <View style={styles.titleRow}>
         <Ionicons
-          color="#f2bf4a"
+          color={colors.warning}
           name={isDark ? 'trophy-outline' : 'trophy'}
           size={16}
         />
-        <ThemedText
-          type="bodyStrong"
-          style={[styles.title, isDark ? styles.titleDark : styles.titleLight]}
-        >
+        <ThemedText type="bodyStrong" style={[styles.title]}>
           {achievement.milestone} днів
         </ThemedText>
       </View>
-      <ThemedText
-        style={[styles.status, isDark ? styles.statusDark : styles.statusLight]}
-      >
+      <ThemedText style={[styles.status]}>
         {isUnlocked ? 'Отримано' : 'Заблоковано'}
       </ThemedText>
-      <View
-        style={[
-          styles.progressTrack,
-          isDark ? styles.progressTrackDark : styles.progressTrackLight,
-        ]}
-      >
+      <View style={[styles.progressTrack]}>
         <View
           style={[
             styles.progressFill,
@@ -65,12 +53,7 @@ export function StreakAchievementCard({
           ]}
         />
       </View>
-      <ThemedText
-        style={[
-          styles.progressText,
-          isDark ? styles.progressTextDark : styles.progressTextLight,
-        ]}
-      >
+      <ThemedText style={[styles.progressText]}>
         {Math.min(progressValue, achievement.milestone)}/{achievement.milestone}
       </ThemedText>
       <ThemedText style={styles.reward}>

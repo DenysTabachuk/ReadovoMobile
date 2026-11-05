@@ -16,8 +16,8 @@ export default function TabLayout() {
         sceneStyle: {
           backgroundColor: colors.background,
         },
-        tabBarActiveTintColor: colors.accent,
-        tabBarInactiveTintColor: colors.tabIconDefault,
+        tabBarActiveTintColor: colors.interactive,
+        tabBarInactiveTintColor: colors.textSecondary,
         headerShown: false,
         tabBarStyle: {
           backgroundColor: colors.background,

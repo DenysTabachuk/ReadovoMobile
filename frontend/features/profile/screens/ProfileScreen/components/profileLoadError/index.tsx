@@ -1,8 +1,9 @@
+import { useMemo } from 'react';
+import { useTheme } from '@/hooks/use-theme';
 import { Pressable, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { ThemedText } from '@/components/themedText';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { styles } from './styles';
+import { createStyles } from './styles';
 
 type ProfileLoadErrorProps = {
   messageKey: string;
@@ -14,28 +15,21 @@ export function ProfileLoadError({
   onRetry,
 }: ProfileLoadErrorProps) {
   const { t } = useTranslation();
-  const isDarkTheme = useColorScheme() === 'dark';
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   return (
-    <View style={[styles.card, isDarkTheme ? styles.cardDark : null]}>
-      <ThemedText style={[styles.text, isDarkTheme ? styles.textDark : null]}>
-        {t(messageKey)}
-      </ThemedText>
+    <View style={[styles.card]}>
+      <ThemedText style={[styles.text]}>{t(messageKey)}</ThemedText>
       <Pressable
         accessibilityRole="button"
         onPress={onRetry}
         style={({ pressed }) => [
           styles.retryButton,
-          isDarkTheme ? styles.retryButtonDark : null,
           pressed ? styles.buttonPressed : null,
         ]}
       >
-        <ThemedText
-          type="bodyStrong"
-          style={[
-            styles.retryButtonText,
-            isDarkTheme ? styles.retryButtonTextDark : null,
-          ]}
-        >
+        <ThemedText type="bodyStrong" style={[styles.retryButtonText]}>
           {t('article.retry')}
         </ThemedText>
       </Pressable>

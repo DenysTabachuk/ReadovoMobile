@@ -1,12 +1,13 @@
+import { useTheme } from '@/hooks/use-theme';
+import { useMemo } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { Pressable, ScrollView, View } from 'react-native';
-import { styles as sharedStyles } from '../../styles';
+import { createStyles as createSharedStyles } from '../../styles';
 
 import { OptionPickerField } from '@/components/optionPickerField';
 import { ThemedText } from '@/components/themedText';
 
-import { useArticlesFilterTheme } from '../../hooks/useArticlesFilterTheme';
 import type { ArticlesToolbarProps } from '../../types';
 import { ARTICLE_CATEGORY_OPTIONS } from './constants';
 type Props = Pick<
@@ -24,16 +25,10 @@ export function ArticleContentFilters({
   sortByFilter,
   onChangeSortByFilter,
 }: Props) {
+  const { colors } = useTheme();
+  const sharedStyles = useMemo(() => createSharedStyles(colors), [colors]);
   const { t } = useTranslation();
-  const {
-    isDarkMode,
-    borderColor,
-    cardColor,
-    sectionCardColor,
-    mutedTextColor,
-    selectedCategoryBackground,
-    selectedCategoryColor,
-  } = useArticlesFilterTheme();
+
   const sortOptions = [
     { label: t('articles.filters.sort.default'), value: 'default' as const },
     {
@@ -47,19 +42,11 @@ export function ArticleContentFilters({
   ];
   return (
     <>
-      <View
-        style={[
-          sharedStyles.sectionCard,
-          {
-            backgroundColor: sectionCardColor,
-            borderColor,
-          },
-        ]}
-      >
+      <View style={[sharedStyles.sectionCard, sharedStyles.filterSurface]}>
         <View style={sharedStyles.sectionHeader}>
           <ThemedText
             type="body"
-            style={[sharedStyles.sectionHeaderText, { color: mutedTextColor }]}
+            style={[sharedStyles.sectionHeaderText, sharedStyles.mutedText]}
           >
             {t('articles.filtersSections.main')}
           </ThemedText>
@@ -78,13 +65,8 @@ export function ArticleContentFilters({
               const isSelected =
                 personalFilter === null && option.value === categoryFilter;
               const categoryColor = isSelected
-                ? selectedCategoryColor
-                : isDarkMode
-                  ? option.darkIconColor
-                  : mutedTextColor;
-              const categoryLabelColor = isSelected
-                ? selectedCategoryColor
-                : mutedTextColor;
+                ? colors.onSelection
+                : option.iconColor;
 
               return (
                 <Pressable
@@ -94,15 +76,9 @@ export function ArticleContentFilters({
                   onPress={() => onChangeCategoryFilter(option.value)}
                   style={({ pressed }) => [
                     sharedStyles.categoryChip,
-                    {
-                      backgroundColor: isSelected
-                        ? selectedCategoryBackground
-                        : cardColor,
-                      borderColor: isSelected
-                        ? selectedCategoryColor
-                        : borderColor,
-                      opacity: pressed ? 0.75 : 1,
-                    },
+                    sharedStyles.controlSurface,
+                    isSelected ? sharedStyles.selectedCategoryChip : null,
+                    pressed ? sharedStyles.chipPressed : null,
                   ]}
                 >
                   <Ionicons
@@ -115,7 +91,9 @@ export function ArticleContentFilters({
                     type="bodyStrong"
                     style={[
                       sharedStyles.categoryChipLabel,
-                      { color: categoryLabelColor },
+                      isSelected
+                        ? sharedStyles.selectedCategoryText
+                        : sharedStyles.mutedText,
                     ]}
                   >
                     {t(option.labelKey)}

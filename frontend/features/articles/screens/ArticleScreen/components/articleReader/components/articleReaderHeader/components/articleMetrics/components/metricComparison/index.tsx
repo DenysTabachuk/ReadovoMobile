@@ -1,3 +1,4 @@
+import { useTheme } from '@/hooks/use-theme';
 import { ThemedText } from '@/components/themedText';
 import { Ionicons } from '@expo/vector-icons';
 import { View } from 'react-native';
@@ -17,6 +18,7 @@ export function MetricComparison({
   originalValue: number;
   suffix?: string;
 }) {
+  const { colors } = useTheme();
   return (
     <View style={styles.simplificationMetricItem}>
       <ThemedText type="description" style={styles.simplificationMetricLabel}>
@@ -26,7 +28,7 @@ export function MetricComparison({
         <ThemedText type="bodyStrong">
           {formatMetricValue(originalValue, decimals, suffix)}
         </ThemedText>
-        <Ionicons color="#7c7c7c" name="arrow-forward" size={14} />
+        <Ionicons color={colors.textSecondary} name="arrow-forward" size={14} />
         <ThemedText type="bodyStrong">
           {formatMetricValue(adaptedValue, decimals, suffix)}
         </ThemedText>

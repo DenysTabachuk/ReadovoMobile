@@ -32,7 +32,7 @@ jest.mock('react-native', () => ({
 jest.mock('@react-native-async-storage/async-storage', () => ({
   getItem: async (key: string) =>
     key.endsWith('.theme') ? mockStoredTheme : null,
-  setItem: async () => undefined,
+  setItem: (key: string, value: string) => mockSetItem(key, value),
 }));
 jest.mock('@/localization', () => ({ changeLanguage: async () => undefined }));
 jest.mock('@react-navigation/native', () => ({
@@ -45,6 +45,7 @@ let mockStoredTheme: string | null = null;
 const mockText = jest.fn();
 const mockView = jest.fn();
 const mockInput = jest.fn();
+const mockSetItem = jest.fn<Promise<void>, [key: string, value: string]>();
 let renderer: Root;
 let current: ReturnType<typeof useTheme>;
 let preferences: ReturnType<typeof usePreferences>;
@@ -74,6 +75,10 @@ beforeEach(() => {
   mockSystemScheme = 'light';
   mockStoredTheme = null;
   jest.clearAllMocks();
+  mockSetItem.mockReset();
+  mockSetItem.mockImplementation(async (key, value) => {
+    if (key.endsWith('.theme')) mockStoredTheme = value;
+  });
   renderer = createRoot();
 });
 afterEach(async () => {
@@ -121,6 +126,91 @@ describe('resolved application theme', () => {
     expect(current.theme).toBe('dark');
   });
 
+  it('ignores rapid selections during a save and accepts a new choice after completion', async () => {
+    await renderProbe();
+    let finishFirst = () => {};
+    mockSetItem.mockImplementationOnce(
+      (_key, value) =>
+        new Promise<void>((resolve) => {
+          finishFirst = () => {
+            mockStoredTheme = value;
+            resolve();
+          };
+        }),
+    );
+    const writes: Promise<void>[] = [];
+    await act(async () => {
+      writes.push(preferences.setThemePreference('dark'));
+      writes.push(preferences.setThemePreference('light'));
+      writes.push(preferences.setThemePreference('system'));
+    });
+    expect(mockSetItem.mock.calls).toEqual([
+      ['readovo.preferences.theme', 'dark'],
+    ]);
+    expect(preferences.isSavingThemePreference).toBe(true);
+    expect(preferences.themePreference).toBe('system');
+    await act(async () => {
+      finishFirst();
+      await Promise.all(writes);
+    });
+    expect(mockSetItem).toHaveBeenCalledTimes(1);
+    expect(preferences.themePreference).toBe('dark');
+    expect(mockStoredTheme).toBe('dark');
+    expect(preferences.isSavingThemePreference).toBe(false);
+    await act(async () => preferences.setThemePreference('system'));
+    expect(preferences.themePreference).toBe('system');
+    expect(mockStoredTheme).toBe('system');
+    expect(preferences.isSavingThemePreference).toBe(false);
+  });
+
+  it('keeps the last persisted choice on failure and allows later writes', async () => {
+    mockStoredTheme = 'light';
+    mockSystemScheme = 'dark';
+    await renderProbe();
+    const failure = new Error('Storage unavailable');
+    mockSetItem.mockRejectedValueOnce(failure);
+    await act(async () => {
+      await expect(preferences.setThemePreference('dark')).rejects.toBe(
+        failure,
+      );
+    });
+    expect(preferences.themePreference).toBe('light');
+    expect(current.theme).toBe('light');
+    expect(mockStoredTheme).toBe('light');
+    expect(preferences.isSavingThemePreference).toBe(false);
+    await act(async () => preferences.setThemePreference('system'));
+    expect(preferences.themePreference).toBe('system');
+    expect(current.theme).toBe('dark');
+    expect(mockStoredTheme).toBe('system');
+  });
+
+  it('ignores competing selections even when the active save fails', async () => {
+    await renderProbe();
+    mockSetItem.mockRejectedValueOnce(new Error('First save failed'));
+    await act(async () => {
+      const earlier = preferences
+        .setThemePreference('dark')
+        .catch(() => undefined);
+      const latest = preferences.setThemePreference('light');
+      await Promise.all([earlier, latest]);
+    });
+    expect(mockSetItem).toHaveBeenCalledTimes(1);
+    expect(preferences.themePreference).toBe('system');
+    expect(mockStoredTheme).toBe(null);
+    expect(preferences.isSavingThemePreference).toBe(false);
+  });
+
+  it('hydrates a successfully saved selection after remounting', async () => {
+    await renderProbe();
+    await act(async () => preferences.setThemePreference('dark'));
+    await act(async () => renderer.unmount());
+    renderer = createRoot();
+    mockSystemScheme = 'light';
+    await renderProbe();
+    expect(current.theme).toBe('dark');
+    expect(preferences.themePreference).toBe('dark');
+  });
+
   it.each(['light', 'dark'] as const)(
     'aligns navigation with %s application roles',
     (theme) => {
@@ -128,7 +218,7 @@ describe('resolved application theme', () => {
         background: themeColors[theme].background,
         card: themeColors[theme].background,
         text: themeColors[theme].text,
-        primary: themeColors[theme].accent,
+        primary: themeColors[theme].interactive,
         border: themeColors[theme].borderSubtle,
       });
       expect(navigationThemes[theme].dark).toBe(theme === 'dark');
@@ -149,13 +239,13 @@ describe('resolved application theme', () => {
     );
     let input = mockInput.mock.calls.at(-1)?.[0];
     expect(resolveStyle(input.style)).toMatchObject({
-      color: '#ECEDEE',
-      borderColor: '#9f9f9f',
+      color: '#e6e8eb',
+      borderColor: '#687076',
     });
     await act(async () => input.onFocus({}));
     input = mockInput.mock.calls.at(-1)?.[0];
     expect(resolveStyle(input.style)).toMatchObject({
-      borderColor: '#4257ff',
+      borderColor: '#8db7ff',
       borderWidth: 2,
     });
     await act(async () =>
@@ -197,11 +287,11 @@ describe('resolved application theme', () => {
       ),
     );
     expect(resolveStyle(mockInput.mock.calls.at(-1)?.[0].style)).toMatchObject({
-      color: '#11181C',
+      color: '#151718',
     });
     await act(async () => preferences.setThemePreference('dark'));
     expect(resolveStyle(mockInput.mock.calls.at(-1)?.[0].style)).toMatchObject({
-      color: '#ECEDEE',
+      color: '#e6e8eb',
     });
     const link = mockText.mock.calls
       .filter(([props]) => props.testID === 'theme-link')

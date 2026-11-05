@@ -1,6 +1,5 @@
-import { StyleSheet } from 'react-native';
-
 import { palette } from '@/constants/palette';
+import { StyleSheet } from 'react-native';
 
 import { Spacing } from '@/constants/spacing';
 

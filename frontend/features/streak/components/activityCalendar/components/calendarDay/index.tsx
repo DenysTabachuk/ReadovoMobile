@@ -1,13 +1,13 @@
+import { useMemo, type ComponentProps, type ReactElement } from 'react';
+import { useTheme } from '@/hooks/use-theme';
 import { Ionicons } from '@expo/vector-icons';
-import type { ComponentProps, ReactElement } from 'react';
 import { Pressable, View } from 'react-native';
 import type { ViewStyle } from 'react-native';
 
 import { ThemedText } from '@/components/themedText';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 import type { CalendarDayStatus, StreakCalendarDay } from '../../../../types';
 
-import { styles } from './styles';
+import { createStyles } from './styles';
 
 type CalendarDayProps = {
   day: StreakCalendarDay | null;
@@ -24,20 +24,10 @@ const STATUS_ICONS: Partial<Record<CalendarDayStatus, StatusIconConfig>> = {
   restored: { name: 'refresh', size: 11 },
 };
 
-const STATUS_STYLES = {
-  completed: styles.dayCompleted,
-  today_completed: styles.dayCompleted,
-  missed: styles.dayMissed,
-  frozen: styles.dayFrozen,
-  restored: styles.dayRestored,
-  today_pending: styles.dayTodayPending,
-  future: styles.dayFuture,
-  neutral: styles.dayNeutral,
-} satisfies Record<CalendarDayStatus, ViewStyle>;
-
 function getStatusIcon(
   status: CalendarDayStatus,
-  isDark: boolean,
+  iconColor: string,
+  styles: ReturnType<typeof createStyles>,
 ): ReactElement | null {
   const icon = STATUS_ICONS[status];
   if (!icon) {
@@ -46,7 +36,7 @@ function getStatusIcon(
 
   return (
     <Ionicons
-      color={status === 'restored' && !isDark ? '#5c3410' : '#ffffff'}
+      color={iconColor}
       name={icon.name}
       size={icon.size}
       style={styles.dayIcon}
@@ -55,24 +45,41 @@ function getStatusIcon(
 }
 
 export function CalendarDay({ day, onRequestFreezeDay }: CalendarDayProps) {
-  const isDark = useColorScheme() === 'dark';
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
+  const statusStyles = {
+    completed: styles.dayCompleted,
+    today_completed: styles.dayCompleted,
+    missed: styles.dayMissed,
+    frozen: styles.dayFrozen,
+    restored: styles.dayRestored,
+    today_pending: styles.dayTodayPending,
+    future: styles.dayFuture,
+    neutral: styles.dayNeutral,
+  } satisfies Record<CalendarDayStatus, ViewStyle>;
+
   if (!day) {
     return <View style={styles.emptyDayCell} />;
   }
-  const icon = getStatusIcon(day.status, isDark);
+  const iconColor =
+    day.status === 'restored' ? colors.onHighlight : colors.onPrimary;
+  const icon = getStatusIcon(day.status, iconColor, styles);
   const canRequestFreeze = day.status === 'missed';
+  const isFilledDay = [
+    'completed',
+    'today_completed',
+    'missed',
+    'frozen',
+  ].includes(day.status);
   const dayContent = (
     <>
       <ThemedText
         style={[
           styles.dayText,
-          day.status === 'future'
-            ? isDark
-              ? styles.futureDayTextDark
-              : styles.futureDayTextLight
-            : isDark
-              ? styles.dayTextDark
-              : styles.dayTextLight,
+          day.status === 'future' ? styles.futureDayText : styles.dayText,
+          isFilledDay ? styles.filledDayText : null,
+          day.status === 'restored' ? styles.restoredDayText : null,
         ]}
       >
         {day.dayOfMonth}
@@ -88,8 +95,8 @@ export function CalendarDay({ day, onRequestFreezeDay }: CalendarDayProps) {
         onPress={() => onRequestFreezeDay(day)}
         style={({ pressed }) => [
           styles.dayCell,
-          STATUS_STYLES[day.status],
-          isDark ? styles.dayCellDark : styles.dayCellLight,
+          statusStyles[day.status],
+          styles.dayCell,
           styles.dayPressable,
           pressed ? styles.dayPressed : null,
         ]}
@@ -100,13 +107,7 @@ export function CalendarDay({ day, onRequestFreezeDay }: CalendarDayProps) {
   }
 
   return (
-    <View
-      style={[
-        styles.dayCell,
-        STATUS_STYLES[day.status],
-        isDark ? styles.dayCellDark : styles.dayCellLight,
-      ]}
-    >
+    <View style={[styles.dayCell, statusStyles[day.status], styles.dayCell]}>
       {dayContent}
     </View>
   );

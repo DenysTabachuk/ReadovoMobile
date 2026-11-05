@@ -1,13 +1,11 @@
+import { useMemo, useEffect, useState } from 'react';
+import { useTheme } from '@/hooks/use-theme';
 import { ResizeMode, Video } from 'expo-av';
-import { useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
-
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 
 import { type ResultTier } from '../../types';
 
-import { styles } from './styles';
+import { createStyles } from './styles';
 import { resolveAnimationSource } from './utils/resolveAnimationSource';
 
 type ResultAnimationProps = {
@@ -17,9 +15,9 @@ type ResultAnimationProps = {
 const READY_VIDEO_OPACITY = 0.94;
 
 export function ResultAnimation({ tier }: ResultAnimationProps) {
-  const colorScheme = useColorScheme();
-  const palette = Colors[colorScheme ?? 'light'];
-  const animationSource = resolveAnimationSource(tier, colorScheme);
+  const { theme, colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  const animationSource = resolveAnimationSource(tier, theme);
   const [isVideoReady, setIsVideoReady] = useState(false);
 
   useEffect(() => {
@@ -46,20 +44,12 @@ export function ResultAnimation({ tier }: ResultAnimationProps) {
             source={animationSource}
             style={[
               styles.backgroundVideo,
-              {
-                backgroundColor: palette.background,
-                opacity: isVideoReady ? READY_VIDEO_OPACITY : 0,
-              },
+              { opacity: isVideoReady ? READY_VIDEO_OPACITY : 0 },
             ]}
           />
           {!isVideoReady ? (
-            <View
-              style={[
-                styles.videoLoader,
-                { backgroundColor: palette.background },
-              ]}
-            >
-              <ActivityIndicator color={palette.tint} size="large" />
+            <View style={styles.videoLoader}>
+              <ActivityIndicator color={colors.interactive} size="large" />
             </View>
           ) : null}
         </View>

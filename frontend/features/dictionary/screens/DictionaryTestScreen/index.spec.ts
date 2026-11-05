@@ -61,11 +61,9 @@ jest.mock('expo-router', () => ({
   useNavigation: () => ({ dispatch: jest.fn() }),
 }));
 jest.mock('react-native', () => ({
+  Platform: { select: () => ({}) },
   View: 'div',
   ActivityIndicator: 'progress',
-}));
-jest.mock('@/constants/theme', () => ({
-  Colors: { light: { tint: '#000000' } },
 }));
 jest.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (key: string) => key }),
@@ -82,8 +80,15 @@ jest.mock('@/components/modalSheet', () => ({ ModalSheet: () => null }));
 jest.mock('@/components/banner', () => ({
   useBanner: () => ({ showBanner: jest.fn() }),
 }));
-jest.mock('@/hooks/use-color-scheme', () => ({
-  useColorScheme: () => 'light',
+jest.mock('@/hooks/use-theme', () => ({
+  useTheme: () => ({
+    theme: 'light',
+    isDark: false,
+    colors:
+      jest.requireActual<typeof import('@/constants/theme')>(
+        '@/constants/theme',
+      ).themeColors.light,
+  }),
 }));
 jest.mock('@/features/quiz', () => ({
   useCompleteQuizMutation: () => ({ mutate: jest.fn(), isPending: false }),

@@ -1,3 +1,5 @@
+import { useTheme } from '@/hooks/use-theme';
+import { useMemo } from 'react';
 import { Pressable } from 'react-native';
 
 import { ThemedText } from '@/components/themedText';
@@ -5,7 +7,7 @@ import { type LanguagePreference } from '@/providers/preferencesProvider';
 
 import { type LanguageOption as LanguageOptionValue } from '../../types';
 
-import { styles } from './styles';
+import { createStyles } from './styles';
 
 type LanguageOptionProps = {
   borderColor: string;
@@ -20,6 +22,9 @@ export function LanguageOption({
   language,
   onSelect,
 }: LanguageOptionProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   return (
     <Pressable
       onPress={() => {

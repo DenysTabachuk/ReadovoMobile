@@ -1,38 +1,31 @@
 import type { DictionaryWordProgress } from '../../../../api/types';
-import type { useColorScheme } from '@/hooks/use-color-scheme';
+import type { ThemeColors } from '@/constants/theme';
 
 /**
- * Choose badge colors for a dictionary progress state and theme.
- *
- * @param progress - Dictionary learning state.
- * @param colorScheme - Active theme; only dark selects the dark palette.
- * @returns Background and text colors for the progress badge.
+ * Choose badge colors from the caller's resolved semantic palette.
+ * @param progress - Dictionary learning state; new words use the default branch.
+ * @param colors - Resolved application colors, without hooks or system appearance reads.
+ * @returns Background and text colors for the badge; does not mutate inputs.
  * @example
- * getProgressBadgeColors('learned', 'light');
- * // => { backgroundColor: '#dff7e8', textColor: '#1f8a4c' }
+ * // getProgressBadgeColors('learned', themeColors.light)
+ * // => { backgroundColor: '#dff7e8', textColor: '#217a3b' }
  */
 export function getProgressBadgeColors(
   progress: DictionaryWordProgress,
-  colorScheme: ReturnType<typeof useColorScheme>,
-): { backgroundColor: string; textColor: string } {
-  const isDark = colorScheme === 'dark';
-
-  if (progress === 'learned') {
+  colors: ThemeColors,
+) {
+  if (progress === 'learned')
     return {
-      backgroundColor: isDark ? '#173522' : '#dff7e8',
-      textColor: isDark ? '#7ee0a0' : '#1f8a4c',
+      backgroundColor: colors.successSurface,
+      textColor: colors.success,
     };
-  }
-
-  if (progress === 'in_progress') {
+  if (progress === 'in_progress')
     return {
-      backgroundColor: isDark ? '#3a2d14' : '#fff2cc',
-      textColor: isDark ? '#ffd36a' : '#9a6700',
+      backgroundColor: colors.warningSurface,
+      textColor: colors.warning,
     };
-  }
-
   return {
-    backgroundColor: isDark ? '#263238' : '#e6f4f8',
-    textColor: isDark ? '#7ccce6' : '#0a7ea4',
+    backgroundColor: colors.infoSurface,
+    textColor: colors.info,
   };
 }
