@@ -48,7 +48,7 @@ let root: Root;
 
 function resolveStyle(style: unknown): Record<string, unknown> {
   if (typeof style === 'function')
-    return resolveStyle(style({ pressed: false, hovered: false }));
+    return resolveStyle(style({ pressed: false }));
   if (Array.isArray(style))
     return Object.assign({}, ...style.map(resolveStyle));
   if (typeof style === 'object' && style !== null) return { ...style };

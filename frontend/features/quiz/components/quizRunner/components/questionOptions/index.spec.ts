@@ -47,9 +47,11 @@ function resolveStyle(style: unknown): Record<string, unknown> {
 }
 function optionStyle(index: number) {
   const props = mockOptions[index];
+  // Expo web adds hovered; a named value also fits native-only typings.
+  const pressableState = { pressed: false, hovered: false };
   const style =
     typeof props.style === 'function'
-      ? props.style({ pressed: false, hovered: false })
+      ? props.style(pressableState)
       : props.style;
   return resolveStyle(style);
 }
