@@ -22,12 +22,6 @@ import { ThemedText } from '@/components/themedText';
 import { Spacing } from '@/constants/spacing';
 
 import { createStyles } from './styles';
-export type {
-  ArticleCategoryFilter,
-  ArticlePersonalFilter,
-  ArticleReadyLevelFilter,
-  ArticleSortFilter,
-} from './types';
 
 const FILTERS_ANIMATION_MS = 280;
 const FILTERS_COLLAPSED_HEADER_HEIGHT = 44;

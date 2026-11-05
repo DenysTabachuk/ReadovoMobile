@@ -27,7 +27,7 @@ const RULES = {
   whitelistValidation: 'PROPERTY_NOT_ALLOWED',
 } as const;
 
-export const UNKNOWN_VALIDATION_RULE = 'VALUE_INVALID';
+const UNKNOWN_VALIDATION_RULE = 'VALUE_INVALID';
 export const VALIDATION_RULE_CODES = [
   ...new Set([...Object.values(RULES), UNKNOWN_VALIDATION_RULE]),
 ];

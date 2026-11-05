@@ -1,12 +1,12 @@
 import { type QuizVocabularyWordDto } from './dto/submit-quiz-answer-response.dto';
 
-export type QuizKind = 'article' | 'vocabulary' | 'dictionary';
+type QuizKind = 'article' | 'vocabulary' | 'dictionary';
 export type QuizLevel = 'A1' | 'A2' | 'B1' | 'B2' | 'C1';
 export type QuizLength = 'short' | 'medium' | 'long';
 
-export type QuizVocabularyWord = QuizVocabularyWordDto;
+type QuizVocabularyWord = QuizVocabularyWordDto;
 
-export type QuizQuestionSnapshot = {
+type QuizQuestionSnapshot = {
   id: string;
   type: 'single_choice' | 'multiple_choice' | 'true_false';
   optionIds: string[];

@@ -18,7 +18,7 @@ import { ArticleLibraryService } from '../library/article-library.service';
 import { ArticleQuizService } from '../quiz/article-quiz.service';
 import { ArticleAdaptationService } from '../transformation/article-adaptation.service';
 
-export const WIKIPEDIA_TEST_PAGE = {
+const WIKIPEDIA_TEST_PAGE = {
   pageid: 42,
   title: 'Space',
   fullurl: 'https://en.wikipedia.org/wiki/Space',

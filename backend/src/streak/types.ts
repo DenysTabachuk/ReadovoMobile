@@ -18,10 +18,7 @@ export type StreakAchievementMilestone =
 export type BrokenStreakInfo = BrokenStreakInfoDto;
 export type StreakState = GetStreakProfileResponseDto;
 
-export type {
-  StreakHistoryDayDto as StreakHistoryDay,
-  StreakAchievementDto as StreakAchievement,
-} from './dto/get-streak-profile-response.dto';
+export type { StreakAchievementDto as StreakAchievement } from './dto/get-streak-profile-response.dto';
 export type {
   StreakCalendarDayDto as StreakCalendarDay,
   GetStreakCalendarMonthResponseDto as StreakCalendarMonthResponse,

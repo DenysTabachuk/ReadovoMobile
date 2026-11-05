@@ -9,6 +9,9 @@
       "project": ["scripts/**/*.{js,cjs,mjs,ts}", "*.mjs"],
     },
     "frontend": {
+      // Knip assumes expo-updates unless updates.enabled is false. This app does
+      // not configure/import that optional package; do not add it to silence Knip.
+      "ignoreDependencies": ["expo-updates"],
       // Expo Router supplies app/** routes. Jest supplies tests and their imports.
       // Follow Knip's documented Metro approach for native platform variants:
       // https://knip.dev/reference/plugins/metro#note
@@ -27,6 +30,12 @@
       "expo-router": true,
     },
     "backend": {
+      "ignoreDependencies": [
+        // Required by ignored generated Prisma source: @prisma/client/runtime/client.
+        "@prisma/client",
+        // article-formula-renderer.ts loads mathjax/node-main.cjs via createRequire.
+        "mathjax",
+      ],
       // Knip's Jest defaults do not translate the testRegex e2e filename suffix.
       "entry": ["src/main.ts!", "prisma7.config.ts", "test/**/*.e2e-spec.ts"],
       "project": [

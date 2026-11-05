@@ -8,24 +8,3 @@ export {
   verifyEmail,
   verifyPasswordResetCode,
 } from './requests';
-
-export type {
-  AuthSessionResponse,
-  AuthUser,
-  GoogleLoginRequest,
-  GoogleLoginResponse,
-  LoginUserRequest,
-  LoginUserResponse,
-  RegisterUserRequest,
-  RegisterUserResponse,
-  RequestPasswordResetRequest,
-  RequestPasswordResetResponse,
-  ResendVerificationCodeRequest,
-  ResendVerificationCodeResponse,
-  ResetPasswordRequest,
-  ResetPasswordResponse,
-  VerifyEmailRequest,
-  VerifyEmailResponse,
-  VerifyPasswordResetCodeRequest,
-  VerifyPasswordResetCodeResponse,
-} from './types';

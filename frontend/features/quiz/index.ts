@@ -4,9 +4,7 @@ export { useCompleteQuizMutation } from './api/mutations/useCompleteQuizMutation
 export { useSubmitQuizAnswerMutation } from './api/mutations/useSubmitQuizAnswerMutation';
 export { useRetakeQuizMutation } from './api/mutations/useRetakeQuizMutation';
 export type {
-  QuizOption,
   QuizQuestion,
-  QuizQuestionType,
   QuizSessionResult,
   QuizSubmitResult,
 } from './types';

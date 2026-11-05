@@ -220,7 +220,15 @@ export function sanitizeWikipediaText(text: string): string {
   );
 }
 
-export function parseInlineNodes(
+/**
+ * Converts an HTML subtree into normalized word/text nodes with inline formatting.
+ * @param parentNode - Parsed HTML element or text node; ignored elements yield no nodes.
+ * @returns New inline nodes with trimmed edges; the parsed HTML tree is not mutated.
+ * @example
+ * parseInlineNodes({ nodeName: '#text', value: 'Read', parentNode: null });
+ * // => [{ text: 'Read', type: 'word' }]
+ */
+function parseInlineNodes(
   parentNode: HtmlParentNode | HtmlChildNode,
 ): InlineNode[] {
   const segments = collectInlineSegments(parentNode, {});

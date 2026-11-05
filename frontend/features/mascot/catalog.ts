@@ -2,7 +2,7 @@ import { type MascotAccessorySlot, type MascotCatalogItem } from './types';
 
 export const mascotAccessorySlots: MascotAccessorySlot[] = ['head', 'eyes'];
 
-export const mascotCatalog: MascotCatalogItem[] = [
+const mascotCatalog: MascotCatalogItem[] = [
   {
     asset: require('../../assets/mascot/accessories/hats/pirate-hat.png'),
     id: 'pirate-hat',

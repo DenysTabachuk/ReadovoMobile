@@ -102,7 +102,7 @@ export type ArticleTextTransformationType =
   (typeof TRANSFORMATION_TYPES)[number];
 export type ArticleQuizSourceCoverage = 'complete' | 'representative_excerpts';
 
-export type ArticleAdaptationSummary = ArticleAdaptationSummaryResponseDto;
+type ArticleAdaptationSummary = ArticleAdaptationSummaryResponseDto;
 
 export type ArticleAdaptationsByArticleId = Record<
   string,

@@ -31,9 +31,5 @@
     "knip": "6.44.1",
     "lint-staged": "^17.6.0",
     "prettier": "3.9.10"
-  },
-  "dependencies": {
-    "i18next": "^26.0.6",
-    "react-i18next": "^17.0.4"
   }
 }

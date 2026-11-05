@@ -22,10 +22,6 @@
       "googleServicesFile": "./android/app/google-services.json",
       "package": "com.readovo.mobile"
     },
-    "web": {
-      "output": "static",
-      "favicon": "./assets/images/favicon.png"
-    },
     "plugins": [
       "expo-router",
       [

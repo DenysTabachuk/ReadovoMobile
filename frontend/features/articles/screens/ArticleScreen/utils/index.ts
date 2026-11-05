@@ -5,4 +5,3 @@ export { getBlockIndexFromTokenKey } from './getBlockIndexFromTokenKey';
 export { getTextComplexityMetrics } from './getTextComplexityMetrics';
 export { hasDuplicateArticleImage } from './hasDuplicateArticleImage';
 export { isSameAdaptation } from './isSameAdaptation';
-export { resolveNextTokenSelection } from './resolveNextTokenSelection';

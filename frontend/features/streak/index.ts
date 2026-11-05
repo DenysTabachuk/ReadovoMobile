@@ -1,11 +1,9 @@
 export {
-  getNewlyUnlockedStreakAchievements,
   getStreakAchievementDescriptionKey,
   getStreakAchievementTitleKey,
 } from './achievements';
 export {
   applyStreakFreeze,
-  getStreakCalendarMonth,
   getStreakProfile,
   purchaseStreakFreezeToken,
   restoreBrokenStreak,
@@ -14,26 +12,7 @@ export {
   useRestoreStreakMutation,
   usePurchaseStreakFreezeTokenMutation,
 } from './api';
-export {
-  STREAK_MAX_FREEZE_TOKENS,
-  streakMilestones,
-  weekDayLabels,
-} from './constants';
-export { getStreakReminderState } from './utils';
-export type {
-  ApplyStreakFreezeRequest,
-  BrokenStreakInfo,
-  CalendarDayStatus,
-  StreakAchievement,
-  StreakAchievementMilestone,
-  StreakCalendarDay,
-  StreakCalendarMonthResponse,
-  StreakDayStatus,
-  StreakHistoryDay,
-  StreakReminderState,
-  StreakState,
-  StreakTodayStatus,
-} from './types';
+export type { StreakState } from './types';
 export { useStreakAchievementFeedback } from './hooks';
 
 export { ActivityCalendar } from './components/activityCalendar';
