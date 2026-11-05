@@ -254,6 +254,99 @@ applies to both frontend and backend. Frontend-specific guidance:
 - Prefer an existing theme or design token for shared colors, spacing, typography, and sizing before introducing a new constant.
 - Values inside a `StyleSheet` are not automatically magic values when the style name and property already explain their purpose; extract them only when they are reused, encode a non-obvious invariant, or belong in a design token.
 
+## Theme and colors
+
+### Ownership and API
+
+`PreferencesProvider` owns the persisted `system | light | dark` preference and
+resolves OS appearance only in System mode. Components use `useTheme()` from
+`hooks/use-theme`, returning `{ theme, colors, isDark }`. Here `theme` is the resolved
+`light | dark` appearance, not the saved preference. There is no second application
+theme provider or consumer-level OS subscription. React Navigation receives
+`navigationThemes[theme]`, derived from the same semantic colors.
+
+Settings disables theme selection until its save finishes. The provider ignores
+overlapping attempts, including taps before React renders the disabled control;
+it has no write queue. Save successfully before updating the committed selection.
+On failure retain the previous selection, release the control and show localized
+feedback from the mounted screen. Do not move storage writes into components.
+
+### Color layers and names
+
+1. `constants/palette.ts` contains opaque `#RRGGBB` reference shades. Family keys
+   use hundred steps (`blue100`, `blue300`, etc.); steps are design positions, not
+   measured lightness or RGB values. Add only used shades, consolidate close
+   colors by purpose and do not populate every possible step.
+2. `constants/theme.ts` defines the matching, checked light/dark semantic roles.
+   Reuse these roles for application UI. Equal values can still represent distinct
+   responsibilities; do not merge tokens solely because their hex values match.
+3. Components consume resolved `colors`; pure utilities and style factories receive
+   colors explicitly. Do not import a fixed light/dark palette or create a parallel
+   feature theme or local light/dark style table.
+
+| Role                                                             | Meaning                                                                                        |
+| ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `background`                                                     | Screen canvas.                                                                                 |
+| `surface`                                                        | Background of cards, fields and panels on the canvas. It may match `background` in light mode. |
+| `surfaceMuted`                                                   | Less prominent neutral region, such as an empty progress track; not inherently disabled.       |
+| `text`, `textSecondary`, `textMuted`                             | Content text and its intended emphasis.                                                        |
+| `primary`, `onPrimary`                                           | Main filled action and its text/icons. A button is not automatically a primary action.         |
+| `interactive`                                                    | Active controls, native caret/selection and navigation highlights.                             |
+| `link`                                                           | Text/actions presented as links.                                                               |
+| `accentSolid`, `onAccentSolid`                                   | Filled visual accent and its text/icons.                                                       |
+| `accentSurface`, `accentBorder`, `onAccentSurface`               | Soft accent region, its border and text/icons; used across badges, panels and some actions.    |
+| `border`, `borderSubtle`, `borderStrong`, `inputBorder`, `focus` | General dividers/outlines, field outlines and focus indication.                                |
+| `selection`, `selectionBorder`, `onSelection`                    | Selected surface, outline and foreground.                                                      |
+| `success`, `danger`, `info`, `warning` families                  | Feedback foregrounds, soft surfaces/borders, solid fills and their `on*Solid` foregrounds.     |
+| `highlight`, `onHighlight`                                       | Highlight fill and its foreground, such as a restored calendar day.                            |
+| `backdrop`, `overlayControlSurface`, `textHighlight`             | Composited overlays with alpha owned by the semantic catalogue.                                |
+
+The prefix `on` means text or icons placed on the named background. Choose the
+matching pair even when several foreground roles currently resolve to white.
+Define colors by their responsibility, not the current shade or feature name.
+Compose alpha through `withOpacity` at the token/effect owner; do not introduce
+names such as `yellowAlpha14` or apply container opacity to fade text accidentally.
+
+### Styles and overrides
+
+Keep theme-dependent StyleSheet rules in the owning `styles.ts` factory and
+memoize by `colors`. Select named state styles in the component. Static metadata
+can map states to style keys; it should not capture a particular theme's styles.
+Do not extract ordinary dimensions or spacing just because color rules change.
+
+Use tokens directly for native color props, such as `selectionColor`. Avoid
+intermediate variables that only rename `colors.warning`. Native appearance props
+(`keyboardAppearance`, picker `themeVariant`, status/navigation bar icon style)
+and actual light/dark assets may use resolved `theme` or `isDark`.
+Preserve supported caller overrides, including style precedence, TextInput props,
+custom icons and caller-owned parallax header backgrounds.
+
+### Audited exceptions and native limits
+
+- Black shadows use `palette.black`; literal `transparent` means no paint and
+  does not need a palette entry. Disabled/pressed opacity remains a state effect.
+- Google login uses its fixed blue brand color. Profile metric icons, article
+  category icons and streak gift icons use decorative palette colors independently
+  of UI feedback roles.
+- `achievementGradients` is a shared decorative effect with light/dark variants.
+  Quiz animation/score glows own their alpha effects beside their components;
+  mascot videos select actual theme-specific assets. These are not feature themes.
+- Images, SVG/video assets and external/user-authored content retain their owned
+  colors. Tests and JSDoc may contain literal colors as concrete examples or
+  independent expectations.
+- `app.json` keeps build-time literals for the adaptive icon, notification accent,
+  splash backgrounds and initial Android navigation bar. They are available before
+  React/AsyncStorage and cannot import runtime tokens from the JSON configuration.
+  Runtime bars follow the resolved app theme. Native splash appearance follows
+  native configuration/OS appearance and may differ from a stored manual choice.
+
+Verify app Light with OS Dark, app Dark with OS Light, System changes, restart,
+pending/failed saves, keyboards, pickers and modal/system bars on supported devices.
+Android picker/system-bar behavior depends on installed native capabilities.
+Jest verifies state, roles and props; it does not verify native appearance or
+contrast. Assess composed surfaces, gradients and disabled states visually rather
+than inferring readability from a token name or a passing test.
+
 ## Data layer example
 
 ```text

@@ -1,3 +1,4 @@
+import { useTheme } from '@/hooks/use-theme';
 import { memo, useMemo, Fragment } from 'react';
 import { type PlainInlineTextProps } from './types';
 import { ENABLE_SPEECH_SENTENCE_HIGHLIGHT } from '../../../../constants';
@@ -9,7 +10,7 @@ import { createSentenceGroups } from '../../utils/createSentenceGroups';
 import { ThemedText } from '@/components/themedText';
 import { createPlainTextSegments } from './utils/createPlainTextSegments';
 import { type TouchableTextPart } from '../../../../types';
-import { styles } from '../../styles';
+import { createStyles } from '../../styles';
 
 export const PlainInlineText = memo(function PlainInlineText({
   nodes,
@@ -18,6 +19,8 @@ export const PlainInlineText = memo(function PlainInlineText({
   speakingTokenKey,
   style,
 }: PlainInlineTextProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const shouldHighlightSentence =
     ENABLE_SPEECH_SENTENCE_HIGHLIGHT &&
     isTokenKeyInsidePrefix(speakingTokenKey, prefix);
@@ -37,7 +40,9 @@ export const PlainInlineText = memo(function PlainInlineText({
     }
 
     return createSentenceGroups(parts).map((group) => {
-      const renderedParts = group.parts.map(renderPlainTouchablePart);
+      const renderedParts = group.parts.map((part) =>
+        renderPlainTouchablePart(part, styles),
+      );
 
       if (group.sentenceKey === speakingSentenceKey) {
         return (
@@ -53,7 +58,7 @@ export const PlainInlineText = memo(function PlainInlineText({
 
       return <Fragment key={group.key}>{renderedParts}</Fragment>;
     });
-  }, [nodes, prefix, shouldHighlightSentence, speakingTokenKey]);
+  }, [nodes, prefix, shouldHighlightSentence, speakingTokenKey, styles]);
   const segments = useMemo(() => createPlainTextSegments(nodes), [nodes]);
 
   if (highlightedSentenceContent) {
@@ -101,7 +106,10 @@ export const PlainInlineText = memo(function PlainInlineText({
   );
 });
 
-function renderPlainTouchablePart(part: TouchableTextPart) {
+function renderPlainTouchablePart(
+  part: TouchableTextPart,
+  styles: ReturnType<typeof createStyles>,
+) {
   return (
     <ThemedText
       key={part.key}

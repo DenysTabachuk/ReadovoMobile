@@ -1,3 +1,5 @@
+import { useTheme } from '@/hooks/use-theme';
+import { useMemo } from 'react';
 import { Pressable, View } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
@@ -5,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { ThemedText } from '@/components/themedText';
 import type { AuthUserProfile } from '@/features/auth';
 import { Mascot, type MascotEquippedItems } from '@/features/mascot';
-import { styles } from './styles';
+import { createStyles } from './styles';
 
 type ProfileSummaryProps = {
   user: AuthUserProfile;
@@ -18,6 +20,8 @@ export function ProfileSummary({
   balance,
   equippedItems,
 }: ProfileSummaryProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { t } = useTranslation();
   const router = useRouter();
   const fallbackName = user.email?.split('@')[0] ?? t('profile.defaultName');

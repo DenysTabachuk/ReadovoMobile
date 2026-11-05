@@ -1,3 +1,5 @@
+import { palette } from '@/constants/palette';
+import { useTheme } from '@/hooks/use-theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useMemo, useState } from 'react';
 import { Pressable, View } from 'react-native';
@@ -6,9 +8,8 @@ import { useTranslation } from 'react-i18next';
 import { ThemedText } from '@/components/themedText';
 import { useStreakCalendarMonthQuery } from '../../api';
 import { type StreakCalendarDay, type StreakState } from '../../types';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 
-import { styles } from './styles';
+import { createStyles } from './styles';
 import { CalendarDay } from './components/calendarDay';
 import { createCalendarGrid } from './utils/createCalendarGrid';
 
@@ -77,9 +78,9 @@ export function ActivityCalendar({
   onPressCta,
   onRequestFreezeDay,
 }: ActivityCalendarProps) {
+  const { colors } = useTheme();
   const { t } = useTranslation();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const initialDate = new Date(serverNow);
   const [visibleYear, setVisibleYear] = useState(initialDate.getUTCFullYear());
@@ -134,22 +135,16 @@ export function ActivityCalendar({
   const isCtaInteractive = canRestore && Boolean(onPressCta) && !isCtaLoading;
 
   return (
-    <View style={[styles.card, isDark ? styles.cardDark : styles.cardLight]}>
+    <View style={[styles.card]}>
       <View style={styles.headerRow}>
         <Pressable onPress={goPrevMonth} style={styles.navButton}>
           <Ionicons
-            color={isDark ? '#cbc7df' : '#5b5f76'}
+            color={colors.textSecondary}
             name="chevron-back"
             size={16}
           />
         </Pressable>
-        <ThemedText
-          type="bodyStrong"
-          style={[
-            styles.monthLabel,
-            isDark ? styles.titleDark : styles.titleLight,
-          ]}
-        >
+        <ThemedText type="bodyStrong" style={[styles.monthLabel, styles.title]}>
           {monthLabel}
         </ThemedText>
         <Pressable
@@ -161,7 +156,7 @@ export function ActivityCalendar({
           ]}
         >
           <Ionicons
-            color={isDark ? '#cbc7df' : '#5b5f76'}
+            color={colors.textSecondary}
             name="chevron-forward"
             size={16}
           />
@@ -172,10 +167,7 @@ export function ActivityCalendar({
         {weekDayTranslationKeys.map((key) => (
           <ThemedText
             key={key}
-            style={[
-              styles.weekHeaderText,
-              isDark ? styles.subtitleDark : styles.subtitleLight,
-            ]}
+            style={[styles.weekHeaderText, styles.subtitle]}
           >
             {t(key)}
           </ThemedText>
@@ -194,54 +186,27 @@ export function ActivityCalendar({
 
       <View style={styles.summaryTopRow}>
         <View style={styles.summaryValueRow}>
-          <Ionicons
-            color={isDark ? '#f2994a' : '#d97706'}
-            name="flame"
-            size={18}
-          />
+          <Ionicons color={colors.warning} name="flame" size={18} />
           <ThemedText
             type="sectionTitle"
-            style={[
-              styles.summaryValue,
-              isDark ? styles.titleDark : styles.titleLight,
-            ]}
+            style={[styles.summaryValue, styles.title]}
           >
             {streak.currentStreak}
           </ThemedText>
-          <ThemedText
-            style={[
-              styles.summarySuffix,
-              isDark ? styles.subtitleDark : styles.subtitleLight,
-            ]}
-          >
+          <ThemedText style={[styles.summarySuffix, styles.subtitle]}>
             {t('streak.summary.daysInRow')}
           </ThemedText>
         </View>
-        <ThemedText
-          style={[
-            styles.summaryStatus,
-            isDark ? styles.statusDark : styles.statusLight,
-          ]}
-        >
+        <ThemedText style={[styles.summaryStatus, styles.status]}>
           {t(getStatusTextKey(streak.todayStatus))}
         </ThemedText>
       </View>
 
       <View style={styles.progressRow}>
-        <ThemedText
-          style={[
-            styles.progressCounter,
-            isDark ? styles.subtitleDark : styles.subtitleLight,
-          ]}
-        >
+        <ThemedText style={[styles.progressCounter, styles.subtitle]}>
           {streak.currentStreak}/{streak.nextMilestone}
         </ThemedText>
-        <View
-          style={[
-            styles.progressTrack,
-            isDark ? styles.progressTrackDark : styles.progressTrackLight,
-          ]}
-        >
+        <View style={[styles.progressTrack]}>
           <View
             style={[
               styles.progressFill,
@@ -254,7 +219,7 @@ export function ActivityCalendar({
             ]}
           />
         </View>
-        <Ionicons color="#7d4ef6" name="gift-outline" size={16} />
+        <Ionicons color={palette.purple500} name="gift-outline" size={16} />
       </View>
 
       <Pressable
@@ -263,19 +228,13 @@ export function ActivityCalendar({
         onPress={onPressCta}
         style={({ pressed }) => [
           styles.ctaRow,
-          canRestore
-            ? isDark
-              ? styles.ctaRowRestoreDark
-              : styles.ctaRowRestoreLight
-            : isDark
-              ? styles.ctaRowDark
-              : styles.ctaRowLight,
+          canRestore ? styles.ctaRowRestore : styles.ctaRow,
           !isCtaInteractive && canRestore ? styles.ctaRowDisabled : null,
           pressed ? styles.ctaRowPressed : null,
         ]}
       >
         <Ionicons
-          color={canRestore ? '#ffffff' : isDark ? '#cbc7df' : '#5b5f76'}
+          color={canRestore ? colors.onWarningSolid : colors.textSecondary}
           name={canRestore ? 'refresh' : 'information-circle-outline'}
           size={18}
         />
@@ -283,11 +242,7 @@ export function ActivityCalendar({
           type="bodyStrong"
           style={[
             styles.ctaRowText,
-            canRestore
-              ? styles.ctaRowRestoreText
-              : isDark
-                ? styles.subtitleDark
-                : styles.subtitleLight,
+            canRestore ? styles.ctaRowRestoreText : styles.subtitle,
           ]}
         >
           {isCtaLoading

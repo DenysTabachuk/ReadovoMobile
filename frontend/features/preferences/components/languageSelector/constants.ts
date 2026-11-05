@@ -12,8 +12,3 @@ export const LANGUAGES = [
     label: 'Українська',
   },
 ] satisfies LanguageOption[];
-
-export const LANGUAGE_SELECTOR_BORDER_COLORS = {
-  dark: '#2d3336',
-  light: '#d0d7de',
-} as const;

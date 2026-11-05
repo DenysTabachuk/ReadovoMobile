@@ -3,9 +3,9 @@ import { Pressable, ScrollView, View } from 'react-native';
 
 import { ThemedText } from '@/components/themedText';
 import { type TableCell } from '@/features/articles/api';
-import { useThemeColor } from '@/hooks/use-theme-color';
+import { useTheme } from '@/hooks/use-theme';
 
-import { styles } from './styles';
+import { createStyles } from './styles';
 
 type ArticleTableBlockProps = {
   renderCellContent: (params: {
@@ -29,15 +29,8 @@ export function ArticleTableBlock({
   const rowCount = rows.length;
   const isWideTable = columnCount >= WIDE_TABLE_COLUMN_COUNT;
   const [isExpanded, setIsExpanded] = useState(false);
-  const borderColor = useThemeColor(
-    { dark: 'rgba(255, 255, 255, 0.16)', light: 'rgba(17, 24, 28, 0.12)' },
-    'icon',
-  );
-  const headerBackgroundColor = useThemeColor(
-    { dark: 'rgba(255, 255, 255, 0.06)', light: 'rgba(17, 24, 28, 0.04)' },
-    'background',
-  );
-  const tableBackgroundColor = useThemeColor({}, 'background');
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const headerText = isExpanded ? 'Hide table' : 'Show table';
   const summaryText = buildTableSummary(rows, columnCount, rowCount);
   const tableMinWidth = isWideTable
@@ -49,13 +42,7 @@ export function ArticleTableBlock({
       <Pressable
         accessibilityRole="button"
         onPress={() => setIsExpanded((currentValue) => !currentValue)}
-        style={[
-          styles.toggle,
-          {
-            backgroundColor: headerBackgroundColor,
-            borderColor,
-          },
-        ]}
+        style={styles.toggle}
       >
         <View style={styles.toggleCopy}>
           <ThemedText type="bodyStrong">{headerText}</ThemedText>
@@ -83,10 +70,6 @@ export function ArticleTableBlock({
           <View
             style={[
               styles.table,
-              {
-                backgroundColor: tableBackgroundColor,
-                borderColor,
-              },
               tableMinWidth ? { minWidth: tableMinWidth } : null,
             ]}
           >
@@ -96,7 +79,7 @@ export function ArticleTableBlock({
                 style={[
                   styles.tableRow,
                   {
-                    borderBottomColor: borderColor,
+                    borderBottomColor: colors.borderSubtle,
                   },
                 ]}
               >
@@ -105,15 +88,8 @@ export function ArticleTableBlock({
                     key={`cell-${rowIndex}-${cellIndex}`}
                     style={[
                       styles.tableCell,
-                      {
-                        borderColor,
-                      },
                       isWideTable ? styles.tableWideCell : null,
-                      cell.header
-                        ? {
-                            backgroundColor: headerBackgroundColor,
-                          }
-                        : null,
+                      cell.header ? styles.headerCell : null,
                     ]}
                   >
                     <ThemedText

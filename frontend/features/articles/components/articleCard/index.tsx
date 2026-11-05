@@ -1,3 +1,5 @@
+import { useMemo } from 'react';
+import { useTheme } from '@/hooks/use-theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { Pressable, View } from 'react-native';
@@ -10,12 +12,11 @@ import {
 } from '@/features/articles/api';
 
 import { ArticleThumbnail } from '../articleThumbnail';
-import { styles } from './styles';
+import { createStyles } from './styles';
 
 type ArticleCardProps = {
   article: WikipediaArticle;
   borderColor: string;
-  colorScheme: 'light' | 'dark' | null | undefined;
   expandedAdaptations: boolean;
   iconColor: string;
   isSaved: boolean;
@@ -30,7 +31,6 @@ type ArticleCardProps = {
 export function ArticleCard({
   article,
   borderColor,
-  colorScheme,
   expandedAdaptations,
   iconColor,
   isSaved,
@@ -41,6 +41,8 @@ export function ArticleCard({
   tintColor,
   wasOpened,
 }: ArticleCardProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { t } = useTranslation();
 
   return (
@@ -104,7 +106,7 @@ export function ArticleCard({
                           styles.adaptationLevelLabel,
                           getAdaptationLevelLabelStyle(
                             adaptationGroup.level,
-                            colorScheme,
+                            styles,
                           ),
                         ]}
                       >
@@ -118,18 +120,8 @@ export function ArticleCard({
                               style={[
                                 styles.adaptationBadge,
                                 transformationType === 'adaptation'
-                                  ? [
-                                      styles.transformationBadgeAdaptation,
-                                      colorScheme === 'dark'
-                                        ? styles.transformationBadgeAdaptationDark
-                                        : null,
-                                    ]
-                                  : [
-                                      styles.transformationBadgeSummary,
-                                      colorScheme === 'dark'
-                                        ? styles.transformationBadgeSummaryDark
-                                        : null,
-                                    ],
+                                  ? [styles.transformationBadgeAdaptation]
+                                  : [styles.transformationBadgeSummary],
                               ]}
                             >
                               <ThemedText
@@ -137,18 +129,8 @@ export function ArticleCard({
                                 style={[
                                   styles.adaptationBadgeText,
                                   transformationType === 'adaptation'
-                                    ? [
-                                        styles.transformationBadgeTextAdaptation,
-                                        colorScheme === 'dark'
-                                          ? styles.transformationBadgeTextAdaptationDark
-                                          : null,
-                                      ]
-                                    : [
-                                        styles.transformationBadgeTextSummary,
-                                        colorScheme === 'dark'
-                                          ? styles.transformationBadgeTextSummaryDark
-                                          : null,
-                                      ],
+                                    ? [styles.transformationBadgeTextAdaptation]
+                                    : [styles.transformationBadgeTextSummary],
                                 ]}
                               >
                                 {transformationType === 'adaptation'
@@ -193,7 +175,7 @@ export function ArticleCard({
             style={styles.openedIndicator}
           >
             <Ionicons
-              color={colorScheme === 'dark' ? '#9ba1a6' : '#687076'}
+              color={colors.textSecondary}
               name="eye-outline"
               size={16}
             />
@@ -241,29 +223,19 @@ function compareTransformationType(
 
 function getAdaptationLevelLabelStyle(
   level: ArticleAdaptationSummary['level'],
-  colorScheme: ArticleCardProps['colorScheme'],
+  styles: ReturnType<typeof createStyles>,
 ) {
-  const isDark = colorScheme === 'dark';
-
   if (level === 'A1') {
-    return isDark
-      ? styles.adaptationLevelLabelA1Dark
-      : styles.adaptationLevelLabelA1;
+    return styles.adaptationLevelLabelA1;
   }
 
   if (level === 'A2') {
-    return isDark
-      ? styles.adaptationLevelLabelA2Dark
-      : styles.adaptationLevelLabelA2;
+    return styles.adaptationLevelLabelA2;
   }
 
   if (level === 'B1') {
-    return isDark
-      ? styles.adaptationLevelLabelB1Dark
-      : styles.adaptationLevelLabelB1;
+    return styles.adaptationLevelLabelB1;
   }
 
-  return isDark
-    ? styles.adaptationLevelLabelB2Dark
-    : styles.adaptationLevelLabelB2;
+  return styles.adaptationLevelLabelB2;
 }

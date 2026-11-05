@@ -1,4 +1,4 @@
-import { useThemeColor } from '@/hooks/use-theme-color';
+import { useTheme } from '@/hooks/use-theme';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { type ListRenderItem, FlatList } from 'react-native';
 import { ArticleBlockRow } from './components/articleBlockRow';
@@ -48,10 +48,7 @@ export function InteractiveArticleText({
     Record<string, boolean>
   >({});
   const onVisibleBlockIndexesChangeRef = useRef(onVisibleBlockIndexesChange);
-  const chevronColor = useThemeColor(
-    { dark: '#9ba1a6', light: '#687076' },
-    'icon',
-  );
+  const { colors } = useTheme();
   const resolvedBlocks = useMemo(() => {
     if (blocks && blocks.length > 0) {
       return blocks;
@@ -118,7 +115,7 @@ export function InteractiveArticleText({
           activeInteractiveBlockKey={activeInteractiveBlockKey}
           block={item.block}
           blockKey={item.key}
-          chevronColor={chevronColor}
+          chevronColor={colors.textSecondary}
           collapsed={Boolean(collapsedHeadings[item.key])}
           onActivateInteractiveBlock={handleActivateInteractiveBlock}
           onToggleHeading={handleToggleHeading}
@@ -134,7 +131,7 @@ export function InteractiveArticleText({
     },
     [
       activeInteractiveBlockKey,
-      chevronColor,
+      colors.textSecondary,
       collapsedHeadings,
       handleActivateInteractiveBlock,
       handleToggleHeading,

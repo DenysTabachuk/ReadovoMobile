@@ -1,3 +1,5 @@
+import { useMemo } from 'react';
+import { useTheme } from '@/hooks/use-theme';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { Pressable, View } from 'react-native';
@@ -5,9 +7,8 @@ import { useTranslation } from 'react-i18next';
 
 import { ModalSheet } from '@/components/modalSheet';
 import { ThemedText } from '@/components/themedText';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 
-import { styles } from './styles';
+import { createStyles } from './styles';
 
 type StreakFreezePurchaseModalProps = {
   coinBalance: number;
@@ -26,9 +27,10 @@ export function StreakFreezePurchaseModal({
   onConfirm,
   open,
 }: StreakFreezePurchaseModalProps) {
+  const { colors } = useTheme();
   const { t } = useTranslation();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const canConfirm = coinBalance >= freezeTokenPrice && !isBuying;
 
   return (
@@ -39,20 +41,10 @@ export function StreakFreezePurchaseModal({
       title={t('streak.freeze.purchaseTitle')}
     >
       <View style={styles.content}>
-        <View
-          style={[
-            styles.iconCircle,
-            isDark ? styles.iconCircleDark : styles.iconCircleLight,
-          ]}
-        >
-          <Ionicons color="#2d6bc9" name="snow" size={24} />
+        <View style={[styles.iconCircle]}>
+          <Ionicons color={colors.info} name="snow" size={24} />
         </View>
-        <ThemedText
-          style={[
-            styles.description,
-            isDark ? styles.descriptionDark : styles.descriptionLight,
-          ]}
-        >
+        <ThemedText style={[styles.description]}>
           {t('streak.freeze.purchaseDescription')}
         </ThemedText>
         <View style={styles.priceRow}>
@@ -70,16 +62,10 @@ export function StreakFreezePurchaseModal({
             onPress={onClose}
             style={({ pressed }) => [
               styles.secondaryButton,
-              isDark ? styles.secondaryButtonDark : styles.secondaryButtonLight,
               pressed ? styles.buttonPressed : null,
             ]}
           >
-            <ThemedText
-              type="bodyStrong"
-              style={
-                isDark ? styles.secondaryTextDark : styles.secondaryTextLight
-              }
-            >
+            <ThemedText type="bodyStrong" style={styles.secondaryText}>
               {t('streak.freeze.cancel')}
             </ThemedText>
           </Pressable>

@@ -1,3 +1,4 @@
+import { useTheme } from '@/hooks/use-theme';
 import {
   usePreventRemove,
   type NavigationAction,
@@ -22,7 +23,6 @@ import { Button } from '@/components/button';
 import { ModalSheet } from '@/components/modalSheet';
 import { ScreenContainer } from '@/components/screenContainer';
 import { ThemedText } from '@/components/themedText';
-import { Colors } from '@/constants/theme';
 import {
   useCompleteQuizMutation,
   useQuizCompletionFeedback,
@@ -34,7 +34,6 @@ import {
   type QuizSubmitResult,
 } from '@/features/quiz';
 import { useBanner } from '@/components/banner';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 
 import { styles } from './styles';
 
@@ -43,7 +42,7 @@ export default function DictionaryTestScreen() {
   const router = useRouter();
   const navigation = useNavigation();
   const { showBanner } = useBanner();
-  const colorScheme = useColorScheme();
+  const { colors } = useTheme();
   const [test, setTest] = useState<DictionaryTest>();
   const [testResult, setTestResult] = useState<QuizSessionResult | null>(null);
   const [isExitTestConfirmOpen, setIsExitTestConfirmOpen] = useState(false);
@@ -152,10 +151,7 @@ export default function DictionaryTestScreen() {
       <Stack.Screen options={{ title: t('dictionary.test.title') }} />
       {testMutation.isPending ? (
         <View style={styles.centerState}>
-          <ActivityIndicator
-            color={Colors[colorScheme ?? 'light'].tint}
-            size="large"
-          />
+          <ActivityIndicator color={colors.interactive} size="large" />
           <ThemedText type="body">{t('dictionary.test.loading')}</ThemedText>
         </View>
       ) : testErrorMessageKey ? (

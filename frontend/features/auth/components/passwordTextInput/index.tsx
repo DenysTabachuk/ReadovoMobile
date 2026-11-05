@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
 import { FormTextInput } from '@/components/formTextInput';
-import { useThemeColor } from '@/hooks/use-theme-color';
+import { useTheme } from '@/hooks/use-theme';
 
 type PasswordTextInputProps = Omit<TextInputProps, 'secureTextEntry'> & {
   errorText?: string;
@@ -14,7 +14,7 @@ type PasswordTextInputProps = Omit<TextInputProps, 'secureTextEntry'> & {
 
 export function PasswordTextInput(props: PasswordTextInputProps) {
   const { t } = useTranslation();
-  const inputIconColor = useThemeColor({}, 'text');
+  const { colors } = useTheme();
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
   return (
@@ -28,7 +28,7 @@ export function PasswordTextInput(props: PasswordTextInputProps) {
           onPress={() => setIsPasswordVisible((current) => !current)}
         >
           <Ionicons
-            color={inputIconColor}
+            color={colors.text}
             name={isPasswordVisible ? 'eye-off-outline' : 'eye-outline'}
             size={22}
           />

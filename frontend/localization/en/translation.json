@@ -332,7 +332,10 @@
     "theme": {
       "title": "Theme",
       "light": "Light",
-      "dark": "Dark"
+      "dark": "Dark",
+      "system": "System",
+      "saving": "Saving theme…",
+      "saveError": "Could not save the theme. Please try again."
     },
     "language": {
       "title": "Language"

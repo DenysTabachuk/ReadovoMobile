@@ -1,12 +1,13 @@
+import { useTheme } from '@/hooks/use-theme';
+import { useMemo } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { Switch, View } from 'react-native';
-import { styles as sharedStyles } from '../../styles';
+import { createStyles as createSharedStyles } from '../../styles';
 
 import { OptionPickerField } from '@/components/optionPickerField';
 import { ThemedText } from '@/components/themedText';
 
-import { useArticlesFilterTheme } from '../../hooks/useArticlesFilterTheme';
 import type { ArticlesToolbarProps } from '../../types';
 type Props = Pick<
   ArticlesToolbarProps,
@@ -29,17 +30,10 @@ export function ArticleQuickFilters({
   onChangeReadyAdaptationEnabled,
   onChangeReadySummaryEnabled,
 }: Props) {
+  const { colors } = useTheme();
+  const sharedStyles = useMemo(() => createSharedStyles(colors), [colors]);
   const { t } = useTranslation();
-  const {
-    isDarkMode,
-    borderColor,
-    cardColor,
-    sectionCardColor,
-    tintColor,
-    mutedTextColor,
-    darkFilterIconColor,
-    selectedCategoryBackground,
-  } = useArticlesFilterTheme();
+
   const readyLevelOptions = [
     { label: t('articles.filters.readyLevel.all'), value: 'all' as const },
     { label: 'A1', value: 'A1' as const },
@@ -49,19 +43,11 @@ export function ArticleQuickFilters({
   ];
   return (
     <>
-      <View
-        style={[
-          sharedStyles.sectionCard,
-          {
-            backgroundColor: sectionCardColor,
-            borderColor,
-          },
-        ]}
-      >
+      <View style={[sharedStyles.sectionCard, sharedStyles.filterSurface]}>
         <View style={sharedStyles.sectionHeader}>
           <ThemedText
             type="body"
-            style={[sharedStyles.sectionHeaderText, { color: mutedTextColor }]}
+            style={[sharedStyles.sectionHeaderText, sharedStyles.mutedText]}
           >
             {t('articles.filtersSections.quick')}
           </ThemedText>
@@ -71,15 +57,12 @@ export function ArticleQuickFilters({
           <View
             style={[
               sharedStyles.recommendedToggle,
-              {
-                backgroundColor: cardColor,
-                borderColor,
-              },
+              sharedStyles.controlSurface,
             ]}
           >
             <View style={sharedStyles.recommendedToggleLabel}>
               <Ionicons
-                color={isDarkMode ? darkFilterIconColor : tintColor}
+                color={colors.interactive}
                 name="image-outline"
                 size={20}
               />
@@ -89,10 +72,12 @@ export function ArticleQuickFilters({
             </View>
             <Switch
               onValueChange={onChangePreferImagesFirst}
-              thumbColor={preferImagesFirst ? tintColor : '#f4f3f4'}
+              thumbColor={
+                preferImagesFirst ? colors.interactive : colors.surface
+              }
               trackColor={{
-                false: '#767577',
-                true: selectedCategoryBackground,
+                false: colors.borderStrong,
+                true: colors.selection,
               }}
               value={preferImagesFirst}
             />
@@ -115,15 +100,12 @@ export function ArticleQuickFilters({
           <View
             style={[
               sharedStyles.recommendedToggle,
-              {
-                backgroundColor: cardColor,
-                borderColor,
-              },
+              sharedStyles.controlSurface,
             ]}
           >
             <View style={sharedStyles.recommendedToggleLabel}>
               <Ionicons
-                color={isDarkMode ? darkFilterIconColor : tintColor}
+                color={colors.interactive}
                 name="create-outline"
                 size={20}
               />
@@ -133,10 +115,12 @@ export function ArticleQuickFilters({
             </View>
             <Switch
               onValueChange={onChangeReadyAdaptationEnabled}
-              thumbColor={readyAdaptationEnabled ? tintColor : '#f4f3f4'}
+              thumbColor={
+                readyAdaptationEnabled ? colors.interactive : colors.surface
+              }
               trackColor={{
-                false: '#767577',
-                true: selectedCategoryBackground,
+                false: colors.borderStrong,
+                true: colors.selection,
               }}
               value={readyAdaptationEnabled}
             />
@@ -147,15 +131,12 @@ export function ArticleQuickFilters({
           <View
             style={[
               sharedStyles.recommendedToggle,
-              {
-                backgroundColor: cardColor,
-                borderColor,
-              },
+              sharedStyles.controlSurface,
             ]}
           >
             <View style={sharedStyles.recommendedToggleLabel}>
               <Ionicons
-                color={isDarkMode ? darkFilterIconColor : tintColor}
+                color={colors.interactive}
                 name="document-text-outline"
                 size={20}
               />
@@ -165,10 +146,12 @@ export function ArticleQuickFilters({
             </View>
             <Switch
               onValueChange={onChangeReadySummaryEnabled}
-              thumbColor={readySummaryEnabled ? tintColor : '#f4f3f4'}
+              thumbColor={
+                readySummaryEnabled ? colors.interactive : colors.surface
+              }
               trackColor={{
-                false: '#767577',
-                true: selectedCategoryBackground,
+                false: colors.borderStrong,
+                true: colors.selection,
               }}
               value={readySummaryEnabled}
             />

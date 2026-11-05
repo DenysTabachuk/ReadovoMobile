@@ -1,3 +1,5 @@
+import { useMemo } from 'react';
+import { useTheme } from '@/hooks/use-theme';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { Pressable, View } from 'react-native';
@@ -5,9 +7,8 @@ import { useTranslation } from 'react-i18next';
 
 import { ThemedText } from '@/components/themedText';
 import { STREAK_MAX_FREEZE_TOKENS } from '../../constants';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 
-import { styles } from './styles';
+import { createStyles } from './styles';
 
 type StreakFreezeCardProps = {
   coinBalance: number;
@@ -24,9 +25,10 @@ export function StreakFreezeCard({
   isBuying = false,
   onBuyToken,
 }: StreakFreezeCardProps) {
+  const { colors } = useTheme();
   const { t } = useTranslation();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const hasEnoughCoins = coinBalance >= freezeTokenPrice;
   const reachedLimit = freezeTokens >= STREAK_MAX_FREEZE_TOKENS;
   const canBuy = hasEnoughCoins && !reachedLimit && !isBuying;
@@ -38,33 +40,20 @@ export function StreakFreezeCard({
   }
 
   return (
-    <View style={[styles.card, isDark ? styles.cardDark : styles.cardLight]}>
+    <View style={[styles.card]}>
       <View style={styles.headerRow}>
         <View style={styles.titleRow}>
-          <Ionicons color="#2d6bc9" name="snow" size={18} />
-          <ThemedText
-            type="bodyStrong"
-            style={isDark ? styles.titleDark : styles.titleLight}
-          >
+          <Ionicons color={colors.info} name="snow" size={18} />
+          <ThemedText type="bodyStrong" style={styles.title}>
             {t('streak.freeze.title')}
           </ThemedText>
         </View>
-        <ThemedText
-          style={[
-            styles.tokenValue,
-            isDark ? styles.tokenValueDark : styles.tokenValueLight,
-          ]}
-        >
+        <ThemedText style={[styles.tokenValue]}>
           {freezeTokens}/{STREAK_MAX_FREEZE_TOKENS}
         </ThemedText>
       </View>
 
-      <ThemedText
-        style={[
-          styles.description,
-          isDark ? styles.descriptionDark : styles.descriptionLight,
-        ]}
-      >
+      <ThemedText style={[styles.description]}>
         {t('streak.freeze.description')}
       </ThemedText>
 
@@ -75,12 +64,7 @@ export function StreakFreezeCard({
             source={require('../../../../assets/images/money.png')}
             style={styles.moneyIcon}
           />
-          <ThemedText
-            style={[
-              styles.priceText,
-              isDark ? styles.descriptionDark : styles.descriptionLight,
-            ]}
-          >
+          <ThemedText style={[styles.priceText, styles.description]}>
             {freezeTokenPrice}
           </ThemedText>
         </View>
@@ -90,12 +74,15 @@ export function StreakFreezeCard({
           onPress={onBuyToken}
           style={({ pressed }) => [
             styles.buyButton,
-            isDark ? styles.buyButtonDark : styles.buyButtonLight,
             !canBuy ? styles.buyButtonDisabled : null,
             pressed ? styles.buyButtonPressed : null,
           ]}
         >
-          <Ionicons color="#ffffff" name="add-circle-outline" size={16} />
+          <Ionicons
+            color={colors.onInfoSolid}
+            name="add-circle-outline"
+            size={16}
+          />
           <ThemedText type="bodyStrong" style={styles.buyButtonText}>
             {buyButtonLabel}
           </ThemedText>

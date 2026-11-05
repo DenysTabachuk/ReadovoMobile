@@ -5,9 +5,9 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Button } from '@/components/button';
 import { ModalSheet } from '@/components/modalSheet';
 import { ThemedText } from '@/components/themedText';
-import { useThemeColor } from '@/hooks/use-theme-color';
+import { useTheme } from '@/hooks/use-theme';
 
-import { styles } from './styles';
+import { createStyles } from './styles';
 
 const verificationCodeLength = 6;
 const resendCooldownMs = 60_000;
@@ -62,32 +62,8 @@ export function VerificationCodeModal({
   verifyingLabel,
 }: VerificationCodeModalProps) {
   const inputRef = useRef<TextInput>(null);
-  const borderColor = useThemeColor(
-    { dark: '#7d8790', light: '#c8ccd6' },
-    'icon',
-  );
-  const cellBackgroundColor = useThemeColor(
-    { dark: '#202426', light: '#ffffff' },
-    'background',
-  );
-  const placeholderColor = useThemeColor(
-    { dark: '#a5adb6', light: '#c8ccd6' },
-    'icon',
-  );
-  const textColor = useThemeColor({}, 'text');
-  const tintColor = useThemeColor({}, 'tint');
-  const resendIconColor = useThemeColor(
-    { dark: '#9aa7ff', light: '#0a7ea4' },
-    'tint',
-  );
-  const helpBlockBackgroundColor = useThemeColor(
-    { dark: '#202039', light: '#f2efff' },
-    'background',
-  );
-  const helpIconBackgroundColor = useThemeColor(
-    { dark: '#292951', light: '#e5ddff' },
-    'background',
-  );
+  const { theme, colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const codeDigits = useMemo(
     () =>
       Array.from(
@@ -184,10 +160,11 @@ export function VerificationCodeModal({
             autoComplete="one-time-code"
             caretHidden
             editable={!isBusy}
+            keyboardAppearance={theme}
             keyboardType="number-pad"
             maxLength={verificationCodeLength}
             onChangeText={handleChangeCode}
-            selectionColor={tintColor}
+            selectionColor={colors.interactive}
             style={styles.hiddenInput}
             textContentType="oneTimeCode"
             value={code}
@@ -204,17 +181,14 @@ export function VerificationCodeModal({
                   key={index}
                   style={[
                     styles.codeCell,
-                    { backgroundColor: cellBackgroundColor, borderColor },
-                    isActive
-                      ? [styles.codeCellActive, { borderColor: tintColor }]
-                      : null,
+                    isActive ? [styles.codeCellActive] : null,
                   ]}
                 >
                   <ThemedText
                     type="sectionTitle"
                     style={[
                       styles.codeCellText,
-                      { color: digit ? textColor : placeholderColor },
+                      { color: digit ? colors.text : colors.placeholder },
                     ]}
                   >
                     {digit || '-'}
@@ -228,29 +202,19 @@ export function VerificationCodeModal({
         {expirationLabel && formattedExpirationTime ? (
           <ThemedText type="paragraph" style={styles.expirationText}>
             {expirationLabel}{' '}
-            <ThemedText type="bodyStrong" style={{ color: tintColor }}>
+            <ThemedText type="bodyStrong" style={{ color: colors.interactive }}>
               {formattedExpirationTime}
             </ThemedText>
           </ThemedText>
         ) : null}
 
         {emailHelpTitle && emailHelpDescription ? (
-          <View
-            style={[
-              styles.emailHelpBlock,
-              { backgroundColor: helpBlockBackgroundColor },
-            ]}
-          >
-            <View
-              style={[
-                styles.emailHelpIcon,
-                { backgroundColor: helpIconBackgroundColor },
-              ]}
-            >
+          <View style={styles.emailHelpBlock}>
+            <View style={styles.emailHelpIcon}>
               <Ionicons
                 name="shield-checkmark-outline"
                 size={28}
-                color={tintColor}
+                color={colors.interactive}
               />
             </View>
 
@@ -273,7 +237,7 @@ export function VerificationCodeModal({
             <MaterialCommunityIcons
               name="timer-refresh-outline"
               size={24}
-              color={resendIconColor}
+              color={colors.link}
             />
           }
           onPress={onResend}

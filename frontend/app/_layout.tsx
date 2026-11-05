@@ -1,8 +1,4 @@
-import {
-  DarkTheme,
-  DefaultTheme,
-  ThemeProvider,
-} from '@react-navigation/native';
+import { ThemeProvider } from '@react-navigation/native';
 import * as NavigationBar from 'expo-navigation-bar';
 import * as Notifications from 'expo-notifications';
 import * as SystemUI from 'expo-system-ui';
@@ -19,13 +15,13 @@ import 'react-native-reanimated';
 
 import { FullScreenLoader } from '@/components/fullScreenLoader';
 import { BannerProvider } from '@/components/banner';
-import { Colors } from '@/constants/theme';
+import { navigationThemes } from '@/constants/navigationTheme';
 import { AuthProvider, useAuth } from '@/features/auth';
 import {
   loadLearningReminderPreferences,
   syncLearningReminder,
 } from '@/features/learningReminders/service';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useTheme } from '@/hooks/use-theme';
 import {
   PreferencesProvider,
   usePreferences,
@@ -61,29 +57,26 @@ function RootLayoutContent() {
   const { t } = useTranslation();
   const { isAuthenticated, currentUser, sessionVersion, isHydratingAuth } =
     useAuth();
-  const colorScheme = useColorScheme() ?? 'light';
+  const { theme, colors, isDark } = useTheme();
   const {
     isLoadingPreferences,
     hydrateLearningReminderPreferences,
     learningReminderEnabled,
     learningReminderTime,
   } = usePreferences();
-  const backgroundColor = Colors[colorScheme].background;
 
   useEffect(() => {
-    void SystemUI.setBackgroundColorAsync(backgroundColor);
-  }, [backgroundColor]);
+    void SystemUI.setBackgroundColorAsync(colors.background);
+  }, [colors.background]);
 
   useEffect(() => {
     if (Platform.OS !== 'android') {
       return;
     }
 
-    void NavigationBar.setBackgroundColorAsync(backgroundColor);
-    void NavigationBar.setButtonStyleAsync(
-      colorScheme === 'dark' ? 'light' : 'dark',
-    );
-  }, [backgroundColor, colorScheme]);
+    void NavigationBar.setBackgroundColorAsync(colors.background);
+    void NavigationBar.setButtonStyleAsync(isDark ? 'light' : 'dark');
+  }, [colors.background, isDark]);
 
   useEffect(() => {
     if (!isAuthenticated || !currentUser?.id) {
@@ -145,19 +138,21 @@ function RootLayoutContent() {
   ]);
 
   return (
-    <GestureHandlerRootView style={{ backgroundColor, flex: 1 }}>
-      <View style={{ backgroundColor, flex: 1 }}>
+    <GestureHandlerRootView
+      style={{ backgroundColor: colors.background, flex: 1 }}
+    >
+      <View style={{ backgroundColor: colors.background, flex: 1 }}>
         <SafeAreaProvider>
-          <ThemeProvider
-            value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}
-          >
+          <ThemeProvider value={navigationThemes[theme]}>
             <BannerProvider>
               {isHydratingAuth || isLoadingPreferences ? (
                 <FullScreenLoader />
               ) : (
                 <Stack
                   key={sessionVersion}
-                  screenOptions={{ contentStyle: { backgroundColor } }}
+                  screenOptions={{
+                    contentStyle: { backgroundColor: colors.background },
+                  }}
                 >
                   <Stack.Protected guard={!isAuthenticated}>
                     <Stack.Screen
@@ -209,8 +204,8 @@ function RootLayoutContent() {
                 </Stack>
               )}
               <StatusBar
-                backgroundColor={backgroundColor}
-                style={colorScheme === 'dark' ? 'light' : 'dark'}
+                backgroundColor={colors.background}
+                style={isDark ? 'light' : 'dark'}
                 translucent={false}
               />
             </BannerProvider>

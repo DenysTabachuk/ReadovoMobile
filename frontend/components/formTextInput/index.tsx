@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import {
   TextInput,
   type StyleProp,
@@ -7,10 +7,10 @@ import {
   type ViewStyle,
 } from 'react-native';
 
-import { useThemeColor } from '@/hooks/use-theme-color';
+import { useTheme } from '@/hooks/use-theme';
 import { ThemedText } from '@/components/themedText';
 
-import { styles } from './styles';
+import { createStyles } from './styles';
 
 type FormTextInputProps = TextInputProps & {
   containerStyle?: StyleProp<ViewStyle>;
@@ -33,13 +33,9 @@ export function FormTextInput({
   style,
   ...props
 }: FormTextInputProps) {
+  const { theme, colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [isFocused, setIsFocused] = useState(false);
-  const placeholderColor = useThemeColor(
-    { light: '#7c7c7c', dark: '#a8a8a8' },
-    'icon',
-  );
-  const tintColor = useThemeColor({}, 'tint');
-  const textColor = useThemeColor({}, 'text');
 
   return (
     <View style={[styles.container, containerStyle]}>
@@ -49,6 +45,7 @@ export function FormTextInput({
 
       <View style={styles.inputWrap}>
         <TextInput
+          keyboardAppearance={theme}
           onBlur={(event) => {
             setIsFocused(false);
             onBlur?.(event);
@@ -57,15 +54,14 @@ export function FormTextInput({
             setIsFocused(true);
             onFocus?.(event);
           }}
-          placeholderTextColor={placeholderTextColor ?? placeholderColor}
-          selectionColor={selectionColor ?? tintColor}
+          placeholderTextColor={placeholderTextColor ?? colors.placeholder}
+          selectionColor={selectionColor ?? colors.interactive}
           style={[
             styles.input,
             isFocused && styles.inputFocused,
             hasError && styles.inputError,
             rightAccessory ? styles.inputWithRightAccessory : null,
             style,
-            { color: textColor },
           ]}
           {...props}
         />

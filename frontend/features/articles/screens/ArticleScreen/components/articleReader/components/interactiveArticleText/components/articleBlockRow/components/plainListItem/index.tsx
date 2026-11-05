@@ -1,8 +1,10 @@
+import { useTheme } from '@/hooks/use-theme';
+import { useMemo, memo } from 'react';
 import { ThemedText } from '@/components/themedText';
 import { type InlineNode } from '@/features/articles/api';
-import { memo } from 'react';
+
 import { View } from 'react-native';
-import { styles } from '../../styles';
+import { createStyles } from '../../styles';
 import { PlainInlineText } from '../plainInlineText';
 
 export const PlainListItem = memo(function PlainListItem({
@@ -20,6 +22,8 @@ export const PlainListItem = memo(function PlainListItem({
   prefix: string;
   speakingTokenKey?: string;
 }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   return (
     <View style={styles.listItem}>
       <ThemedText style={styles.listBullet} type="paragraph">

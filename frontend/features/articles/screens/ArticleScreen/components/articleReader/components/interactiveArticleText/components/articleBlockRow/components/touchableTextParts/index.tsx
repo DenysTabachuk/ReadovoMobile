@@ -1,3 +1,5 @@
+import { useTheme } from '@/hooks/use-theme';
+import { useMemo, Fragment } from 'react';
 import {
   type InteractiveArticleTextProps,
   type TouchableTextPart,
@@ -9,17 +11,29 @@ import {
 import { getSpeakingSentenceKey } from '../../utils/getSpeakingSentenceKey';
 import { createSentenceGroups } from '../../utils/createSentenceGroups';
 import { ThemedText } from '@/components/themedText';
-import { Fragment } from 'react';
-import { TouchableWord } from '../../../../../../../touchableWord';
-import { styles } from '../../styles';
 
-export function TouchableTextParts(params: {
+import { TouchableWord } from '../../../../../../../touchableWord';
+import { createStyles } from '../../styles';
+
+type RenderTouchablePartParams = {
+  onWordPress: InteractiveArticleTextProps['onWordPress'];
+  part: TouchableTextPart;
+  selectedTokenKeySet: ReadonlySet<string>;
+  speakingTokenKey?: string;
+  styles: ReturnType<typeof createStyles>;
+};
+
+type TouchableTextPartsProps = {
   onWordPress: InteractiveArticleTextProps['onWordPress'];
   parts: TouchableTextPart[];
   selectedTokenKey?: string;
   selectedTokenKeys?: string[];
   speakingTokenKey?: string;
-}) {
+};
+
+export function TouchableTextParts(params: TouchableTextPartsProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const selectedTokenKeySet = new Set([
     ...(params.selectedTokenKeys ?? []),
     ...(params.selectedTokenKey ? [params.selectedTokenKey] : []),
@@ -34,6 +48,7 @@ export function TouchableTextParts(params: {
       renderTouchablePart({
         onWordPress: params.onWordPress,
         part,
+        styles,
         selectedTokenKeySet,
         speakingTokenKey: ENABLE_SPEECH_WORD_HIGHLIGHT
           ? params.speakingTokenKey
@@ -57,13 +72,8 @@ export function TouchableTextParts(params: {
   });
 }
 
-function renderTouchablePart(params: {
-  onWordPress: InteractiveArticleTextProps['onWordPress'];
-  part: TouchableTextPart;
-  selectedTokenKeySet: ReadonlySet<string>;
-  speakingTokenKey?: string;
-}) {
-  const { part } = params;
+function renderTouchablePart(params: RenderTouchablePartParams) {
+  const { part, styles } = params;
 
   if (part.type === 'text') {
     return (

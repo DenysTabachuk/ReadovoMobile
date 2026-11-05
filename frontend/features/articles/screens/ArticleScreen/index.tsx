@@ -2,7 +2,7 @@ import { Button } from '@/components/button';
 import { ScreenContainer } from '@/components/screenContainer';
 import { ThemedText } from '@/components/themedText';
 import { useArticleDetailQuery } from '@/features/articles/api';
-import { useThemeColor } from '@/hooks/use-theme-color';
+import { useTheme } from '@/hooks/use-theme';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { getArticleErrorMessageKey } from '../../utils/getArticleErrorMessageKey';
@@ -13,7 +13,7 @@ import { parseArticleId } from '@/features/articles/utils/parseArticleId';
 
 export default function ArticleScreen() {
   const { t } = useTranslation();
-  const tintColor = useThemeColor({}, 'tint');
+  const { colors } = useTheme();
   const params = useLocalSearchParams<{ id?: string | string[] }>();
   const articleId = parseArticleId(params.id);
   const {
@@ -44,7 +44,7 @@ export default function ArticleScreen() {
       <ScreenContainer>
         <Stack.Screen options={{ title: t('article.titleFallback') }} />
         <View style={styles.centerState}>
-          <ActivityIndicator color={tintColor} size="large" />
+          <ActivityIndicator color={colors.interactive} size="large" />
           <ThemedText type="body">{t('article.loading')}</ThemedText>
         </View>
       </ScreenContainer>

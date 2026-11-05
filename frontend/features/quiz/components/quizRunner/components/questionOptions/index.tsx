@@ -1,17 +1,15 @@
+import { useTheme } from '@/hooks/use-theme';
+import { useMemo } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, View } from 'react-native';
 
 import { CheckboxIndicator } from '@/components/checkboxRow';
 import { ThemedText } from '@/components/themedText';
 
-import {
-  QUIZ_ANSWER_COLORS,
-  QUIZ_OPTION_COLORS,
-  QUIZ_STATUS_ICON_SIZE,
-} from '../../constants';
+import { QUIZ_STATUS_ICON_SIZE } from '../../constants';
 import { type QuizQuestion } from '../../../../types';
 
-import { styles } from './styles';
+import { createStyles } from './styles';
 
 type QuestionOptionsProps = {
   isSubmitted: boolean;
@@ -30,6 +28,9 @@ export function QuestionOptions({
   resolvedCorrectOptionIds,
   selectedOptionIds,
 }: QuestionOptionsProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const isMultipleChoice = question.type === 'multiple_choice';
 
   return (
@@ -40,6 +41,10 @@ export function QuestionOptions({
         const shouldShowCorrectState = isSubmitted && isCorrectOption;
         const shouldShowWrongState =
           isSubmitted && isSelected && !isCorrectOption;
+        let checkedColor = colors.onPrimary;
+        if (isSubmitted) {
+          checkedColor = shouldShowWrongState ? colors.danger : colors.success;
+        }
 
         return (
           <Pressable
@@ -61,14 +66,8 @@ export function QuestionOptions({
               <View style={styles.checkboxIndicator}>
                 <CheckboxIndicator
                   checked={isSelected}
-                  checkedColor={
-                    isSubmitted
-                      ? shouldShowWrongState
-                        ? QUIZ_ANSWER_COLORS.wrong
-                        : QUIZ_ANSWER_COLORS.correct
-                      : QUIZ_OPTION_COLORS.checked
-                  }
-                  uncheckedColor={QUIZ_OPTION_COLORS.unchecked}
+                  checkedColor={checkedColor}
+                  uncheckedColor={colors.borderStrong}
                 />
               </View>
             ) : null}
@@ -87,11 +86,7 @@ export function QuestionOptions({
             </ThemedText>
             {shouldShowCorrectState || shouldShowWrongState ? (
               <Ionicons
-                color={
-                  shouldShowCorrectState
-                    ? QUIZ_ANSWER_COLORS.correct
-                    : QUIZ_ANSWER_COLORS.wrong
-                }
+                color={shouldShowCorrectState ? colors.success : colors.danger}
                 name={
                   shouldShowCorrectState ? 'checkmark-circle' : 'close-circle'
                 }

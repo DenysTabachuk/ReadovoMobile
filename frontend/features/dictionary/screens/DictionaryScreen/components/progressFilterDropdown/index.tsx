@@ -1,19 +1,17 @@
-import { useCallback } from 'react';
+import { useMemo, useCallback } from 'react';
 import { View, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ModalSheet } from '@/components/modalSheet';
 import { ThemedText } from '@/components/themedText';
-import type { useColorScheme } from '@/hooks/use-color-scheme';
-import { useThemeColor } from '@/hooks/use-theme-color';
+import { useTheme } from '@/hooks/use-theme';
 import type {
   DictionaryProgressFilter,
   ProgressFilterOption,
 } from '../../types';
 import { ProgressStatusBadge } from './components/progressStatusBadge';
-import { styles } from './styles';
+import { createStyles } from './styles';
 
 type ProgressFilterDropdownProps = {
-  colorScheme: ReturnType<typeof useColorScheme>;
   label: string;
   onClose: () => void;
   onOpen: () => void;
@@ -25,7 +23,6 @@ type ProgressFilterDropdownProps = {
 };
 
 export function ProgressFilterDropdown({
-  colorScheme,
   label,
   onClose,
   onOpen,
@@ -38,30 +35,8 @@ export function ProgressFilterDropdown({
   const selectedOption = options.find(
     (option) => option.value === selectedValue,
   );
-  const borderColor = useThemeColor(
-    { dark: '#3a4348', light: '#d0d7de' },
-    'icon',
-  );
-  const buttonBackgroundColor = useThemeColor(
-    { dark: '#202425', light: '#f5f7fa' },
-    'background',
-  );
-  const optionBackgroundColor = useThemeColor(
-    { dark: '#151718', light: '#ffffff' },
-    'background',
-  );
-  const selectedBackgroundColor = useThemeColor(
-    { dark: '#123847', light: '#e8f5f9' },
-    'background',
-  );
-  const selectedBorderColor = useThemeColor(
-    { dark: '#67c6e3', light: '#0a7ea4' },
-    'tint',
-  );
-  const chevronColor = useThemeColor(
-    { dark: '#9ba1a6', light: '#687076' },
-    'icon',
-  );
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const handleSelect = useCallback(
     (value: DictionaryProgressFilter) => {
@@ -75,25 +50,22 @@ export function ProgressFilterDropdown({
     <>
       <View style={styles.progressFilterField}>
         <ThemedText type="bodyStrong">{label}</ThemedText>
-        <Pressable
-          onPress={onOpen}
-          style={[
-            styles.progressFilterButton,
-            { backgroundColor: buttonBackgroundColor, borderColor },
-          ]}
-        >
+        <Pressable onPress={onOpen} style={styles.progressFilterButton}>
           {selectedValue === 'all' ? (
             <ThemedText style={styles.progressFilterAllText} type="bodyStrong">
               {selectedOption?.label ?? selectedValue}
             </ThemedText>
           ) : (
             <ProgressStatusBadge
-              colorScheme={colorScheme}
               label={selectedOption?.label ?? selectedValue}
               progress={selectedValue}
             />
           )}
-          <Ionicons color={chevronColor} name="chevron-down" size={18} />
+          <Ionicons
+            color={colors.textSecondary}
+            name="chevron-down"
+            size={18}
+          />
         </Pressable>
       </View>
 
@@ -108,13 +80,7 @@ export function ProgressFilterDropdown({
                 onPress={() => handleSelect(option.value)}
                 style={[
                   styles.progressFilterOption,
-                  { backgroundColor: optionBackgroundColor, borderColor },
-                  isSelected
-                    ? {
-                        backgroundColor: selectedBackgroundColor,
-                        borderColor: selectedBorderColor,
-                      }
-                    : null,
+                  isSelected ? styles.progressFilterOptionSelected : null,
                 ]}
               >
                 {option.value === 'all' ? (
@@ -126,14 +92,13 @@ export function ProgressFilterDropdown({
                   </ThemedText>
                 ) : (
                   <ProgressStatusBadge
-                    colorScheme={colorScheme}
                     label={option.label}
                     progress={option.value}
                   />
                 )}
                 {isSelected ? (
                   <Ionicons
-                    color={selectedBorderColor}
+                    color={colors.selectionBorder}
                     name="checkmark-circle"
                     size={20}
                   />

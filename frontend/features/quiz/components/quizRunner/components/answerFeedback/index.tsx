@@ -1,46 +1,47 @@
+import { useTheme } from '@/hooks/use-theme';
+import { useMemo } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { ThemedText } from '@/components/themedText';
 
-import { QUIZ_ANSWER_COLORS, QUIZ_STATUS_ICON_SIZE } from '../../constants';
+import { QUIZ_STATUS_ICON_SIZE } from '../../constants';
 
-import { styles } from './styles';
+import { createStyles } from './styles';
 
 type AnswerFeedbackProps = {
   explanation?: string;
   feedbackText?: string;
   isCorrect: boolean;
-  isDarkTheme: boolean;
 };
 
 export function AnswerFeedback({
   explanation,
   feedbackText,
   isCorrect,
-  isDarkTheme,
 }: AnswerFeedbackProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const { t } = useTranslation();
+  let resolvedFeedbackText = feedbackText;
+  if (!resolvedFeedbackText) {
+    resolvedFeedbackText = isCorrect
+      ? t('dictionary.test.correct')
+      : t('article.quiz.incorrect');
+  }
 
   return (
     <>
       <View
         style={[
           styles.feedbackBlock,
-          isCorrect
-            ? isDarkTheme
-              ? styles.correctFeedbackBlockDark
-              : styles.correctFeedbackBlock
-            : isDarkTheme
-              ? styles.wrongFeedbackBlockDark
-              : styles.wrongFeedbackBlock,
+          isCorrect ? styles.correctFeedbackBlock : styles.wrongFeedbackBlock,
         ]}
       >
         <Ionicons
-          color={
-            isCorrect ? QUIZ_ANSWER_COLORS.correct : QUIZ_ANSWER_COLORS.wrong
-          }
+          color={isCorrect ? colors.success : colors.danger}
           name={isCorrect ? 'checkmark-circle' : 'close-circle'}
           size={QUIZ_STATUS_ICON_SIZE}
         />
@@ -51,11 +52,7 @@ export function AnswerFeedback({
             isCorrect ? styles.correctFeedbackText : styles.wrongFeedbackText,
           ]}
         >
-          {feedbackText
-            ? feedbackText
-            : isCorrect
-              ? t('dictionary.test.correct')
-              : t('article.quiz.incorrect')}
+          {resolvedFeedbackText}
         </ThemedText>
       </View>
       {explanation ? <ThemedText type="body">{explanation}</ThemedText> : null}

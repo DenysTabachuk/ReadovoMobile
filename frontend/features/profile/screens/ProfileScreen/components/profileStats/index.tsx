@@ -1,10 +1,12 @@
+import { useMemo } from 'react';
+import { palette } from '@/constants/palette';
+import { useTheme } from '@/hooks/use-theme';
 import { View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { ThemedText } from '@/components/themedText';
 import type { AchievementProgress } from '@/features/achievements';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { styles } from './styles';
+import { createStyles } from './styles';
 
 type ProfileStatsProps = {
   progress: AchievementProgress;
@@ -17,37 +19,38 @@ export function ProfileStats({
   achievementsCount,
   currentStreak,
 }: ProfileStatsProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { t } = useTranslation();
-  const isDarkTheme = useColorScheme() === 'dark';
   const stats = [
     {
       labelKey: 'profile.stats.words',
       value: progress.wordsLearned,
       icon: 'library-outline',
-      color: '#7d4ef6',
+      color: palette.purple500,
     },
     {
       labelKey: 'profile.stats.tests',
       value: progress.testsCompleted,
       icon: 'checkmark-circle-outline',
-      color: '#2c9d49',
+      color: palette.green500,
     },
     {
       labelKey: 'profile.stats.achievements',
       value: achievementsCount,
       icon: 'trophy-outline',
-      color: '#2f80ed',
+      color: palette.blue500,
     },
     {
       labelKey: 'profile.stats.streak',
       value: currentStreak,
       icon: 'flame',
-      color: '#f2994a',
+      color: palette.orange500,
     },
   ] as const;
 
   return (
-    <View style={[styles.statsCard, isDarkTheme ? styles.statsCardDark : null]}>
+    <View style={[styles.statsCard]}>
       {stats.map(({ labelKey, value, icon, color }) => (
         <View key={labelKey} style={styles.statItem}>
           <View style={styles.statValueRow}>

@@ -1,3 +1,5 @@
+import { useMemo } from 'react';
+import { useTheme } from '@/hooks/use-theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import {
@@ -8,13 +10,10 @@ import {
 } from 'react-native';
 
 import { ThemedText } from '@/components/themedText';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 import type { DictionaryWord } from '../../../../api/types';
 
-import { getProgressBadgeColors } from '../../utils/getProgressBadgeColors';
 import { getProgressLabel } from './utils/getProgressLabel';
-import { styles } from './styles';
+import { createStyles } from './styles';
 import { ProgressMenu } from './components/progressMenu';
 
 type DictionaryWordCardProps = {
@@ -35,10 +34,12 @@ export function DictionaryWordCard({
   onMoveBackToInProgress,
 }: DictionaryWordCardProps) {
   const { t } = useTranslation();
-  const colorScheme = useColorScheme();
-  const isDarkTheme = colorScheme === 'dark';
-  const borderColor = isDarkTheme ? '#2d3336' : '#d0d7de';
-  const progressColors = getProgressBadgeColors(word.progress, colorScheme);
+  const { colors } = useTheme();
+  const styles = useMemo(
+    () => createStyles(colors, word.progress),
+    [colors, word.progress],
+  );
+
   const progressRatio = Math.min(
     word.correctAnswersCount / word.requiredCorrectAnswers,
     1,
@@ -54,7 +55,7 @@ export function DictionaryWordCard({
     <Pressable
       accessibilityRole="button"
       onPress={() => onOpenWord(word)}
-      style={[styles.wordCard, { borderColor }]}
+      style={styles.wordCard}
     >
       <View style={styles.cardHeader}>
         <View style={styles.wordTitleGroup}>
@@ -69,15 +70,9 @@ export function DictionaryWordCard({
           <Pressable
             disabled={word.progress !== 'learned'}
             onPress={handleProgressPress}
-            style={[
-              styles.progressBadge,
-              { backgroundColor: progressColors.backgroundColor },
-            ]}
+            style={[styles.progressBadge]}
           >
-            <ThemedText
-              type="bodyStrong"
-              style={[styles.progressText, { color: progressColors.textColor }]}
-            >
+            <ThemedText type="bodyStrong" style={styles.progressText}>
               {getProgressLabel(word.progress, t)}
             </ThemedText>
           </Pressable>
@@ -101,11 +96,7 @@ export function DictionaryWordCard({
         </ThemedText>
       </View>
       <View style={styles.cardTapHint}>
-        <Ionicons
-          color={Colors[colorScheme ?? 'light'].icon}
-          name="open-outline"
-          size={13}
-        />
+        <Ionicons color={colors.textSecondary} name="open-outline" size={13} />
         <ThemedText type="description" style={styles.cardTapHintText}>
           {t('dictionary.tapHint')}
         </ThemedText>

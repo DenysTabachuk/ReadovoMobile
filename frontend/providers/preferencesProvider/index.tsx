@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 import { useColorScheme as useSystemColorScheme } from 'react-native';
@@ -42,6 +43,7 @@ type PreferencesContextValue = {
   learningReminderTime: LearningReminderTime;
   themePreference: ThemePreference;
   isLoadingPreferences: boolean;
+  isSavingThemePreference: boolean;
   completeOnboarding: () => Promise<void>;
   hydrateLearningReminderPreferences: (input: {
     learningReminderTime: LearningReminderTime;
@@ -71,6 +73,16 @@ type StoredPreferencesState = {
   themePreference: ThemePreference;
 };
 
+/**
+ * Hydrates application preferences and resolves explicit/system appearance.
+ * Only successful theme writes change the committed selection. While a save is
+ * pending, further selections are ignored; controls should be disabled. Callers
+ * must handle rejected setters and own the lifetime of any UI feedback.
+ * @param props - Children sharing this preference lifetime.
+ * @returns Preference context; pending theme writes are exposed to consumers.
+ * @example
+ * // A child can await setThemePreference('system'); after success the UI follows OS changes.
+ */
 export function PreferencesProvider({ children }: PreferencesProviderProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [preferences, setPreferences] = useState<StoredPreferencesState>({
@@ -81,6 +93,8 @@ export function PreferencesProvider({ children }: PreferencesProviderProps) {
     themePreference: DEFAULT_THEME_PREFERENCE,
   });
   const systemColorScheme = useSystemColorScheme();
+  const themeSaveInProgress = useRef(false);
+  const [isSavingThemePreference, setIsSavingThemePreference] = useState(false);
 
   useEffect(() => {
     async function initializePreferences() {
@@ -134,11 +148,17 @@ export function PreferencesProvider({ children }: PreferencesProviderProps) {
 
   const setThemePreference = useCallback(
     async (themePreference: ThemePreference) => {
-      await saveThemePreference(AsyncStorage, themePreference);
-      setPreferences((previous) => ({
-        ...previous,
-        themePreference,
-      }));
+      // Ignore taps arriving before React renders the disabled control.
+      if (themeSaveInProgress.current) return;
+      themeSaveInProgress.current = true;
+      setIsSavingThemePreference(true);
+      try {
+        await saveThemePreference(AsyncStorage, themePreference);
+        setPreferences((previous) => ({ ...previous, themePreference }));
+      } finally {
+        themeSaveInProgress.current = false;
+        setIsSavingThemePreference(false);
+      }
     },
     [],
   );
@@ -193,6 +213,7 @@ export function PreferencesProvider({ children }: PreferencesProviderProps) {
       learningReminderTime: preferences.learningReminderTime,
       themePreference: preferences.themePreference,
       isLoadingPreferences: isLoading,
+      isSavingThemePreference,
       completeOnboarding,
       hydrateLearningReminderPreferences,
       setLearningReminderEnabled,
@@ -205,6 +226,7 @@ export function PreferencesProvider({ children }: PreferencesProviderProps) {
       hydrateLearningReminderPreferences,
       colorScheme,
       isLoading,
+      isSavingThemePreference,
       preferences.hasCompletedOnboarding,
       preferences.languagePreference,
       preferences.learningReminderEnabled,

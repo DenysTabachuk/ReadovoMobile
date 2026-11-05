@@ -1,10 +1,11 @@
+import { useTheme } from '@/hooks/use-theme';
+import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import * as Notifications from 'expo-notifications';
 import { useTranslation } from 'react-i18next';
-import { useState } from 'react';
 
 import { Button } from '@/components/button';
 import { CheckboxRow } from '@/components/checkboxRow';
@@ -13,33 +14,33 @@ import { usePreferences } from '@/providers/preferencesProvider';
 import { ModalSheet } from '@/components/modalSheet';
 import { ScreenContainer } from '@/components/screenContainer';
 import { ThemedText } from '@/components/themedText';
-import { IconSymbol } from '@/components/iconSymbol';
+import { SegmentedToggle } from '@/components/segmentedToggle';
+import type { ThemePreference } from '@/providers/preferencesProvider';
 import { TimePickerField } from '@/components/timePickerField';
 import { LanguageSelector } from '@/features/preferences';
 
-import { styles } from './styles';
+import { createStyles } from './styles';
+import { useThemePreferenceSelection } from './hooks/useThemePreferenceSelection';
 
 export default function SettingsScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const { t } = useTranslation();
   const { signOut } = useAuth();
   const {
-    colorScheme,
     learningReminderEnabled,
     learningReminderTime,
     setLearningReminderEnabled,
     setLearningReminderTime,
-    setThemePreference,
   } = usePreferences();
-  const isDarkTheme = colorScheme === 'dark';
+  const { themePreference, isSavingThemePreference, selectTheme } =
+    useThemePreferenceSelection();
   const [pendingReminderEnabled, setPendingReminderEnabled] = useState<
     boolean | null
   >(null);
   const [versionTapCount, setVersionTapCount] = useState(0);
   const appVersion = Constants.expoConfig?.version ?? 'dev';
-
-  const handleToggleTheme = () => {
-    setThemePreference(isDarkTheme ? 'light' : 'dark');
-  };
 
   const handleLogout = async () => {
     await signOut();
@@ -112,30 +113,21 @@ export default function SettingsScreen() {
           <ThemedText type="sectionTitle">
             {t('settings.theme.title')}
           </ThemedText>
-          <View style={styles.themeRow}>
-            <Pressable
-              accessibilityRole="switch"
-              accessibilityState={{ checked: isDarkTheme }}
-              onPress={handleToggleTheme}
-              style={[
-                styles.themeToggle,
-                isDarkTheme ? styles.themeToggleDark : styles.themeToggleLight,
-              ]}
-            >
-              <View
-                style={[
-                  styles.themeThumb,
-                  isDarkTheme ? styles.themeThumbDark : styles.themeThumbLight,
-                ]}
-              >
-                <IconSymbol
-                  color={isDarkTheme ? '#ffffff' : '#ffcf33'}
-                  name={isDarkTheme ? 'moon.fill' : 'sun.max.fill'}
-                  size={28}
-                />
-              </View>
-            </Pressable>
-          </View>
+          <SegmentedToggle<ThemePreference>
+            disabled={isSavingThemePreference}
+            onChange={selectTheme}
+            options={[
+              { label: t('settings.theme.system'), value: 'system' },
+              { label: t('settings.theme.light'), value: 'light' },
+              { label: t('settings.theme.dark'), value: 'dark' },
+            ]}
+            selectedValue={themePreference}
+          />
+          {isSavingThemePreference ? (
+            <ThemedText accessibilityLiveRegion="polite" type="body">
+              {t('settings.theme.saving')}
+            </ThemedText>
+          ) : null}
         </View>
 
         <View style={styles.section}>
@@ -215,7 +207,7 @@ export default function SettingsScreen() {
             {t('settings.account.title')}
           </ThemedText>
           <Pressable style={styles.logoutButton} onPress={handleLogout}>
-            <Ionicons color="#d64545" name="log-out-outline" size={20} />
+            <Ionicons color={colors.danger} name="log-out-outline" size={20} />
             <ThemedText type="bodyStrong" style={styles.logoutText}>
               {t('settings.account.logout')}
             </ThemedText>

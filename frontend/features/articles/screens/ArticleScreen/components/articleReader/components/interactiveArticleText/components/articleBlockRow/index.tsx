@@ -1,7 +1,9 @@
+import { useTheme } from '@/hooks/use-theme';
+import { useMemo, memo, useCallback } from 'react';
 import { ThemedText } from '@/components/themedText';
 import { type InlineNode, type TableCell } from '@/features/articles/api';
 import { Ionicons } from '@expo/vector-icons';
-import { memo, useCallback } from 'react';
+
 import { Pressable, View } from 'react-native';
 import { ArticleFormulaBlock } from '../../../../../articleFormulaBlock';
 import { ArticleImageBlock } from '../../../../../articleImageBlock';
@@ -14,7 +16,7 @@ import { PlainListItem } from './components/plainListItem';
 import { TouchableInlineText } from './components/touchableInlineText';
 import { TouchableListItem } from './components/touchableListItem';
 import { TouchableTextParts } from './components/touchableTextParts';
-import { styles } from './styles';
+import { createStyles } from './styles';
 import { type ArticleBlockRowProps } from './types';
 import { areArticleBlockRowPropsEqual } from './utils/areArticleBlockRowPropsEqual';
 import { getHeadingTypographyType } from './utils/getHeadingTypographyType';
@@ -32,6 +34,8 @@ export const ArticleBlockRow = memo(function ArticleBlockRow({
   selectedTokenKeys,
   speakingTokenKey,
 }: ArticleBlockRowProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const handleToggleHeading = useCallback(() => {
     onToggleHeading(blockKey);
   }, [blockKey, onToggleHeading]);
@@ -83,7 +87,7 @@ export const ArticleBlockRow = memo(function ArticleBlockRow({
     return (
       <View style={styles.wordPickBlock}>
         <Ionicons
-          color="rgba(111, 63, 240, 0.5)"
+          color={colors.accentBorder}
           name="language-outline"
           size={16}
           style={styles.wordPickHint}
@@ -131,7 +135,7 @@ export const ArticleBlockRow = memo(function ArticleBlockRow({
         )}
         {isInteractiveBlock ? (
           <Ionicons
-            color="rgba(111, 63, 240, 0.5)"
+            color={colors.accentBorder}
             name="language-outline"
             size={16}
             style={styles.wordPickHint}

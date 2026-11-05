@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { type ReactNode } from 'react';
 import {
   Pressable,
@@ -10,7 +11,9 @@ import {
 
 import { ThemedText } from '@/components/themedText';
 
-import { styles } from './styles';
+import { useTheme } from '@/hooks/use-theme';
+
+import { createStyles } from './styles';
 
 type ButtonVariant = 'primary' | 'secondary';
 
@@ -31,6 +34,8 @@ export function Button({
   variant = 'primary',
   ...props
 }: ButtonProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const variantButtonStyle =
     variant === 'primary' ? styles.primary : styles.secondary;
   const variantTextStyle =

@@ -12,15 +12,12 @@ import {
 } from 'react-native';
 
 import { ThemedText } from '@/components/themedText';
-import { useThemeColor } from '@/hooks/use-theme-color';
+import { useTheme } from '@/hooks/use-theme';
 
-import { styles } from './styles';
+import { createStyles } from './styles';
 import type { TimeValue } from './types';
 import { createDateFromTime } from './utils/createDateFromTime';
 import { formatTime } from './utils/formatTime';
-
-const TIME_ICON_SIZE = 20;
-const CHEVRON_ICON_SIZE = 18;
 
 type TimePickerFieldProps = {
   containerStyle?: StyleProp<ViewStyle>;
@@ -29,26 +26,19 @@ type TimePickerFieldProps = {
   value: TimeValue;
 };
 
+const TIME_ICON_SIZE = 20;
+const CHEVRON_ICON_SIZE = 18;
+
 export function TimePickerField({
   containerStyle,
   label,
   onChange,
   value,
 }: TimePickerFieldProps) {
+  const { theme, colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [isPickerVisible, setPickerVisible] = useState(false);
   const pickerDate = useMemo(() => createDateFromTime(value), [value]);
-  const borderColor = useThemeColor(
-    { dark: '#3a4348', light: '#d0d7de' },
-    'icon',
-  );
-  const buttonBackgroundColor = useThemeColor(
-    { dark: '#202425', light: '#f5f7fa' },
-    'background',
-  );
-  const iconColor = useThemeColor(
-    { dark: '#9ba1a6', light: '#687076' },
-    'icon',
-  );
 
   const handlePress = () => {
     setPickerVisible(true);
@@ -72,14 +62,11 @@ export function TimePickerField({
       <Pressable
         accessibilityRole="button"
         onPress={handlePress}
-        style={[
-          styles.pickerButton,
-          { backgroundColor: buttonBackgroundColor, borderColor },
-        ]}
+        style={styles.pickerButton}
       >
         <View style={styles.pickerButtonContent}>
           <Ionicons
-            color={iconColor}
+            color={colors.textSecondary}
             name="time-outline"
             size={TIME_ICON_SIZE}
           />
@@ -88,7 +75,7 @@ export function TimePickerField({
           </ThemedText>
         </View>
         <Ionicons
-          color={iconColor}
+          color={colors.textSecondary}
           name="chevron-down"
           size={CHEVRON_ICON_SIZE}
         />
@@ -97,6 +84,7 @@ export function TimePickerField({
       {isPickerVisible || Platform.OS === 'ios' ? (
         <DateTimePicker
           display={Platform.OS === 'ios' ? 'compact' : 'default'}
+          themeVariant={theme}
           is24Hour
           mode="time"
           onChange={handleChange}

@@ -1,13 +1,14 @@
+import { useTheme } from '@/hooks/use-theme';
+import { useMemo } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { Pressable, ScrollView, View } from 'react-native';
-import { styles as sharedStyles } from '../../styles';
+import { createStyles as createSharedStyles } from '../../styles';
 
 import { ThemedText } from '@/components/themedText';
 
 import { styles } from './styles';
 
-import { useArticlesFilterTheme } from '../../hooks/useArticlesFilterTheme';
 import type { ArticlesToolbarProps } from '../../types';
 type Props = Pick<
   ArticlesToolbarProps,
@@ -22,32 +23,17 @@ export function PersonalArticlesFilter({
   savedArticlesCount,
   recentArticlesCount,
 }: Props) {
+  const { colors } = useTheme();
+  const sharedStyles = useMemo(() => createSharedStyles(colors), [colors]);
   const { t } = useTranslation();
-  const {
-    isDarkMode,
-    borderColor,
-    cardColor,
-    sectionCardColor,
-    mutedTextColor,
-    savedAccentColor,
-    selectedCategoryBackground,
-    selectedCategoryColor,
-  } = useArticlesFilterTheme();
+
   return (
     <>
-      <View
-        style={[
-          sharedStyles.sectionCard,
-          {
-            backgroundColor: sectionCardColor,
-            borderColor,
-          },
-        ]}
-      >
+      <View style={[sharedStyles.sectionCard, sharedStyles.filterSurface]}>
         <View style={sharedStyles.sectionHeader}>
           <ThemedText
             type="body"
-            style={[sharedStyles.sectionHeaderText, { color: mutedTextColor }]}
+            style={[sharedStyles.sectionHeaderText, sharedStyles.mutedText]}
           >
             {t('articles.filtersSections.personal')}
           </ThemedText>
@@ -72,24 +58,18 @@ export function PersonalArticlesFilter({
               }
               style={({ pressed }) => [
                 sharedStyles.categoryChip,
-                {
-                  backgroundColor:
-                    personalFilter === 'recent'
-                      ? selectedCategoryBackground
-                      : cardColor,
-                  borderColor:
-                    personalFilter === 'recent'
-                      ? selectedCategoryColor
-                      : borderColor,
-                  opacity: pressed ? 0.75 : 1,
-                },
+                sharedStyles.controlSurface,
+                personalFilter === 'recent'
+                  ? sharedStyles.selectedCategoryChip
+                  : null,
+                pressed ? sharedStyles.chipPressed : null,
               ]}
             >
               <Ionicons
                 color={
                   personalFilter === 'recent'
-                    ? selectedCategoryColor
-                    : mutedTextColor
+                    ? colors.onSelection
+                    : colors.textSecondary
                 }
                 name={personalFilter === 'recent' ? 'eye' : 'eye-outline'}
                 size={18}
@@ -99,12 +79,9 @@ export function PersonalArticlesFilter({
                 type="bodyStrong"
                 style={[
                   sharedStyles.categoryChipLabel,
-                  {
-                    color:
-                      personalFilter === 'recent'
-                        ? selectedCategoryColor
-                        : mutedTextColor,
-                  },
+                  personalFilter === 'recent'
+                    ? sharedStyles.selectedCategoryText
+                    : sharedStyles.mutedText,
                 ]}
               >
                 {t('articles.recent.label')}
@@ -113,12 +90,9 @@ export function PersonalArticlesFilter({
                 type="bodyStrong"
                 style={[
                   styles.savedCount,
-                  {
-                    color:
-                      personalFilter === 'recent'
-                        ? selectedCategoryColor
-                        : mutedTextColor,
-                  },
+                  personalFilter === 'recent'
+                    ? sharedStyles.selectedCategoryText
+                    : sharedStyles.mutedText,
                 ]}
               >
                 {recentArticlesCount}
@@ -137,24 +111,18 @@ export function PersonalArticlesFilter({
               }
               style={({ pressed }) => [
                 sharedStyles.categoryChip,
-                {
-                  backgroundColor:
-                    personalFilter === 'saved'
-                      ? selectedCategoryBackground
-                      : cardColor,
-                  borderColor:
-                    personalFilter === 'saved' ? savedAccentColor : borderColor,
-                  opacity: pressed ? 0.75 : 1,
-                },
+                sharedStyles.controlSurface,
+                personalFilter === 'saved'
+                  ? sharedStyles.selectedSavedChip
+                  : null,
+                pressed ? sharedStyles.chipPressed : null,
               ]}
             >
               <Ionicons
                 color={
                   personalFilter === 'saved'
-                    ? savedAccentColor
-                    : isDarkMode
-                      ? '#a78bfa'
-                      : mutedTextColor
+                    ? colors.interactive
+                    : colors.interactive
                 }
                 name={
                   personalFilter === 'saved' ? 'bookmark' : 'bookmark-outline'
@@ -166,12 +134,9 @@ export function PersonalArticlesFilter({
                 type="bodyStrong"
                 style={[
                   sharedStyles.categoryChipLabel,
-                  {
-                    color:
-                      personalFilter === 'saved'
-                        ? savedAccentColor
-                        : mutedTextColor,
-                  },
+                  personalFilter === 'saved'
+                    ? sharedStyles.selectedSavedText
+                    : sharedStyles.mutedText,
                 ]}
               >
                 {t('articles.saved.label')}
@@ -180,12 +145,9 @@ export function PersonalArticlesFilter({
                 type="bodyStrong"
                 style={[
                   styles.savedCount,
-                  {
-                    color:
-                      personalFilter === 'saved'
-                        ? savedAccentColor
-                        : mutedTextColor,
-                  },
+                  personalFilter === 'saved'
+                    ? sharedStyles.selectedSavedText
+                    : sharedStyles.mutedText,
                 ]}
               >
                 {savedArticlesCount}

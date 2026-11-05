@@ -4,14 +4,14 @@ import { OptionPickerField } from '@/components/optionPickerField';
 import { SegmentedToggle } from '@/components/segmentedToggle';
 import { ThemedText } from '@/components/themedText';
 import type { ArticleTextTransformationType } from '@/features/articles/api';
-import { useThemeColor } from '@/hooks/use-theme-color';
+import { useTheme } from '@/hooks/use-theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { View } from 'react-native';
 import type { useArticleTransformations } from '../../../../hooks/useArticleTransformations';
 import type { ArticleTextViewMode } from '../../../../types';
-import { styles } from './styles';
+import { createStyles } from './styles';
 import { createArticleLevelOptions } from './utils/createArticleLevelOptions';
 import { createArticleTextModeOptions } from './utils/createArticleTextModeOptions';
 type Props = {
@@ -58,14 +58,8 @@ export function ArticleTextSettings({ transformations, open, onClose }: Props) {
       ),
     [isSelectedAdaptationAvailable, isSelectedSummaryAvailable, t],
   );
-  const adaptationReadyBorderColor = useThemeColor(
-    { dark: '#2b6f43', light: '#9dddb7' },
-    'icon',
-  );
-  const adaptationReadyTextColor = useThemeColor(
-    { dark: '#7ee0a0', light: '#1f8a4c' },
-    'text',
-  );
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   return (
     <ModalSheet
       contentStyle={styles.adaptModalContent}
@@ -99,23 +93,15 @@ export function ArticleTextSettings({ transformations, open, onClose }: Props) {
         </View>
       </View>
       {isSelectedAdaptationAvailable || isSelectedSummaryAvailable ? (
-        <View
-          style={[
-            styles.readyStatusList,
-            { borderColor: adaptationReadyBorderColor },
-          ]}
-        >
+        <View style={styles.readyStatusList}>
           {isSelectedAdaptationAvailable ? (
             <View style={styles.readyStatusItem}>
               <Ionicons
-                color={adaptationReadyTextColor}
+                color={colors.success}
                 name="sparkles-outline"
                 size={16}
               />
-              <ThemedText
-                type="description"
-                style={{ color: adaptationReadyTextColor }}
-              >
+              <ThemedText type="description" style={styles.readyText}>
                 {t('article.readyAdaptedShort')}
               </ThemedText>
             </View>
@@ -123,14 +109,11 @@ export function ArticleTextSettings({ transformations, open, onClose }: Props) {
           {isSelectedSummaryAvailable ? (
             <View style={styles.readyStatusItem}>
               <Ionicons
-                color={adaptationReadyTextColor}
+                color={colors.success}
                 name="document-text-outline"
                 size={16}
               />
-              <ThemedText
-                type="description"
-                style={{ color: adaptationReadyTextColor }}
-              >
+              <ThemedText type="description" style={styles.readyText}>
                 {t('article.readySummaryShort')}
               </ThemedText>
             </View>

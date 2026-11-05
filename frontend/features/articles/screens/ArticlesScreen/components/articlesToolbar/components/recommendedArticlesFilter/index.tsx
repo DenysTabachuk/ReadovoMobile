@@ -1,8 +1,10 @@
+import { useTheme } from '@/hooks/use-theme';
+import { useMemo, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
-import { useState } from 'react';
+
 import { useTranslation } from 'react-i18next';
 import { Pressable, Switch, View } from 'react-native';
-import { styles as sharedStyles } from '../../styles';
+import { createStyles as createSharedStyles } from '../../styles';
 
 import { Button } from '@/components/button';
 import { ModalSheet } from '@/components/modalSheet';
@@ -10,7 +12,6 @@ import { ThemedText } from '@/components/themedText';
 
 import { styles } from './styles';
 
-import { useArticlesFilterTheme } from '../../hooks/useArticlesFilterTheme';
 import type { ArticlesToolbarProps } from '../../types';
 type Props = Pick<
   ArticlesToolbarProps,
@@ -20,42 +21,26 @@ export function RecommendedArticlesFilter({
   recommendedArticles,
   onChangeRecommendedArticles,
 }: Props) {
+  const { colors } = useTheme();
+  const sharedStyles = useMemo(() => createSharedStyles(colors), [colors]);
   const { t } = useTranslation();
-  const {
-    isDarkMode,
-    borderColor,
-    cardColor,
-    sectionCardColor,
-    tintColor,
-    selectedCategoryBackground,
-  } = useArticlesFilterTheme();
+
   const [isRecommendedInfoOpen, setIsRecommendedInfoOpen] = useState(false);
   const openRecommendedInfo = () => setIsRecommendedInfoOpen(true);
   const closeRecommendedInfo = () => setIsRecommendedInfoOpen(false);
   return (
     <>
-      <View
-        style={[
-          sharedStyles.sectionCard,
-          {
-            backgroundColor: sectionCardColor,
-            borderColor,
-          },
-        ]}
-      >
+      <View style={[sharedStyles.sectionCard, sharedStyles.filterSurface]}>
         <View style={sharedStyles.recommendedRow}>
           <View
             style={[
               sharedStyles.recommendedToggle,
-              {
-                backgroundColor: cardColor,
-                borderColor,
-              },
+              sharedStyles.controlSurface,
             ]}
           >
             <View style={sharedStyles.recommendedToggleLabel}>
               <Ionicons
-                color={isDarkMode ? '#c4a7ff' : tintColor}
+                color={colors.interactive}
                 name="sparkles-outline"
                 size={20}
               />
@@ -65,10 +50,12 @@ export function RecommendedArticlesFilter({
             </View>
             <Switch
               onValueChange={onChangeRecommendedArticles}
-              thumbColor={recommendedArticles ? tintColor : '#f4f3f4'}
+              thumbColor={
+                recommendedArticles ? colors.interactive : colors.surface
+              }
               trackColor={{
-                false: '#767577',
-                true: selectedCategoryBackground,
+                false: colors.borderStrong,
+                true: colors.selection,
               }}
               value={recommendedArticles}
             />
@@ -76,16 +63,10 @@ export function RecommendedArticlesFilter({
           <Pressable
             accessibilityLabel={t('articles.recommendedInfo.openAction')}
             onPress={openRecommendedInfo}
-            style={[
-              styles.infoButton,
-              {
-                backgroundColor: cardColor,
-                borderColor,
-              },
-            ]}
+            style={[styles.infoButton, sharedStyles.controlSurface]}
           >
             <Ionicons
-              color={isDarkMode ? '#c4a7ff' : tintColor}
+              color={colors.interactive}
               name="information-circle-outline"
               size={22}
             />

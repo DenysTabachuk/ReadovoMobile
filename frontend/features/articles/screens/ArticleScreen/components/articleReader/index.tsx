@@ -1,3 +1,4 @@
+import { useMemo, useCallback, useState } from 'react';
 import { TranslationSelectionProgress } from './components/translationSelectionProgress';
 import { Cta } from '@/components/cta';
 import { IconSymbol } from '@/components/iconSymbol';
@@ -5,15 +6,13 @@ import { ScreenContainer } from '@/components/screenContainer';
 import { ScrollToTopButton } from '@/components/scrollToTopButton';
 import { ThemedText } from '@/components/themedText';
 import { Spacing } from '@/constants/spacing';
-import { Colors } from '@/constants/theme';
 import type { WikipediaArticleDetail } from '@/features/articles/api';
 import { useAuth } from '@/features/auth';
 import { WordTranslationSheet } from '@/features/translations';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { useThemeColor } from '@/hooks/use-theme-color';
+import { useTheme } from '@/hooks/use-theme';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack } from 'expo-router';
-import { useCallback, useState } from 'react';
+
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, View } from 'react-native';
 import { SCROLL_TO_TOP_THRESHOLD } from '../../constants';
@@ -28,7 +27,7 @@ import { ArticleReaderHeader } from './components/articleReaderHeader';
 import { ArticleTextSettings } from './components/articleTextSettings';
 import { FloatingSpeechControls } from './components/floatingSpeechControls';
 import { InteractiveArticleText } from './components/interactiveArticleText';
-import { styles } from './styles';
+import { createStyles } from './styles';
 type Props = { article: WikipediaArticleDetail };
 
 const ARTICLE_CTA_NAVIGATION_OFFSET = 160;
@@ -37,10 +36,8 @@ const CURRENT_SPEECH_BUTTON_SPACING = 64;
 export function ArticleReader({ article }: Props) {
   const { t } = useTranslation();
   const { currentUser } = useAuth();
-  const colorScheme = useColorScheme();
-  const iconColor = useThemeColor({}, 'icon');
-  const tintColor = Colors[colorScheme ?? 'light'].tint;
-  const savedAccentColor = colorScheme === 'dark' ? '#c4a7ff' : tintColor;
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const translationController = useArticleTranslation();
   const {
     selectedTokens,
@@ -105,7 +102,9 @@ export function ArticleReader({ article }: Props) {
         style={styles.headerIconButton}
       >
         <IconSymbol
-          color={isCurrentArticleSaved ? savedAccentColor : iconColor}
+          color={
+            isCurrentArticleSaved ? colors.interactive : colors.textSecondary
+          }
           name={isCurrentArticleSaved ? 'bookmark.fill' : 'bookmark'}
           size={24}
         />
@@ -114,9 +113,9 @@ export function ArticleReader({ article }: Props) {
     [
       isSaving,
       handleToggleSavedArticle,
-      iconColor,
+      colors.textSecondary,
       isCurrentArticleSaved,
-      savedAccentColor,
+      colors.interactive,
       t,
     ],
   );
@@ -130,10 +129,7 @@ export function ArticleReader({ article }: Props) {
           }}
         />
         <View style={styles.centerState}>
-          <ActivityIndicator
-            color={Colors[colorScheme ?? 'light'].tint}
-            size="large"
-          />
+          <ActivityIndicator color={colors.interactive} size="large" />
           <ThemedText type="body">
             {pendingTransformationType === 'adaptation'
               ? t('article.adapting')
@@ -210,7 +206,7 @@ export function ArticleReader({ article }: Props) {
           ]}
         >
           <Ionicons
-            color="#11181C"
+            color={colors.onHighlight}
             name={currentSpeechButtonIconName}
             size={24}
           />

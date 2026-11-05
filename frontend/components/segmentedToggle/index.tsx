@@ -1,9 +1,10 @@
+import { useMemo } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { ThemedText } from '@/components/themedText';
-import { useThemeColor } from '@/hooks/use-theme-color';
+import { useTheme } from '@/hooks/use-theme';
 
-import { styles } from './styles';
+import { createStyles } from './styles';
 
 type SegmentedToggleOption<T extends string> = {
   label: string;
@@ -11,42 +12,43 @@ type SegmentedToggleOption<T extends string> = {
 };
 
 type SegmentedToggleProps<T extends string> = {
+  disabled?: boolean;
   onChange: (value: T) => void;
   options: SegmentedToggleOption<T>[];
   selectedValue: T;
 };
 
 export function SegmentedToggle<T extends string>({
+  disabled = false,
   onChange,
   options,
   selectedValue,
 }: SegmentedToggleProps<T>) {
-  const containerColor = useThemeColor(
-    { dark: '#1f2326', light: '#f3f4f6' },
-    'background',
-  );
-  const activeOptionColor = '#0a7ea4';
-  const activeTextColor = '#ffffff';
-  const inactiveTextColor = useThemeColor({}, 'text');
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   return (
-    <View style={[styles.container, { backgroundColor: containerColor }]}>
+    <View style={styles.container}>
       {options.map((option) => {
         const isActive = option.value === selectedValue;
 
         return (
           <Pressable
+            accessibilityRole="radio"
+            accessibilityState={{ selected: isActive, disabled }}
+            disabled={disabled}
             key={option.value}
-            onPress={() => onChange(option.value)}
+            onPress={disabled ? undefined : () => onChange(option.value)}
             style={[
               styles.option,
-              isActive ? { backgroundColor: activeOptionColor } : null,
+              isActive ? styles.activeOption : null,
+              disabled ? styles.disabledOption : null,
             ]}
           >
             <ThemedText
               style={[
                 styles.text,
-                { color: isActive ? activeTextColor : inactiveTextColor },
+                isActive ? styles.activeText : styles.inactiveText,
               ]}
               type="bodyStrong"
             >

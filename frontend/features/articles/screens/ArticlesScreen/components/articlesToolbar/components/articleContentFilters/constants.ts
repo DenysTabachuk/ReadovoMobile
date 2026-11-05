@@ -1,75 +1,76 @@
+import { palette } from '@/constants/palette';
 import type { Ionicons } from '@expo/vector-icons';
 import type { ComponentProps } from 'react';
 import type { ArticleCategoryFilter } from '../../types';
 type CategoryOption = {
-  darkIconColor: string;
+  iconColor: string;
   icon: ComponentProps<typeof Ionicons>['name'];
   labelKey: string;
   value: ArticleCategoryFilter;
 };
 export const ARTICLE_CATEGORY_OPTIONS: CategoryOption[] = [
   {
-    darkIconColor: '#c4a7ff',
+    iconColor: palette.purple300,
     icon: 'sparkles-outline',
     labelKey: 'articles.filters.category.all',
     value: 'all',
   },
   {
-    darkIconColor: '#a5b4fc',
+    iconColor: palette.blue300,
     icon: 'planet-outline',
     labelKey: 'articles.filters.category.space',
     value: 'space',
   },
   {
-    darkIconColor: '#f0abfc',
+    iconColor: palette.pink300,
     icon: 'football-outline',
     labelKey: 'articles.filters.category.sports',
     value: 'sports',
   },
   {
-    darkIconColor: '#f9a8d4',
+    iconColor: palette.pink300,
     icon: 'restaurant-outline',
     labelKey: 'articles.filters.category.food',
     value: 'food',
   },
   {
-    darkIconColor: '#93c5fd',
+    iconColor: palette.blue300,
     icon: 'map-outline',
     labelKey: 'articles.filters.category.geography',
     value: 'geography',
   },
   {
-    darkIconColor: '#c4b5fd',
+    iconColor: palette.purple300,
     icon: 'person-outline',
     labelKey: 'articles.filters.category.biography',
     value: 'biography',
   },
   {
-    darkIconColor: '#f5d0fe',
+    iconColor: palette.pink300,
     icon: 'time-outline',
     labelKey: 'articles.filters.category.history',
     value: 'history',
   },
   {
-    darkIconColor: '#86efac',
+    iconColor: palette.green300,
     icon: 'flask-outline',
     labelKey: 'articles.filters.category.science',
     value: 'science',
   },
   {
-    darkIconColor: '#67e8f9',
+    iconColor: palette.cyan300,
     icon: 'hardware-chip-outline',
     labelKey: 'articles.filters.category.technology',
     value: 'technology',
   },
   {
-    darkIconColor: '#bef264',
+    iconColor: palette.green300,
     icon: 'leaf-outline',
     labelKey: 'articles.filters.category.nature',
     value: 'nature',
   },
   {
-    darkIconColor: '#fbcfe8',
+    iconColor: palette.pink300,
     icon: 'color-palette-outline',
     labelKey: 'articles.filters.category.culture',
     value: 'culture',

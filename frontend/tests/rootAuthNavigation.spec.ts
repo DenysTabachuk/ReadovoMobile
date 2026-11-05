@@ -81,9 +81,6 @@ jest.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (key: string) => key }),
 }));
 jest.mock('@/devtools/reactotron', () => ({}));
-jest.mock('@/hooks/use-color-scheme', () => ({
-  useColorScheme: () => 'light',
-}));
 jest.mock('@/components/fullScreenLoader', () => ({
   FullScreenLoader: () => createElement('div', { id: 'auth-loader' }),
 }));
@@ -101,6 +98,7 @@ jest.mock('@/features/auth', () => ({
 jest.mock('@/providers/preferencesProvider', () => ({
   PreferencesProvider: ({ children }: PropsWithChildren) => children,
   usePreferences: () => ({
+    colorScheme: 'light',
     isLoadingPreferences: mockLoadingPreferences,
     hasCompletedOnboarding: mockCompletedOnboarding,
   }),

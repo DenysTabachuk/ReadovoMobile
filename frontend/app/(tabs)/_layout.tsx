@@ -4,28 +4,24 @@ import { useTranslation } from 'react-i18next';
 
 import { HapticTab } from '@/components/hapticTab';
 import { IconSymbol } from '@/components/iconSymbol';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useTheme } from '@/hooks/use-theme';
 
 export default function TabLayout() {
   const { t } = useTranslation();
-  const colorScheme = useColorScheme() ?? 'light';
+  const { colors } = useTheme();
 
   return (
     <Tabs
       screenOptions={{
         sceneStyle: {
-          backgroundColor: Colors[colorScheme].background,
+          backgroundColor: colors.background,
         },
-        tabBarActiveTintColor: Colors[colorScheme].tint,
-        tabBarInactiveTintColor: Colors[colorScheme].tabIconDefault,
+        tabBarActiveTintColor: colors.interactive,
+        tabBarInactiveTintColor: colors.textSecondary,
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: Colors[colorScheme].background,
-          borderTopColor:
-            colorScheme === 'dark'
-              ? 'rgba(255, 255, 255, 0.08)'
-              : 'rgba(17, 24, 28, 0.08)',
+          backgroundColor: colors.background,
+          borderTopColor: colors.borderSubtle,
           borderTopWidth: 1,
           elevation: 0,
           height: 60,

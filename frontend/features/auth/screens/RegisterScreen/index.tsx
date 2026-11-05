@@ -1,5 +1,7 @@
+import { useTheme } from '@/hooks/use-theme';
+import { useMemo, useState } from 'react';
 import { getAuthErrorMessageKey } from '../../utils/getAuthErrorMessageKey';
-import { useState } from 'react';
+
 import { Pressable, View } from 'react-native';
 import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -14,13 +16,15 @@ import { registerUser, resendVerificationCode, verifyEmail } from '../../api';
 import { PasswordTextInput } from '../../components/passwordTextInput';
 import { VerificationCodeModal } from '../../components/verificationCodeModal';
 
-import { styles } from './styles';
+import { createStyles } from './styles';
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const minPasswordLength = 8;
 const verificationCodePattern = /^\d{6}$/;
 
 export default function RegisterScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { t } = useTranslation();
   const { showBanner } = useBanner();
   const [email, setEmail] = useState('');

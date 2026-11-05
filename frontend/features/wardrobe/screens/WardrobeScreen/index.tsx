@@ -1,3 +1,4 @@
+import { useTheme } from '@/hooks/use-theme';
 import { getMascotErrorMessageKey } from '@/features/mascot';
 import { Image } from 'expo-image';
 import { useMemo, useState } from 'react';
@@ -17,7 +18,6 @@ import { Button } from '@/components/button';
 import { ModalSheet } from '@/components/modalSheet';
 import { ScreenContainer } from '@/components/screenContainer';
 import { ThemedText } from '@/components/themedText';
-import { Colors } from '@/constants/theme';
 import { useAchievementsProfileQuery } from '@/features/achievements';
 import {
   getMascotCatalogItem,
@@ -32,15 +32,15 @@ import {
   type MascotAccessorySlot,
   type MascotCatalogItem,
 } from '@/features/mascot';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 
-import { styles } from './styles';
+import { createStyles } from './styles';
 
 export default function WardrobeScreen() {
+  const { colors } = useTheme();
   const { t } = useTranslation();
   const { showBanner } = useBanner();
-  const colorScheme = useColorScheme();
-  const palette = Colors[colorScheme ?? 'light'];
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const [selectedSlot, setSelectedSlot] = useState<MascotAccessorySlot>('head');
   const [purchaseItem, setPurchaseItem] = useState<MascotCatalogItem | null>(
     null,
@@ -165,7 +165,7 @@ export default function WardrobeScreen() {
     return (
       <ScreenContainer>
         <View style={styles.previewBlock}>
-          <ActivityIndicator color={palette.tint} size="large" />
+          <ActivityIndicator color={colors.interactive} size="large" />
           <ThemedText>{t('mascot.loading')}</ThemedText>
         </View>
       </ScreenContainer>
@@ -290,7 +290,7 @@ export default function WardrobeScreen() {
           <RefreshControl
             onRefresh={handleRefresh}
             refreshing={isRefreshing}
-            tintColor={palette.tint}
+            tintColor={colors.interactive}
           />
         }
         renderItem={renderItem}

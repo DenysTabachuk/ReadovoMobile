@@ -1,15 +1,17 @@
-import { useEffect, useRef } from 'react';
+import { useMemo, useEffect, useRef } from 'react';
+
 import { Animated, View } from 'react-native';
-import { useThemeColor } from '@/hooks/use-theme-color';
+import { useTheme } from '@/hooks/use-theme';
 import { TRANSLATION_SHEET_OPEN_DELAY_MS } from '../../../../constants';
-import { styles } from './styles';
+import { createStyles } from './styles';
 
 type TranslationSelectionProgressProps = { selectionKey: string };
 
 export function TranslationSelectionProgress({
   selectionKey,
 }: TranslationSelectionProgressProps) {
-  const tintColor = useThemeColor({}, 'tint');
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const progress = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     progress.setValue(0);
@@ -28,7 +30,6 @@ export function TranslationSelectionProgress({
         style={[
           styles.translationProgressFill,
           {
-            backgroundColor: tintColor,
             width: progress.interpolate({
               inputRange: [0, 1],
               outputRange: ['0%', '100%'],

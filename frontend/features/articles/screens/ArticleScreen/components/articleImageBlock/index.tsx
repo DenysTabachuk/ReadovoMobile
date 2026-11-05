@@ -24,12 +24,10 @@ import Animated, {
 
 import { ThemedText } from '@/components/themedText';
 import { ThemedView } from '@/components/themedView';
-import { Colors } from '@/constants/theme';
 import { Spacing } from '@/constants/spacing';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { useThemeColor } from '@/hooks/use-theme-color';
+import { useTheme } from '@/hooks/use-theme';
 
-import { styles } from './styles';
+import { createStyles } from './styles';
 
 type ArticleImageBlockProps = {
   alt?: string;
@@ -51,8 +49,7 @@ export function ArticleImageBlock({
 }: ArticleImageBlockProps) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
-  const colorScheme = useColorScheme() ?? 'light';
-  const isDarkTheme = colorScheme === 'dark';
+  const { colors, isDark } = useTheme();
   const [hasLoadError, setHasLoadError] = useState(false);
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerLoadError, setViewerLoadError] = useState(false);
@@ -63,14 +60,6 @@ export function ArticleImageBlock({
   const viewerTranslateY = useSharedValue(0);
   const savedViewerTranslateX = useSharedValue(0);
   const savedViewerTranslateY = useSharedValue(0);
-  const borderColor = useThemeColor(
-    { dark: 'rgba(255, 255, 255, 0.16)', light: 'rgba(17, 24, 28, 0.12)' },
-    'icon',
-  );
-  const fallbackBackgroundColor = useThemeColor(
-    { dark: 'rgba(255, 255, 255, 0.06)', light: 'rgba(17, 24, 28, 0.04)' },
-    'background',
-  );
   const fallbackText = useMemo(() => {
     const normalizedCaption = caption?.trim();
     const normalizedAlt = alt?.trim();
@@ -89,12 +78,7 @@ export function ArticleImageBlock({
     Platform.OS === 'android'
       ? Math.max(insets.bottom, ANDROID_NAVIGATION_BAR_FALLBACK_INSET)
       : insets.bottom;
-  const viewerBackgroundColor = Colors[colorScheme].background;
-  const viewerForegroundColor = isDarkTheme ? '#ffffff' : '#11181C';
-  const viewerCloseButtonColor = isDarkTheme
-    ? 'rgba(0, 0, 0, 0.48)'
-    : 'rgba(255, 255, 255, 0.82)';
-  const appBackgroundColor = Colors[colorScheme].background;
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const resetViewerTransform = useCallback(() => {
     viewerScale.value = MIN_VIEWER_SCALE;
     savedViewerScale.value = MIN_VIEWER_SCALE;
@@ -217,14 +201,14 @@ export function ArticleImageBlock({
       return;
     }
 
-    void NavigationBar.setBackgroundColorAsync(viewerBackgroundColor);
-    void NavigationBar.setButtonStyleAsync(isDarkTheme ? 'light' : 'dark');
+    void NavigationBar.setBackgroundColorAsync(colors.background);
+    void NavigationBar.setButtonStyleAsync(isDark ? 'light' : 'dark');
 
     return () => {
-      void NavigationBar.setBackgroundColorAsync(appBackgroundColor);
-      void NavigationBar.setButtonStyleAsync(isDarkTheme ? 'light' : 'dark');
+      void NavigationBar.setBackgroundColorAsync(colors.background);
+      void NavigationBar.setButtonStyleAsync(isDark ? 'light' : 'dark');
     };
-  }, [appBackgroundColor, isDarkTheme, viewerBackgroundColor, viewerOpen]);
+  }, [colors.background, isDark, viewerOpen]);
 
   const handleOpenViewer = useCallback(() => {
     setViewerLoadError(false);
@@ -243,11 +227,7 @@ export function ArticleImageBlock({
   if (!src || hasLoadError) {
     return (
       <ThemedView style={styles.container}>
-        <ThemedView
-          darkColor={fallbackBackgroundColor}
-          lightColor={fallbackBackgroundColor}
-          style={[styles.fallback, { borderColor }]}
-        >
+        <ThemedView style={styles.fallback}>
           <ThemedText style={styles.fallbackTitle} type="bodyStrong">
             {t('article.imageUnavailable')}
           </ThemedText>
@@ -297,37 +277,22 @@ export function ArticleImageBlock({
         transparent
         visible={viewerOpen}
       >
-        <GestureHandlerRootView
-          style={[
-            styles.viewerRoot,
-            { backgroundColor: viewerBackgroundColor },
-          ]}
-        >
-          <View
-            style={[styles.viewer, { backgroundColor: viewerBackgroundColor }]}
-          >
+        <GestureHandlerRootView style={styles.viewerRoot}>
+          <View style={styles.viewer}>
             <Pressable
               hitSlop={12}
               onPress={handleCloseViewer}
-              style={[
-                styles.viewerCloseButton,
-                { backgroundColor: viewerCloseButtonColor },
-              ]}
+              style={styles.viewerCloseButton}
             >
-              <Ionicons color={viewerForegroundColor} name="close" size={28} />
+              <Ionicons color={colors.text} name="close" size={28} />
             </Pressable>
             {!viewerLoaded && !viewerLoadError ? (
               <View style={styles.viewerLoading}>
-                <ActivityIndicator color={viewerForegroundColor} size="large" />
+                <ActivityIndicator color={colors.text} size="large" />
               </View>
             ) : null}
             {viewerLoadError ? (
-              <ThemedText
-                darkColor={viewerForegroundColor}
-                lightColor={viewerForegroundColor}
-                style={styles.viewerFallbackTitle}
-                type="bodyStrong"
-              >
+              <ThemedText style={styles.viewerFallbackTitle} type="bodyStrong">
                 {t('article.imageUnavailable')}
               </ThemedText>
             ) : (
@@ -347,8 +312,6 @@ export function ArticleImageBlock({
             )}
             {caption ? (
               <ThemedText
-                darkColor={viewerForegroundColor}
-                lightColor={viewerForegroundColor}
                 numberOfLines={3}
                 style={[
                   styles.viewerCaption,

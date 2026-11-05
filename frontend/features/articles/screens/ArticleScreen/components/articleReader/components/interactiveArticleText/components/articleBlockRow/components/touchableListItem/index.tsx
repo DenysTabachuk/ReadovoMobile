@@ -1,10 +1,12 @@
-import { memo } from 'react';
+import { useTheme } from '@/hooks/use-theme';
+import { useMemo, memo } from 'react';
+
 import { type TouchableListItemProps } from './types';
 import { View } from 'react-native';
 import { ThemedText } from '@/components/themedText';
 import { TouchableInlineText } from '../touchableInlineText';
 import { areTouchableListItemPropsEqual } from './utils/areTouchableListItemPropsEqual';
-import { styles } from '../../styles';
+import { createStyles } from '../../styles';
 
 export const TouchableListItem = memo(function TouchableListItem({
   item,
@@ -15,6 +17,8 @@ export const TouchableListItem = memo(function TouchableListItem({
   selectedTokenKeys,
   speakingTokenKey,
 }: TouchableListItemProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   return (
     <View style={styles.listItem}>
       <ThemedText style={styles.listBullet} type="paragraph">

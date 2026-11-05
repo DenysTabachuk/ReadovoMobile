@@ -10,7 +10,7 @@ import { useBanner } from '@/components/banner';
 import { FormTextInput } from '@/components/formTextInput';
 import { ScreenContainer } from '@/components/screenContainer';
 import { ThemedText } from '@/components/themedText';
-import { useThemeColor } from '@/hooks/use-theme-color';
+import { useTheme } from '@/hooks/use-theme';
 
 import { requestPasswordReset, verifyPasswordResetCode } from '../../api';
 import { VerificationCodeModal } from '../../components/verificationCodeModal';
@@ -27,7 +27,7 @@ function getParamValue(param: string | string[] | undefined): string {
 export default function ForgotPasswordScreen() {
   const { t } = useTranslation();
   const { showBanner } = useBanner();
-  const iconColor = useThemeColor({}, 'icon');
+  const { colors } = useTheme();
   const params = useLocalSearchParams<{ email?: string }>();
   const [email, setEmail] = useState(getParamValue(params.email));
   const [pendingEmail, setPendingEmail] = useState('');
@@ -171,7 +171,7 @@ export default function ForgotPasswordScreen() {
             router.replace({ pathname: '/login', params: { email } })
           }
         >
-          <Ionicons name="arrow-back" size={24} color={iconColor} />
+          <Ionicons name="arrow-back" size={24} color={colors.textSecondary} />
         </Pressable>
 
         <View style={styles.textBlock}>

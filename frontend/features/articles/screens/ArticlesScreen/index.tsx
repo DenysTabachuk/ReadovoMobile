@@ -28,15 +28,13 @@ import { ScreenContainer } from '@/components/screenContainer';
 import { ScrollToTopButton } from '@/components/scrollToTopButton';
 import { ThemedText } from '@/components/themedText';
 import { Spacing } from '@/constants/spacing';
-import { Colors } from '@/constants/theme';
 import {
   ArticleCard,
   isArticleRecentlyOpened,
   isArticleSaved,
 } from '@/features/articles';
 import { type WikipediaArticle } from '@/features/articles/api';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { useThemeColor } from '@/hooks/use-theme-color';
+import { useTheme } from '@/hooks/use-theme';
 
 import { ArticlesToolbar } from './components/articlesToolbar';
 import { styles } from './styles';
@@ -45,11 +43,7 @@ const SCROLL_TO_TOP_BOTTOM_OFFSET = 72;
 
 export default function ArticlesScreen() {
   const { t } = useTranslation();
-  const colorScheme = useColorScheme();
-  const iconColor = useThemeColor({}, 'icon');
-  const tintColor = Colors[colorScheme ?? 'light'].tint;
-  const savedAccentColor = colorScheme === 'dark' ? '#c4a7ff' : tintColor;
-  const borderColor = colorScheme === 'dark' ? '#2d3336' : '#d0d7de';
+  const { theme, colors } = useTheme();
   const {
     searchValue,
     debouncedSearchValue,
@@ -248,30 +242,29 @@ export default function ArticlesScreen() {
       return (
         <ArticleCard
           article={item}
-          borderColor={borderColor}
-          colorScheme={colorScheme}
+          borderColor={colors.border}
           expandedAdaptations={Boolean(expandedAdaptationArticleIds[item.id])}
-          iconColor={iconColor}
+          iconColor={colors.textSecondary}
           isSaved={isSaved}
           onOpen={openArticle}
           onToggleAdaptations={toggleAdaptations}
           onToggleSaved={toggleSavedArticle}
-          savedAccentColor={savedAccentColor}
-          tintColor={tintColor}
+          savedAccentColor={colors.interactive}
+          tintColor={colors.interactive}
           wasOpened={wasOpened}
         />
       );
     },
     [
-      borderColor,
-      colorScheme,
+      colors.border,
+      theme,
       expandedAdaptationArticleIds,
-      iconColor,
+      colors.textSecondary,
       openArticle,
       recentArticles,
       savedArticles,
-      savedAccentColor,
-      tintColor,
+      colors.interactive,
+      colors.interactive,
       toggleAdaptations,
       toggleSavedArticle,
     ],
@@ -281,10 +274,7 @@ export default function ArticlesScreen() {
     return (
       <ScreenContainer>
         <View style={styles.centerState}>
-          <ActivityIndicator
-            color={Colors[colorScheme ?? 'light'].tint}
-            size="large"
-          />
+          <ActivityIndicator color={colors.interactive} size="large" />
           <ThemedText type="body">{t('articles.loading')}</ThemedText>
         </View>
       </ScreenContainer>
@@ -381,7 +371,7 @@ export default function ArticlesScreen() {
           personalFilter !== null ? undefined : (
             <RefreshControl
               refreshing={isManualRefresh}
-              tintColor={Colors[colorScheme ?? 'light'].tint}
+              tintColor={colors.interactive}
               onRefresh={handleRefresh}
             />
           )

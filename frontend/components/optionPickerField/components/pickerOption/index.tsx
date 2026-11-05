@@ -1,11 +1,10 @@
+import { useMemo } from 'react';
 import { Pressable, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ThemedText } from '@/components/themedText';
-import { useThemeColor } from '@/hooks/use-theme-color';
+import { useTheme } from '@/hooks/use-theme';
 import type { PickerOptionValue } from '../../types';
-import { styles } from './styles';
-
-const STATUS_ICON_SIZE = 16;
+import { createStyles } from './styles';
 
 type PickerOptionProps<T extends string> = {
   isSelected: boolean;
@@ -13,27 +12,15 @@ type PickerOptionProps<T extends string> = {
   option: PickerOptionValue<T>;
 };
 
+const STATUS_ICON_SIZE = 16;
+
 export function PickerOption<T extends string>({
   isSelected,
   onSelect,
   option,
 }: PickerOptionProps<T>) {
-  const defaultBorderColor = useThemeColor(
-    { dark: '#3a4348', light: '#d0d7de' },
-    'icon',
-  );
-  const selectedBackgroundColor = useThemeColor(
-    { dark: '#123847', light: '#e8f5f9' },
-    'background',
-  );
-  const selectedBorderColor = useThemeColor(
-    { dark: '#67c6e3', light: '#0a7ea4' },
-    'tint',
-  );
-  const badgeColor = useThemeColor(
-    { dark: '#7ee0a0', light: '#1f8a4c' },
-    'tint',
-  );
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const badgeLabels =
     option.badgeLabels ?? (option.badgeLabel ? [option.badgeLabel] : []);
@@ -44,14 +31,8 @@ export function PickerOption<T extends string>({
       onPress={option.disabled ? undefined : () => onSelect(option.value)}
       style={[
         styles.optionButton,
-        { borderColor: defaultBorderColor },
         option.disabled ? styles.optionButtonDisabled : null,
-        isSelected
-          ? {
-              backgroundColor: selectedBackgroundColor,
-              borderColor: selectedBorderColor,
-            }
-          : null,
+        isSelected ? styles.optionButtonSelected : null,
       ]}
     >
       <View style={styles.optionContent}>
@@ -73,25 +54,13 @@ export function PickerOption<T extends string>({
           {badgeLabels.length > 0 ? (
             <View style={styles.optionBadges}>
               {badgeLabels.map((badgeLabel) => (
-                <View
-                  key={badgeLabel}
-                  style={[
-                    styles.optionBadge,
-                    {
-                      backgroundColor: selectedBackgroundColor,
-                      borderColor: badgeColor,
-                    },
-                  ]}
-                >
+                <View key={badgeLabel} style={styles.optionBadge}>
                   <Ionicons
-                    color={badgeColor}
+                    color={colors.success}
                     name="checkmark-circle"
                     size={STATUS_ICON_SIZE}
                   />
-                  <ThemedText
-                    type="description"
-                    style={[styles.optionBadgeText, { color: badgeColor }]}
-                  >
+                  <ThemedText type="description" style={styles.optionBadgeText}>
                     {badgeLabel}
                   </ThemedText>
                 </View>
@@ -105,16 +74,10 @@ export function PickerOption<T extends string>({
               <View
                 accessibilityLabel={statusIcon.accessibilityLabel}
                 key={`${option.value}-${statusIcon.name}-${statusIcon.accessibilityLabel}`}
-                style={[
-                  styles.statusIconBadge,
-                  {
-                    backgroundColor: selectedBackgroundColor,
-                    borderColor: badgeColor,
-                  },
-                ]}
+                style={styles.statusIconBadge}
               >
                 <Ionicons
-                  color={badgeColor}
+                  color={colors.success}
                   name={statusIcon.name}
                   size={STATUS_ICON_SIZE}
                 />

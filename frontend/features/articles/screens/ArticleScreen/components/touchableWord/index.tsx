@@ -1,8 +1,9 @@
-import { memo, useCallback } from 'react';
+import { useTheme } from '@/hooks/use-theme';
+import { useMemo, memo, useCallback } from 'react';
 
 import { ThemedText } from '@/components/themedText';
 
-import { styles } from './styles';
+import { createStyles } from './styles';
 
 type TouchableWordProps = {
   bold?: boolean;
@@ -38,6 +39,8 @@ export const TouchableWord = memo(function TouchableWord({
   tokenKey,
   word,
 }: TouchableWordProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const handlePress = useCallback(() => {
     onPress({
       context: contextSentence ?? '',

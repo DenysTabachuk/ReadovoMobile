@@ -1,3 +1,4 @@
+import { palette } from '@/constants/palette';
 import { StyleSheet } from 'react-native';
 
 import { Spacing } from '@/constants/spacing';
@@ -5,7 +6,7 @@ import { Spacing } from '@/constants/spacing';
 export const styles = StyleSheet.create({
   button: {
     borderRadius: 999,
-    shadowColor: '#000000',
+    shadowColor: palette.black,
     shadowOffset: {
       height: 4,
       width: 0,

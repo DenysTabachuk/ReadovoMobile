@@ -1,5 +1,7 @@
+import { useTheme } from '@/hooks/use-theme';
+import { useMemo, useEffect, useState } from 'react';
+import { palette } from '@/constants/palette';
 import { getAuthErrorMessageKey } from '../../utils/getAuthErrorMessageKey';
-import { useEffect, useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -17,10 +19,10 @@ import { GoogleSignInError } from '../../googleAuth/googleSignInError';
 import { PasswordTextInput } from '../../components/passwordTextInput';
 import { useAuth } from '../../providers/authProvider';
 
-import { styles } from './styles';
+import { createStyles } from './styles';
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const GOOGLE_ICON_COLOR = '#4285F4';
+const GOOGLE_ICON_COLOR = palette.blue500;
 const GOOGLE_ICON_SIZE = 32;
 
 function getParamValue(param: string | string[] | undefined): string {
@@ -28,6 +30,9 @@ function getParamValue(param: string | string[] | undefined): string {
 }
 
 export default function LoginScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const { t } = useTranslation();
   const { showBanner } = useBanner();
   const { rememberMePreference, setRememberMePreference, signIn } = useAuth();
