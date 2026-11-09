@@ -1,8 +1,8 @@
 # Vocabulary: first mobile lesson
 
-Status: steps 1 and 2 and the first exercise format in step 3 are implemented.
-Picture practice awaits product review; remaining exercise formats and steps 4–8
-are not started.
+Status: steps 1 and 2 and the word-to-picture and audio-to-picture formats in
+step 3 are implemented. Audio practice awaits product review; sentence-gap
+practice and steps 4–8 are not started.
 
 ## Goal
 
@@ -124,6 +124,32 @@ from an unanswered first question. Reviewed Ukrainian/light and English/dark.
 Google sign-in with the existing emulator account worked; use that route for
 future local visual checks when signed out. Native screen-reader output and
 additional device sizes remain unverified. No staged files were present.
+
+Audio-to-picture is available as a separate third step in the lesson overview
+and through the word-to-picture result. It reuses the questions, checking and
+result UI with a different prompt: each focused question automatically plays
+the word and provides a compact inline button for unlimited replay. The English
+answer stays hidden until checking. Existing device
+speech handles playback, errors and cancellation when leaving the question.
+The sample still contains three words and keeps no persisted progress.
+
+The word and audio exercises have separate screen components. They compose the
+feature-owned `PicturePractice` UI with their own prompt; only the word screen
+provides the listening transition on results. Shared options, feedback, results
+and attempt state have no exercise-mode flag. Audio playback and its tests belong
+to the audio screen. After this refactor, frontend checks still pass (814 tests);
+the emulator walkthrough confirmed word practice, its result and the audio entry.
+
+Verification: `npm run ci:frontend` passed (155 suites, 814 tests). Added tests
+cover autoplay, replay, stable playback across rerenders, hidden prompt
+text/accessibility labels, question cleanup and retry after a speech error.
+Android emulator checks confirmed the direct overview entry and compact replay
+control, as well as the listening
+screen, replay control, hidden word, correct/incorrect feedback, question
+transitions and a 2/3 result with Backpack listed for review in Ukrainian/light.
+Audio output quality and a full review in both
+themes/locales remain device/product checks. `npm run check:staged` passed for
+the two staged locale files; the implementation remains unstaged.
 
 - Begin with word-to-picture selection and its correct/incorrect feedback.
 - Review audio-to-picture and sentence-gap formats in subsequent small changes

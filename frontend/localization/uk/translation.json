@@ -38,6 +38,14 @@
     }
   },
   "vocabulary": {
+    "audio": {
+      "title": "Практика на слух",
+      "sample": "Слухайте й обирайте · Запитань: {{count}}",
+      "choosePicture": "Послухайте слово й виберіть картинку",
+      "listenAgain": "Послухати ще раз",
+      "replayHint": "Слухайте стільки разів, скільки потрібно.",
+      "start": "Потренуватися на слух"
+    },
     "practice": {
       "title": "Швидка практика",
       "sample": "Слова й картинки · Запитань: {{count}}",
@@ -108,6 +116,7 @@
       "firstWords": "Backpack, book, pencil та інші",
       "quickPractice": "Швидка практика",
       "matchPictures": "Зіставте слова й картинки",
+      "matchAudio": "Послухайте й виберіть картинку",
       "learnMore": "Ще {{count}} слів",
       "moreWords": "Chair, table, umbrella та інші",
       "finalChallenge": "Фінальне випробування",

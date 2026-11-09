@@ -12,6 +12,14 @@ import { LessonSummary } from '../../components/lessonSummary';
 import { DEMO_LESSONS } from '../../fixtures/lessons';
 import { createStyles } from './styles';
 
+const PREVIEW_STAGE_ROUTES = {
+  'learn-first': '/(tabs)/(learning)/vocabulary/words/[lessonId]',
+  'practise-first': '/(tabs)/(learning)/vocabulary/practice/[lessonId]',
+  'listen-first': '/(tabs)/(learning)/vocabulary/listening/[lessonId]',
+  'learn-second': undefined,
+  'practise-all': undefined,
+} as const;
+
 export default function VocabularyLessonScreen() {
   const { lessonId } = useLocalSearchParams();
   const { t } = useTranslation();
@@ -52,63 +60,65 @@ export default function VocabularyLessonScreen() {
         />
       </View>
       <View style={styles.stages}>
-        {lesson.stages.map((stage, index) => (
-          <Pressable
-            key={stage.id}
-            accessibilityRole="button"
-            accessibilityLabel={t(stage.titleKey, { count: stage.wordCount })}
-            disabled={index > 1}
-            accessibilityState={{ disabled: index > 1 }}
-            onPress={() =>
-              router.push({
-                pathname:
-                  stage.id === 'practise-first'
-                    ? '/(tabs)/(learning)/vocabulary/practice/[lessonId]'
-                    : '/(tabs)/(learning)/vocabulary/words/[lessonId]',
-                params: { lessonId: lesson.id },
-              })
-            }
-            style={[styles.stage, index === 0 && styles.firstStage]}
-          >
-            <View
-              style={[
-                styles.stageNumber,
-                index === 0 && styles.firstStageNumber,
-              ]}
+        {lesson.stages.map((stage, index) => {
+          const pathname = PREVIEW_STAGE_ROUTES[stage.id];
+          const isAvailable = pathname !== undefined;
+          return (
+            <Pressable
+              key={stage.id}
+              accessibilityRole="button"
+              accessibilityLabel={t(stage.titleKey, { count: stage.wordCount })}
+              disabled={!isAvailable}
+              accessibilityState={{ disabled: !isAvailable }}
+              onPress={() => {
+                if (!pathname) return;
+                router.push({
+                  pathname,
+                  params: { lessonId: lesson.id },
+                });
+              }}
+              style={[styles.stage, index === 0 && styles.firstStage]}
             >
-              <ThemedText type="sectionTitle" style={styles.numberText}>
-                {index + 1}
-              </ThemedText>
-            </View>
-            <MaterialIcons
-              name={stage.icon}
-              size={26}
-              color={colors.interactive}
-              accessible={false}
-            />
-            <View style={styles.stageText}>
-              <ThemedText type="bodyStrong">
-                {t(stage.titleKey, { count: stage.wordCount })}
-              </ThemedText>
-              <ThemedText style={styles.secondary}>
-                {t(stage.descriptionKey, { count: stage.wordCount })}
-              </ThemedText>
-              {index <= 1 && (
-                <ThemedText style={styles.upcoming}>
-                  {t('vocabulary.cards.previewAvailable')}
+              <View
+                style={[
+                  styles.stageNumber,
+                  index === 0 && styles.firstStageNumber,
+                ]}
+              >
+                <ThemedText type="sectionTitle" style={styles.numberText}>
+                  {index + 1}
                 </ThemedText>
-              )}
-            </View>
-            {index > 1 && (
+              </View>
               <MaterialIcons
-                name="lock-outline"
-                size={20}
-                color={colors.textSecondary}
-                accessibilityLabel={t('vocabulary.lockedStage')}
+                name={stage.icon}
+                size={26}
+                color={colors.interactive}
+                accessible={false}
               />
-            )}
-          </Pressable>
-        ))}
+              <View style={styles.stageText}>
+                <ThemedText type="bodyStrong">
+                  {t(stage.titleKey, { count: stage.wordCount })}
+                </ThemedText>
+                <ThemedText style={styles.secondary}>
+                  {t(stage.descriptionKey, { count: stage.wordCount })}
+                </ThemedText>
+                {isAvailable && (
+                  <ThemedText style={styles.upcoming}>
+                    {t('vocabulary.cards.previewAvailable')}
+                  </ThemedText>
+                )}
+              </View>
+              {!isAvailable && (
+                <MaterialIcons
+                  name="lock-outline"
+                  size={20}
+                  color={colors.textSecondary}
+                  accessibilityLabel={t('vocabulary.lockedStage')}
+                />
+              )}
+            </Pressable>
+          );
+        })}
       </View>
       <View style={styles.footer}>
         <Button

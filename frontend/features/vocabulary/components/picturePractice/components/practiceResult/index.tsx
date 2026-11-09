@@ -1,6 +1,6 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { router } from 'expo-router';
-import { useMemo } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { View } from 'react-native';
 
@@ -16,6 +16,7 @@ type PracticeResultProps = {
   total: number;
   correctCount: number;
   onRestart: () => void;
+  children?: ReactNode;
 };
 
 export function PracticeResult({
@@ -23,6 +24,7 @@ export function PracticeResult({
   total,
   correctCount,
   onRestart,
+  children,
 }: PracticeResultProps) {
   const { t } = useTranslation();
   const { colors } = useTheme();
@@ -66,6 +68,7 @@ export function PracticeResult({
           ))}
         </View>
       )}
+      {children}
       <Button onPress={onRestart}>{t('vocabulary.practice.tryAgain')}</Button>
       <Button
         variant="secondary"

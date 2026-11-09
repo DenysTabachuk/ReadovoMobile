@@ -38,6 +38,14 @@
     }
   },
   "vocabulary": {
+    "audio": {
+      "title": "Listening practice",
+      "sample": "Listen and choose · Questions: {{count}}",
+      "choosePicture": "Listen to the word, then choose its picture",
+      "listenAgain": "Listen again",
+      "replayHint": "You can listen as many times as you need.",
+      "start": "Practise listening"
+    },
     "practice": {
       "title": "Quick practice",
       "sample": "Picture practice · Questions: {{count}}",
@@ -108,6 +116,7 @@
       "firstWords": "Backpack, book, pencil and more",
       "quickPractice": "Quick practice",
       "matchPictures": "Match words and pictures",
+      "matchAudio": "Listen and choose a picture",
       "learnMore": "Learn {{count}} more",
       "moreWords": "Chair, table, umbrella and more",
       "finalChallenge": "Final challenge",
