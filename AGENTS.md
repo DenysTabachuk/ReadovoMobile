@@ -26,6 +26,13 @@
   new and touched code; do not perform unrelated assertion-removal sweeps.
 - Write documentation in English, including task documents, unless the user
   explicitly requests another language.
+- Treat database seeds as test/sample data by default. Do not present them as
+  approved production content; production data imports require explicit agreement.
+  Keep the Prisma seed entry point in `backend/prisma/seed.ts` and feature-owned
+  seed data, import logic, validation and their unit tests under
+  `backend/prisma/seeds/<feature>/`, outside production `backend/src/**`.
+  Clearly label sample content in names/comments and keep seed execution explicit.
+  Include seed TypeScript in relevant lint, formatting, type and test checks.
 - Store temporary task documents in `docs/tasks/`. Delete the task document once
   the task is fully completed; retain lasting documentation outside `docs/tasks/`
   in the appropriate project documentation. Keep task documents while work remains.

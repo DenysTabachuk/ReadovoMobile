@@ -1,8 +1,9 @@
 # Vocabulary: first mobile lesson
 
 Status: steps 1–3 are implemented as local UI prototypes. Step 4 now adds the
-content schema and migration; seed content, media delivery, APIs and progress
-remain pending. The agreed order changed after UI review: build storage before
+content schema and migration; a separate test seed is prepared. Approved
+production content, media delivery, APIs and progress remain pending.
+The agreed order changed after UI review: build storage before
 expanding the temporary frontend fixtures.
 
 ## Goal
@@ -193,22 +194,29 @@ translation design, database/application validation boundary and test commands.
 The migration has only been applied in an isolated test database; applying it to
 the application database remains a normal deployment/migration step.
 
-Verification: Prisma validation and client generation passed. The isolated
+Initial verification: Prisma validation and client generation passed. An isolated
 PostgreSQL check applied all six migrations and passed the vocabulary integrity
-and deletion tests. `npm run ci:backend` passed (95 suites, 815 tests), including
-OpenAPI freshness; the backend unused-code audit and documentation formatting
-also passed. No files were staged, so no staged commit snapshot was validated.
+and deletion tests. The vocabulary database integration suites, SQL test fixture
+and temporary-database helper were subsequently removed after review. Seed
+validation unit tests remain in the normal Jest suite.
 
 - Review the schema before seeding the complete content inventory.
 - Outcome: a verified storage foundation, without disposable expanded fixtures.
 
-### 5. Seed the first lesson and prepare media
+### 5. Populate test data, then prepare real content and media
 
-Split content import and R2 setup into separate small review units.
+Seeds are test data by default. The current sample and its import/validation
+code live under `backend/prisma/seeds/vocabulary/`, with the entry point at
+`backend/prisma/seed.ts`. Do not treat the sample as approved production content.
+No seed or pending migrations have been applied to the application's database.
+
+Split test population, approved production content and R2 setup into separate
+small review units.
 
 - Implement a repeatable, transactional seed/import for Common Things with 20
   original words, two learning blocks, practice rosters and the three exercise
-  formats. Reuse suitable prototype content as real seed data.
+  formats. Keep this sample visibly labelled as test data. Real content import
+  requires explicit agreement and a separate workflow.
 - Use stable lesson/word/stage/question IDs; validate choices, correct-answer
   membership, stage kinds, word rosters and required translation locales.
 - Keep drafts unpublished until content and actual media are ready. Confirm

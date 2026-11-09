@@ -37,13 +37,19 @@
         "mathjax",
       ],
       // Knip's Jest defaults do not translate the testRegex e2e filename suffix.
-      "entry": ["src/main.ts!", "prisma7.config.ts", "test/**/*.e2e-spec.ts"],
+      "entry": [
+        "src/main.ts!",
+        "prisma7.config.ts",
+        "prisma/seed.ts",
+        "test/**/*.e2e-spec.ts",
+      ],
       "project": [
         "src/**/*.ts!",
         "test/**/*.ts",
         "scripts/**/*.{cjs,mjs}",
         "*.{ts,mjs}",
         "prisma/**/*.prisma",
+        "prisma/**/*.ts",
       ],
       "nest": true,
       "jest": { "config": ["package.json", "test/jest-e2e.json"] },

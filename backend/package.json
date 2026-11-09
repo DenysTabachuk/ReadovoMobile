@@ -9,14 +9,14 @@
     "openapi:generate": "node scripts/openapi.cjs",
     "openapi:check": "node scripts/openapi.cjs --check",
     "build": "nest build",
-    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\" \"scripts/**/*.{cjs,mjs}\"",
-    "format:check": "prettier --check \"src/**/*.ts\" \"test/**/*.ts\" \"scripts/**/*.{cjs,mjs}\"",
+    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\" \"scripts/**/*.{cjs,mjs}\" \"prisma/**/*.ts\" \"prisma7.config.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\" \"test/**/*.ts\" \"scripts/**/*.{cjs,mjs}\" \"prisma/**/*.ts\" \"prisma7.config.ts\"",
     "format:staged": "prettier --write",
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
-    "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" \"scripts/**/*.{cjs,mjs}\"",
+    "lint": "eslint \"{src,apps,libs,test,prisma}/**/*.ts\" \"scripts/**/*.{cjs,mjs}\" \"prisma7.config.ts\"",
     "lint:fix": "npm run lint -- --fix",
     "lint:staged": "eslint --fix",
     "typecheck": "tsc --noEmit --incremental false",
@@ -28,6 +28,7 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config ./test/jest-e2e.json",
     "prisma:generate": "prisma generate",
+    "prisma:seed": "prisma db seed",
     "prisma:migrate": "prisma migrate deploy",
     "postinstall": "prisma generate"
   },
@@ -99,6 +100,10 @@
       "**/*.(t|j)s"
     ],
     "coverageDirectory": "../coverage",
-    "testEnvironment": "node"
+    "testEnvironment": "node",
+    "roots": [
+      "<rootDir>",
+      "<rootDir>/../prisma/seeds"
+    ]
   }
 }

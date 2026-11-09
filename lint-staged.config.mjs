@@ -28,6 +28,12 @@ export default {
     "npm --prefix backend run lint:staged --",
   ],
 
+  "backend/{prisma/**/*.ts,prisma7.config.ts}": [
+    "npm --prefix backend run format:staged --",
+    "npm --prefix backend run lint:staged --",
+    "npm --prefix backend run test:staged --",
+  ],
+
   "frontend/**/*.{js,jsx,mjs,ts,tsx}": [
     "npm --prefix frontend run format:staged --",
     "npm --prefix frontend run lint:staged --",

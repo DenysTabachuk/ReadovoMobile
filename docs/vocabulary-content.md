@@ -2,8 +2,21 @@
 
 Official vocabulary lessons use their own PostgreSQL tables. Personal dictionary
 entries, article quizzes and user statistics remain separate. This first storage
-change adds content only; it does not add endpoints, seed content, progress,
-rewards or an authoring interface.
+schema adds content storage only; it does not add endpoints, progress, rewards
+or an authoring interface. The separate seed is test data, described below.
+
+## Test database population
+
+Seeds default to test/sample data, not approved production lessons.
+`backend/prisma/seed.ts` invokes the vocabulary seed under
+`backend/prisma/seeds/vocabulary/`. Data, import logic, validation and unit tests
+stay there, outside production application source. The sample lesson uses the
+slug `seed-common-things` and a visible test-data label. It remains unpublished;
+image keys are placeholders, not uploaded media.
+
+Run `npm --prefix backend run prisma:seed` explicitly to populate the configured
+database. Production content imports require separate agreement. This seed is
+not a production catalogue or application startup behaviour.
 
 ## Content and translations
 
@@ -103,18 +116,14 @@ before those features are added.
 
 ## Verification
 
-From the repository root, with the local Compose PostgreSQL service running:
+From the repository root:
 
 ```sh
 npm --prefix backend run prisma:generate
-npm --prefix backend run test:e2e -- --runInBand vocabulary/content-schema
 npm run ci:backend
 ```
 
-The Jest integration suite creates a uniquely named temporary database in the local Compose
-PostgreSQL service, applies the complete migration history, runs
-`backend/test/vocabulary/content-schema.sql`, then drops only that test database.
-It does not apply migrations to the application's database. It verifies all three
-exercise formats, lesson isolation, ordering, content checks, foreign keys and
-deletion behaviour against PostgreSQL. Docker access is required; it is separate
-from the ordinary backend unit/HTTP suites.
+Seed validation unit tests run through the ordinary backend Jest command.
+The vocabulary-specific database integration suites and temporary-database
+helpers were removed after review. These checks do not apply migrations or
+populate the application's database.
