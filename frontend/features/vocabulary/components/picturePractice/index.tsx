@@ -8,9 +8,11 @@ import { ScrollableScreen } from '@/components/scrollableScreen';
 import { ThemedText } from '@/components/themedText';
 import { useTheme } from '@/hooks/use-theme';
 import { COMMON_THINGS_LESSON_ID } from '../../fixtures/lessons';
-import { usePicturePractice } from '../../hooks/usePicturePractice';
+import { useVocabularyPractice } from '../../hooks/useVocabularyPractice';
+import { PICTURE_PRACTICE_QUESTIONS } from '../../fixtures/picturePractice';
+import { PracticeProgress } from '../practiceProgress';
 import { PictureOption } from './components/pictureOption';
-import { PracticeResult } from './components/practiceResult';
+import { PracticeResult } from '../practiceResult';
 import { createStyles } from './styles';
 import type { VocabularyWordCard } from '../../fixtures/wordCards';
 
@@ -31,7 +33,7 @@ export function PicturePractice({
   const { t } = useTranslation();
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
-  const practice = usePicturePractice();
+  const practice = useVocabularyPractice(PICTURE_PRACTICE_QUESTIONS);
   const { question, answer, questionIndex, total } = practice;
   if (lessonId !== COMMON_THINGS_LESSON_ID)
     return (
@@ -77,34 +79,13 @@ export function PicturePractice({
       edges={[]}
       contentContainerStyle={styles.content}
     >
-      <View style={styles.progressHeading}>
-        <ThemedText style={styles.secondary}>
-          {t(sampleKey, { count: total })}
-        </ThemedText>
-        <ThemedText type="bodyStrong">
-          {t('vocabulary.cards.position', {
-            current: questionIndex + 1,
-            total,
-          })}
-        </ThemedText>
-      </View>
-      <View
-        style={styles.progressTrack}
-        accessibilityRole="progressbar"
-        accessibilityLabel={t(titleKey)}
-        accessibilityValue={{
-          min: 0,
-          max: total,
-          now: practice.answers.length,
-        }}
-      >
-        <View
-          style={[
-            styles.progressFill,
-            { width: `${(practice.answers.length / total) * 100}%` },
-          ]}
-        />
-      </View>
+      <PracticeProgress
+        title={t(titleKey)}
+        sample={t(sampleKey, { count: total })}
+        current={questionIndex + 1}
+        total={total}
+        answered={practice.answers.length}
+      />
       {renderPrompt(question.word, question.id)}
       <View style={styles.options} accessibilityRole="radiogroup">
         {question.options.map((option, index) => (

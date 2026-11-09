@@ -1,16 +1,17 @@
 import { act, createElement } from 'react';
 import { createRoot, type Root } from 'test-renderer';
-import { usePicturePractice } from '.';
+import { useVocabularyPractice } from '.';
+import { PICTURE_PRACTICE_QUESTIONS } from '../../fixtures/picturePractice';
 
 jest.mock('../../assets/backpack.svg', () => 1);
 jest.mock('../../assets/book.svg', () => 2);
 jest.mock('../../assets/pencil.svg', () => 3);
 
 let root: Root;
-let practice: ReturnType<typeof usePicturePractice>;
+let practice: ReturnType<typeof useVocabularyPractice>;
 
 function Probe() {
-  practice = usePicturePractice();
+  practice = useVocabularyPractice(PICTURE_PRACTICE_QUESTIONS);
   return null;
 }
 

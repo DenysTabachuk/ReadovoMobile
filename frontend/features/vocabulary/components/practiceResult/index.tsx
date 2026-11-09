@@ -7,12 +7,12 @@ import { View } from 'react-native';
 import { Button } from '@/components/button';
 import { ThemedText } from '@/components/themedText';
 import { useTheme } from '@/hooks/use-theme';
-import { COMMON_THINGS_LESSON_ID } from '../../../../fixtures/lessons';
-import type { PicturePracticeAnswer } from '../../../../hooks/usePicturePractice';
+import { COMMON_THINGS_LESSON_ID } from '../../fixtures/lessons';
+import type { VocabularyPracticeAnswer } from '../../hooks/useVocabularyPractice';
 import { createStyles } from './styles';
 
 type PracticeResultProps = {
-  answers: PicturePracticeAnswer[];
+  answers: VocabularyPracticeAnswer[];
   total: number;
   correctCount: number;
   onRestart: () => void;

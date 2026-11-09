@@ -1,8 +1,8 @@
 # Vocabulary: first mobile lesson
 
-Status: steps 1 and 2 and the word-to-picture and audio-to-picture formats in
-step 3 are implemented. Audio practice awaits product review; sentence-gap
-practice and steps 4–8 are not started.
+Status: steps 1–3 are implemented as local UI prototypes. All three practice
+formats await final product review. The complete 20-word lesson and steps 4–8
+are not started.
 
 ## Goal
 
@@ -150,6 +150,25 @@ transitions and a 2/3 result with Backpack listed for review in Ukrainian/light.
 Audio output quality and a full review in both
 themes/locales remain device/product checks. `npm run check:staged` passed for
 the two staged locale files; the implementation remains unstaged.
+
+Sentence-gap practice is available as a separate fourth overview step. Three
+original sentences use the same backpack, book and pencil sample, with text
+choices. Checking locks the choices, highlights the correct word in the completed
+sentence and reveals its Ukrainian translation. Results include the score, words
+to review, retry and return to the lesson. The question set and result are local;
+later stages stay locked and no progress is saved.
+
+All formats reuse `useVocabularyPractice`, now parameterized by a stable question
+set. The former picture-specific hook and its regression suite were renamed;
+progress and result UI moved to shared vocabulary components. Sentence-specific
+presentation remains in its own screen, with no exercise-mode flags.
+
+Verification: `npm run ci:frontend` passed (156 suites, 817 tests), including the
+existing attempt safeguards and new screen tests for hidden translations, locked
+answers, a 2/3 score, retry reset and unknown lessons. In the Android emulator,
+verified the fourth-step entry, unanswered state, completed sentence and feedback
+in Ukrainian/light. Both-theme/device review remains pending. No files were
+staged, so a staged commit snapshot could not be validated.
 
 - Begin with word-to-picture selection and its correct/incorrect feedback.
 - Review audio-to-picture and sentence-gap formats in subsequent small changes

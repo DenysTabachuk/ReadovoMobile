@@ -38,6 +38,16 @@
     }
   },
   "vocabulary": {
+    "sentence": {
+      "title": "Complete the sentence",
+      "sample": "Missing words · Questions: {{count}}",
+      "chooseWord": "Choose the missing word"
+    },
+    "sentences": {
+      "backpack": "Я ношу книжки до школи в рюкзаку.",
+      "book": "Я читаю книжку про тварин.",
+      "pencil": "Я пишу олівцем і стираю помилки гумкою."
+    },
     "audio": {
       "title": "Listening practice",
       "sample": "Listen and choose · Questions: {{count}}",

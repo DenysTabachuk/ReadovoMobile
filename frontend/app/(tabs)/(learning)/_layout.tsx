@@ -38,6 +38,10 @@ export default function LearningLayout() {
         options={{ title: t('vocabulary.audio.title') }}
       />
       <Stack.Screen
+        name="vocabulary/sentences/[lessonId]"
+        options={{ title: t('vocabulary.sentence.title') }}
+      />
+      <Stack.Screen
         name="articles"
         options={{ title: t('learning.reading.title') }}
       />

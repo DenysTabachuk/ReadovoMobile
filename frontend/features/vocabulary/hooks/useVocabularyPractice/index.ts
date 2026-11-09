@@ -1,41 +1,49 @@
 import { useState } from 'react';
-import { PICTURE_PRACTICE_QUESTIONS } from '../../fixtures/picturePractice';
 import type { VocabularyWordCard } from '../../fixtures/wordCards';
 
-export type PicturePracticeAnswer = {
+export type VocabularyPracticeAnswer = {
   questionId: string;
   word: VocabularyWordCard;
   selectedOptionId: string;
   isCorrect: boolean;
 };
 
+type PracticeQuestion = {
+  id: string;
+  word: VocabularyWordCard;
+  options: readonly VocabularyWordCard[];
+};
+
 type PracticeState = {
   questionIndex: number;
   selectedOptionId: string | null;
-  answers: PicturePracticeAnswer[];
+  answers: VocabularyPracticeAnswer[];
 };
 
 /**
- * Manages a local choose/check/advance picture-practice attempt without saving it.
+ * Manages a local choose/check/advance vocabulary-practice attempt without saving it.
  * Checks are idempotent; stale events cannot change another question or score.
+ * @param questions - Stable local questions; keep the same set for the mounted attempt.
  * @returns Current question, selection, checked answer, results and guarded actions.
  * @example
- * const practice = usePicturePractice();
+ * const practice = useVocabularyPractice(PICTURE_PRACTICE_QUESTIONS);
  * practice.selectOption('picture-backpack', 'backpack');
  * practice.checkAnswer('picture-backpack'); // Records one correct answer.
  */
-export function usePicturePractice() {
+export function useVocabularyPractice<Question extends PracticeQuestion>(
+  questions: readonly Question[],
+) {
   const [state, setState] = useState<PracticeState>({
     questionIndex: 0,
     selectedOptionId: null,
     answers: [],
   });
-  const question = PICTURE_PRACTICE_QUESTIONS[state.questionIndex];
+  const question = questions[state.questionIndex];
   const answer = state.answers[state.questionIndex];
 
   const selectOption = (questionId: string, optionId: string) => {
     setState((current) => {
-      const activeQuestion = PICTURE_PRACTICE_QUESTIONS[current.questionIndex];
+      const activeQuestion = questions[current.questionIndex];
       if (
         !activeQuestion ||
         activeQuestion.id !== questionId ||
@@ -50,7 +58,7 @@ export function usePicturePractice() {
 
   const checkAnswer = (questionId: string) => {
     setState((current) => {
-      const activeQuestion = PICTURE_PRACTICE_QUESTIONS[current.questionIndex];
+      const activeQuestion = questions[current.questionIndex];
       if (
         !activeQuestion ||
         activeQuestion.id !== questionId ||
@@ -58,7 +66,7 @@ export function usePicturePractice() {
         current.answers[current.questionIndex]
       )
         return current;
-      const checkedAnswer: PicturePracticeAnswer = {
+      const checkedAnswer: VocabularyPracticeAnswer = {
         questionId,
         word: activeQuestion.word,
         selectedOptionId: current.selectedOptionId,
@@ -70,7 +78,7 @@ export function usePicturePractice() {
 
   const advance = (questionId: string) => {
     setState((current) => {
-      const activeQuestion = PICTURE_PRACTICE_QUESTIONS[current.questionIndex];
+      const activeQuestion = questions[current.questionIndex];
       if (
         !activeQuestion ||
         activeQuestion.id !== questionId ||
@@ -97,8 +105,8 @@ export function usePicturePractice() {
     correctCount: state.answers.filter(
       (checkedAnswer) => checkedAnswer.isCorrect,
     ).length,
-    total: PICTURE_PRACTICE_QUESTIONS.length,
-    isComplete: state.questionIndex === PICTURE_PRACTICE_QUESTIONS.length,
+    total: questions.length,
+    isComplete: state.questionIndex === questions.length,
     selectOption,
     checkAnswer,
     advance,

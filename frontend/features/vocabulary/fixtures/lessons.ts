@@ -34,6 +34,13 @@ export const DEMO_LESSONS = [
         icon: 'hearing',
       },
       {
+        id: 'sentences-first',
+        titleKey: 'vocabulary.sentence.title',
+        descriptionKey: 'vocabulary.sentence.chooseWord',
+        wordCount: WORDS_PER_LEARNING_BLOCK,
+        icon: 'short-text',
+      },
+      {
         id: 'learn-second',
         titleKey: 'vocabulary.stages.learnMore',
         descriptionKey: 'vocabulary.stages.moreWords',

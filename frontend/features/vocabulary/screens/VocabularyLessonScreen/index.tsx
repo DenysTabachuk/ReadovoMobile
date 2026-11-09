@@ -16,6 +16,7 @@ const PREVIEW_STAGE_ROUTES = {
   'learn-first': '/(tabs)/(learning)/vocabulary/words/[lessonId]',
   'practise-first': '/(tabs)/(learning)/vocabulary/practice/[lessonId]',
   'listen-first': '/(tabs)/(learning)/vocabulary/listening/[lessonId]',
+  'sentences-first': '/(tabs)/(learning)/vocabulary/sentences/[lessonId]',
   'learn-second': undefined,
   'practise-all': undefined,
 } as const;
