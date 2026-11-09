@@ -1,15 +1,17 @@
 # Vocabulary: first mobile lesson
 
-Status: steps 1–3 are implemented as local UI prototypes. All three practice
-formats await final product review. The complete 20-word lesson and steps 4–8
-are not started.
+Status: steps 1–3 are implemented as local UI prototypes. Step 4 now adds the
+content schema and migration; seed content, media delivery, APIs and progress
+remain pending. The agreed order changed after UI review: build storage before
+expanding the temporary frontend fixtures.
 
 ## Goal
 
 Deliver one complete official A1 lesson, Common Things, in small changes that can
 be reviewed independently. Do not implement the entire feature in one PR.
-Build and review the mobile UI first using local demonstration content. Implement
-R2, backend contracts and persistence after the learning experience is approved.
+The representative mobile UI is implemented with local demonstration content.
+Build the real content storage next, then seed the full lesson and connect the UI;
+do not expand the disposable frontend fixtures to 20 words first.
 
 ## Agreed direction
 
@@ -45,7 +47,7 @@ R2, backend contracts and persistence after the learning experience is approved.
 
 These decisions can evolve during UI reviews. Start with a small representative
 sample; a final 20-word inventory and storage design must not block the first
-screen. Before infrastructure work, confirm R2 account access and the production
+screen. Before media setup, confirm R2 account access and the production
 delivery domain. Account changes, billing choices and publishing assets are
 separate explicit setup actions.
 
@@ -177,19 +179,40 @@ staged, so a staged commit snapshot could not be validated.
   explanations, mistakes returning for practice and progress behaviour.
 - Outcome: approved exercise interactions without backend dependencies.
 
-### 4. Connect and approve the complete local lesson
+### 4. Add the content schema and migration
 
-- Expand original content to 20 words and connect both learning blocks, practices
-  and results. Review unlocking, replay and the distinction between viewing a
-  word, practising it and completing the lesson.
-- Walk through the whole experience in the emulator. Confirm the remaining
-  content and completion decisions before designing production persistence.
-- Keep progress temporary and rewards inactive. Do not add prototype results to
-  the personal dictionary or existing streak/reward state.
-- Outcome: an approved UI flow and content inventory that guide backend design.
+Implemented: vocabulary content tables for lessons, words, stages, stage word
+rosters, exercises and options, plus locale-based lesson/stage translations. Three question kinds support the
+existing UI. Composite foreign keys prevent cross-lesson references, and SQL
+constraints validate ordering, required content and sentence shape. Image keys
+and attribution metadata are stored with words. No seed, endpoints, user progress
+or frontend changes are included in this review.
 
-### 5. Prepare R2 media
+See [Vocabulary content storage](../vocabulary-content.md) for the model,
+translation design, database/application validation boundary and test commands.
+The migration has only been applied in an isolated test database; applying it to
+the application database remains a normal deployment/migration step.
 
+Verification: Prisma validation and client generation passed. The isolated
+PostgreSQL check applied all six migrations and passed the vocabulary integrity
+and deletion tests. `npm run ci:backend` passed (95 suites, 815 tests), including
+OpenAPI freshness; the backend unused-code audit and documentation formatting
+also passed. No files were staged, so no staged commit snapshot was validated.
+
+- Review the schema before seeding the complete content inventory.
+- Outcome: a verified storage foundation, without disposable expanded fixtures.
+
+### 5. Seed the first lesson and prepare media
+
+Split content import and R2 setup into separate small review units.
+
+- Implement a repeatable, transactional seed/import for Common Things with 20
+  original words, two learning blocks, practice rosters and the three exercise
+  formats. Reuse suitable prototype content as real seed data.
+- Use stable lesson/word/stage/question IDs; validate choices, correct-answer
+  membership, stage kinds, word rosters and required translation locales.
+- Keep drafts unpublished until content and actual media are ready. Confirm
+  pronunciation/IPA, completion rules and the intended content inventory.
 - Create the media bucket and configure development/production delivery. Keep
   write credentials out of the mobile app and repository.
 - Optimise and manually upload approved images with stable, versioned keys.
@@ -198,16 +221,13 @@ staged, so a staged commit snapshot could not be validated.
   caching and failures on a device. Keep interface illustrations bundled.
 - Outcome: the reviewed UI uses production media without requiring a lesson API.
 
-### 6. Persist content and expose read APIs
+### 6. Expose read APIs
 
-- Add a vocabulary backend module, reviewed Prisma migration and repeatable
-  import/seed tooling using stable content IDs and media keys.
-- Model only what the approved flow requires. Define the minimal revision policy
-  needed to avoid silently changing an in-progress attempt after a content edit.
+- Add the vocabulary backend module and read services using the reviewed schema
+  and seed. Keep feature contracts and validation within the owning module.
 - Add authenticated catalogue/detail endpoints, module-owned DTOs, documented
   errors and HTTP tests. Generate both contract artifacts in this review.
-- Outcome: database-backed lesson content and verified read contracts. Split the
-  migration/seed and read endpoints into separate reviews if this becomes large.
+- Outcome: database-backed lesson content and verified read contracts.
 
 ### 7. Connect the approved UI to real lesson content
 
@@ -216,9 +236,15 @@ staged, so a staged commit snapshot could not be validated.
 - Add real loading, empty, error and retry states. Preserve the reviewed layout.
 - Remove superseded fixture wiring rather than maintaining a second production
   data path.
+- Walk through the complete 20-word lesson and review both learning blocks,
+  practices, unlocking and results using database content.
 - Outcome: the approved lesson loads from the backend; progress remains temporary.
 
 ### 8. Persist learning and implement answer checking
+
+- First resolve [content updates with saved progress](vocabulary-content-updates.md).
+  Versioning is not part of the initial content schema; do not introduce saved
+  attempts without an explicit content-edit policy.
 
 - First review saved card position and stage progress, including resume after
   navigation/restart, account switching and failures. Make saves idempotent and
