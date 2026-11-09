@@ -17,21 +17,21 @@ const ACTIVITIES = [
     titleKey: 'learning.vocabulary.title',
     descriptionKey: 'learning.vocabulary.description',
     image: require('../../../../assets/images/learning/vocabulary.png'),
-    available: false,
+    href: '/(tabs)/(learning)/vocabulary',
   },
   {
     id: 'grammar',
     titleKey: 'learning.grammar.title',
     descriptionKey: 'learning.grammar.description',
     image: require('../../../../assets/images/learning/grammar.png'),
-    available: false,
+    href: null,
   },
   {
     id: 'reading',
     titleKey: 'learning.reading.title',
     descriptionKey: 'learning.reading.description',
     image: require('../../../../assets/images/learning/reading.png'),
-    available: true,
+    href: '/(tabs)/(learning)/articles',
   },
 ] as const;
 
@@ -59,9 +59,11 @@ export default function LearningScreen() {
             accessibilityRole="button"
             accessibilityLabel={t(activity.titleKey)}
             accessibilityHint={t(activity.descriptionKey)}
-            accessibilityState={{ disabled: !activity.available }}
-            disabled={!activity.available}
-            onPress={() => router.push('/(tabs)/(learning)/articles')}
+            accessibilityState={{ disabled: activity.href === null }}
+            disabled={activity.href === null}
+            onPress={() => {
+              if (activity.href !== null) router.push(activity.href);
+            }}
             style={({ pressed }) => [
               styles.card,
               pressed && styles.cardPressed,
@@ -80,7 +82,7 @@ export default function LearningScreen() {
               <ThemedText style={styles.cardDescription}>
                 {t(activity.descriptionKey)}
               </ThemedText>
-              {!activity.available && (
+              {activity.href === null && (
                 <View style={styles.badge}>
                   <ThemedText style={styles.badgeText}>
                     {t('learning.comingSoon')}
@@ -88,7 +90,7 @@ export default function LearningScreen() {
                 </View>
               )}
             </View>
-            {activity.available && (
+            {activity.href !== null && (
               <IconSymbol
                 name="chevron.right"
                 size={24}

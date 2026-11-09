@@ -34,6 +34,35 @@
       "description": "Discover something interesting"
     }
   },
+  "vocabulary": {
+    "chooseLesson": "Choose a lesson",
+    "description": "Everyday words, one topic at a time.",
+    "lessonOverview": "Your lesson",
+    "wordCount": "Words: {{count}}",
+    "openLesson": "View the lesson and its learning stages",
+    "viewLesson": "Explore lesson",
+    "lessonProgress": "Lesson progress",
+    "notStarted": "Not started",
+    "lockedStage": "Complete the previous stage first",
+    "startLesson": "Start lesson",
+    "activitiesComingSoon": "Word cards and practice are coming soon.",
+    "notFound": "Lesson not found",
+    "backToLessons": "Back to lessons",
+    "commonThings": {
+      "title": "Common Things",
+      "description": "Get to know the objects around you, from your school bag to your home."
+    },
+    "stages": {
+      "learnFirst": "Learn {{count}} words",
+      "firstWords": "Backpack, book, pencil and more",
+      "quickPractice": "Quick practice",
+      "matchPictures": "Match words and pictures",
+      "learnMore": "Learn {{count}} more",
+      "moreWords": "Chair, table, umbrella and more",
+      "finalChallenge": "Final challenge",
+      "mixedExercises": "Mixed practice with all {{count}} words"
+    }
+  },
   "about": {
     "title": "Readovo",
     "description": "Readovo is an app for learning English through short educational texts. Read useful stories, discover new words, and build your understanding of English in context.",

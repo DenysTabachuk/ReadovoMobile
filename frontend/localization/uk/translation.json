@@ -34,6 +34,35 @@
       "description": "Відкрийте для себе щось цікаве"
     }
   },
+  "vocabulary": {
+    "chooseLesson": "Виберіть урок",
+    "description": "Повсякденні слова — тема за темою.",
+    "lessonOverview": "Ваш урок",
+    "wordCount": "Слів: {{count}}",
+    "openLesson": "Переглянути урок і його навчальні етапи",
+    "viewLesson": "Переглянути урок",
+    "lessonProgress": "Прогрес уроку",
+    "notStarted": "Ще не розпочато",
+    "lockedStage": "Спочатку завершіть попередній етап",
+    "startLesson": "Почати урок",
+    "activitiesComingSoon": "Картки слів і вправи з’являться незабаром.",
+    "notFound": "Урок не знайдено",
+    "backToLessons": "До списку уроків",
+    "commonThings": {
+      "title": "Повсякденні речі",
+      "description": "Познайомтеся з речами навколо — від вмісту шкільного рюкзака до домашніх предметів."
+    },
+    "stages": {
+      "learnFirst": "Вивчіть {{count}} слів",
+      "firstWords": "Backpack, book, pencil та інші",
+      "quickPractice": "Швидка практика",
+      "matchPictures": "Зіставте слова й картинки",
+      "learnMore": "Ще {{count}} слів",
+      "moreWords": "Chair, table, umbrella та інші",
+      "finalChallenge": "Фінальне випробування",
+      "mixedExercises": "Змішані вправи на всі {{count}} слів"
+    }
+  },
   "about": {
     "title": "Readovo",
     "description": "Readovo — це застосунок для вивчення англійської мови на основі пізнавальних текстів. Читайте короткі матеріали, відкривайте нові слова й поступово тренуйте розуміння англійської в живому контексті.",

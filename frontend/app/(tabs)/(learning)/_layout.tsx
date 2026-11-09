@@ -18,6 +18,14 @@ export default function LearningLayout() {
     >
       <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen
+        name="vocabulary/index"
+        options={{ title: t('learning.vocabulary.title') }}
+      />
+      <Stack.Screen
+        name="vocabulary/[lessonId]"
+        options={{ title: t('vocabulary.lessonOverview') }}
+      />
+      <Stack.Screen
         name="articles"
         options={{ title: t('learning.reading.title') }}
       />
