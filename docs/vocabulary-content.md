@@ -2,8 +2,9 @@
 
 Official vocabulary lessons use their own PostgreSQL tables. Personal dictionary
 entries, article quizzes and user statistics remain separate. This first storage
-schema adds content storage only; it does not add endpoints, progress, rewards
-or an authoring interface. The separate seed is test data, described below.
+schema adds content storage. Read endpoints now expose published lesson overviews
+and word cards; progress, rewards and an authoring interface remain pending.
+The separate seed is test data, described below.
 
 ## Test database population
 
@@ -19,6 +20,15 @@ database. Production content imports require separate agreement. This seed is
 not a production catalogue or application startup behaviour.
 
 ## Content and translations
+
+Authenticated reads are available at `GET /vocabulary/lessons` and
+`GET /vocabulary/lessons/:slug`, with optional `locale=en|uk` (default `en`).
+They use only published lessons, so the unpublished seed is absent from the
+catalogue and returns the same 404 as a missing slug. No preview bypass or seed
+publication is included. Missing requested copy falls back to English; missing
+fallback copy is a content error. Detail responses include word cards, media
+attribution and ordered stage word rosters, but no practice questions, answer keys
+or persisted progress. Image object keys do not promise working media URLs.
 
 `VocabularyLesson` represents one lesson. Its UUID is the relational identity;
 its unique slug is a readable identifier such as `common-things`. Child IDs such

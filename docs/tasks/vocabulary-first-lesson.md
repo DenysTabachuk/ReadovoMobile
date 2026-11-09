@@ -1,8 +1,10 @@
 # Vocabulary: first mobile lesson
 
-Status: steps 1–3 are implemented as local UI prototypes. Step 4 now adds the
-content schema and migration; a separate test seed is prepared. Approved
-production content, media delivery, APIs and progress remain pending.
+Status: steps 1–3 are implemented as local UI prototypes. The content schema,
+migration and test seed are implemented and applied to the local application
+database. Published lesson overview/card read APIs are implemented. Approved
+production content, media delivery, practice APIs, UI integration and progress
+remain pending.
 The agreed order changed after UI review: build storage before
 expanding the temporary frontend fixtures.
 
@@ -191,8 +193,9 @@ or frontend changes are included in this review.
 
 See [Vocabulary content storage](../vocabulary-content.md) for the model,
 translation design, database/application validation boundary and test commands.
-The migration has only been applied in an isolated test database; applying it to
-the application database remains a normal deployment/migration step.
+The migration was applied to the local application database on 2026-11-09,
+along with the preceding pending streak-policy migration. All six repository
+migrations are now applied locally. There is no production database.
 
 Initial verification: Prisma validation and client generation passed. An isolated
 PostgreSQL check applied all six migrations and passed the vocabulary integrity
@@ -208,7 +211,22 @@ validation unit tests remain in the normal Jest suite.
 Seeds are test data by default. The current sample and its import/validation
 code live under `backend/prisma/seeds/vocabulary/`, with the entry point at
 `backend/prisma/seed.ts`. Do not treat the sample as approved production content.
-No seed or pending migrations have been applied to the application's database.
+The seed and pending migrations were applied to the local application database
+on 2026-11-09. Running the seed twice succeeded with the same lesson ID and no
+duplicate lesson: direct database reads confirmed 20 words, 6 stages, 50 exercises
+and a null publication timestamp. Image keys remain placeholders.
+
+The first real seed run exposed a TypeScript loader configuration issue: generated
+Prisma sources import `.js` paths, which plain `ts-node` did not resolve to `.ts`.
+The backend TypeScript configuration now enables `ts-node.experimentalResolver`,
+matching the resolver already used by offline OpenAPI export. The seed entry point
+and explicit execution command are unchanged.
+
+Verification: migration status reports no pending migrations; both explicit seed
+runs succeeded. `npm run ci:backend` passed (97 suites, 824 tests, including OpenAPI
+freshness). Documentation checks, formatting of the changed configuration/task
+document and `git diff --check` passed. No files were staged, so there was no staged
+commit snapshot to validate. API and UI integration remain separate review units.
 
 Split test population, approved production content and R2 setup into separate
 small review units.
@@ -230,6 +248,30 @@ small review units.
 - Outcome: the reviewed UI uses production media without requiring a lesson API.
 
 ### 6. Expose read APIs
+
+First read API increment implemented: authenticated catalogue and detail endpoints
+for published lessons, localized lesson/stage copy with English fallback, word
+cards, attribution, ordered stage rosters and counts. Missing and draft slugs share
+the same 404; the unpublished sample remains hidden. Explicit response mapping
+omits storage fields and answer keys. Module registration and canonical OpenAPI
+coverage include both routes; generated artifacts accompany the implementation.
+
+Verification: `npm run contracts:generate` and `npm run contracts:check` passed.
+`npm run ci:backend` passed (99 suites, 835 tests), including route coverage,
+fresh-process export isolation and runtime Swagger parity. `npm run ci:frontend`
+passed (156 suites, 817 tests). The new HTTP suite checks real controllers,
+service, auth guard and boundary configuration with persistence mocked; unit
+checks verify publication predicates and ordered reads. A read-only smoke check
+against the local application database confirmed an empty published catalogue,
+404 for the draft seed and unchanged sample publication/counts. Documentation
+formatting and `git diff --check` passed. No files were staged; no staged commit
+snapshot was available to validate.
+
+Practice question delivery remains a subsequent API increment. It must respect
+the answer-key boundary before replacing local checking. Local sample preview
+still needs an explicit development boundary; no draft bypass or automatic
+publication was added. Media delivery remains a separate dependency because
+placeholder keys do not resolve to images. UI integration has not started.
 
 - Add the vocabulary backend module and read services using the reviewed schema
   and seed. Keep feature contracts and validation within the owning module.

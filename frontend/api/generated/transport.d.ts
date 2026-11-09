@@ -777,6 +777,43 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/vocabulary/lessons': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List published vocabulary lessons */
+    get: operations['listVocabularyLessons'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/vocabulary/lessons/{slug}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Read a published lesson overview and word cards
+     * @description Includes ordered stage rosters and exercise counts. Does not expose practice questions, answer keys or user progress.
+     */
+    get: operations['getVocabularyLesson'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1155,6 +1192,19 @@ export interface components {
       /** @description Trimmed embedding text. */
       text: string;
     };
+    GetVocabularyLessonResponse: {
+      description: string;
+      /** Format: uuid */
+      id: string;
+      level: components['schemas']['VocabularyLevel'];
+      slug: string;
+      stageCount: number;
+      stages: components['schemas']['VocabularyLessonStage'][];
+      /** @description Requested locale, falling back to English. */
+      title: string;
+      wordCount: number;
+      words: components['schemas']['VocabularyLessonWord'][];
+    };
     GoogleLoginRequest: {
       /** @description Google ID token, trimmed before validation. Identity is verified with the provider. */
       idToken: string;
@@ -1178,6 +1228,9 @@ export interface components {
        * @example 19:00
        */
       learningReminderTime: string;
+    };
+    ListVocabularyLessonsResponse: {
+      lessons: components['schemas']['VocabularyLessonSummary'][];
     };
     LoginUserRequest: {
       /**
@@ -1516,6 +1569,45 @@ export interface components {
       email: string;
       resetToken: string;
     };
+    VocabularyLessonStage: {
+      description: string;
+      exerciseCount: number;
+      id: string;
+      kind: components['schemas']['VocabularyStageKind'];
+      position: number;
+      title: string;
+      /** @description Word IDs in card/roster order, referencing the lesson words array. */
+      wordIds: string[];
+    };
+    VocabularyLessonSummary: {
+      description: string;
+      /** Format: uuid */
+      id: string;
+      level: components['schemas']['VocabularyLevel'];
+      slug: string;
+      stageCount: number;
+      /** @description Requested locale, falling back to English. */
+      title: string;
+      wordCount: number;
+    };
+    VocabularyLessonWord: {
+      example: string;
+      exampleTranslationUk: string;
+      id: string;
+      imageAttribution: string;
+      /** @description Storage object key; media URL delivery is not configured by this API. */
+      imageKey: string;
+      imageLicense: string;
+      /** Format: uri */
+      imageSourceUrl: string;
+      transcription: string;
+      translationUk: string;
+      word: string;
+    };
+    /** @enum {string} */
+    VocabularyLevel: 'A1' | 'A2' | 'B1' | 'B2' | 'C1' | 'C2';
+    /** @enum {string} */
+    VocabularyStageKind: 'learn' | 'practice';
     WikipediaArticle: {
       availableAdaptations?: components['schemas']['ArticleAdaptationSummary'][];
       extract: string;
@@ -1650,12 +1742,16 @@ export type GenerateArticleVocabularyQuizResponse =
   components['schemas']['GenerateArticleVocabularyQuizResponse'];
 export type GenerateDictionaryEmbeddingRequest =
   components['schemas']['GenerateDictionaryEmbeddingRequest'];
+export type GetVocabularyLessonResponse =
+  components['schemas']['GetVocabularyLessonResponse'];
 export type GoogleLoginRequest = components['schemas']['GoogleLoginRequest'];
 export type InlineNode = components['schemas']['InlineNode'];
 export type LearningReminderDispatchResponse =
   components['schemas']['LearningReminderDispatchResponse'];
 export type LearningReminderPreferencesResponse =
   components['schemas']['LearningReminderPreferencesResponse'];
+export type ListVocabularyLessonsResponse =
+  components['schemas']['ListVocabularyLessonsResponse'];
 export type LoginUserRequest = components['schemas']['LoginUserRequest'];
 export type MascotAccessorySlot = components['schemas']['MascotAccessorySlot'];
 export type MascotEquippedItems = components['schemas']['MascotEquippedItems'];
@@ -1723,6 +1819,14 @@ export type VerifyAuthCodeRequest =
   components['schemas']['VerifyAuthCodeRequest'];
 export type VerifyPasswordResetCodeResponse =
   components['schemas']['VerifyPasswordResetCodeResponse'];
+export type VocabularyLessonStage =
+  components['schemas']['VocabularyLessonStage'];
+export type VocabularyLessonSummary =
+  components['schemas']['VocabularyLessonSummary'];
+export type VocabularyLessonWord =
+  components['schemas']['VocabularyLessonWord'];
+export type VocabularyLevel = components['schemas']['VocabularyLevel'];
+export type VocabularyStageKind = components['schemas']['VocabularyStageKind'];
 export type WikipediaArticle = components['schemas']['WikipediaArticle'];
 export type WikipediaArticleCategory =
   components['schemas']['WikipediaArticleCategory'];
@@ -11475,6 +11579,410 @@ export interface operations {
                 code: 'STREAK_USER_NOT_FOUND';
                 /** @enum {string} */
                 message: 'User not found.';
+                /** @enum {integer} */
+                statusCode: 404;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 404;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_TOO_LARGE';
+                /** @enum {string} */
+                message: 'Request body is too large.';
+                /** @enum {integer} */
+                statusCode: 413;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 413;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'INTERNAL_ERROR';
+                /** @enum {string} */
+                message: 'Internal server error.';
+                /** @enum {integer} */
+                statusCode: 500;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 500;
+              };
+        };
+      };
+      /** @description Other rejected requests retain their HTTP error status. Infrastructure errors may have a different body. */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** @enum {string} */
+            code: 'REQUEST_REJECTED';
+            /** @enum {string} */
+            message: 'Request rejected.';
+            statusCode: number;
+          };
+        };
+      };
+    };
+  };
+  listVocabularyLessons: {
+    parameters: {
+      query?: {
+        locale?: 'en' | 'uk';
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ListVocabularyLessonsResponse'];
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'VALIDATION_FAILED';
+                details: {
+                  fields: {
+                    path: (string | number)[];
+                    /** @enum {string} */
+                    rule:
+                      | 'VALUE_REQUIRED'
+                      | 'STRING_REQUIRED'
+                      | 'INTEGER_REQUIRED'
+                      | 'BOOLEAN_REQUIRED'
+                      | 'ARRAY_REQUIRED'
+                      | 'EMAIL_INVALID'
+                      | 'UUID_INVALID'
+                      | 'URL_INVALID'
+                      | 'TIMEZONE_INVALID'
+                      | 'DATE_INVALID'
+                      | 'STRING_TOO_SHORT'
+                      | 'STRING_TOO_LONG'
+                      | 'NUMBER_TOO_SMALL'
+                      | 'NUMBER_TOO_LARGE'
+                      | 'ARRAY_TOO_LARGE'
+                      | 'ARRAY_EMPTY'
+                      | 'VALUE_NOT_ALLOWED'
+                      | 'FORMAT_INVALID'
+                      | 'FIELDS_DO_NOT_MATCH'
+                      | 'PROPERTY_NOT_ALLOWED'
+                      | 'VALUE_INVALID';
+                  }[];
+                };
+                /** @enum {string} */
+                message: 'Request validation failed.';
+                /** @enum {integer} */
+                statusCode: 400;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_MALFORMED';
+                /** @enum {string} */
+                message: 'Malformed request body.';
+                /** @enum {integer} */
+                statusCode: 400;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 400;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'AUTH_AUTHENTICATION_REQUIRED';
+                /** @enum {string} */
+                message: 'Authentication is required.';
+                /** @enum {integer} */
+                statusCode: 401;
+              }
+            | {
+                /** @enum {string} */
+                code: 'AUTH_ACCESS_TOKEN_INVALID';
+                /** @enum {string} */
+                message: 'Access token is invalid.';
+                /** @enum {integer} */
+                statusCode: 401;
+              }
+            | {
+                /** @enum {string} */
+                code: 'AUTH_ACCESS_TOKEN_EXPIRED';
+                /** @enum {string} */
+                message: 'Access token has expired.';
+                /** @enum {integer} */
+                statusCode: 401;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 401;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_TOO_LARGE';
+                /** @enum {string} */
+                message: 'Request body is too large.';
+                /** @enum {integer} */
+                statusCode: 413;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 413;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'INTERNAL_ERROR';
+                /** @enum {string} */
+                message: 'Internal server error.';
+                /** @enum {integer} */
+                statusCode: 500;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 500;
+              };
+        };
+      };
+      /** @description Other rejected requests retain their HTTP error status. Infrastructure errors may have a different body. */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** @enum {string} */
+            code: 'REQUEST_REJECTED';
+            /** @enum {string} */
+            message: 'Request rejected.';
+            statusCode: number;
+          };
+        };
+      };
+    };
+  };
+  getVocabularyLesson: {
+    parameters: {
+      query?: {
+        locale?: 'en' | 'uk';
+      };
+      header?: never;
+      path: {
+        /** @description Lesson slug. Trimmed before validation. */
+        slug: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['GetVocabularyLessonResponse'];
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'VALIDATION_FAILED';
+                details: {
+                  fields: {
+                    path: (string | number)[];
+                    /** @enum {string} */
+                    rule:
+                      | 'VALUE_REQUIRED'
+                      | 'STRING_REQUIRED'
+                      | 'INTEGER_REQUIRED'
+                      | 'BOOLEAN_REQUIRED'
+                      | 'ARRAY_REQUIRED'
+                      | 'EMAIL_INVALID'
+                      | 'UUID_INVALID'
+                      | 'URL_INVALID'
+                      | 'TIMEZONE_INVALID'
+                      | 'DATE_INVALID'
+                      | 'STRING_TOO_SHORT'
+                      | 'STRING_TOO_LONG'
+                      | 'NUMBER_TOO_SMALL'
+                      | 'NUMBER_TOO_LARGE'
+                      | 'ARRAY_TOO_LARGE'
+                      | 'ARRAY_EMPTY'
+                      | 'VALUE_NOT_ALLOWED'
+                      | 'FORMAT_INVALID'
+                      | 'FIELDS_DO_NOT_MATCH'
+                      | 'PROPERTY_NOT_ALLOWED'
+                      | 'VALUE_INVALID';
+                  }[];
+                };
+                /** @enum {string} */
+                message: 'Request validation failed.';
+                /** @enum {integer} */
+                statusCode: 400;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_MALFORMED';
+                /** @enum {string} */
+                message: 'Malformed request body.';
+                /** @enum {integer} */
+                statusCode: 400;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 400;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'AUTH_AUTHENTICATION_REQUIRED';
+                /** @enum {string} */
+                message: 'Authentication is required.';
+                /** @enum {integer} */
+                statusCode: 401;
+              }
+            | {
+                /** @enum {string} */
+                code: 'AUTH_ACCESS_TOKEN_INVALID';
+                /** @enum {string} */
+                message: 'Access token is invalid.';
+                /** @enum {integer} */
+                statusCode: 401;
+              }
+            | {
+                /** @enum {string} */
+                code: 'AUTH_ACCESS_TOKEN_EXPIRED';
+                /** @enum {string} */
+                message: 'Access token has expired.';
+                /** @enum {integer} */
+                statusCode: 401;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 401;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'VOCABULARY_LESSON_NOT_FOUND';
+                /** @enum {string} */
+                message: 'Vocabulary lesson not found.';
                 /** @enum {integer} */
                 statusCode: 404;
               }

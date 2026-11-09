@@ -10,6 +10,7 @@ import { NotificationsDiagnosticsModule } from '../notifications/diagnostics/not
 import { DictionaryModule } from '../dictionary/dictionary.module';
 import { ArticlesModule } from '../articles/articles.module';
 import { AuthModule } from '../auth/auth.module';
+import { VocabularyModule } from '../vocabulary/vocabulary.module';
 
 // Canonical coverage includes development contracts for frontend type generation.
 // Runtime Swagger scans only modules actually registered in its application.
@@ -25,4 +26,5 @@ export const DOCUMENTED_API_MODULES = [
   AuthModule,
   DictionaryModule,
   ArticlesModule,
+  VocabularyModule,
 ] satisfies Type[];

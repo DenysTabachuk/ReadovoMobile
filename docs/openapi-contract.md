@@ -1,9 +1,9 @@
 # OpenAPI contract and frontend transport types
 
-The canonical document covers all 51 application controller operations:
+The canonical document covers all 53 application controller operations:
 translations, achievements, mascot, streak, quiz sessions, notifications,
-auth, dictionary and articles. It includes three development notification
-diagnostics operations. Production registers 48 operations and omits those
+auth, dictionary, articles and vocabulary. It includes three development notification
+diagnostics operations. Production registers 50 operations and omits those
 three diagnostics from its runtime Swagger document. Swagger UI assets and the
 raw document are served separately by `SwaggerModule`.
 The transport-type migration is complete. Backend DTO metadata owns the contract;
@@ -363,6 +363,26 @@ malformed bodies to exercise this boundary. UI must not display diagnostic serve
 messages directly. Infrastructure failures can have a different body and need the
 same defensive fallback. Generating runtime validators, clients or hooks is outside
 this migration.
+
+## Vocabulary reads
+
+Vocabulary catalogue and lesson detail require Bearer authentication and return
+HTTP **200**. Both accept an optional `locale=en|uk` query, defaulting to English;
+missing content translations fall back to English, while missing fallback content
+fails with the shared internal error. Word and example translations remain Ukrainian
+regardless of interface locale. Unsupported/repeated locale values and unknown
+query fields return **400**.
+
+`GET /vocabulary/lessons` returns `{ lessons: [] }` when no published content exists.
+Only lessons with non-null `publishedAt` are visible. Direct slug reads use the
+same publication filter; missing and draft lessons both return
+**404 VOCABULARY_LESSON_NOT_FOUND**. There is no draft-preview bypass in this contract.
+The catalogue orders by CEFR level, then slug. Details include word cards and
+attribution, stages ordered by position, ordered stage word IDs and exercise counts.
+Words are listed by ID; stage rosters determine card order. Storage timestamps,
+translation rows, practice questions, answer keys and user progress are omitted.
+Images are object keys with source/licence/attribution metadata; delivery URLs
+remain a separate media integration step.
 
 ## Separate runtime follow-ups
 

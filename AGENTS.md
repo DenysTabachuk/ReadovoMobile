@@ -98,6 +98,10 @@
 
 ## Backend module ownership and validation
 
+- Keep one class declaration per source file, including DTOs and nested Swagger
+  response models. Name each file after its class/responsibility and import composed
+  models from their own files. Apply this to classes created, moved or changed
+  within the task; do not split unrelated existing files or generated code.
 - Keep new feature request and response DTOs in the owning module's `dto/`
   directory. Use operation-specific filenames: `<operation>.dto.ts` for input and
   `<operation>-response.dto.ts` for the serialized response, for example

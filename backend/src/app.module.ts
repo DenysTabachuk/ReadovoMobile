@@ -10,6 +10,7 @@ import { NotificationsDiagnosticsModule } from './notifications/diagnostics/noti
 import { PrismaModule } from './prisma/prisma.module';
 import { StreakModule } from './streak/streak.module';
 import { TranslationsModule } from './translations/translations.module';
+import { VocabularyModule } from './vocabulary/vocabulary.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { TranslationsModule } from './translations/translations.module';
     MascotModule,
     NotificationsModule,
     StreakModule,
+    VocabularyModule,
   ],
 })
 export class AppModule {

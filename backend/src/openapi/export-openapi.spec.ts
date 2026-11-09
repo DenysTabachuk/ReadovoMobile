@@ -109,6 +109,8 @@ describe('Offline OpenAPI export', () => {
       '/streak/profile/me/freeze',
       '/streak/profile/me/freeze-token/purchase',
       '/streak/profile/me/restore',
+      '/vocabulary/lessons',
+      '/vocabulary/lessons/{slug}',
     ]);
     expect(listen).not.toHaveBeenCalled();
     expect(init).not.toHaveBeenCalled();
