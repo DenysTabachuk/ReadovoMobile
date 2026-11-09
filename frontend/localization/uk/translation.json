@@ -38,6 +38,24 @@
     }
   },
   "vocabulary": {
+    "practice": {
+      "title": "Швидка практика",
+      "sample": "Слова й картинки · Запитань: {{count}}",
+      "choosePicture": "Виберіть картинку до цього слова",
+      "pictureNumber": "Картинка {{number}}",
+      "check": "Перевірити",
+      "correct": "Правильно!",
+      "incorrect": "Не зовсім",
+      "answerExplanation": "{{word}} — це {{translation}}.",
+      "showResult": "До результатів",
+      "startPractice": "До вправ",
+      "resultTitle": "Практику завершено",
+      "score": "{{correct}} / {{total}}",
+      "correctAnswers": "Правильні відповіді",
+      "localResult": "Це пробна практика. Прогрес уроку не збережено.",
+      "reviewWords": "Слова для повторення",
+      "tryAgain": "Спробувати ще раз"
+    },
     "cards": {
       "title": "Вивчення слів",
       "sample": "Знайомство · {{count}} слова",
@@ -47,7 +65,7 @@
       "next": "Далі",
       "backToLesson": "До уроку",
       "previewAvailable": "Доступне знайомство",
-      "previewHint": "Перегляньте 3 демонстраційні картки. Вправи з’являться згодом.",
+      "previewHint": "Перегляньте 3 демонстраційні картки, а потім спробуйте вправи з картинками.",
       "translationLanguage": "УКР",
       "pronounceWord": "Послухати вимову {{word}}",
       "pronounceExample": "Послухати речення-приклад",

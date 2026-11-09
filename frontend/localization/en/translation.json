@@ -38,6 +38,24 @@
     }
   },
   "vocabulary": {
+    "practice": {
+      "title": "Quick practice",
+      "sample": "Picture practice · Questions: {{count}}",
+      "choosePicture": "Choose the picture for this word",
+      "pictureNumber": "Picture {{number}}",
+      "check": "Check answer",
+      "correct": "Correct!",
+      "incorrect": "Not quite",
+      "answerExplanation": "{{word}} means {{translation}}.",
+      "showResult": "See results",
+      "startPractice": "Start practice",
+      "resultTitle": "Practice finished",
+      "score": "{{correct}} / {{total}}",
+      "correctAnswers": "Correct answers",
+      "localResult": "This is sample practice. Your lesson progress has not been saved.",
+      "reviewWords": "Words to review",
+      "tryAgain": "Try again"
+    },
     "cards": {
       "title": "Learn words",
       "sample": "Preview · {{count}} words",
@@ -47,7 +65,7 @@
       "next": "Next",
       "backToLesson": "Back to lesson",
       "previewAvailable": "Preview available",
-      "previewHint": "Explore 3 sample cards. Practice is coming soon.",
+      "previewHint": "Explore 3 sample cards, then try picture practice.",
       "translationLanguage": "УКР",
       "pronounceWord": "Listen to {{word}}",
       "pronounceExample": "Listen to the example sentence",

@@ -57,11 +57,14 @@ export default function VocabularyLessonScreen() {
             key={stage.id}
             accessibilityRole="button"
             accessibilityLabel={t(stage.titleKey, { count: stage.wordCount })}
-            disabled={index !== 0}
-            accessibilityState={{ disabled: index !== 0 }}
+            disabled={index > 1}
+            accessibilityState={{ disabled: index > 1 }}
             onPress={() =>
               router.push({
-                pathname: '/(tabs)/(learning)/vocabulary/words/[lessonId]',
+                pathname:
+                  stage.id === 'practise-first'
+                    ? '/(tabs)/(learning)/vocabulary/practice/[lessonId]'
+                    : '/(tabs)/(learning)/vocabulary/words/[lessonId]',
                 params: { lessonId: lesson.id },
               })
             }
@@ -90,13 +93,13 @@ export default function VocabularyLessonScreen() {
               <ThemedText style={styles.secondary}>
                 {t(stage.descriptionKey, { count: stage.wordCount })}
               </ThemedText>
-              {index === 0 && (
+              {index <= 1 && (
                 <ThemedText style={styles.upcoming}>
                   {t('vocabulary.cards.previewAvailable')}
                 </ThemedText>
               )}
             </View>
-            {index > 0 && (
+            {index > 1 && (
               <MaterialIcons
                 name="lock-outline"
                 size={20}

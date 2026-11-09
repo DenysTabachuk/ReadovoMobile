@@ -74,8 +74,8 @@ export default function VocabularyWordsScreen() {
         <Button
           onPress={() => {
             if (isLastCard) {
-              router.dismissTo({
-                pathname: '/(tabs)/(learning)/vocabulary/[lessonId]',
+              router.replace({
+                pathname: '/(tabs)/(learning)/vocabulary/practice/[lessonId]',
                 params: { lessonId: COMMON_THINGS_LESSON_ID },
               });
               return;
@@ -85,7 +85,7 @@ export default function VocabularyWordsScreen() {
           style={styles.next}
         >
           {isLastCard
-            ? t('vocabulary.cards.backToLesson')
+            ? t('vocabulary.practice.startPractice')
             : t('vocabulary.cards.next')}
         </Button>
       </View>

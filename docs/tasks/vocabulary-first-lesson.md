@@ -1,6 +1,8 @@
 # Vocabulary: first mobile lesson
 
-Status: steps 1 and 2 implemented; step 2 awaits UI review. Steps 3–8 are not started.
+Status: steps 1 and 2 and the first exercise format in step 3 are implemented.
+Picture practice awaits product review; remaining exercise formats and steps 4–8
+are not started.
 
 ## Goal
 
@@ -58,7 +60,8 @@ dependency; avoid combining unrelated refactoring with these changes.
 Step 1 delivered Vocabulary entry, a local Common Things lesson and a four-stage
 overview in both locales. At its initial review, the first stage was marked coming
 soon and Start was disabled. Step 2 below supersedes those entry states; practice,
-saved progress, R2 and backend work are still deferred.
+saved progress, R2 and backend work are still deferred. Step 3 also makes Quick
+Practice accessible as a preview; the later two stages remain locked.
 
 Verification: checked lesson entry, overview, scrolling and return navigation in
 the Android emulator, with English/dark and Ukrainian/light combinations. Start
@@ -79,7 +82,7 @@ Implemented: Start and the first stage open a three-card local sample (backpack,
 book and pencil). Cards include US IPA, Ukrainian translations, original example
 sentences and their translations, device pronunciation for words and examples,
 previous/next controls and a sample-specific progress indicator. The last card
-returns to the lesson without marking a block completed or unlocking practice.
+now opens picture practice (step 3) without marking a block completed.
 Position is held only while the screen remains mounted. Twemoji illustrations
 are bundled with attribution and their licence; R2 remains deferred.
 
@@ -103,6 +106,24 @@ were present for a commit-snapshot check.
 - Outcome: an interactive word-learning screen that can be reviewed independently.
 
 ### 3. Prototype practice, one exercise format per review
+
+Implemented: a local three-question word-to-picture exercise using the same
+backpack, book and pencil illustrations. The last word card opens practice;
+Quick Practice on the overview also provides direct preview access. Users choose
+an image, check once and then advance. Checked choices are locked, correct/wrong
+options have distinct icons and colours, and feedback shows the word's meaning.
+The result shows the first-attempt score and words answered incorrectly, with
+restart and return-to-lesson actions. Restart clears the attempt. No progress,
+rewards, streak changes, API calls or later-stage unlocking are implemented.
+
+Verification: `npm run ci:frontend` passed (154 suites, 809 tests). Hook tests cover
+invalid selections, check/advance gating, duplicate submissions, stale events,
+scoring and reset. In the Android emulator, checked cards-to-practice navigation,
+correct/incorrect feedback, a 2/3 result with the expected review word and retry
+from an unanswered first question. Reviewed Ukrainian/light and English/dark.
+Google sign-in with the existing emulator account worked; use that route for
+future local visual checks when signed out. Native screen-reader output and
+additional device sizes remain unverified. No staged files were present.
 
 - Begin with word-to-picture selection and its correct/incorrect feedback.
 - Review audio-to-picture and sentence-gap formats in subsequent small changes
