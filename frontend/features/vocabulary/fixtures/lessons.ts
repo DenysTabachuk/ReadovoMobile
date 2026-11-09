@@ -1,10 +1,11 @@
 // Local presentation fixtures for UI review. No saved progress or answer keys.
+export const COMMON_THINGS_LESSON_ID = 'common-things';
 const WORDS_PER_LEARNING_BLOCK = 10;
 const LEARNING_BLOCK_COUNT = 2;
 
 export const DEMO_LESSONS = [
   {
-    id: 'common-things',
+    id: COMMON_THINGS_LESSON_ID,
     titleKey: 'vocabulary.commonThings.title',
     descriptionKey: 'vocabulary.commonThings.description',
     level: 'A1',

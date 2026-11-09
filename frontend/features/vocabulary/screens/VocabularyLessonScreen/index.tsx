@@ -2,7 +2,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
 import { Button } from '@/components/button';
 import { ScrollableScreen } from '@/components/scrollableScreen';
@@ -53,8 +53,18 @@ export default function VocabularyLessonScreen() {
       </View>
       <View style={styles.stages}>
         {lesson.stages.map((stage, index) => (
-          <View
+          <Pressable
             key={stage.id}
+            accessibilityRole="button"
+            accessibilityLabel={t(stage.titleKey, { count: stage.wordCount })}
+            disabled={index !== 0}
+            accessibilityState={{ disabled: index !== 0 }}
+            onPress={() =>
+              router.push({
+                pathname: '/(tabs)/(learning)/vocabulary/words/[lessonId]',
+                params: { lessonId: lesson.id },
+              })
+            }
             style={[styles.stage, index === 0 && styles.firstStage]}
           >
             <View
@@ -82,7 +92,7 @@ export default function VocabularyLessonScreen() {
               </ThemedText>
               {index === 0 && (
                 <ThemedText style={styles.upcoming}>
-                  {t('learning.comingSoon')}
+                  {t('vocabulary.cards.previewAvailable')}
                 </ThemedText>
               )}
             </View>
@@ -94,15 +104,22 @@ export default function VocabularyLessonScreen() {
                 accessibilityLabel={t('vocabulary.lockedStage')}
               />
             )}
-          </View>
+          </Pressable>
         ))}
       </View>
       <View style={styles.footer}>
-        <Button disabled accessibilityState={{ disabled: true }}>
+        <Button
+          onPress={() =>
+            router.push({
+              pathname: '/(tabs)/(learning)/vocabulary/words/[lessonId]',
+              params: { lessonId: lesson.id },
+            })
+          }
+        >
           {t('vocabulary.startLesson')}
         </Button>
         <ThemedText style={styles.footerHint}>
-          {t('vocabulary.activitiesComingSoon')}
+          {t('vocabulary.cards.previewHint')}
         </ThemedText>
       </View>
     </ScrollableScreen>

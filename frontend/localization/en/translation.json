@@ -1,4 +1,7 @@
 {
+  "image": {
+    "unavailable": "Image unavailable"
+  },
   "navigation": {
     "modalTitle": "Modal",
     "notificationTestTitle": "Notification Test"
@@ -35,6 +38,36 @@
     }
   },
   "vocabulary": {
+    "cards": {
+      "title": "Learn words",
+      "sample": "Preview · {{count}} words",
+      "position": "{{current}} / {{total}}",
+      "progress": "Word cards",
+      "previous": "Previous",
+      "next": "Next",
+      "backToLesson": "Back to lesson",
+      "previewAvailable": "Preview available",
+      "previewHint": "Explore 3 sample cards. Practice is coming soon.",
+      "translationLanguage": "УКР",
+      "pronounceWord": "Listen to {{word}}",
+      "pronounceExample": "Listen to the example sentence",
+      "speechUnavailable": "Could not play pronunciation. Check your device's English voice and try again.",
+      "imageCredit": "Illustrations: Twemoji, Twitter and contributors · CC BY 4.0"
+    },
+    "words": {
+      "backpack": {
+        "translation": "Рюкзак",
+        "exampleTranslation": "Мій рюкзак червоний."
+      },
+      "book": {
+        "translation": "Книга",
+        "exampleTranslation": "Ця книга про тварин."
+      },
+      "pencil": {
+        "translation": "Олівець",
+        "exampleTranslation": "Я пишу олівцем."
+      }
+    },
     "chooseLesson": "Choose a lesson",
     "description": "Everyday words, one topic at a time.",
     "lessonOverview": "Your lesson",

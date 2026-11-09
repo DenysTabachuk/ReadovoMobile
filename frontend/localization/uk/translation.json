@@ -1,4 +1,7 @@
 {
+  "image": {
+    "unavailable": "Зображення недоступне"
+  },
   "navigation": {
     "modalTitle": "Модальне вікно",
     "notificationTestTitle": "Тест сповіщень"
@@ -35,6 +38,36 @@
     }
   },
   "vocabulary": {
+    "cards": {
+      "title": "Вивчення слів",
+      "sample": "Знайомство · {{count}} слова",
+      "position": "{{current}} / {{total}}",
+      "progress": "Картки слів",
+      "previous": "Назад",
+      "next": "Далі",
+      "backToLesson": "До уроку",
+      "previewAvailable": "Доступне знайомство",
+      "previewHint": "Перегляньте 3 демонстраційні картки. Вправи з’являться згодом.",
+      "translationLanguage": "УКР",
+      "pronounceWord": "Послухати вимову {{word}}",
+      "pronounceExample": "Послухати речення-приклад",
+      "speechUnavailable": "Не вдалося відтворити вимову. Перевірте англійський голос на пристрої й спробуйте ще раз.",
+      "imageCredit": "Ілюстрації: Twemoji, Twitter та учасники проєкту · CC BY 4.0"
+    },
+    "words": {
+      "backpack": {
+        "translation": "Рюкзак",
+        "exampleTranslation": "Мій рюкзак червоний."
+      },
+      "book": {
+        "translation": "Книга",
+        "exampleTranslation": "Ця книга про тварин."
+      },
+      "pencil": {
+        "translation": "Олівець",
+        "exampleTranslation": "Я пишу олівцем."
+      }
+    },
     "chooseLesson": "Виберіть урок",
     "description": "Повсякденні слова — тема за темою.",
     "lessonOverview": "Ваш урок",

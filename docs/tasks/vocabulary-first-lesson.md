@@ -1,6 +1,6 @@
 # Vocabulary: first mobile lesson
 
-Status: step 1 implemented; awaiting UI review. Steps 2–8 are not started.
+Status: steps 1 and 2 implemented; step 2 awaits UI review. Steps 3–8 are not started.
 
 ## Goal
 
@@ -55,11 +55,10 @@ dependency; avoid combining unrelated refactoring with these changes.
 
 ### 1. Prototype lesson selection and overview
 
-Implemented: Vocabulary is enabled, the local Common Things lesson opens a
-four-stage overview, and both locales are supported. The first stage is marked
-coming soon, subsequent stages are locked and Start is disabled. No progress,
-word cards, exercises, R2 or backend work is included. Review the emulator UI
-before moving to step 2.
+Step 1 delivered Vocabulary entry, a local Common Things lesson and a four-stage
+overview in both locales. At its initial review, the first stage was marked coming
+soon and Start was disabled. Step 2 below supersedes those entry states; practice,
+saved progress, R2 and backend work are still deferred.
 
 Verification: checked lesson entry, overview, scrolling and return navigation in
 the Android emulator, with English/dark and Ukrainian/light combinations. Start
@@ -75,6 +74,26 @@ plural-rule support. Product approval is still pending.
 - Outcome: the lesson's entry experience is visible; no R2, API or database work.
 
 ### 2. Prototype word cards
+
+Implemented: Start and the first stage open a three-card local sample (backpack,
+book and pencil). Cards include US IPA, Ukrainian translations, original example
+sentences and their translations, device pronunciation for words and examples,
+previous/next controls and a sample-specific progress indicator. The last card
+returns to the lesson without marking a block completed or unlocking practice.
+Position is held only while the screen remains mounted. Twemoji illustrations
+are bundled with attribution and their licence; R2 remains deferred.
+
+Speech requests are cancelled on card changes and screen blur. Native speech
+errors and image loading failures have visible fallback states. Lifecycle tests
+cover late callbacks, pending playback, unmounting and retry after speech failure.
+
+Verification: `npm run ci:frontend` passed (152 suites, 794 tests). Checked all
+three SVG illustrations, word/example pronunciation controls, previous/next
+navigation, first-card disabled Previous, last-card return and still-locked
+practice in the Android emulator. Reviewed Ukrainian/light and English/dark
+appearances, then restored Ukrainian/light. Device audio output quality and
+additional screen sizes remain part of product/device review. No staged changes
+were present for a commit-snapshot check.
 
 - Build the word card, forward/back controls, progress indicator, example and
   translation using the local sample. Try pronunciation through existing speech.
