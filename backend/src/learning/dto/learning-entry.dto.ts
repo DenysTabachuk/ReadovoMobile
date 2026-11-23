@@ -1,5 +1,6 @@
 import { ApiProperty, ApiSchema } from '@nestjs/swagger';
 import { VocabularyLevel } from '../../generated/prisma/enums';
+import { LEARNING_MEDIA_URL_PATTERN } from '../media/constants';
 
 @ApiSchema({ name: 'LearningEntry' })
 export class LearningEntryDto {
@@ -8,11 +9,10 @@ export class LearningEntryDto {
   @ApiProperty({
     type: String,
     nullable: true,
-    description:
-      'Topic cover object key. Null uses the neutral catalogue illustration.',
-    pattern: '^[a-z0-9][a-z0-9/_-]*\\.(png|webp|jpg|svg)$',
+    description: 'API-relative URL of the cover, or null if unavailable.',
+    pattern: LEARNING_MEDIA_URL_PATTERN,
   })
-  declare coverImageKey: string | null;
+  declare coverImageUrl: string | null;
   @ApiProperty({ type: String })
   declare title: string;
   @ApiProperty({ type: String })

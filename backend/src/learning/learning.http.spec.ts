@@ -132,7 +132,8 @@ describe('Unified thematic lessons (HTTP)', () => {
     expect(body).toHaveProperty('topics', [
       {
         slug: 'germany',
-        coverImageKey: 'learning/topics/germany/v1.png',
+        coverImageUrl:
+          '/learning/media?key=learning%2Ftopics%2Fgermany%2Fcatalogue%2Fv1.webp',
         title: 'Німеччина',
         description: 'Досліджуйте Німеччину',
         availableLevels: ['A2', 'B2'],
@@ -151,7 +152,11 @@ describe('Unified thematic lessons (HTTP)', () => {
     expect(body).toHaveProperty('topic.slug', 'festivals');
     expect(body).toHaveProperty('topic.title', 'Festivals');
     expect(body).toHaveProperty('lessons', [
-      expect.objectContaining({ availableLevels: ['A2', 'B2'] }),
+      expect.objectContaining({
+        availableLevels: ['A2', 'B2'],
+        thumbnailUrl:
+          '/learning/media?key=learning%2Flessons%2Foktoberfest%2Freading%2Fv1.png',
+      }),
     ]);
     expectSchema('GetLearningCatalogueResponse', body);
   });
@@ -164,6 +169,15 @@ describe('Unified thematic lessons (HTTP)', () => {
         .expect(200);
       const body: unknown = response.body;
       expect(body).toHaveProperty('slug', 'oktoberfest');
+      expect(body).toMatchObject({
+        readingImageUrl:
+          '/learning/media?key=learning%2Flessons%2Foktoberfest%2Freading%2Fv1.png',
+        readingCheckImageUrl:
+          '/learning/media?key=learning%2Fart%2Freading-check%2Fv1.png',
+        resultsImageUrl:
+          '/learning/media?key=learning%2Flessons%2Foktoberfest%2Fquestions%2Fv1.png',
+      });
+      expect(body).not.toHaveProperty('coverImageKey');
       expect(body).toHaveProperty('variant.level', level);
       expect(body).toHaveProperty('variant.vocabulary.words.0.id', 'book');
       expect(body).toHaveProperty(

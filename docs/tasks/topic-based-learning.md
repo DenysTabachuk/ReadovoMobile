@@ -135,13 +135,10 @@ vocabulary highlighting, a working larger-text toggle and an end-of-story panel.
 Comprehension has a question-position track, numbered radio choices and bottom
 action/feedback layout. Back semantics and stateless checking remain intact.
 
-Two original images were generated with built-in ImageGen and saved under
-`frontend/features/learning/assets/lesson-art/`; exact prompts are in its README.
-They are prepared assets, not yet connected to independent reading/question
-fields. A required architectural question is pending: extend the established
-image-key scheme with optional reading and per-question images, no authoring UI
-in this step, versus keeping only the inherited cover for now. Per repository
-instructions, no database/API changes have been made before that agreement.
+The original illustrations generated with ImageGen are stored in private R2.
+The lesson stores artwork keys for the reader and comprehension results. The
+authenticated API supplies their URLs. Source keys and prompts are in
+[Lesson artwork](../learning-media/lesson-art.md).
 
 Frontend CI passed (169 suites, 861 tests). Android in Ukrainian/dark verified
 the overview cover, reading typography/highlights, both text sizes, all paragraphs

@@ -17,6 +17,7 @@ import { createStyles } from './styles';
 
 type ReadingQuizProps = {
   slug: string;
+  resultsImageUrl: string | null;
   level: VocabularyLevel;
   questions: LearningReadingQuestion[];
   onBack: () => void;
@@ -27,6 +28,7 @@ type ReadingQuizProps = {
 
 export function ReadingQuiz({
   slug,
+  resultsImageUrl,
   level,
   questions,
   onBack,
@@ -52,6 +54,7 @@ export function ReadingQuiz({
   if (!question) {
     return (
       <ReadingQuizResult
+        imageUrl={resultsImageUrl}
         correctCount={correctCount}
         total={questions.length}
         onBack={onBack}

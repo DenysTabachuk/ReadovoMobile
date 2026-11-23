@@ -95,6 +95,7 @@ describe('Offline OpenAPI export', () => {
       '/learning/lessons/{slug}',
       '/learning/lessons/{slug}/questions/{questionId}/check',
       '/learning/lessons/{slug}/vocabulary/exercises/{exerciseId}/check',
+      '/learning/media',
       '/mascot/profile/me',
       '/mascot/profile/me/items/{itemId}/buy',
       '/mascot/profile/me/items/{itemId}/equip',

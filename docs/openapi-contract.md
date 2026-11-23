@@ -1,9 +1,9 @@
 # OpenAPI contract and frontend transport types
 
-The canonical document covers all 58 application controller operations:
+The canonical document covers all 56 application controller operations:
 translations, achievements, mascot, streak, quiz sessions, notifications,
 auth, dictionary, articles, vocabulary and thematic learning. It includes three development notification
-diagnostics operations. Production registers 55 operations and omits those
+diagnostics operations. Production registers 53 operations and omits those
 three diagnostics from its runtime Swagger document. Swagger UI assets and the
 raw document are served separately by `SwaggerModule`.
 The transport-type migration is complete. Backend DTO metadata owns the contract;
@@ -384,8 +384,11 @@ variant and check vocabulary or reading answers. See
 
 Checks are stateless. The backend verifies answer membership within the
 published lesson level. It withholds answer identifiers, sentence translations
-and explanations until an answer is checked. Lesson entries include a required
-nullable `coverImageKey` for the topic artwork.
+and explanations until an answer is checked. Catalogue entries return a
+nullable `coverImageUrl` and lesson summaries also return `thumbnailUrl`.
+Lesson details return nullable `readingImageUrl`, `readingCheckImageUrl`, and
+`resultsImageUrl`. These are API-relative links to authenticated PNG or WebP
+responses. The topic catalogue cover URL prefers the stored thumbnail.
 
 ### Generated Learning response validation
 

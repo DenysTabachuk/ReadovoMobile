@@ -84,16 +84,21 @@ images are still placeholders. Cultural context was checked against the
 [Munich Tourism](https://www.munich.travel/en/topics/markets-festivals/oktoberfest/which-beer-tent-is-the-right-one-for-me);
 the learner text is original sample content, not a quotation or production approval.
 
-Topics store a nullable versioned `coverImageKey` object key. Catalogue entries
-include it, and lesson cards/overviews inherit their topic's cover key. Null and
-unknown keys render a neutral illustration. Keys are not media URLs.
+Topics store nullable versioned keys for the catalogue thumbnail and full cover.
+Lessons store nullable thumbnail,
+reading, and results keys shared across levels. Catalogue responses include
+ready-to-use cover and thumbnail URLs, and lesson responses also include URLs
+for reading, the shared end-of-reading callout, and results. The backend resolves
+fallback artwork and builds API-relative links to `GET /learning/media`.
+The route checks the session and the configured Readovo user allowlist before
+reading PNG or WebP artwork from private R2. Unavailable covers use the app's
+shared image placeholder.
 
-The local Germany sample maps to a bundled generated illustration; its seed
-updates the cover key without changing publication state. The neutral cover is
-also bundled. Assets and exact generation prompts are documented in
-[the cover asset directory](../frontend/features/learning/assets/topic-covers/README.md).
-This does not configure R2, upload media or change the separate word-card image
-placeholders. Remote topic-cover delivery remains a separate integration.
+The topic covers and existing lesson illustrations are stored in `readovo-media`.
+The [topic cover guide](learning-media/topic-covers.md) and the
+[lesson artwork guide](learning-media/lesson-art.md) record the source keys
+and generation prompts. The [project README](../README.md#development-lesson-media)
+documents local configuration. Word-card and vocabulary exercise images still use placeholders.
 
 ## API and validation
 

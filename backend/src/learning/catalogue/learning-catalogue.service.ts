@@ -8,6 +8,8 @@ import {
   PUBLISHED_LEARNING_VARIANT,
 } from '../constants';
 import { LEARNING_ERRORS } from '../learning-errors';
+import { DEFAULT_LEARNING_COVER_KEY } from '../media/constants';
+import { getLearningMediaUrl } from '../media/utils/getLearningMediaUrl';
 import { localizeLearningEntry } from '../utils/localizeLearningEntry';
 import { orderLearningLevels } from '../utils/orderLearningLevels';
 import type { GetLearningCatalogueDto } from './dto/get-learning-catalogue.dto';
@@ -33,7 +35,9 @@ export class LearningCatalogueService {
       throw new ApiException(LEARNING_ERRORS.NOT_FOUND);
     const summarizeTopic = (topic: (typeof topics)[number]) => ({
       slug: topic.slug,
-      coverImageKey: topic.coverImageKey,
+      coverImageUrl:
+        getLearningMediaUrl(topic.thumbnailImageKey) ??
+        getLearningMediaUrl(topic.coverImageKey ?? DEFAULT_LEARNING_COVER_KEY),
       ...localizeLearningEntry(topic.translations, query.locale),
       availableLevels: this.topicLevels(topic.id, topics, lessons),
     });
@@ -47,16 +51,23 @@ export class LearningCatalogueService {
         .filter((topic) => topic.availableLevels.length > 0),
       lessons: lessons
         .filter((lesson) => lesson.topicId === parent?.id)
-        .map((lesson) => ({
-          slug: lesson.slug,
-          coverImageKey:
-            topics.find((topic) => topic.id === lesson.topicId)
-              ?.coverImageKey ?? null,
-          ...localizeLearningEntry(lesson.translations, query.locale),
-          availableLevels: orderLearningLevels(
-            lesson.variants.map((variant) => variant.level),
-          ),
-        })),
+        .map((lesson) => {
+          const coverImageUrl = getLearningMediaUrl(
+            parent?.coverImageKey ?? DEFAULT_LEARNING_COVER_KEY,
+          );
+          return {
+            slug: lesson.slug,
+            coverImageUrl,
+            thumbnailUrl:
+              getLearningMediaUrl(lesson.thumbnailImageKey) ??
+              getLearningMediaUrl(parent?.thumbnailImageKey ?? null) ??
+              coverImageUrl,
+            ...localizeLearningEntry(lesson.translations, query.locale),
+            availableLevels: orderLearningLevels(
+              lesson.variants.map((variant) => variant.level),
+            ),
+          };
+        }),
     };
   }
 

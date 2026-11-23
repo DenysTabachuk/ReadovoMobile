@@ -53,16 +53,17 @@ enum VocabularyExerciseKind {
 
 // Catalogue identity is independent of the English level of its lesson variants.
 model LearningTopic {
-  id            String                     @id @db.Uuid
-  slug          String                     @unique
-  coverImageKey String?                    @map("cover_image_key")
-  parentId      String?                    @map("parent_id") @db.Uuid
-  position      Int
-  publishedAt   DateTime?                  @map("published_at") @db.Timestamptz(6)
-  parent        LearningTopic?             @relation("TopicChildren", fields: [parentId], references: [id], onDelete: Restrict)
-  children      LearningTopic[]            @relation("TopicChildren")
-  translations  LearningTopicTranslation[]
-  lessons       LearningLesson[]
+  id                String                     @id @db.Uuid
+  slug              String                     @unique
+  coverImageKey     String?                    @map("cover_image_key")
+  thumbnailImageKey String?                    @map("thumbnail_image_key")
+  parentId          String?                    @map("parent_id") @db.Uuid
+  position          Int
+  publishedAt       DateTime?                  @map("published_at") @db.Timestamptz(6)
+  parent            LearningTopic?             @relation("TopicChildren", fields: [parentId], references: [id], onDelete: Restrict)
+  children          LearningTopic[]            @relation("TopicChildren")
+  translations      LearningTopicTranslation[]
+  lessons           LearningLesson[]
 
   @@index([parentId, position])
   @@map("learning_topics")
@@ -80,13 +81,16 @@ model LearningTopicTranslation {
 }
 
 model LearningLesson {
-  id           String                      @id @db.Uuid
-  slug         String                      @unique
-  topicId      String                      @map("topic_id") @db.Uuid
-  position     Int
-  topic        LearningTopic               @relation(fields: [topicId], references: [id], onDelete: Restrict)
-  translations LearningLessonTranslation[]
-  variants     LearningLessonVariant[]
+  id                String                      @id @db.Uuid
+  slug              String                      @unique
+  thumbnailImageKey String?                     @map("thumbnail_image_key")
+  readingImageKey   String?                     @map("reading_image_key")
+  resultsImageKey   String?                     @map("results_image_key")
+  topicId           String                      @map("topic_id") @db.Uuid
+  position          Int
+  topic             LearningTopic               @relation(fields: [topicId], references: [id], onDelete: Restrict)
+  translations      LearningLessonTranslation[]
+  variants          LearningLessonVariant[]
 
   @@index([topicId, position])
   @@map("learning_lessons")

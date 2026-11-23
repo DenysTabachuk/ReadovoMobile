@@ -3,9 +3,11 @@ import { View } from 'react-native';
 import { Button } from '@/components/button';
 import { ScrollableScreen } from '@/components/scrollableScreen';
 import { ThemedText } from '@/components/themedText';
+import { LearningArtwork } from '../../../../../../components/LearningArtwork';
 import { styles } from './styles';
 
 type ReadingQuizResultProps = {
+  imageUrl: string | null;
   correctCount: number;
   total: number;
   onBack: () => void;
@@ -17,6 +19,7 @@ type ReadingQuizResultProps = {
 
 /** Shows the reading score and provides recovery if saving completion failed. */
 export function ReadingQuizResult({
+  imageUrl,
   correctCount,
   total,
   onBack,
@@ -29,6 +32,12 @@ export function ReadingQuizResult({
 
   return (
     <ScrollableScreen contentContainerStyle={styles.content}>
+      <LearningArtwork
+        imageUrl={imageUrl}
+        fallback={null}
+        style={styles.artwork}
+        contentFit="cover"
+      />
       <ThemedText type="screenTitle">
         {t('vocabulary.practice.resultTitle')}
       </ThemedText>

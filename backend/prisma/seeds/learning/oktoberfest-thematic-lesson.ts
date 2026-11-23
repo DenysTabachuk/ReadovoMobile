@@ -9,7 +9,11 @@ export const OKTOBERFEST_THEMATIC_LESSON_SEED: LearningSeed = {
   topicSlug: 'seed-germany',
   lessonSlug: 'seed-oktoberfest',
   variantId: 'f276e561-078e-4a94-924c-8df97108fa01',
-  coverImageKey: 'learning/topics/germany/v1.png',
+  coverImageKey: 'learning/topics/germany/v2.webp',
+  topicThumbnailImageKey: 'learning/topics/germany/catalogue/v1.webp',
+  thumbnailImageKey: 'learning/lessons/oktoberfest/thumbnail/v1.webp',
+  readingImageKey: 'learning/lessons/oktoberfest/reading/v2.webp',
+  resultsImageKey: 'learning/lessons/oktoberfest/questions/v2.webp',
   position: 0,
   topicTranslations: [
     {

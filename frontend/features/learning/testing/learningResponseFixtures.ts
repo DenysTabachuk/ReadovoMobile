@@ -14,7 +14,7 @@ export function createCatalogue(): GetLearningCatalogueResponse {
     topics: [
       {
         slug: 'everyday',
-        coverImageKey: null,
+        coverImageUrl: null,
         title: 'Everyday life',
         description: 'One theme',
         availableLevels: ['A1', 'B2'],
@@ -28,7 +28,10 @@ export function createCatalogue(): GetLearningCatalogueResponse {
 export function createLesson(): GetLearningLessonResponse {
   return {
     slug: 'a-day',
-    coverImageKey: null,
+    coverImageUrl: null,
+    readingImageUrl: null,
+    readingCheckImageUrl: null,
+    resultsImageUrl: null,
     topicSlug: 'everyday',
     title: 'Anna’s day',
     description: 'Words and reading together',

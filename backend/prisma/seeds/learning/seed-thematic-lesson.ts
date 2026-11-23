@@ -47,11 +47,13 @@ export async function seedThematicLesson(
         id: sample.topicId,
         slug: sample.topicSlug,
         coverImageKey: sample.coverImageKey,
+        thumbnailImageKey: sample.topicThumbnailImageKey,
         position: sample.position,
         publishedAt: new Date(),
       },
       update: {
         coverImageKey: sample.coverImageKey,
+        thumbnailImageKey: sample.topicThumbnailImageKey,
         position: sample.position,
       },
     });
@@ -63,6 +65,11 @@ export async function seedThematicLesson(
         create: { topicId: sample.topicId, ...copy },
         update: copy,
       });
+    const artwork = {
+      thumbnailImageKey: sample.thumbnailImageKey,
+      readingImageKey: sample.readingImageKey,
+      resultsImageKey: sample.resultsImageKey,
+    };
     await transaction.learningLesson.upsert({
       where: { id: sample.lessonId },
       create: {
@@ -70,8 +77,9 @@ export async function seedThematicLesson(
         slug: sample.lessonSlug,
         topicId: sample.topicId,
         position: 0,
+        ...artwork,
       },
-      update: {},
+      update: artwork,
     });
     for (const copy of sample.lessonTranslations)
       await transaction.learningLessonTranslation.upsert({

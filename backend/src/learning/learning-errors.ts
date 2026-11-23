@@ -11,4 +11,14 @@ export const LEARNING_ERRORS = {
     statusCode: 400,
     message: 'Option is not available for this question.',
   },
+  MEDIA_FORBIDDEN: {
+    code: 'LEARNING_MEDIA_FORBIDDEN',
+    statusCode: 403,
+    message: 'Learning media is unavailable to this account.',
+  },
+  MEDIA_UNAVAILABLE: {
+    code: 'LEARNING_MEDIA_UNAVAILABLE',
+    statusCode: 503,
+    message: 'Learning media could not be loaded.',
+  },
 } as const satisfies Record<string, ApiErrorDefinition>;

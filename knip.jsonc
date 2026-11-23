@@ -9,9 +9,13 @@
       "project": ["scripts/**/*.{js,cjs,mjs,ts}", "*.mjs"],
     },
     "frontend": {
-      // Knip assumes expo-updates unless updates.enabled is false. This app does
-      // not configure/import that optional package; do not add it to silence Knip.
-      "ignoreDependencies": ["expo-updates"],
+      "ignoreDependencies": [
+        // Metro uses the npm Buffer polyfill; Knip treats its import as a Node built-in.
+        "buffer",
+        // Knip assumes expo-updates unless updates.enabled is false. This app does
+        // not configure/import that optional package; do not add it to silence Knip.
+        "expo-updates",
+      ],
       // Expo Router supplies app/** routes. Jest supplies tests and their imports.
       // Follow Knip's documented Metro approach for native platform variants:
       // https://knip.dev/reference/plugins/metro#note

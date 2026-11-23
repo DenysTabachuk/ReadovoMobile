@@ -9,6 +9,11 @@ import {
 } from '../constants';
 import { LEARNING_ERRORS } from '../learning-errors';
 import {
+  DEFAULT_LEARNING_COVER_KEY,
+  READING_CHECK_IMAGE_KEY,
+} from '../media/constants';
+import { getLearningMediaUrl } from '../media/utils/getLearningMediaUrl';
+import {
   LearningReadingService,
   READING_QUESTION_INCLUDE,
   type LearningReadingVariant,
@@ -37,7 +42,14 @@ export class LearningLessonService {
     const variant = await this.loadReadingVariant(lesson.id, query.level);
     return {
       slug: lesson.slug,
-      coverImageKey: topic.coverImageKey,
+      coverImageUrl: getLearningMediaUrl(
+        topic.coverImageKey ?? DEFAULT_LEARNING_COVER_KEY,
+      ),
+      readingImageUrl:
+        getLearningMediaUrl(lesson.readingImageKey) ??
+        getLearningMediaUrl(topic.coverImageKey),
+      readingCheckImageUrl: getLearningMediaUrl(READING_CHECK_IMAGE_KEY),
+      resultsImageUrl: getLearningMediaUrl(lesson.resultsImageKey),
       ...localizeLearningEntry(lesson.translations, query.locale),
       topicSlug: topic.slug,
       supportedLevels: [...CATALOGUE_LEARNING_LEVELS],

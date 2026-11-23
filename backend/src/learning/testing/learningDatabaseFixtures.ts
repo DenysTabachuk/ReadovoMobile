@@ -14,6 +14,7 @@ export function createTopics() {
       id: TOPIC_ID,
       slug: 'germany',
       coverImageKey: 'learning/topics/germany/v1.png',
+      thumbnailImageKey: 'learning/topics/germany/catalogue/v1.webp',
       parentId: null,
       position: 0,
       publishedAt: new Date(),
@@ -30,6 +31,7 @@ export function createTopics() {
       id: CHILD_ID,
       slug: 'festivals',
       coverImageKey: null,
+      thumbnailImageKey: null,
       parentId: TOPIC_ID,
       position: 0,
       publishedAt: new Date(),
@@ -46,6 +48,9 @@ export function createLessons() {
     {
       id: LESSON_ID,
       slug: 'oktoberfest',
+      thumbnailImageKey: 'learning/lessons/oktoberfest/reading/v1.png',
+      readingImageKey: 'learning/lessons/oktoberfest/reading/v1.png',
+      resultsImageKey: 'learning/lessons/oktoberfest/questions/v1.png',
       topicId: CHILD_ID,
       position: 0,
       translations: [

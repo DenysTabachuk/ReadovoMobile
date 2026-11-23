@@ -13,12 +13,12 @@ import { useTheme } from '@/hooks/use-theme';
 import { useLearningLessonQuery } from '../../../../api/queries/useLearningLessonQuery';
 import { useLessonLibrary } from '../../../../hooks/useLessonLibrary';
 import { useLearningLevel } from '../../../../providers/learningLevelProvider';
+import { LessonReadingActivity } from '../LessonReadingActivity';
 import { ReadingQuiz } from '../ReadingQuiz';
 import { createStyles } from './styles';
 import { LessonPath } from './components/lessonPath';
-import { LessonHero } from './components/lessonHero';
+import { LessonOverviewHeader } from './components/LessonOverviewHeader';
 import { LessonHeaderActions } from './components/lessonHeaderActions';
-import { Reading } from '../reading';
 
 type LessonProps = { slug: string; level: VocabularyLevel };
 type LessonActivity =
@@ -88,9 +88,10 @@ export function LessonContent({ slug, level }: LessonProps) {
       );
     } else if (activity.kind === 'reading') {
       content = (
-        <Reading
+        <LessonReadingActivity
           variant={variant}
-          coverImageKey={data.coverImageKey}
+          readingImageUrl={data.readingImageUrl}
+          readingCheckImageUrl={data.readingCheckImageUrl}
           onContinue={() => setActivity({ kind: 'comprehension' })}
         />
       );
@@ -98,6 +99,7 @@ export function LessonContent({ slug, level }: LessonProps) {
       content = (
         <ReadingQuiz
           slug={slug}
+          resultsImageUrl={data.resultsImageUrl}
           level={level}
           questions={variant.questions}
           onBack={close}
@@ -140,10 +142,10 @@ export function LessonContent({ slug, level }: LessonProps) {
           ),
         }}
       />
-      <LessonHero
+      <LessonOverviewHeader
         title={data.title}
         description={data.description}
-        coverImageKey={data.coverImageKey}
+        coverImageUrl={data.coverImageUrl}
       />
       {library.isError && (
         <Button onPress={() => void library.refetch()}>

@@ -6,6 +6,7 @@ import {
 } from '@nestjs/swagger';
 import { VocabularyLevel } from '../../../generated/prisma/enums';
 import { LearningEntryDto } from '../../dto/learning-entry.dto';
+import { LearningLessonSummaryDto } from './learning-lesson-summary.dto';
 
 @ApiSchema({ name: 'GetLearningCatalogueResponse' })
 @ApiExtraModels(LearningEntryDto)
@@ -27,6 +28,6 @@ export class GetLearningCatalogueResponseDto {
   declare topic: LearningEntryDto | null;
   @ApiProperty({ type: [LearningEntryDto] })
   declare topics: LearningEntryDto[];
-  @ApiProperty({ type: [LearningEntryDto] })
-  declare lessons: LearningEntryDto[];
+  @ApiProperty({ type: [LearningLessonSummaryDto] })
+  declare lessons: LearningLessonSummaryDto[];
 }

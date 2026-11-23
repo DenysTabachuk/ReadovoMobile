@@ -5,6 +5,10 @@ export type LearningSeed = {
   lessonSlug: string;
   variantId: string;
   coverImageKey: string;
+  topicThumbnailImageKey: string | null;
+  thumbnailImageKey: string | null;
+  readingImageKey: string | null;
+  resultsImageKey: string | null;
   position: number;
   topicTranslations: { locale: string; title: string; description: string }[];
   lessonTranslations: { locale: string; title: string; description: string }[];

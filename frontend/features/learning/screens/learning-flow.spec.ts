@@ -1,10 +1,18 @@
-import { act, createElement, type ComponentProps, type ReactNode } from 'react';
+import {
+  act,
+  createElement,
+  Fragment,
+  isValidElement,
+  type ComponentProps,
+  type ReactNode,
+} from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createRoot, type Root } from 'test-renderer';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { usePreventRemove } from '@react-navigation/native';
 import { router, useLocalSearchParams } from 'expo-router';
 import type {
+  FlatListProps,
   PressableProps,
   TextInputProps,
   TextProps,
@@ -15,6 +23,7 @@ import type { ModalSheet } from '@/components/modalSheet';
 import type { Button } from '@/components/button';
 import { api } from '@/features/auth';
 import type { PracticeSession, WordCards } from '@/features/vocabulary';
+import type { LearningArtwork } from '../components/LearningArtwork';
 import { LearningLevelProvider } from '../providers/learningLevelProvider';
 import {
   createCatalogue,
@@ -23,6 +32,10 @@ import {
 import LearningScreen from './LearningScreen';
 import ThematicLessonScreen from './ThematicLessonScreen';
 
+const mockShowBanner = jest.fn();
+jest.mock('@/components/banner', () => ({
+  useBanner: () => ({ showBanner: mockShowBanner }),
+}));
 jest.mock('@/features/auth', () => ({
   api: { get: jest.fn(), post: jest.fn() },
   useAuthenticatedUser: () => ({ id: 'owner' }),
@@ -45,6 +58,28 @@ jest.mock('expo-router', () => ({
 jest.mock('@react-navigation/native', () => ({ usePreventRemove: jest.fn() }));
 jest.mock('react-native', () => ({
   ActivityIndicator: () => createElement('loader'),
+  FlatList: <Item>(props: FlatListProps<Item>) =>
+    createElement(
+      'list',
+      null,
+      isValidElement(props.ListHeaderComponent) && props.ListHeaderComponent,
+      ...Array.from(props.data ?? [], (item, index) =>
+        createElement(
+          Fragment,
+          { key: props.keyExtractor?.(item, index) ?? index },
+          props.renderItem?.({
+            item,
+            index,
+            separators: {
+              highlight: () => undefined,
+              unhighlight: () => undefined,
+              updateProps: () => undefined,
+            },
+          }),
+        ),
+      ),
+      isValidElement(props.ListFooterComponent) && props.ListFooterComponent,
+    ),
   View: (props: ViewProps) => createElement('view', props),
   Pressable: (props: PressableProps) => createElement('button', props),
   TextInput: (props: TextInputProps) => createElement('input', props),
@@ -65,6 +100,9 @@ jest.mock('@/components/button', () => ({
 jest.mock('@/components/scrollableScreen', () => ({
   ScrollableScreen: (props: ViewProps) => createElement('view', props),
 }));
+jest.mock('@/components/screenContainer', () => ({
+  ScreenContainer: (props: ViewProps) => createElement('view', props),
+}));
 jest.mock('@/components/fullScreenLoader', () => ({
   FullScreenLoader: () => createElement('loader'),
 }));
@@ -81,12 +119,15 @@ jest.mock('expo-linear-gradient', () => ({
 jest.mock('@/components/imageWithFallback', () => ({
   ImageWithFallback: () => createElement('image'),
 }));
-jest.mock('../assets/topic-covers/everyday-life.png', () => 1);
-jest.mock('../assets/topic-covers/germany.png', () => 3);
-jest.mock('../assets/topic-covers/discover-topics.png', () => 2);
-jest.mock('../assets/lesson-art/reading-check.png', () => 4);
-jest.mock('../assets/lesson-art/oktoberfest-reading.png', () => 5);
-jest.mock('../assets/lesson-art/oktoberfest-questions.png', () => 6);
+jest.mock('../components/LearningArtwork', () => ({
+  LearningArtwork: ({
+    imageUrl,
+    fallback,
+  }: ComponentProps<typeof LearningArtwork>) =>
+    imageUrl === null && fallback !== undefined
+      ? fallback
+      : createElement('image', { imageUrl }),
+}));
 jest.mock('@/components/optionPickerField', () => ({
   OptionPickerField: (props: ComponentProps<typeof OptionPickerField>) =>
     createElement(
@@ -262,7 +303,8 @@ it('opens saved lessons directly and keeps a completed lesson after removing its
     title: lesson.title,
     description: lesson.description,
     availableLevels: lesson.availableLevels,
-    coverImageKey: lesson.coverImageKey,
+    coverImageUrl: lesson.coverImageUrl,
+    thumbnailUrl: null,
   };
   jest.mocked(api.get).mockImplementation(async (_url, config) => {
     const params = config?.params;
@@ -286,14 +328,41 @@ it('opens saved lessons directly and keeps a completed lesson after removing its
     );
 
   await render(LearningScreen);
+  const input = root.container.queryAll((node) => node.type === 'input')[0];
+  const change: unknown = input?.props.onChangeText;
+  if (typeof change !== 'function') throw new Error('Missing search input');
+  await act(async () => {
+    change('no matching theme');
+  });
   await press('learning.topics.tabs.saved');
   expect(() => button('articles.title')).toThrow('Missing button');
   expect(text()).toContain('learning.topics.completedStatus');
+  expect(
+    root.container.queryAll(
+      (node) => node.props.accessibilityLabel === 'image.unavailable',
+    ),
+  ).toHaveLength(1);
+  await act(async () => {
+    change(` ${parent.title.toUpperCase()} `);
+  });
+  expect(text()).toContain(lesson.title);
   await press(lesson.title);
   expect(router.push).toHaveBeenCalledWith({
     pathname: '/(tabs)/(learning)/lessons/[slug]',
     params: { slug: lesson.slug },
   });
+
+  await press('learning.topics.clearSearch');
+  jest
+    .mocked(AsyncStorage.setItem)
+    .mockRejectedValueOnce(new Error('Bookmark write failed'));
+  await press('learning.topics.removeBookmark');
+  expect(mockShowBanner).toHaveBeenCalledTimes(1);
+  expect(mockShowBanner).toHaveBeenCalledWith({
+    title: 'learning.topics.libraryWriteError',
+    variant: 'error',
+  });
+  expect(text()).toContain(lesson.title);
 
   await press('learning.topics.removeBookmark');
   expect(text()).toContain('learning.topics.emptyTab.saved');
@@ -316,6 +385,33 @@ it('switches level within one lesson and explicitly shows unavailable variants',
   expect(text()).not.toContain('learning.lesson.reading');
   await press('A1');
   expect(text()).toContain('learning.lesson.reading');
+});
+it('uses the cover and reading artwork URLs supplied with the lesson', async () => {
+  jest.mocked(useLocalSearchParams).mockReturnValue({ slug: 'a-day' });
+  const coverImageUrl =
+    '/learning/media?key=learning%2Fart%2Ftest-cover%2Fv1.png';
+  const readingImageUrl =
+    '/learning/media?key=learning%2Fart%2Ftest-reading%2Fv2.png';
+  const readingCheckImageUrl =
+    '/learning/media?key=learning%2Fart%2Ftest-check%2Fv1.png';
+  jest.mocked(api.get).mockImplementation(async (url) => ({
+    data:
+      url === '/learning/catalogue'
+        ? createCatalogue()
+        : {
+            ...createLesson(),
+            coverImageUrl,
+            readingImageUrl,
+            readingCheckImageUrl,
+          },
+  }));
+
+  await render(ThematicLessonScreen);
+  expect(text()).toContain(coverImageUrl);
+  await press('learning.lesson.reading');
+  expect(text()).toContain(readingImageUrl);
+  expect(text()).toContain(readingCheckImageUrl);
+  expect(text()).not.toContain(coverImageUrl);
 });
 it('shows all lesson words as one roster and finishes at the unified lesson', async () => {
   jest.mocked(useLocalSearchParams).mockReturnValue({ slug: 'a-day' });

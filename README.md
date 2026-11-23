@@ -83,6 +83,28 @@ npm run db:migrate
 
 Application startup no longer creates or alters tables.
 
+## Development Lesson Media
+
+The team shares the private Cloudflare R2 bucket `readovo-media` for lesson
+images. The bucket owner manages access. Regular local development requires
+no Cloudflare account, personal bucket, or AWS CLI profile.
+
+- To test remote media with a local backend, get the S3 endpoint and scoped
+  **Object Read only** credentials from the bucket owner. Use
+  `R2_BUCKET=readovo-media` and put the supplied `R2_ENDPOINT`,
+  `R2_ACCESS_KEY_ID`, and `R2_SECRET_ACCESS_KEY` in your local `backend/.env`.
+  Set `R2_MEDIA_ALLOWED_USER_IDS` to the comma-separated Readovo user IDs
+  authorized to view those images. The app loads artwork through its
+  authenticated API. When artwork is unavailable, covers use the shared image
+  placeholder.
+- Maintainers who upload images use [AWS CLI v2](https://developers.cloudflare.com/r2/get-started/cli/)
+  with a separate **Object Read & Write** token scoped to `readovo-media`.
+  Run `aws configure --profile readovo-r2-dev` and use `auto` for the region.
+  The [Readovo lesson media skill](.agents/skills/readovo-lesson-media/SKILL.md)
+  uploads versioned keys such as `learning/topics/germany/v1.png` without
+  overwriting existing files, then verifies the files through the private
+  endpoint.
+
 ## Backend Setup
 
 Create `backend/.env` from `backend/.env.example`:

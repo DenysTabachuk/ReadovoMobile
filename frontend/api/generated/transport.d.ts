@@ -534,6 +534,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/learning/media': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Read private learning artwork for an authorized media account */
+    get: operations['getLearningMedia'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/mascot/profile/me': {
     parameters: {
       query?: never;
@@ -1246,16 +1263,19 @@ export interface components {
     };
     GetLearningCatalogueResponse: {
       defaultLevel: components['schemas']['VocabularyLevel'];
-      lessons: components['schemas']['LearningEntry'][];
+      lessons: components['schemas']['LearningLessonSummary'][];
       supportedLevels: components['schemas']['VocabularyLevel'][];
       topic: components['schemas']['LearningEntry'] | (never | null);
       topics: components['schemas']['LearningEntry'][];
     };
     GetLearningLessonResponse: {
       availableLevels: components['schemas']['VocabularyLevel'][];
-      /** @description Topic cover object key. Null uses the neutral catalogue illustration. */
-      coverImageKey: string | null;
+      /** @description API-relative URL of the cover, or null if unavailable. */
+      coverImageUrl: string | null;
       description: string;
+      readingCheckImageUrl: string | null;
+      readingImageUrl: string | null;
+      resultsImageUrl: string | null;
       slug: string;
       supportedLevels: components['schemas']['VocabularyLevel'][];
       title: string;
@@ -1272,10 +1292,19 @@ export interface components {
       | components['schemas']['ArticleWordNode'];
     LearningEntry: {
       availableLevels: components['schemas']['VocabularyLevel'][];
-      /** @description Topic cover object key. Null uses the neutral catalogue illustration. */
-      coverImageKey: string | null;
+      /** @description API-relative URL of the cover, or null if unavailable. */
+      coverImageUrl: string | null;
       description: string;
       slug: string;
+      title: string;
+    };
+    LearningLessonSummary: {
+      availableLevels: components['schemas']['VocabularyLevel'][];
+      /** @description API-relative URL of the cover, or null if unavailable. */
+      coverImageUrl: string | null;
+      description: string;
+      slug: string;
+      thumbnailUrl: string | null;
       title: string;
     };
     LearningReadingOption: {
@@ -1832,6 +1861,8 @@ export type GetLearningLessonResponse =
 export type GoogleLoginRequest = components['schemas']['GoogleLoginRequest'];
 export type InlineNode = components['schemas']['InlineNode'];
 export type LearningEntry = components['schemas']['LearningEntry'];
+export type LearningLessonSummary =
+  components['schemas']['LearningLessonSummary'];
 export type LearningReadingOption =
   components['schemas']['LearningReadingOption'];
 export type LearningReadingQuestion =
@@ -8571,6 +8602,270 @@ export interface operations {
                 message: 'Request rejected.';
                 /** @enum {integer} */
                 statusCode: 500;
+              };
+        };
+      };
+      /** @description Other rejected requests retain their HTTP error status. Infrastructure errors may have a different body. */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** @enum {string} */
+            code: 'REQUEST_REJECTED';
+            /** @enum {string} */
+            message: 'Request rejected.';
+            statusCode: number;
+          };
+        };
+      };
+    };
+  };
+  getLearningMedia: {
+    parameters: {
+      query: {
+        key: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'image/png': string;
+          'image/webp': string;
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'VALIDATION_FAILED';
+                details: {
+                  fields: {
+                    path: (string | number)[];
+                    /** @enum {string} */
+                    rule:
+                      | 'VALUE_REQUIRED'
+                      | 'STRING_REQUIRED'
+                      | 'INTEGER_REQUIRED'
+                      | 'BOOLEAN_REQUIRED'
+                      | 'ARRAY_REQUIRED'
+                      | 'EMAIL_INVALID'
+                      | 'UUID_INVALID'
+                      | 'URL_INVALID'
+                      | 'TIMEZONE_INVALID'
+                      | 'DATE_INVALID'
+                      | 'STRING_TOO_SHORT'
+                      | 'STRING_TOO_LONG'
+                      | 'NUMBER_TOO_SMALL'
+                      | 'NUMBER_TOO_LARGE'
+                      | 'ARRAY_TOO_LARGE'
+                      | 'ARRAY_EMPTY'
+                      | 'VALUE_NOT_ALLOWED'
+                      | 'FORMAT_INVALID'
+                      | 'FIELDS_DO_NOT_MATCH'
+                      | 'PROPERTY_NOT_ALLOWED'
+                      | 'VALUE_INVALID';
+                  }[];
+                };
+                /** @enum {string} */
+                message: 'Request validation failed.';
+                /** @enum {integer} */
+                statusCode: 400;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_MALFORMED';
+                /** @enum {string} */
+                message: 'Malformed request body.';
+                /** @enum {integer} */
+                statusCode: 400;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 400;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'AUTH_AUTHENTICATION_REQUIRED';
+                /** @enum {string} */
+                message: 'Authentication is required.';
+                /** @enum {integer} */
+                statusCode: 401;
+              }
+            | {
+                /** @enum {string} */
+                code: 'AUTH_ACCESS_TOKEN_INVALID';
+                /** @enum {string} */
+                message: 'Access token is invalid.';
+                /** @enum {integer} */
+                statusCode: 401;
+              }
+            | {
+                /** @enum {string} */
+                code: 'AUTH_ACCESS_TOKEN_EXPIRED';
+                /** @enum {string} */
+                message: 'Access token has expired.';
+                /** @enum {integer} */
+                statusCode: 401;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 401;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'LEARNING_MEDIA_FORBIDDEN';
+                /** @enum {string} */
+                message: 'Learning media is unavailable to this account.';
+                /** @enum {integer} */
+                statusCode: 403;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 403;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'LEARNING_CONTENT_NOT_FOUND';
+                /** @enum {string} */
+                message: 'Learning content not found.';
+                /** @enum {integer} */
+                statusCode: 404;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 404;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_TOO_LARGE';
+                /** @enum {string} */
+                message: 'Request body is too large.';
+                /** @enum {integer} */
+                statusCode: 413;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 413;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'INTERNAL_ERROR';
+                /** @enum {string} */
+                message: 'Internal server error.';
+                /** @enum {integer} */
+                statusCode: 500;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 500;
+              };
+        };
+      };
+      /** @description Application-owned error. statusCode equals the HTTP status. */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                code: 'LEARNING_MEDIA_UNAVAILABLE';
+                /** @enum {string} */
+                message: 'Learning media could not be loaded.';
+                /** @enum {integer} */
+                statusCode: 503;
+              }
+            | {
+                /** @enum {string} */
+                code: 'REQUEST_REJECTED';
+                /** @enum {string} */
+                message: 'Request rejected.';
+                /** @enum {integer} */
+                statusCode: 503;
               };
         };
       };
