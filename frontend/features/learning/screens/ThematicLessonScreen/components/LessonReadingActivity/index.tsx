@@ -7,7 +7,7 @@ import { Button } from '@/components/button';
 import { ScrollableScreen } from '@/components/scrollableScreen';
 import { ThemedText } from '@/components/themedText';
 import { useTheme } from '@/hooks/use-theme';
-import { LearningArtwork } from '../../../../components/LearningArtwork';
+import { LearningArtwork } from '@/features/learningMedia';
 import { highlightReadingWords } from '../../../../utils/highlightReadingWords';
 import { createStyles } from './styles';
 import { ReadingParagraph } from './components/readingParagraph';

@@ -3,8 +3,9 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, View } from 'react-native';
 
-import { ThemedText } from '@/components/themedText';
 import { ImageWithFallback } from '@/components/imageWithFallback';
+import { ThemedText } from '@/components/themedText';
+import { LearningArtwork } from '@/features/learningMedia';
 import { useTheme } from '@/hooks/use-theme';
 import type { VocabularyLessonWord } from '@/api/generated/transport';
 import { useVocabularySpeech } from '../../../../hooks/useVocabularySpeech';
@@ -23,10 +24,13 @@ export function WordCard({ card }: WordCardProps) {
   return (
     <View style={styles.card}>
       <View style={styles.imagePanel}>
-        <ImageWithFallback
+        <LearningArtwork
           contentFit="contain"
+          imageUrl={card.imageUrl}
           style={styles.image}
-          accessible={false}
+          fallback={
+            <ImageWithFallback style={[styles.image, styles.imageFallback]} />
+          }
         />
       </View>
       <View style={styles.details}>

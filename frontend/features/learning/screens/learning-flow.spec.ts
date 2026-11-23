@@ -23,7 +23,7 @@ import type { ModalSheet } from '@/components/modalSheet';
 import type { Button } from '@/components/button';
 import { api } from '@/features/auth';
 import type { PracticeSession, WordCards } from '@/features/vocabulary';
-import type { LearningArtwork } from '../components/LearningArtwork';
+import type { LearningArtwork } from '@/features/learningMedia';
 import { LearningLevelProvider } from '../providers/learningLevelProvider';
 import {
   createCatalogue,
@@ -119,7 +119,7 @@ jest.mock('expo-linear-gradient', () => ({
 jest.mock('@/components/imageWithFallback', () => ({
   ImageWithFallback: () => createElement('image'),
 }));
-jest.mock('../components/LearningArtwork', () => ({
+jest.mock('@/features/learningMedia', () => ({
   LearningArtwork: ({
     imageUrl,
     fallback,

@@ -22,6 +22,11 @@ numeric `revision` field alone solves reference integrity or resume behaviour.
 
 ## Follow-up work
 
+Deleting a lesson variant cascades through its vocabulary. Word references in
+stage rosters, exercises and options use deferred `NO ACTION` constraints.
+Deleting a referenced word by itself fails at transaction commit. Handle
+constraint errors at commit when designing content edits.
+
 - Define which published content edits are permitted and whether active attempts
   continue, restart explicitly, or migrate. Distinguish translation-only fixes
   from changes to word rosters, stage order and answer keys.

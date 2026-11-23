@@ -22,7 +22,19 @@ jest.mock('react-native', () => ({
   View: (props: ViewProps) => createElement('view', props),
   Pressable: (props: PressableProps) => createElement('button', props),
   StyleSheet: { create: (styles: object) => styles },
+  useWindowDimensions: () => ({ fontScale: 1 }),
 }));
+jest.mock('react-native-reanimated', () => {
+  const transition = {
+    delay: () => ({ duration: () => ({ reduceMotion: () => ({}) }) }),
+  };
+  return {
+    __esModule: true,
+    default: { View: (props: ViewProps) => createElement('view', props) },
+    FadeIn: transition,
+    ReduceMotion: { System: 'system' },
+  };
+});
 jest.mock('@/components/themedText', () => ({
   ThemedText: ({ children }: Pick<TextProps, 'children'>) =>
     createElement('text', null, children),
@@ -38,11 +50,21 @@ jest.mock('@/components/button', () => ({
 jest.mock('@/components/scrollableScreen', () => ({
   ScrollableScreen: (props: ViewProps) => createElement('view', props),
 }));
-jest.mock('@/hooks/use-theme', () => ({ useTheme: () => ({ colors: {} }) }));
-jest.mock('expo-image', () => ({ Image: () => createElement('image') }));
-jest.mock('@/components/imageWithFallback', () => ({
-  ImageWithFallback: () => createElement('image'),
+jest.mock('@/hooks/use-theme', () => ({
+  useTheme: () => ({ colors: { textSecondary: '#9ba1a6' } }),
 }));
+jest.mock('expo-image', () => ({ Image: () => createElement('image') }));
+jest.mock('@/features/learningMedia', () => ({
+  LearningArtwork: ({ imageUrl }: { imageUrl: string | null }) =>
+    createElement('image', { imageUrl }),
+}));
+jest.mock(
+  '../picturePractice/components/pictureOption/components/SpoilerPlaceholder',
+  () => ({
+    SpoilerPlaceholder: ({ revealed }: { revealed: boolean }) =>
+      createElement('spoiler', { revealed }),
+  }),
+);
 jest.mock('../../hooks/useVocabularySpeech', () => ({
   useVocabularySpeech: () => ({
     speakingText: null,
@@ -127,6 +149,29 @@ async function openPractice() {
 it('loads API questions, submits once during duplicate taps, and locks server-checked choices', async () => {
   await openPractice();
   expect(text()).toContain('Sample word 1');
+  expect(
+    root.container
+      .queryAll((node) => node.type === 'image')
+      .map((image) => image.props.imageUrl),
+  ).toEqual([
+    '/learning/media?key=vocabulary%2Fsample%2Fword-1%2Fv1.png',
+    '/learning/media?key=vocabulary%2Fsample%2Fword-2%2Fv1.png',
+    '/learning/media?key=vocabulary%2Fsample%2Fword-3%2Fv1.png',
+  ]);
+  expect(
+    root.container.queryAll(
+      (node) =>
+        node.type === 'text' &&
+        typeof node.props.children === 'string' &&
+        node.props.children.startsWith('vocabulary.practice.pictureNumber'),
+    ),
+  ).toHaveLength(0);
+  expect(
+    root.container
+      .queryAll((node) => node.type === 'spoiler')
+      .map((node) => node.props.revealed),
+  ).toEqual([false, false, false]);
+  expect(text()).not.toContain('Sample word 2');
   expect(button('vocabulary.practice.check').props.disabled).toBe(true);
   await press('vocabulary.practice.pictureNumber {"number":2}');
   expect(text()).not.toContain('close-circle');
@@ -150,11 +195,15 @@ it('loads API questions, submits once during duplicate taps, and locks server-ch
     { params: { level: 'A1' } },
   );
   expect(text()).toContain('vocabulary.practice.incorrect');
+  expect(text()).toContain('Sample word 2');
+  expect(
+    root.container
+      .queryAll((node) => node.type === 'spoiler')
+      .map((node) => node.props.revealed),
+  ).toEqual([true, true, true]);
   expect(text()).toContain('checkmark-circle');
   expect(text()).toContain('close-circle');
-  expect(
-    button('vocabulary.practice.pictureNumber {"number":2}').props.disabled,
-  ).toBe(true);
+  expect(button('Sample word 2').props.disabled).toBe(true);
   expect(text()).toContain('Translation 1');
 });
 

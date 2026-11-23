@@ -368,8 +368,7 @@ and hooks remain outside this migration.
 ## Thematic learning contracts
 
 The authenticated `/learning` routes browse topics, return a unified lesson
-variant and check vocabulary or reading answers. See
-[Topic-based learning](topic-based-learning.md).
+variant and check vocabulary or reading answers.
 
 - Catalogue entries identify topics and lessons by slug and list available levels.
   An unpublished ancestor hides its descendants.
@@ -389,6 +388,10 @@ nullable `coverImageUrl` and lesson summaries also return `thumbnailUrl`.
 Lesson details return nullable `readingImageUrl`, `readingCheckImageUrl`, and
 `resultsImageUrl`. These are API-relative links to authenticated PNG or WebP
 responses. The topic catalogue cover URL prefers the stored thumbnail.
+Vocabulary cards, picture choices, and vocabulary answer feedback expose the
+same API-relative `imageUrl` for a supported `imageKey`, or null for an
+unsupported key. `GET /learning/media` serves versioned vocabulary PNG and
+WebP files through the existing authenticated media-account policy.
 
 ### Generated Learning response validation
 

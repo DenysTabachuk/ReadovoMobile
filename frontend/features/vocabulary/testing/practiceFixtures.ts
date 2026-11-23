@@ -33,6 +33,7 @@ export function createVocabularyPractice(): Pick<
           id: option.id,
           word: option.word,
           imageKey: option.imageKey,
+          imageUrl: option.imageUrl,
         })),
       };
     }),

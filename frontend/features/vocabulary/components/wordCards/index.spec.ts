@@ -28,8 +28,9 @@ jest.mock('@/components/scrollableScreen', () => ({
 }));
 jest.mock('@/hooks/use-theme', () => ({ useTheme: () => ({ colors: {} }) }));
 jest.mock('expo-image', () => ({ Image: () => createElement('image') }));
-jest.mock('@/components/imageWithFallback', () => ({
-  ImageWithFallback: () => createElement('image'),
+jest.mock('@/features/learningMedia', () => ({
+  LearningArtwork: ({ imageUrl }: { imageUrl: string | null }) =>
+    createElement('image', { imageUrl }),
 }));
 jest.mock('../../hooks/useVocabularySpeech', () => ({
   useVocabularySpeech: () => ({
@@ -92,9 +93,14 @@ it('shows the full ordered vocabulary roster and continues after the final card'
 
   expect(text()).toContain('Sample word 20');
   expect(text()).toContain('Translation 20');
-  expect(root.container.queryAll((node) => node.type === 'image')).toHaveLength(
-    1,
-  );
+  expect(
+    root.container.queryAll(
+      (node) =>
+        node.type === 'image' &&
+        node.props.imageUrl ===
+          '/learning/media?key=vocabulary%2Fsample%2Fword-20%2Fv1.png',
+    ),
+  ).toHaveLength(1);
   expect(button('vocabulary.cards.previous').props.disabled).toBe(true);
   for (let count = 1; count < words.length; count += 1)
     await press('vocabulary.cards.next');

@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 import { View } from 'react-native';
 import { ThemedText } from '@/components/themedText';
 import { useTheme } from '@/hooks/use-theme';
-import { LearningArtwork } from '../../../../../../components/LearningArtwork';
+import { LearningArtwork } from '@/features/learningMedia';
 import { createStyles } from './styles';
 
 type LessonOverviewHeaderProps = {

@@ -1,7 +1,7 @@
 export const LEARNING_MEDIA_PATH = 'learning/media';
 export const MAX_MEDIA_KEY_LENGTH = 200;
 export const LEARNING_IMAGE_KEY =
-  /^learning\/(?:topics|lessons|art)\/(?:[a-z0-9-]+\/)+v[1-9][0-9]*\.(?:png|webp)$/;
+  /^(?:learning\/(?:topics|lessons|art)|vocabulary)\/(?:[a-z0-9-]+\/)+v[1-9][0-9]*\.(?:png|webp)$/;
 export const LEARNING_IMAGE_TYPES = {
   png: 'image/png',
   webp: 'image/webp',

@@ -4,6 +4,9 @@ it('encodes the stored key into a protected, API-relative URL', () => {
   expect(getLearningMediaUrl('learning/topics/example/v2.png')).toBe(
     '/learning/media?key=learning%2Ftopics%2Fexample%2Fv2.png',
   );
+  expect(getLearningMediaUrl('vocabulary/oktoberfest/tent/v1.png')).toBe(
+    '/learning/media?key=vocabulary%2Foktoberfest%2Ftent%2Fv1.png',
+  );
 });
 
 it.each([null, 'learning/topics/example/v1.svg', 'learning/topics/../v1.png'])(

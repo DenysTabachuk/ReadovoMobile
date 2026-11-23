@@ -2891,7 +2891,7 @@
             "type": "string"
           },
           "imageKey": {
-            "description": "Storage object key; media URL delivery is not configured by this API.",
+            "description": "Stored vocabulary image object key.",
             "type": "string"
           },
           "imageLicense": {
@@ -2899,6 +2899,11 @@
           },
           "imageSourceUrl": {
             "format": "uri",
+            "type": "string"
+          },
+          "imageUrl": {
+            "nullable": true,
+            "pattern": "^/learning/media\\?key=\\S+$",
             "type": "string"
           },
           "transcription": {
@@ -2919,6 +2924,7 @@
           "example",
           "exampleTranslationUk",
           "imageKey",
+          "imageUrl",
           "imageSourceUrl",
           "imageLicense",
           "imageAttribution"
@@ -2944,6 +2950,11 @@
           "imageKey": {
             "type": "string"
           },
+          "imageUrl": {
+            "nullable": true,
+            "pattern": "^/learning/media\\?key=\\S+$",
+            "type": "string"
+          },
           "word": {
             "type": "string"
           }
@@ -2951,7 +2962,8 @@
         "required": [
           "id",
           "word",
-          "imageKey"
+          "imageKey",
+          "imageUrl"
         ],
         "type": "object"
       },
@@ -20713,7 +20725,7 @@
             "schema": {
               "example": "learning/topics/germany/v1.png",
               "maxLength": 200,
-              "pattern": "^learning\\/(?:topics|lessons|art)\\/(?:[a-z0-9-]+\\/)+v[1-9][0-9]*\\.(?:png|webp)$",
+              "pattern": "^(?:learning\\/(?:topics|lessons|art)|vocabulary)\\/(?:[a-z0-9-]+\\/)+v[1-9][0-9]*\\.(?:png|webp)$",
               "type": "string"
             }
           }

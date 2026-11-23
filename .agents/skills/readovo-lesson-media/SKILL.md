@@ -5,7 +5,7 @@ description: Generate or source Readovo vocabulary and thematic lesson images, m
 
 # Readovo lesson media
 
-Read [Vocabulary content](../../../docs/vocabulary-content.md#images) and check the current lesson or sample seed for the exact object keys. For the Oktoberfest A1 sample, start with [its vocabulary seed](../../../backend/prisma/seeds/learning/oktoberfest-vocabulary.ts). Use existing keys for missing files. If replacing an existing image, propose a new key and identify the content records that need the new key.
+Read [Development Lesson Media](../../../README.md#development-lesson-media) and check the current lesson or sample seed for the exact object keys. For the Oktoberfest A1 sample, start with [its vocabulary seed](../../../backend/prisma/seeds/learning/oktoberfest-vocabulary.ts). Use existing keys for missing files. If replacing an existing image, propose a new key and identify the content records that need the new key.
 
 ## Prepare images
 

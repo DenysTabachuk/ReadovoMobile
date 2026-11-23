@@ -1689,11 +1689,12 @@ export interface components {
       exampleTranslationUk: string;
       id: string;
       imageAttribution: string;
-      /** @description Storage object key; media URL delivery is not configured by this API. */
+      /** @description Stored vocabulary image object key. */
       imageKey: string;
       imageLicense: string;
       /** Format: uri */
       imageSourceUrl: string;
+      imageUrl: string | null;
       transcription: string;
       translationUk: string;
       word: string;
@@ -1703,6 +1704,7 @@ export interface components {
     VocabularyPracticeOption: {
       id: string;
       imageKey: string;
+      imageUrl: string | null;
       word: string;
     };
     VocabularyPracticeQuestion: {

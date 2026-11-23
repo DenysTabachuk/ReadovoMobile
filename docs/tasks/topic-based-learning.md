@@ -1,8 +1,8 @@
 # Topic-based learning
 
 Status: the first coherent thematic learning slice is implemented. Additional
-authored level variants and saved progress remain pending. Lasting architecture
-and API details live in [Topic-based learning](../topic-based-learning.md).
+authored level variants and saved progress remain pending. See the
+[learning API contract](../openapi-contract.md#thematic-learning-contracts).
 
 ## Variant-owned vocabulary verification
 

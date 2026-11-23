@@ -1265,9 +1265,14 @@ const schema18 = {
   properties: {
     id: { type: 'string' },
     imageKey: { type: 'string' },
+    imageUrl: {
+      nullable: true,
+      pattern: '^/learning/media\\?key=\\S+$',
+      type: 'string',
+    },
     word: { type: 'string' },
   },
-  required: ['id', 'word', 'imageKey'],
+  required: ['id', 'word', 'imageKey', 'imageUrl'],
   type: 'object',
 };
 
@@ -1283,7 +1288,8 @@ function validate46(
       if (
         (data.id === undefined && (missing0 = 'id')) ||
         (data.word === undefined && (missing0 = 'word')) ||
-        (data.imageKey === undefined && (missing0 = 'imageKey'))
+        (data.imageKey === undefined && (missing0 = 'imageKey')) ||
+        (data.imageUrl === undefined && (missing0 = 'imageUrl'))
       ) {
         validate46.errors = [
           {
@@ -1334,13 +1340,14 @@ function validate46(
             var valid0 = true;
           }
           if (valid0) {
-            if (data.word !== undefined) {
+            if (data.imageUrl !== undefined) {
+              let data2 = data.imageUrl;
               const _errs5 = errors;
-              if (typeof data.word !== 'string') {
+              if (typeof data2 !== 'string' && data2 !== null) {
                 validate46.errors = [
                   {
-                    instancePath: instancePath + '/word',
-                    schemaPath: '#/properties/word/type',
+                    instancePath: instancePath + '/imageUrl',
+                    schemaPath: '#/properties/imageUrl/type',
                     keyword: 'type',
                     params: { type: 'string' },
                     message: 'must be string',
@@ -1348,9 +1355,48 @@ function validate46(
                 ];
                 return false;
               }
+              if (errors === _errs5) {
+                if (typeof data2 === 'string') {
+                  if (!pattern0.test(data2)) {
+                    validate46.errors = [
+                      {
+                        instancePath: instancePath + '/imageUrl',
+                        schemaPath: '#/properties/imageUrl/pattern',
+                        keyword: 'pattern',
+                        params: { pattern: '^/learning/media\\?key=\\S+$' },
+                        message:
+                          'must match pattern "' +
+                          '^/learning/media\\?key=\\S+$' +
+                          '"',
+                      },
+                    ];
+                    return false;
+                  }
+                }
+              }
               var valid0 = _errs5 === errors;
             } else {
               var valid0 = true;
+            }
+            if (valid0) {
+              if (data.word !== undefined) {
+                const _errs8 = errors;
+                if (typeof data.word !== 'string') {
+                  validate46.errors = [
+                    {
+                      instancePath: instancePath + '/word',
+                      schemaPath: '#/properties/word/type',
+                      keyword: 'type',
+                      params: { type: 'string' },
+                      message: 'must be string',
+                    },
+                  ];
+                  return false;
+                }
+                var valid0 = _errs8 === errors;
+              } else {
+                var valid0 = true;
+              }
             }
           }
         }
@@ -1588,12 +1634,16 @@ const schema19 = {
     id: { type: 'string' },
     imageAttribution: { type: 'string' },
     imageKey: {
-      description:
-        'Storage object key; media URL delivery is not configured by this API.',
+      description: 'Stored vocabulary image object key.',
       type: 'string',
     },
     imageLicense: { type: 'string' },
     imageSourceUrl: { format: 'uri', type: 'string' },
+    imageUrl: {
+      nullable: true,
+      pattern: '^/learning/media\\?key=\\S+$',
+      type: 'string',
+    },
     transcription: { type: 'string' },
     translationUk: { type: 'string' },
     word: { type: 'string' },
@@ -1606,6 +1656,7 @@ const schema19 = {
     'example',
     'exampleTranslationUk',
     'imageKey',
+    'imageUrl',
     'imageSourceUrl',
     'imageLicense',
     'imageAttribution',
@@ -1632,6 +1683,7 @@ function validate49(
         (data.exampleTranslationUk === undefined &&
           (missing0 = 'exampleTranslationUk')) ||
         (data.imageKey === undefined && (missing0 = 'imageKey')) ||
+        (data.imageUrl === undefined && (missing0 = 'imageUrl')) ||
         (data.imageSourceUrl === undefined && (missing0 = 'imageSourceUrl')) ||
         (data.imageLicense === undefined && (missing0 = 'imageLicense')) ||
         (data.imageAttribution === undefined && (missing0 = 'imageAttribution'))
@@ -1800,13 +1852,14 @@ function validate49(
                       var valid0 = true;
                     }
                     if (valid0) {
-                      if (data.transcription !== undefined) {
+                      if (data.imageUrl !== undefined) {
+                        let data7 = data.imageUrl;
                         const _errs15 = errors;
-                        if (typeof data.transcription !== 'string') {
+                        if (typeof data7 !== 'string' && data7 !== null) {
                           validate49.errors = [
                             {
-                              instancePath: instancePath + '/transcription',
-                              schemaPath: '#/properties/transcription/type',
+                              instancePath: instancePath + '/imageUrl',
+                              schemaPath: '#/properties/imageUrl/type',
                               keyword: 'type',
                               params: { type: 'string' },
                               message: 'must be string',
@@ -1814,18 +1867,39 @@ function validate49(
                           ];
                           return false;
                         }
+                        if (errors === _errs15) {
+                          if (typeof data7 === 'string') {
+                            if (!pattern0.test(data7)) {
+                              validate49.errors = [
+                                {
+                                  instancePath: instancePath + '/imageUrl',
+                                  schemaPath: '#/properties/imageUrl/pattern',
+                                  keyword: 'pattern',
+                                  params: {
+                                    pattern: '^/learning/media\\?key=\\S+$',
+                                  },
+                                  message:
+                                    'must match pattern "' +
+                                    '^/learning/media\\?key=\\S+$' +
+                                    '"',
+                                },
+                              ];
+                              return false;
+                            }
+                          }
+                        }
                         var valid0 = _errs15 === errors;
                       } else {
                         var valid0 = true;
                       }
                       if (valid0) {
-                        if (data.translationUk !== undefined) {
-                          const _errs17 = errors;
-                          if (typeof data.translationUk !== 'string') {
+                        if (data.transcription !== undefined) {
+                          const _errs18 = errors;
+                          if (typeof data.transcription !== 'string') {
                             validate49.errors = [
                               {
-                                instancePath: instancePath + '/translationUk',
-                                schemaPath: '#/properties/translationUk/type',
+                                instancePath: instancePath + '/transcription',
+                                schemaPath: '#/properties/transcription/type',
                                 keyword: 'type',
                                 params: { type: 'string' },
                                 message: 'must be string',
@@ -1833,18 +1907,18 @@ function validate49(
                             ];
                             return false;
                           }
-                          var valid0 = _errs17 === errors;
+                          var valid0 = _errs18 === errors;
                         } else {
                           var valid0 = true;
                         }
                         if (valid0) {
-                          if (data.word !== undefined) {
-                            const _errs19 = errors;
-                            if (typeof data.word !== 'string') {
+                          if (data.translationUk !== undefined) {
+                            const _errs20 = errors;
+                            if (typeof data.translationUk !== 'string') {
                               validate49.errors = [
                                 {
-                                  instancePath: instancePath + '/word',
-                                  schemaPath: '#/properties/word/type',
+                                  instancePath: instancePath + '/translationUk',
+                                  schemaPath: '#/properties/translationUk/type',
                                   keyword: 'type',
                                   params: { type: 'string' },
                                   message: 'must be string',
@@ -1852,9 +1926,29 @@ function validate49(
                               ];
                               return false;
                             }
-                            var valid0 = _errs19 === errors;
+                            var valid0 = _errs20 === errors;
                           } else {
                             var valid0 = true;
+                          }
+                          if (valid0) {
+                            if (data.word !== undefined) {
+                              const _errs22 = errors;
+                              if (typeof data.word !== 'string') {
+                                validate49.errors = [
+                                  {
+                                    instancePath: instancePath + '/word',
+                                    schemaPath: '#/properties/word/type',
+                                    keyword: 'type',
+                                    params: { type: 'string' },
+                                    message: 'must be string',
+                                  },
+                                ];
+                                return false;
+                              }
+                              var valid0 = _errs22 === errors;
+                            } else {
+                              var valid0 = true;
+                            }
                           }
                         }
                       }

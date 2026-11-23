@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import type { LearningLessonSummary } from '@/api/generated/transport';
 import { ThemedText } from '@/components/themedText';
 import { useTheme } from '@/hooks/use-theme';
-import { LearningArtwork } from '../../../../components/LearningArtwork';
+import { LearningArtwork } from '@/features/learningMedia';
 import { createStyles } from './styles';
 
 type LessonCardProps = {

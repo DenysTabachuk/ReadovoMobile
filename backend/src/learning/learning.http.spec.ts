@@ -181,6 +181,15 @@ describe('Unified thematic lessons (HTTP)', () => {
       expect(body).toHaveProperty('variant.level', level);
       expect(body).toHaveProperty('variant.vocabulary.words.0.id', 'book');
       expect(body).toHaveProperty(
+        'variant.vocabulary.words.0.imageUrl',
+        '/learning/media?key=vocabulary%2Ftest%2Fbook%2Fv1.png',
+      );
+      expect(body).toHaveProperty('variant.vocabulary.words.1.imageUrl', null);
+      expect(body).toHaveProperty(
+        'variant.vocabulary.questions.0.options.0.imageUrl',
+        '/learning/media?key=vocabulary%2Ftest%2Fbook%2Fv1.png',
+      );
+      expect(body).toHaveProperty(
         'variant.vocabulary.questions.0.id',
         'question-1',
       );
@@ -218,6 +227,9 @@ describe('Unified thematic lessons (HTTP)', () => {
       selectedOptionId: 'pencil',
       correctOptionId: 'book',
       isCorrect: false,
+      word: {
+        imageUrl: '/learning/media?key=vocabulary%2Ftest%2Fbook%2Fv1.png',
+      },
       sentenceTranslationUk: 'У мене є книга.',
     });
     expectSchema('CheckVocabularyAnswerResponse', response.body);

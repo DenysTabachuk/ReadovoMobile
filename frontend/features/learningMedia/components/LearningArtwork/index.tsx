@@ -1,7 +1,10 @@
 import type { ImageProps } from 'expo-image';
 import type { ReactNode } from 'react';
+import { ActivityIndicator, View } from 'react-native';
 import { ImageWithFallback } from '@/components/imageWithFallback';
+import { useTheme } from '@/hooks/use-theme';
 import { useLearningMediaQuery } from '../../api/queries/useLearningMediaQuery';
+import { styles } from './styles';
 
 type LearningArtworkProps = Pick<ImageProps, 'style' | 'contentFit'> & {
   imageUrl: string | null;
@@ -27,7 +30,16 @@ function RemoteLearningArtwork({
   imageUrl,
   ...props
 }: RemoteLearningArtworkProps) {
-  const { data } = useLearningMediaQuery(imageUrl);
+  const { colors } = useTheme();
+  const { data, isPending } = useLearningMediaQuery(imageUrl);
+
+  if (isPending) {
+    return (
+      <View style={[styles.loading, props.style]} accessible={false}>
+        <ActivityIndicator color={colors.primary} />
+      </View>
+    );
+  }
 
   return (
     <ImageWithFallback

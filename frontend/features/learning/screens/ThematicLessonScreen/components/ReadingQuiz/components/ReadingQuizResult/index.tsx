@@ -3,7 +3,7 @@ import { View } from 'react-native';
 import { Button } from '@/components/button';
 import { ScrollableScreen } from '@/components/scrollableScreen';
 import { ThemedText } from '@/components/themedText';
-import { LearningArtwork } from '../../../../../../components/LearningArtwork';
+import { LearningArtwork } from '@/features/learningMedia';
 import { styles } from './styles';
 
 type ReadingQuizResultProps = {

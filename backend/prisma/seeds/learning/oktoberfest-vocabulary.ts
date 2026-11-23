@@ -1,6 +1,6 @@
 import type { VocabularySeedContent } from './vocabulary-seed.types';
 
-// Original A1 test content. Image keys remain placeholders, not licensed media.
+// Original A1 test content with generated artwork in the development bucket.
 const entries = [
   [
     'festival',
@@ -111,9 +111,9 @@ const entries = [
       example: sentence.replace('___', id),
       exampleTranslationUk: sentenceTranslationUk,
       imageKey: `vocabulary/oktoberfest/${id}/v1.png`,
-      imageSourceUrl: 'https://www.oktoberfest.de/en',
-      imageLicense: 'Placeholder only; no image asset supplied',
-      imageAttribution: 'No image delivered by this test seed',
+      imageSourceUrl: 'https://chatgpt.com/',
+      imageLicense: 'AI-generated artwork for the Readovo development sample',
+      imageAttribution: 'Generated with OpenAI ImageGen',
     },
     sentenceBefore,
     sentenceAfter,

@@ -105,6 +105,14 @@ no Cloudflare account, personal bucket, or AWS CLI profile.
   overwriting existing files, then verifies the files through the private
   endpoint.
 
+Vocabulary records store a versioned R2 object key in `imageKey` (for example,
+`vocabulary/oktoberfest/tent/v1.png`). When preparing content, validate the key
+format and permitted source URLs. Record the image source, license and
+attribution with the word. The
+[Oktoberfest vocabulary seed](backend/prisma/seeds/learning/oktoberfest-vocabulary.ts)
+contains the development sample's keys and attribution. To populate the sample,
+run `npm --prefix backend run prisma:seed` against a development database.
+
 ## Backend Setup
 
 Create `backend/.env` from `backend/.env.example`:

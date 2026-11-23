@@ -1,4 +1,5 @@
 import { ApiProperty, ApiSchema } from '@nestjs/swagger';
+import { LEARNING_MEDIA_URL_PATTERN } from '../../media/constants';
 
 @ApiSchema({ name: 'VocabularyLessonWord' })
 export class VocabularyLessonWordDto {
@@ -22,10 +23,16 @@ export class VocabularyLessonWordDto {
 
   @ApiProperty({
     type: String,
-    description:
-      'Storage object key; media URL delivery is not configured by this API.',
+    description: 'Stored vocabulary image object key.',
   })
   declare imageKey: string;
+
+  @ApiProperty({
+    type: String,
+    nullable: true,
+    pattern: LEARNING_MEDIA_URL_PATTERN,
+  })
+  declare imageUrl: string | null;
 
   @ApiProperty({ type: String, format: 'uri' })
   declare imageSourceUrl: string;

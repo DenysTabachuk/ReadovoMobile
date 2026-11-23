@@ -10,12 +10,14 @@ const practiceKinds = new Map<string, VocabularyExerciseKind[]>([
 const wordExamples = [
   {
     id: 'book',
+    imageKey: 'vocabulary/test/book/v1.png',
     transcription: '/bʊk/',
     translationUk: 'книга',
     exampleTranslationUk: 'У мене є книга.',
   },
   {
     id: 'pencil',
+    imageKey: 'vocabulary/test/pencil.png',
     transcription: '/ˈpen.səl/',
     translationUk: 'олівець',
     exampleTranslationUk: 'У мене є олівець.',
@@ -38,7 +40,6 @@ export function createPracticeStage(stageId: string, variantId = VARIANT_ID) {
     variantId,
     word: word.id,
     example: `I have a ${word.id}.`,
-    imageKey: `vocabulary/test/${word.id}.png`,
     imageSourceUrl: 'https://example.test/vocabulary',
     imageLicense: 'Test fixture',
     imageAttribution: 'Test fixture',

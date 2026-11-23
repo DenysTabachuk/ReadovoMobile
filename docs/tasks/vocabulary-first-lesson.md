@@ -192,8 +192,9 @@ constraints validate ordering, required content and sentence shape. Image keys
 and attribution metadata are stored with words. No seed, endpoints, user progress
 or frontend changes are included in this review.
 
-See [Vocabulary content storage](../vocabulary-content.md) for the model,
-translation design, database/application validation boundary and test commands.
+See the [Prisma schema](../../backend/prisma/schema.prisma) and
+[variant ownership migration](../../backend/prisma/migrations/20261119193000_attach_vocabulary_to_learning_variants/migration.sql)
+for the current storage model and SQL constraints.
 The migration was applied to the local application database on 2026-11-09,
 along with the preceding pending streak-policy migration. All six repository
 migrations are now applied locally. There is no production database.

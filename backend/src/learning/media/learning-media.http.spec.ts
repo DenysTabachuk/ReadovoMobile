@@ -76,6 +76,11 @@ describe('Private learning media (HTTP)', () => {
 
   it.each([
     { key: TEST_IMAGE_KEY, bytes: png, type: 'image/png' },
+    {
+      key: 'vocabulary/oktoberfest/tent/v1.png',
+      bytes: png,
+      type: 'image/png',
+    },
     { key: TEST_WEBP_KEY, bytes: webp, type: 'image/webp' },
   ])(
     'delivers $type bytes without HTTP caching',

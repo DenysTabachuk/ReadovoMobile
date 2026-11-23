@@ -6,6 +6,7 @@ import type {
 import { PrismaService } from '../../prisma/prisma.service';
 import { ApiException } from '../../common/errors/api-exception';
 import { LEARNING_ERRORS } from '../learning-errors';
+import { getLearningMediaUrl } from '../media/utils/getLearningMediaUrl';
 import type { LearningVocabularyDto } from './dto/learning-vocabulary.dto';
 import type { VocabularyLessonWordDto } from './dto/vocabulary-lesson-word.dto';
 import type { CheckVocabularyAnswerResponseDto } from './dto/check-vocabulary-answer-response.dto';
@@ -60,6 +61,7 @@ export class VocabularyPracticeService {
             id: wordId,
             word: word.word,
             imageKey: word.imageKey,
+            imageUrl: getLearningMediaUrl(word.imageKey),
           })),
         });
       }
@@ -110,6 +112,7 @@ export class VocabularyPracticeService {
       example: word.example,
       exampleTranslationUk: word.exampleTranslationUk,
       imageKey: word.imageKey,
+      imageUrl: getLearningMediaUrl(word.imageKey),
       imageSourceUrl: word.imageSourceUrl,
       imageLicense: word.imageLicense,
       imageAttribution: word.imageAttribution,

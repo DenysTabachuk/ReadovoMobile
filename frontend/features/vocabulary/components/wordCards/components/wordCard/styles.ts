@@ -1,4 +1,5 @@
 import { StyleSheet } from 'react-native';
+import { palette } from '@/constants/palette';
 import { Spacing } from '@/constants/spacing';
 import type { ThemeColors } from '@/constants/theme';
 
@@ -12,14 +13,14 @@ export const createStyles = (colors: ThemeColors) =>
       overflow: 'hidden',
     },
     imagePanel: {
-      backgroundColor: colors.accentSurface,
+      backgroundColor: palette.cream100,
       alignItems: 'center',
       justifyContent: 'center',
-      padding: Spacing.xLg,
-      minHeight: 220,
+      paddingVertical: Spacing.sm,
     },
-    image: { width: '100%', height: 192 },
-    details: { padding: Spacing.lg, gap: Spacing.lg },
+    image: { width: '80%', maxWidth: 264, aspectRatio: 1, borderRadius: 12 },
+    imageFallback: { backgroundColor: colors.surface },
+    details: { padding: Spacing.lg, gap: Spacing.md },
     wordRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
     wordText: { flex: 1, gap: Spacing.xs },
     secondary: { color: colors.textSecondary },
@@ -48,7 +49,7 @@ export const createStyles = (colors: ThemeColors) =>
     example: {
       borderTopWidth: 1,
       borderTopColor: colors.borderSubtle,
-      paddingTop: Spacing.lg,
+      paddingTop: Spacing.sm,
       gap: Spacing.sm,
     },
     exampleText: { flex: 1 },
