@@ -10,6 +10,7 @@ const MAX_BACKGROUND_IMAGE_REQUESTS = 3;
  * @param imageUrls - Stable, unique URLs ordered by first use. An empty list skips loading.
  * @param retain - Keep the queued images in memory for the mounted activity.
  * Leaving the activity or changing accounts stops the queue from starting new work.
+ * @returns A function that immediately prefetches an image requested by the user.
  * @example usePrefetchLearningMedia(practiceImageUrls, true); // Keeps artwork for the attempt.
  */
 export function usePrefetchLearningMedia(
@@ -59,4 +60,7 @@ export function usePrefetchLearningMedia(
       stopped = true;
     };
   }, [imageOptions, queryClient]);
+
+  return (imageUrl: string) =>
+    queryClient.prefetchQuery(learningMediaQueryOptions(id, imageUrl));
 }

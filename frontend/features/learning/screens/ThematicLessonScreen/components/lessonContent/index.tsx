@@ -153,6 +153,7 @@ export function LessonContent({ slug, level }: LessonProps) {
       <LessonOverviewHeader
         title={data.title}
         description={data.description}
+        topicSlug={data.topicSlug}
         coverImageUrl={data.coverImageUrl}
       />
       {library.isError && (

@@ -23,7 +23,11 @@ import type { ModalSheet } from '@/components/modalSheet';
 import type { Button } from '@/components/button';
 import { api } from '@/features/auth';
 import type { PracticeSession, WordCards } from '@/features/vocabulary';
-import type { LearningArtwork } from '@/features/learningMedia';
+import {
+  useCachedLearningMedia,
+  usePrefetchLearningMedia,
+  type LearningArtwork,
+} from '@/features/learningMedia';
 import { LearningLevelProvider } from '../providers/learningLevelProvider';
 import {
   createCatalogue,
@@ -61,7 +65,18 @@ jest.mock('react-native', () => ({
   FlatList: <Item>(props: FlatListProps<Item>) =>
     createElement(
       'list',
-      null,
+      {
+        revealRows: () =>
+          props.onViewableItemsChanged?.({
+            changed: [],
+            viewableItems: Array.from(props.data ?? [], (item, index) => ({
+              item,
+              index,
+              key: props.keyExtractor?.(item, index) ?? String(index),
+              isViewable: true,
+            })),
+          }),
+      },
       isValidElement(props.ListHeaderComponent) && props.ListHeaderComponent,
       ...Array.from(props.data ?? [], (item, index) =>
         createElement(
@@ -119,14 +134,18 @@ jest.mock('expo-linear-gradient', () => ({
 jest.mock('@/components/imageWithFallback', () => ({
   ImageWithFallback: () => createElement('image'),
 }));
+const mockPrefetchCover = jest.fn();
 jest.mock('@/features/learningMedia', () => ({
+  usePrefetchLearningMedia: jest.fn(() => mockPrefetchCover),
+  useCachedLearningMedia: jest.fn(),
   LearningArtwork: ({
     imageUrl,
     fallback,
+    previewSource,
   }: ComponentProps<typeof LearningArtwork>) =>
     imageUrl === null && fallback !== undefined
       ? fallback
-      : createElement('image', { imageUrl }),
+      : createElement('image', { imageUrl, previewSource }),
 }));
 jest.mock('@/components/optionPickerField', () => ({
   OptionPickerField: (props: ComponentProps<typeof OptionPickerField>) =>
@@ -176,6 +195,7 @@ beforeEach(() => {
   root = createRoot({ textComponentTypes: ['text'] });
   client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   jest.mocked(useLocalSearchParams).mockReturnValue({});
+  jest.mocked(usePrefetchLearningMedia).mockReturnValue(mockPrefetchCover);
   jest.mocked(AsyncStorage.getItem).mockResolvedValue(null);
   jest.mocked(api.get).mockImplementation(async (url, config) => {
     if (url === '/learning/catalogue') return { data: createCatalogue() };
@@ -299,12 +319,14 @@ it('opens saved lessons directly and keeps a completed lesson after removing its
   const [parent] = catalogue.topics;
   if (!parent) throw new Error('Missing parent topic');
   const lesson = createLesson();
+  const coverImageUrl =
+    '/learning/media?key=learning%2Ftopics%2Feveryday%2Fv2.webp';
   const entry = {
     slug: lesson.slug,
     title: lesson.title,
     description: lesson.description,
     availableLevels: lesson.availableLevels,
-    coverImageUrl: lesson.coverImageUrl,
+    coverImageUrl,
     thumbnailUrl: null,
   };
   jest.mocked(api.get).mockImplementation(async (_url, config) => {
@@ -347,7 +369,17 @@ it('opens saved lessons directly and keeps a completed lesson after removing its
     change(` ${parent.title.toUpperCase()} `);
   });
   expect(text()).toContain(lesson.title);
+  const [list] = root.container.queryAll((node) => node.type === 'list');
+  const revealRows: unknown = list?.props.revealRows;
+  if (typeof revealRows !== 'function')
+    throw new Error('Missing viewability callback');
+  await act(async () => revealRows());
+  expect(usePrefetchLearningMedia).toHaveBeenLastCalledWith(
+    [coverImageUrl],
+    false,
+  );
   await press(lesson.title);
+  expect(mockPrefetchCover).toHaveBeenCalledWith(coverImageUrl);
   expect(router.push).toHaveBeenCalledWith({
     pathname: '/(tabs)/(learning)/lessons/[slug]',
     params: { slug: lesson.slug },
@@ -391,6 +423,17 @@ it('uses the cover and reading artwork URLs supplied with the lesson', async () 
   jest.mocked(useLocalSearchParams).mockReturnValue({ slug: 'a-day' });
   const coverImageUrl =
     '/learning/media?key=learning%2Fart%2Ftest-cover%2Fv1.png';
+  const thumbnailUrl =
+    '/learning/media?key=learning%2Ftopics%2Feveryday%2Fcatalogue%2Fv1.webp';
+  const previewSource = 'data:image/webp;base64,topic-preview';
+  const catalogue = createCatalogue();
+  const [topic] = catalogue.topics;
+  if (!topic) throw new Error('Missing preview topic');
+  client.setQueryData(['learning', 'owner', 'en', 'catalogue', topic.slug], {
+    ...catalogue,
+    topic: { ...topic, coverImageUrl: thumbnailUrl },
+  });
+  jest.mocked(useCachedLearningMedia).mockReturnValue(previewSource);
   const readingImageUrl =
     '/learning/media?key=learning%2Fart%2Ftest-reading%2Fv2.png';
   const readingCheckImageUrl =
@@ -409,6 +452,11 @@ it('uses the cover and reading artwork URLs supplied with the lesson', async () 
 
   await render(ThematicLessonScreen);
   expect(text()).toContain(coverImageUrl);
+  expect(text()).toContain(previewSource);
+  expect(useCachedLearningMedia).toHaveBeenCalledWith(thumbnailUrl);
+  expect(api.get).not.toHaveBeenCalledWith('/learning/catalogue', {
+    params: { locale: 'en', topic: topic.slug },
+  });
   await press('learning.lesson.reading');
   expect(text()).toContain(readingImageUrl);
   expect(text()).toContain(readingCheckImageUrl);

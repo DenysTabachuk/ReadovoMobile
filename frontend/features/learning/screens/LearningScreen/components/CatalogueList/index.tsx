@@ -1,8 +1,9 @@
 import { router } from 'expo-router';
-import type { ReactElement } from 'react';
-import { FlatList, View } from 'react-native';
+import { useCallback, useRef, useState, type ReactElement } from 'react';
+import { FlatList, View, type FlatListProps } from 'react-native';
 import type { LearningEntry } from '@/api/generated/transport';
 import { ScreenContainer } from '@/components/screenContainer';
+import { usePrefetchLearningMedia } from '@/features/learningMedia';
 import type { CatalogueLesson } from '../../types';
 import { LessonCard } from '../LessonCard';
 import { TopicCard } from '../TopicCard';
@@ -23,6 +24,12 @@ type CatalogueListProps = {
   onToggleBookmark: (item: CatalogueLesson) => void;
 };
 
+const MAX_VISIBLE_COVERS_TO_PREFETCH = 2;
+const COVER_VIEWABILITY = {
+  itemVisiblePercentThreshold: 50,
+  minimumViewTime: 120,
+};
+
 function CatalogueSeparator() {
   return <View style={styles.separator} />;
 }
@@ -37,6 +44,27 @@ export function CatalogueList({
   bookmarkDisabled,
   onToggleBookmark,
 }: CatalogueListProps) {
+  const [visibleCoverUrls, setVisibleCoverUrls] = useState<string[]>([]);
+  const viewabilityConfig = useRef(COVER_VIEWABILITY).current;
+  const prefetchCover = usePrefetchLearningMedia(visibleCoverUrls, false);
+  const handleVisibleRows = useCallback<
+    NonNullable<FlatListProps<CatalogueRow>['onViewableItemsChanged']>
+  >(({ viewableItems }) => {
+    const urls = new Set<string>();
+    for (const { item } of viewableItems) {
+      if (item.kind !== 'lesson' || item.item.lesson.coverImageUrl === null)
+        continue;
+      urls.add(item.item.lesson.coverImageUrl);
+      if (urls.size === MAX_VISIBLE_COVERS_TO_PREFETCH) break;
+    }
+    const next = [...urls];
+    setVisibleCoverUrls((current) => {
+      const sameUrls =
+        current.length === next.length &&
+        current.every((url, index) => url === next[index]);
+      return sameUrls ? current : next;
+    });
+  }, []);
   const rows: CatalogueRow[] = [
     ...topics.map((topic): CatalogueRow => ({ kind: 'topic', topic })),
     ...lessons.map((item): CatalogueRow => ({ kind: 'lesson', item })),
@@ -61,6 +89,8 @@ export function CatalogueList({
         ]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
+        onViewableItemsChanged={handleVisibleRows}
+        viewabilityConfig={viewabilityConfig}
         ListHeaderComponent={header}
         ListHeaderComponentStyle={(hasRows || footer) && styles.header}
         ListFooterComponent={footer}
@@ -91,12 +121,14 @@ export function CatalogueList({
               saved={item.saved}
               completed={item.completed}
               bookmarkDisabled={bookmarkDisabled}
-              onPress={() =>
+              onPress={() => {
+                const { coverImageUrl, slug } = item.lesson;
+                if (coverImageUrl !== null) void prefetchCover(coverImageUrl);
                 router.push({
                   pathname: '/(tabs)/(learning)/lessons/[slug]',
-                  params: { slug: item.lesson.slug },
-                })
-              }
+                  params: { slug },
+                });
+              }}
               onToggleSaved={() => onToggleBookmark(item)}
             />
           );
