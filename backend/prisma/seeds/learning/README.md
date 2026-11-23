@@ -12,6 +12,7 @@ npm --prefix backend run prisma:seed
 
 `seed-thematic-lesson.ts` validates the vocabulary and writes the sample in one
 transaction. Re-running replaces practice and reading questions for the same
-variant and preserves its publication timestamp. Image keys are placeholders.
+variant and preserves its publication timestamp. Vocabulary keys reference the
+versioned WebP renditions in the private development media bucket.
 The sample is development data. Production content import requires a separate
 agreement.

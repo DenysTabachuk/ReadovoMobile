@@ -13,6 +13,7 @@ export type {
 
 export { getMascotErrorMessageKey } from './utils/getMascotErrorMessageKey';
 export { useMascotProfileQuery } from './api';
+export { mascotProfileQueryOptions } from './api/queries/useMascotProfileQuery';
 export { useBuyMascotMutation } from './api';
 export { useEquipMascotMutation } from './api';
 export { useClearMascotMutation } from './api';

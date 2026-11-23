@@ -3,11 +3,15 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/features/auth';
 import { getMascotProfile } from '../../requests';
 
+export function mascotProfileQueryOptions(userId: string | undefined) {
+  return {
+    enabled: Boolean(userId),
+    queryFn: () => getMascotProfile(),
+    queryKey: ['mascot-profile', userId],
+  };
+}
+
 export function useMascotProfileQuery() {
   const { currentUser } = useAuth();
-  return useQuery({
-    enabled: Boolean(currentUser?.id),
-    queryFn: () => getMascotProfile(),
-    queryKey: ['mascot-profile', currentUser?.id],
-  });
+  return useQuery(mascotProfileQueryOptions(currentUser?.id));
 }

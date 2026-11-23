@@ -12,6 +12,7 @@ Read [Development Lesson Media](../../../README.md#development-lesson-media) and
 - Source PNG keys and prompts for existing art are recorded under [topic covers](../../../docs/learning-media/topic-covers.md) and [lesson artwork](../../../docs/learning-media/lesson-art.md). Download the source from private R2 into a temporary directory when preparing a new rendition.
 - Use ImageGen for generated educational images. For real photos, verify reuse rights on each original file or source page before using it. Record the source URL, license and required attribution. For generated images, record that they were generated and retain the prompt as provenance.
 - For exercise options, use comparable crops and dimensions. Make each target recognizable at phone-card size and keep option labels out of the image. Inspect the rendered files. Match the actual encoding and MIME type to each key's extension.
+- Deliver vocabulary cards and picture choices as versioned WebP files with `Content-Type: image/webp`. Use the `vocabulary` preset in [prepare_artwork.py](scripts/prepare_artwork.py) for up to 512 px on the longest edge, without cropping. Keep source PNGs under their existing keys and switch word records only after verifying the new WebP objects.
 - Keep work files in a temporary directory. Report each completed image with its object key and provenance. Update lesson content records only when the request includes that work. Development seed material requires separate approval for production use.
 
 ### Catalogue and full-size artwork

@@ -4,7 +4,7 @@ export const mascotAccessorySlots: MascotAccessorySlot[] = ['head', 'eyes'];
 
 const mascotCatalog: MascotCatalogItem[] = [
   {
-    asset: require('../../assets/mascot/accessories/hats/pirate-hat.png'),
+    asset: require('../../assets/mascot/accessories/hats/pirate-hat.webp'),
     id: 'pirate-hat',
     labelKey: 'mascot.items.pirate-hat',
     placement: {
@@ -16,7 +16,7 @@ const mascotCatalog: MascotCatalogItem[] = [
     slot: 'head',
   },
   {
-    asset: require('../../assets/mascot/accessories/hats/bandanna.png'),
+    asset: require('../../assets/mascot/accessories/hats/bandanna.webp'),
     id: 'bandanna',
     labelKey: 'mascot.items.bandanna',
     placement: {
@@ -29,7 +29,7 @@ const mascotCatalog: MascotCatalogItem[] = [
     slot: 'head',
   },
   {
-    asset: require('../../assets/mascot/accessories/glasses/glasses.png'),
+    asset: require('../../assets/mascot/accessories/glasses/glasses.webp'),
     id: 'glasses',
     labelKey: 'mascot.items.glasses',
     placement: {
@@ -41,7 +41,7 @@ const mascotCatalog: MascotCatalogItem[] = [
     slot: 'eyes',
   },
   {
-    asset: require('../../assets/mascot/accessories/glasses/eye-patch.png'),
+    asset: require('../../assets/mascot/accessories/glasses/eye-patch.webp'),
     id: 'eye-patch',
     labelKey: 'mascot.items.eye-patch',
     placement: {

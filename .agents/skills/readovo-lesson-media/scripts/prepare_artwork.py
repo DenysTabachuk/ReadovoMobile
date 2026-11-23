@@ -10,6 +10,7 @@ from PIL import Image, ImageOps
 TOPIC_THUMBNAIL_WIDTH = 960
 LESSON_THUMBNAIL_SIZE = 256
 COVER_WIDTH = 1280
+VOCABULARY_MAX_EDGE = 512
 WEBP_QUALITY = 80
 WEBP_METHOD = 6
 RESAMPLING = Image.Resampling.LANCZOS
@@ -22,7 +23,7 @@ def main() -> None:
     parser.add_argument(
         "--preset",
         required=True,
-        choices=("topic-thumbnail", "lesson-thumbnail", "cover"),
+        choices=("topic-thumbnail", "lesson-thumbnail", "cover", "vocabulary"),
     )
     parser.add_argument(
         "--centering",
@@ -53,6 +54,8 @@ def main() -> None:
             method=RESAMPLING,
             centering=tuple(args.centering or (0.5, 0.5)),
         )
+    elif args.preset == "vocabulary":
+        rendition.thumbnail((VOCABULARY_MAX_EDGE, VOCABULARY_MAX_EDGE), RESAMPLING)
     else:
         max_width = TOPIC_THUMBNAIL_WIDTH if args.preset == "topic-thumbnail" else COVER_WIDTH
         rendition.thumbnail((max_width, rendition.height), RESAMPLING)

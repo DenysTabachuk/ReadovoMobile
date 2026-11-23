@@ -371,6 +371,16 @@ Jest verifies state, roles and props; it does not verify native appearance or
 contrast. Assess composed surfaces, gradients and disabled states visually rather
 than inferring readability from a token name or a passing test.
 
+## Raster assets
+
+- Prefer WebP for app-displayed raster artwork, including illustrations, photos,
+  backgrounds and thumbnails. Size each rendition for its display and use
+  lossless WebP with alpha when precise transparent edges or layered artwork
+  require it.
+- Keep source artwork and preserve file formats required by native tooling,
+  such as app icons or splash-screen inputs. When replacing remote assets, use
+  a new versioned key with the matching extension and MIME type.
+
 ## Data layer example
 
 ```text

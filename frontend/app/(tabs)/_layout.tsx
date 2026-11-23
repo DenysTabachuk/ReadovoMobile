@@ -1,14 +1,62 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useQueryClient } from '@tanstack/react-query';
 import { Tabs } from 'expo-router';
-import React from 'react';
+import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { HapticTab } from '@/components/hapticTab';
+import { achievementsProfileQueryOptions } from '@/features/achievements';
+import { getAuthSessionVersion, useAuthenticatedUser } from '@/features/auth';
+import { dictionaryWordsQueryOptions } from '@/features/dictionary';
+import { mascotProfileQueryOptions } from '@/features/mascot';
+import {
+  streakCalendarMonthQueryOptions,
+  streakProfileQueryOptions,
+} from '@/features/streak';
 import { useTheme } from '@/hooks/use-theme';
+
+/**
+ * Warms the initial Dictionary and Profile reads after the tabs first render.
+ * A completed streak read supplies the same server date the calendar uses.
+ * @example usePrefetchTabData(); // The tabs render while their data loads.
+ */
+function usePrefetchTabData() {
+  const { id } = useAuthenticatedUser();
+  const client = useQueryClient();
+
+  useEffect(() => {
+    const sessionVersion = getAuthSessionVersion();
+    let stillMounted = true;
+    void client.prefetchQuery(dictionaryWordsQueryOptions(id));
+    void client.prefetchQuery(achievementsProfileQueryOptions(id));
+    void client.prefetchQuery(mascotProfileQueryOptions(id));
+    void client.fetchQuery(streakProfileQueryOptions(id)).then(
+      (streak) => {
+        if (!stillMounted || getAuthSessionVersion() !== sessionVersion) return;
+        if (typeof streak?.serverNow !== 'string') return;
+        const date = new Date(streak.serverNow);
+        if (Number.isNaN(date.getTime())) return;
+        void client.prefetchQuery(
+          streakCalendarMonthQueryOptions(id, {
+            year: date.getUTCFullYear(),
+            month: date.getUTCMonth() + 1,
+          }),
+        );
+      },
+      () => {
+        // The mounted Profile screen handles failed reads and retries.
+      },
+    );
+    return () => {
+      stillMounted = false;
+    };
+  }, [client, id]);
+}
 
 export default function TabLayout() {
   const { t } = useTranslation();
   const { colors } = useTheme();
+  usePrefetchTabData();
 
   return (
     <Tabs

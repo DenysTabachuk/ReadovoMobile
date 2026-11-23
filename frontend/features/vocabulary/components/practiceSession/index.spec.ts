@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { PressableProps, TextProps, ViewProps } from 'react-native';
 import type { Button } from '@/components/button';
 import { api } from '@/features/auth';
+import { usePrefetchLearningMedia } from '@/features/learningMedia';
 import {
   createVocabularyPractice,
   createVocabularyFeedback,
@@ -57,6 +58,7 @@ jest.mock('expo-image', () => ({ Image: () => createElement('image') }));
 jest.mock('@/features/learningMedia', () => ({
   LearningArtwork: ({ imageUrl }: { imageUrl: string | null }) =>
     createElement('image', { imageUrl }),
+  usePrefetchLearningMedia: jest.fn(),
 }));
 jest.mock(
   '../picturePractice/components/pictureOption/components/SpoilerPlaceholder',
@@ -148,6 +150,14 @@ async function openPractice() {
 
 it('loads API questions, submits once during duplicate taps, and locks server-checked choices', async () => {
   await openPractice();
+  expect(usePrefetchLearningMedia).toHaveBeenLastCalledWith(
+    [
+      '/learning/media?key=vocabulary%2Fsample%2Fword-1%2Fv1.png',
+      '/learning/media?key=vocabulary%2Fsample%2Fword-2%2Fv1.png',
+      '/learning/media?key=vocabulary%2Fsample%2Fword-3%2Fv1.png',
+    ],
+    true,
+  );
   expect(text()).toContain('Sample word 1');
   expect(
     root.container

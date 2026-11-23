@@ -52,6 +52,8 @@ full requirements, examples, documentation template, and edge cases.
 ## Components and utilities
 
 - Use `Ionicons` from `@expo/vector-icons` for interface icons on Android and iOS.
+- Prefer WebP for new raster artwork shown in the app. See
+  [raster asset conventions](../docs/frontend-conventions.md#raster-assets).
 
 - Reuse `components/fullScreenLoader` for initial screen loading. Do not substitute
   a plain loading-text notice or create a feature-specific full-screen spinner.

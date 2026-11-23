@@ -8,7 +8,11 @@ import { Button } from '@/components/button';
 import { FullScreenLoader } from '@/components/fullScreenLoader';
 import { ScrollableScreen } from '@/components/scrollableScreen';
 import { ThemedText } from '@/components/themedText';
-import { PracticeSession, WordCards } from '@/features/vocabulary';
+import {
+  PracticeSession,
+  usePrefetchPracticeArtwork,
+  WordCards,
+} from '@/features/vocabulary';
 import { useTheme } from '@/hooks/use-theme';
 import { useLearningLessonQuery } from '../../../../api/queries/useLearningLessonQuery';
 import { useLessonLibrary } from '../../../../hooks/useLessonLibrary';
@@ -37,6 +41,11 @@ export function LessonContent({ slug, level }: LessonProps) {
   const { data, isPending, refetch } = useLearningLessonQuery(slug, level);
   const { query: library, mutation: updateLibrary } = useLessonLibrary();
   const [activity, setActivity] = useState<LessonActivity | null>(null);
+  const variant = data?.variant;
+  usePrefetchPracticeArtwork(
+    variant?.vocabulary.questions ?? [],
+    activity === null ? 'preview' : 'inactive',
+  );
   // Activities share the lesson route: Back closes the activity before leaving the lesson.
   usePreventRemove(activity !== null, () => setActivity(null));
   if (isPending)
@@ -54,7 +63,6 @@ export function LessonContent({ slug, level }: LessonProps) {
         <Button onPress={() => void refetch()}>{t('article.retry')}</Button>
       </ScrollableScreen>
     );
-  const variant = data.variant;
   const saved =
     library.data?.some((entry) => entry.slug === slug && entry.saved) ?? false;
   const completeLesson = () =>

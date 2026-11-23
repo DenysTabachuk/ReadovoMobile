@@ -3,6 +3,13 @@ import { useQuery } from '@tanstack/react-query';
 
 import { getStreakProfile } from '../../requests/getStreakProfile';
 
+export function streakProfileQueryOptions(userId: string) {
+  return {
+    queryFn: getStreakProfile,
+    queryKey: ['streak-profile', userId],
+  };
+}
+
 /**
  * Reads the authenticated owner's streak without replaying unverifiable activity events.
  * The owner comes from the protected auth context and remains part of the cache key.
@@ -14,8 +21,5 @@ import { getStreakProfile } from '../../requests/getStreakProfile';
  */
 export function useStreakProfileQuery() {
   const { id: userId } = useAuthenticatedUser();
-  return useQuery({
-    queryFn: getStreakProfile,
-    queryKey: ['streak-profile', userId],
-  });
+  return useQuery(streakProfileQueryOptions(userId));
 }

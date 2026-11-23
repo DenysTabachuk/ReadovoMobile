@@ -105,8 +105,9 @@ no Cloudflare account, personal bucket, or AWS CLI profile.
   overwriting existing files, then verifies the files through the private
   endpoint.
 
-Vocabulary records store a versioned R2 object key in `imageKey` (for example,
-`vocabulary/oktoberfest/tent/v1.png`). When preparing content, validate the key
+Vocabulary cards and picture choices use WebP. Vocabulary records store a
+versioned R2 object key in `imageKey` (for example,
+`vocabulary/oktoberfest/tent/v2.webp`). When preparing content, validate the key
 format and permitted source URLs. Record the image source, license and
 attribution with the word. The
 [Oktoberfest vocabulary seed](backend/prisma/seeds/learning/oktoberfest-vocabulary.ts)

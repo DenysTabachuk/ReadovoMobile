@@ -9,6 +9,7 @@ import { Button } from '@/components/button';
 import { ScrollableScreen } from '@/components/scrollableScreen';
 import { ThemedText } from '@/components/themedText';
 import { useTheme } from '@/hooks/use-theme';
+import { usePrefetchPracticeArtwork } from '../../hooks/usePrefetchPracticeArtwork';
 import { PracticeProgress } from '../practiceProgress';
 import { PracticeResult } from '../practiceResult';
 import { PictureExercise } from '../picturePractice';
@@ -46,6 +47,10 @@ export function PracticeSession({
     restart,
   } = usePracticeSession({ lessonSlug, level, questions });
   const { question, answer, total, questionIndex } = practice;
+  usePrefetchPracticeArtwork(
+    questions,
+    practice.isComplete ? 'inactive' : 'session',
+  );
 
   if (practice.isComplete)
     return (

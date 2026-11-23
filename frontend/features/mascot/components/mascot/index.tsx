@@ -40,7 +40,7 @@ export function Mascot({ equippedItems = {}, style }: MascotProps) {
     <View onLayout={handleLayout} style={[styles.stage, style]}>
       <Image
         contentFit="contain"
-        source={require('../../../../assets/mascot/base/octopus.png')}
+        source={require('../../../../assets/mascot/base/octopus.webp')}
         style={styles.base}
       />
       {equippedCatalogItems.map(({ slot, item }) => {

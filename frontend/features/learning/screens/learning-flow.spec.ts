@@ -154,6 +154,7 @@ jest.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (key: string) => key }),
 }));
 jest.mock('@/features/vocabulary', () => ({
+  usePrefetchPracticeArtwork: jest.fn(),
   WordCards: (props: ComponentProps<typeof WordCards>) =>
     createElement(
       'view',

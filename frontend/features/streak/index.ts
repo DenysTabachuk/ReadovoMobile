@@ -16,6 +16,8 @@ export type { StreakState } from './types';
 export { useStreakAchievementFeedback } from './hooks';
 
 export { ActivityCalendar } from './components/activityCalendar';
+export { streakCalendarMonthQueryOptions } from './api/queries/useStreakCalendarMonthQuery';
+export { streakProfileQueryOptions } from './api/queries/useStreakProfileQuery';
 
 export { StreakAchievementCard } from './components/streakAchievementCard';
 

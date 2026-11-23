@@ -5,3 +5,4 @@ export type {
   AchievementsProfileResponse,
 } from './types';
 export { useAchievementsProfileQuery } from './api';
+export { achievementsProfileQueryOptions } from './api/queries/useAchievementsProfileQuery';

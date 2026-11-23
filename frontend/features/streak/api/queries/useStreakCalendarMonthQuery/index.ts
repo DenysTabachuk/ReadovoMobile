@@ -8,13 +8,20 @@ type UseStreakCalendarMonthQueryParams = {
   month: number;
 };
 
+export function streakCalendarMonthQueryOptions(
+  userId: string,
+  { year, month }: UseStreakCalendarMonthQueryParams,
+) {
+  return {
+    queryFn: () => getStreakCalendarMonth({ year, month }),
+    queryKey: ['streak-calendar-month', userId, year, month],
+  };
+}
+
 export function useStreakCalendarMonthQuery({
   year,
   month,
 }: UseStreakCalendarMonthQueryParams) {
   const { id: userId } = useAuthenticatedUser();
-  return useQuery({
-    queryFn: () => getStreakCalendarMonth({ year, month }),
-    queryKey: ['streak-calendar-month', userId, year, month],
-  });
+  return useQuery(streakCalendarMonthQueryOptions(userId, { year, month }));
 }

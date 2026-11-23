@@ -110,7 +110,7 @@ const entries = [
       translationUk,
       example: sentence.replace('___', id),
       exampleTranslationUk: sentenceTranslationUk,
-      imageKey: `vocabulary/oktoberfest/${id}/v1.png`,
+      imageKey: `vocabulary/oktoberfest/${id}/v2.webp`,
       imageSourceUrl: 'https://chatgpt.com/',
       imageLicense: 'AI-generated artwork for the Readovo development sample',
       imageAttribution: 'Generated with OpenAI ImageGen',
