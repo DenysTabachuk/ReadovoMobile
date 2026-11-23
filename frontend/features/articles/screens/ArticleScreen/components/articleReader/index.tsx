@@ -1,7 +1,6 @@
 import { useMemo, useCallback, useState } from 'react';
 import { TranslationSelectionProgress } from './components/translationSelectionProgress';
 import { Cta } from '@/components/cta';
-import { IconSymbol } from '@/components/iconSymbol';
 import { ScreenContainer } from '@/components/screenContainer';
 import { ScrollToTopButton } from '@/components/scrollToTopButton';
 import { ThemedText } from '@/components/themedText';
@@ -101,11 +100,11 @@ export function ArticleReader({ article }: Props) {
         onPress={handleToggleSavedArticle}
         style={styles.headerIconButton}
       >
-        <IconSymbol
+        <Ionicons
           color={
             isCurrentArticleSaved ? colors.interactive : colors.textSecondary
           }
-          name={isCurrentArticleSaved ? 'bookmark.fill' : 'bookmark'}
+          name={isCurrentArticleSaved ? 'bookmark' : 'bookmark-outline'}
           size={24}
         />
       </Pressable>

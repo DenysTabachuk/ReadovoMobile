@@ -20,6 +20,73 @@
     "profile": "Профіль"
   },
   "learning": {
+    "topics": {
+      "searchLessons": "Пошук уроків",
+      "tabs": {
+        "all": "Усі",
+        "saved": "Збережені",
+        "completed": "Пройдені"
+      },
+      "libraryHeading": {
+        "saved": "Збережені уроки",
+        "completed": "Пройдені уроки"
+      },
+      "emptyTab": {
+        "all": "Опублікованих тем і уроків поки немає.",
+        "saved": "Додайте закладку до уроку, щоб знайти його тут.",
+        "completed": "Тут з’являться пройдені уроки."
+      },
+      "completedStatus": "✓ Пройдено",
+      "completionHint": "Дайте відповіді на всі запитання за текстом, щоб завершити урок.",
+      "repeatLesson": "Повторити",
+      "saveLesson": "Зберегти урок: {{title}}",
+      "removeBookmark": "Прибрати закладку: {{title}}",
+      "libraryLoadError": "Не вдалося завантажити ваші уроки.",
+      "libraryWriteError": "Не вдалося зберегти зміну. Спробуйте ще раз.",
+      "title": "Теми",
+      "description": "Слова, історії та практика за інтересами.",
+      "search": "Пошук тем",
+      "clearSearch": "Очистити пошук",
+      "filters": "Фільтри",
+      "filtersSoon": "Додаткові фільтри з’являться тут.",
+      "closeFilters": "Закрити",
+      "noResults": "Не знайдено відповідних тем або уроків.",
+      "availableLevels": "Рівні: {{levels}}",
+      "englishLevel": "Рівень англійської",
+      "openTopic": "Переглянути тему",
+      "openLesson": "Відкрити урок",
+      "levelUnavailable": "Матеріали для {{level}} ще не доступні.",
+      "loadError": "Не вдалося завантажити цю тему або урок.",
+      "empty": "Опублікованих тем ще немає."
+    },
+    "reader": {
+      "label": "ІСТОРІЯ · {{level}}",
+      "largeText": "Збільшений текст",
+      "checkTitle": "Як добре ти зрозумів історію?",
+      "questions_one": "{{count}} запитання за прочитаним",
+      "questions_few": "{{count}} запитання за прочитаним",
+      "questions_many": "{{count}} запитань за прочитаним",
+      "questions_other": "{{count}} запитання за прочитаним"
+    },
+    "comprehension": {
+      "position": "Запитання {{current}} із {{total}}",
+      "progress": "Запитання до історії",
+      "chooseOne": "Обери одну відповідь"
+    },
+    "lesson": {
+      "title": "Урок",
+      "summary": "{{words}} слів · {{questions}} запитань",
+      "back": "До уроку",
+      "availableLevels": "Доступні рівні: {{levels}}",
+      "words": "Вивчити слова",
+      "wordTest": "Потренувати слова",
+      "reading": "Прочитати текст",
+      "comprehension": "Перевірити розуміння",
+      "path": "Шлях уроку",
+      "wordsDescription": "Картки слів з перекладом і прикладами",
+      "practiceDescription": "Картинки, аудіо та речення",
+      "comprehensionDescription": "Запитання до прочитаної історії"
+    },
     "title": "Навчання",
     "description": "Трохи прогресу щодня.",
     "chooseActivity": "Що хочете потренувати?",
@@ -34,31 +101,26 @@
     },
     "reading": {
       "title": "Читання",
-      "description": "Відкрийте для себе щось цікаве"
+      "description": "Відкрийте для себе щось цікаве",
+      "catalogueDescription": "Читайте англійською про те, що вам цікаво."
     }
   },
   "vocabulary": {
     "sentence": {
       "title": "Доповніть речення",
-      "sample": "Пропущені слова · Запитань: {{count}}",
       "chooseWord": "Виберіть пропущене слово"
-    },
-    "sentences": {
-      "backpack": "Я ношу книжки до школи в рюкзаку.",
-      "book": "Я читаю книжку про тварин.",
-      "pencil": "Я пишу олівцем і стираю помилки гумкою."
     },
     "audio": {
       "title": "Практика на слух",
-      "sample": "Слухайте й обирайте · Запитань: {{count}}",
       "choosePicture": "Послухайте слово й виберіть картинку",
-      "listenAgain": "Послухати ще раз",
-      "replayHint": "Слухайте стільки разів, скільки потрібно.",
+      "listenAgain": "Прослухати ще раз",
       "start": "Потренуватися на слух"
     },
     "practice": {
+      "nextStage": "Продовжити урок",
+      "questionCount": "Запитань: {{count}}",
+      "checkError": "Не вдалося перевірити відповідь. Спробуйте ще раз.",
       "title": "Швидка практика",
-      "sample": "Слова й картинки · Запитань: {{count}}",
       "choosePicture": "Виберіть картинку до цього слова",
       "pictureNumber": "Картинка {{number}}",
       "check": "Перевірити",
@@ -70,39 +132,24 @@
       "resultTitle": "Практику завершено",
       "score": "{{correct}} / {{total}}",
       "correctAnswers": "Правильні відповіді",
-      "localResult": "Це пробна практика. Прогрес уроку не збережено.",
+      "localResult": "Прогрес уроку не збережено.",
       "reviewWords": "Слова для повторення",
       "tryAgain": "Спробувати ще раз"
     },
     "cards": {
+      "continue": "Продовжити урок",
       "title": "Вивчення слів",
-      "sample": "Знайомство · {{count}} слова",
       "position": "{{current}} / {{total}}",
       "progress": "Картки слів",
       "previous": "Назад",
       "next": "Далі",
       "backToLesson": "До уроку",
-      "previewAvailable": "Доступне знайомство",
-      "previewHint": "Перегляньте 3 демонстраційні картки, а потім спробуйте вправи з картинками.",
       "translationLanguage": "УКР",
       "pronounceWord": "Послухати вимову {{word}}",
       "pronounceExample": "Послухати речення-приклад",
       "speechUnavailable": "Не вдалося відтворити вимову. Перевірте англійський голос на пристрої й спробуйте ще раз.",
-      "imageCredit": "Ілюстрації: Twemoji, Twitter та учасники проєкту · CC BY 4.0"
-    },
-    "words": {
-      "backpack": {
-        "translation": "Рюкзак",
-        "exampleTranslation": "Мій рюкзак червоний."
-      },
-      "book": {
-        "translation": "Книга",
-        "exampleTranslation": "Ця книга про тварин."
-      },
-      "pencil": {
-        "translation": "Олівець",
-        "exampleTranslation": "Я пишу олівцем."
-      }
+      "imageUnavailable": "Ілюстрація поки недоступна",
+      "progressNotSaved": "Прогрес поки не зберігається."
     },
     "chooseLesson": "Виберіть урок",
     "description": "Повсякденні слова — тема за темою.",
@@ -117,21 +164,10 @@
     "activitiesComingSoon": "Картки слів і вправи з’являться незабаром.",
     "notFound": "Урок не знайдено",
     "backToLessons": "До списку уроків",
-    "commonThings": {
-      "title": "Повсякденні речі",
-      "description": "Познайомтеся з речами навколо — від вмісту шкільного рюкзака до домашніх предметів."
-    },
-    "stages": {
-      "learnFirst": "Вивчіть {{count}} слів",
-      "firstWords": "Backpack, book, pencil та інші",
-      "quickPractice": "Швидка практика",
-      "matchPictures": "Зіставте слова й картинки",
-      "matchAudio": "Послухайте й виберіть картинку",
-      "learnMore": "Ще {{count}} слів",
-      "moreWords": "Chair, table, umbrella та інші",
-      "finalChallenge": "Фінальне випробування",
-      "mixedExercises": "Змішані вправи на всі {{count}} слів"
-    }
+    "loadError": "Не вдалося завантажити вміст уроку.",
+    "empty": "Уроків поки немає.",
+    "practiceComingSoon": "Практику ще не підключено.",
+    "stageAvailable": "Доступно"
   },
   "about": {
     "title": "Readovo",
@@ -232,7 +268,7 @@
     "rememberMe": "Запам’ятати мене"
   },
   "articles": {
-    "title": "Статті з Wikipedia",
+    "title": "Статті з Вікіпедії",
     "description": "Свіжа добірка випадкових статей для практики читання.",
     "searchPlaceholder": "Пошук статей",
     "searchResults": "Знайдено статей: {{count}}",

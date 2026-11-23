@@ -1,4 +1,4 @@
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { Ionicons } from '@expo/vector-icons';
 import type { ImageProps } from 'expo-image';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -17,8 +17,8 @@ export function DefaultImageFallback({ style }: DefaultImageFallbackProps) {
 
   return (
     <View style={[styles.container, style]}>
-      <MaterialIcons
-        name="image-not-supported"
+      <Ionicons
+        name="image-outline"
         size={48}
         color={colors.textSecondary}
         accessible={false}

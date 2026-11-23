@@ -1,13 +1,14 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { View } from 'react-native';
+import { ProgressBar } from '@/components/progressBar';
 import { ThemedText } from '@/components/themedText';
 import { useTheme } from '@/hooks/use-theme';
 import { createStyles } from './styles';
 
 type PracticeProgressProps = {
   title: string;
-  sample: string;
+  subtitle: string;
   current: number;
   total: number;
   answered: number;
@@ -15,7 +16,7 @@ type PracticeProgressProps = {
 
 export function PracticeProgress({
   title,
-  sample,
+  subtitle,
   current,
   total,
   answered,
@@ -26,7 +27,7 @@ export function PracticeProgress({
   return (
     <>
       <View style={styles.progressHeading}>
-        <ThemedText style={styles.secondary}>{sample}</ThemedText>
+        <ThemedText style={styles.secondary}>{subtitle}</ThemedText>
         <ThemedText type="bodyStrong">
           {t('vocabulary.cards.position', {
             current,
@@ -34,23 +35,7 @@ export function PracticeProgress({
           })}
         </ThemedText>
       </View>
-      <View
-        style={styles.progressTrack}
-        accessibilityRole="progressbar"
-        accessibilityLabel={title}
-        accessibilityValue={{
-          min: 0,
-          max: total,
-          now: answered,
-        }}
-      >
-        <View
-          style={[
-            styles.progressFill,
-            { width: `${(answered / total) * 100}%` },
-          ]}
-        />
-      </View>
+      <ProgressBar accessibilityLabel={title} total={total} value={answered} />
     </>
   );
 }

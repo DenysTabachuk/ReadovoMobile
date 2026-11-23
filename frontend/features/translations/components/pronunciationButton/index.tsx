@@ -1,10 +1,10 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/hooks/use-theme';
 import { useMemo } from 'react';
 import { Pressable, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { ThemedText } from '@/components/themedText';
-import { IconSymbol } from '@/components/iconSymbol';
 
 import { usePronunciation } from './hooks/usePronunciation';
 import { createStyles } from './styles';
@@ -34,9 +34,9 @@ export function PronunciationButton({ word }: PronunciationButtonProps) {
       ]}
     >
       <View style={styles.content}>
-        <IconSymbol
+        <Ionicons
           color={colors.link}
-          name="speaker.wave.2.fill"
+          name="volume-high"
           size={PRONUNCIATION_ICON_SIZE}
         />
         <ThemedText style={styles.label} type="bodyStrong">

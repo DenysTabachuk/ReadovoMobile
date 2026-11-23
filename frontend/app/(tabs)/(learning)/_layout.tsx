@@ -2,49 +2,36 @@ import { Stack } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
 import { useTheme } from '@/hooks/use-theme';
+import { LearningLevelProvider } from '@/features/learning';
 
 export default function LearningLayout() {
   const { t } = useTranslation();
   const { colors } = useTheme();
 
   return (
-    <Stack
-      screenOptions={{
-        contentStyle: { backgroundColor: colors.background },
-        headerStyle: { backgroundColor: colors.background },
-        headerTintColor: colors.text,
-        headerShadowVisible: false,
-      }}
-    >
-      <Stack.Screen name="index" options={{ headerShown: false }} />
-      <Stack.Screen
-        name="vocabulary/index"
-        options={{ title: t('learning.vocabulary.title') }}
-      />
-      <Stack.Screen
-        name="vocabulary/[lessonId]"
-        options={{ title: t('vocabulary.lessonOverview') }}
-      />
-      <Stack.Screen
-        name="vocabulary/words/[lessonId]"
-        options={{ title: t('vocabulary.cards.title') }}
-      />
-      <Stack.Screen
-        name="vocabulary/practice/[lessonId]"
-        options={{ title: t('vocabulary.practice.title') }}
-      />
-      <Stack.Screen
-        name="vocabulary/listening/[lessonId]"
-        options={{ title: t('vocabulary.audio.title') }}
-      />
-      <Stack.Screen
-        name="vocabulary/sentences/[lessonId]"
-        options={{ title: t('vocabulary.sentence.title') }}
-      />
-      <Stack.Screen
-        name="articles"
-        options={{ title: t('learning.reading.title') }}
-      />
-    </Stack>
+    <LearningLevelProvider>
+      <Stack
+        screenOptions={{
+          contentStyle: { backgroundColor: colors.background },
+          headerStyle: { backgroundColor: colors.background },
+          headerTintColor: colors.text,
+          headerShadowVisible: false,
+        }}
+      >
+        <Stack.Screen name="index" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="topics/[topic]"
+          options={{ title: t('learning.topics.title') }}
+        />
+        <Stack.Screen
+          name="lessons/[slug]"
+          options={{ title: t('learning.lesson.title') }}
+        />
+        <Stack.Screen
+          name="articles"
+          options={{ title: t('learning.reading.title') }}
+        />
+      </Stack>
+    </LearningLevelProvider>
   );
 }

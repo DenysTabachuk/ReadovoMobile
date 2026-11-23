@@ -8,9 +8,9 @@ import { QuizModule } from '../quiz/quiz.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { NotificationsDiagnosticsModule } from '../notifications/diagnostics/notifications-diagnostics.module';
 import { DictionaryModule } from '../dictionary/dictionary.module';
-import { ArticlesModule } from '../articles/articles.module';
+import { WikipediaArticlesModule } from '../wikipedia-articles/wikipedia-articles.module';
 import { AuthModule } from '../auth/auth.module';
-import { VocabularyModule } from '../vocabulary/vocabulary.module';
+import { LearningModule } from '../learning/learning.module';
 
 // Canonical coverage includes development contracts for frontend type generation.
 // Runtime Swagger scans only modules actually registered in its application.
@@ -25,6 +25,6 @@ export const DOCUMENTED_API_MODULES = [
   NotificationsDiagnosticsModule,
   AuthModule,
   DictionaryModule,
-  ArticlesModule,
-  VocabularyModule,
+  WikipediaArticlesModule,
+  LearningModule,
 ] satisfies Type[];

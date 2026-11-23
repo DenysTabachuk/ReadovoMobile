@@ -10,9 +10,9 @@ import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '../auth/jwt.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { DictionaryEmbeddingService } from '../dictionary/dictionary-embedding.service';
-import { AiTokenCounter } from '../articles/infrastructure/ai-token-counter';
-import { GroqTextClient } from '../articles/infrastructure/groq-text.client';
-import { ArticleFormulaRenderer } from '../articles/discovery/article-formula-renderer';
+import { AiTokenCounter } from '../wikipedia-articles/infrastructure/ai-token-counter';
+import { GroqTextClient } from '../wikipedia-articles/infrastructure/groq-text.client';
+import { ArticleFormulaRenderer } from '../wikipedia-articles/discovery/article-formula-renderer';
 import { exportOpenApi } from './export-openapi';
 
 type HttpServiceAccessor = {
@@ -91,6 +91,10 @@ describe('Offline OpenAPI export', () => {
       '/auth/reset-password',
       '/auth/verify-email',
       '/auth/verify-password-reset-code',
+      '/learning/catalogue',
+      '/learning/lessons/{slug}',
+      '/learning/lessons/{slug}/questions/{questionId}/check',
+      '/learning/lessons/{slug}/vocabulary/exercises/{exerciseId}/check',
       '/mascot/profile/me',
       '/mascot/profile/me/items/{itemId}/buy',
       '/mascot/profile/me/items/{itemId}/equip',
@@ -109,8 +113,6 @@ describe('Offline OpenAPI export', () => {
       '/streak/profile/me/freeze',
       '/streak/profile/me/freeze-token/purchase',
       '/streak/profile/me/restore',
-      '/vocabulary/lessons',
-      '/vocabulary/lessons/{slug}',
     ]);
     expect(listen).not.toHaveBeenCalled();
     expect(init).not.toHaveBeenCalled();

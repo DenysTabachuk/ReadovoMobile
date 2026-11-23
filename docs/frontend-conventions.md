@@ -76,6 +76,11 @@ import-only updates do not require refactoring the imported module.
 - Use `requests/index.ts`, `queries/index.ts`, and `mutations/index.ts` as re-export barrels where those groups exist, and `api/index.ts` as the feature API barrel. Expose intentional cross-feature APIs through the feature's root `index.ts`.
 - Keep request and response types shared by multiple API functions in the feature's `types.ts` or `api/types.ts`.
 - Helpers used only by one API request may remain private in that request's `index.ts`; helpers shared by multiple requests belong in `api/utils/<helperName>/index.ts`.
+- Thematic learning requests, including vocabulary answer checks, validate unknown
+  success bodies with `api/generated/learning-validators`. Regenerate them with
+  `npm run contracts:generate` from root. Backend tests cover lesson identity,
+  selected levels and submitted answer identifiers. See the
+  [contract guide](openapi-contract.md#generated-learning-response-validation).
 - Do not combine unrelated endpoint functions in a single `api.ts` or `api/index.ts` implementation file.
 - Before finishing a refactor, audit every API module changed in the current diff, including moved files and request functions mixed into other modules, and apply this rule consistently across that scope.
 
@@ -226,6 +231,24 @@ Use this template, adapting the parameters and example to the actual utility:
 - Use the existing Jest setup and keep tests at the narrowest owning scope. Do not add a new test framework for utility tests.
 - Run the relevant tests before finishing, inspect failures, and fix problems introduced by the task. Report what was run and any checks that could not be completed; creating a test file alone is not verification.
 
+## Test fixtures and mocks
+
+- Keep scenario-specific data and mock overrides in the owning `.spec.ts` file.
+  Define malformed values in the test that exercises them so the failure case
+  is visible where it is asserted.
+- When multiple test files need the same data, keep it in the owning feature's
+  `testing/` directory. Name fixture files after the data they provide in
+  `camelCase`, for example `testing/wordFixtures.ts` and
+  `testing/practiceFixtures.ts`.
+- Name typed fixture factories `create<What>()`, for example
+  `createVocabularyWords()`. Return fresh data on each call so tests can modify
+  their own inputs independently.
+- Use `mock<What>` for substitutes for dependencies, such as an HTTP adapter or
+  storage. Fixtures supply test data.
+- Tests in other features may import a fixture from its owning feature when
+  they need the same data. Keep fixtures in test code and out of production
+  entry points.
+
 ## Component utilities
 
 - Keep component entry files focused on React state, effects, event wiring, and rendering.
@@ -240,7 +263,8 @@ Use this template, adapting the parameters and example to the actual utility:
 ## Subcomponents
 
 - Extract a JSX block into a colocated subcomponent when it has a clear visual or behavioral responsibility, owns meaningful state or effects, has substantial dedicated markup or styles, or can be described through a small cohesive props interface.
-- Put component-specific subcomponents under the parent component's `components/<subcomponentName>/index.tsx` and keep their styles, private types, and private utilities with the closest owning subcomponent.
+- Name new React component directories in PascalCase to match their primary component. Rename existing component directories in a dedicated migration.
+- Put component-specific subcomponents under the parent component's `components/<SubcomponentName>/index.tsx` and keep their styles, private types, and private utilities with the closest owning subcomponent.
 - After extracting a subcomponent, move the utilities and styles used only by that block with it instead of leaving them in the parent module.
 - Keep the parent component responsible for orchestration and composition; keep implementation details inside the subcomponent that owns them.
 - Do not extract trivial wrappers, one-line conditional blocks, or tightly coupled fragments solely to reduce line count.

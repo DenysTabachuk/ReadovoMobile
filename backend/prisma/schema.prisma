@@ -51,37 +51,107 @@ enum VocabularyExerciseKind {
   @@map("vocabulary_exercise_kind")
 }
 
-// TODO: Resolve edits to lessons with saved progress before adding persistence.
-// See docs/tasks/vocabulary-content-updates.md.
-model VocabularyLesson {
-  id           String                        @id @db.Uuid
-  slug         String                        @unique
-  level        VocabularyLevel
-  publishedAt  DateTime?                     @map("published_at") @db.Timestamptz(6)
-  createdAt    DateTime                      @default(now()) @map("created_at") @db.Timestamptz(6)
-  translations VocabularyLessonTranslation[]
-  words        VocabularyLessonWord[]
-  stages       VocabularyLessonStage[]
+// Catalogue identity is independent of the English level of its lesson variants.
+model LearningTopic {
+  id            String                     @id @db.Uuid
+  slug          String                     @unique
+  coverImageKey String?                    @map("cover_image_key")
+  parentId      String?                    @map("parent_id") @db.Uuid
+  position      Int
+  publishedAt   DateTime?                  @map("published_at") @db.Timestamptz(6)
+  parent        LearningTopic?             @relation("TopicChildren", fields: [parentId], references: [id], onDelete: Restrict)
+  children      LearningTopic[]            @relation("TopicChildren")
+  translations  LearningTopicTranslation[]
+  lessons       LearningLesson[]
 
-  @@index([level, publishedAt])
-  @@map("vocabulary_lessons")
+  @@index([parentId, position])
+  @@map("learning_topics")
 }
 
-// Locale rows contain lesson content, not frontend translation keys.
-model VocabularyLessonTranslation {
-  lessonId    String           @map("lesson_id") @db.Uuid
+model LearningTopicTranslation {
+  topicId     String        @map("topic_id") @db.Uuid
   locale      String
   title       String
   description String
-  lesson      VocabularyLesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  topic       LearningTopic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+
+  @@id([topicId, locale])
+  @@map("learning_topic_translations")
+}
+
+model LearningLesson {
+  id           String                      @id @db.Uuid
+  slug         String                      @unique
+  topicId      String                      @map("topic_id") @db.Uuid
+  position     Int
+  topic        LearningTopic               @relation(fields: [topicId], references: [id], onDelete: Restrict)
+  translations LearningLessonTranslation[]
+  variants     LearningLessonVariant[]
+
+  @@index([topicId, position])
+  @@map("learning_lessons")
+}
+
+model LearningLessonTranslation {
+  lessonId    String         @map("lesson_id") @db.Uuid
+  locale      String
+  title       String
+  description String
+  lesson      LearningLesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
 
   @@id([lessonId, locale])
-  @@map("vocabulary_lesson_translations")
+  @@map("learning_lesson_translations")
+}
+
+model LearningLessonVariant {
+  lessonId          String                    @map("lesson_id") @db.Uuid
+  level             VocabularyLevel
+  id                String                    @unique @db.Uuid
+  publishedAt       DateTime?                 @map("published_at") @db.Timestamptz(6)
+  readingTitle      String                    @map("reading_title")
+  readingParagraphs String[]                  @map("reading_paragraphs")
+  lesson            LearningLesson            @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  vocabularyWords   VocabularyLessonWord[]
+  vocabularyStages  VocabularyLessonStage[]
+  questions         LearningReadingQuestion[]
+
+  @@id([lessonId, level])
+  @@map("learning_lesson_variants")
+}
+
+model LearningReadingQuestion {
+  lessonId    String                  @map("lesson_id") @db.Uuid
+  level       VocabularyLevel
+  id          String
+  position    Int
+  prompt      String
+  explanation String
+  variant     LearningLessonVariant   @relation(fields: [lessonId, level], references: [lessonId, level], onDelete: Cascade)
+  options     LearningReadingOption[]
+
+  @@id([lessonId, level, id])
+  @@unique([lessonId, level, position])
+  @@map("learning_reading_questions")
+}
+
+model LearningReadingOption {
+  lessonId   String                  @map("lesson_id") @db.Uuid
+  level      VocabularyLevel
+  questionId String                  @map("question_id")
+  id         String
+  position   Int
+  text       String
+  isCorrect  Boolean                 @map("is_correct")
+  question   LearningReadingQuestion @relation(fields: [lessonId, level, questionId], references: [lessonId, level, id], onDelete: Cascade)
+
+  @@id([lessonId, level, questionId, id])
+  @@unique([lessonId, level, questionId, position])
+  @@map("learning_reading_options")
 }
 
 // Words belong to lessons, independently of the user's personal dictionary.
 model VocabularyLessonWord {
-  lessonId             String                     @map("lesson_id") @db.Uuid
+  variantId            String                     @map("variant_id") @db.Uuid
   id                   String
   word                 String
   transcription        String
@@ -93,7 +163,7 @@ model VocabularyLessonWord {
   imageLicense         String                     @map("image_license")
   imageAttribution     String                     @map("image_attribution")
   // Owning lesson; deleting it also deletes this word.
-  lesson               VocabularyLesson           @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  variant              LearningLessonVariant      @relation(fields: [variantId], references: [id], onDelete: Cascade)
   // Stage memberships, including this word's position within each stage.
   stages               VocabularyStageWord[]
   // Exercises where this word is the correct answer.
@@ -101,60 +171,60 @@ model VocabularyLessonWord {
   // Answer choices using this word, whether correct or a distractor.
   options              VocabularyExerciseOption[]
 
-  @@id([lessonId, id])
+  @@id([variantId, id])
   @@map("vocabulary_lesson_words")
 }
 
 // Lesson -> stages -> exercises.
 // Stages <-> words via VocabularyStageWord; exercises <-> words via VocabularyExerciseOption.
 model VocabularyLessonStage {
-  lessonId     String                       @map("lesson_id") @db.Uuid
+  variantId    String                       @map("variant_id") @db.Uuid
   id           String
   // Display order within the lesson: 0 = first stage, 1 = second, etc.
   position     Int
   kind         VocabularyStageKind
-  lesson       VocabularyLesson             @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  variant      LearningLessonVariant        @relation(fields: [variantId], references: [id], onDelete: Cascade)
   translations VocabularyStageTranslation[]
   words        VocabularyStageWord[]
   exercises    VocabularyExercise[]
 
-  @@id([lessonId, id])
-  @@unique([lessonId, position])
+  @@id([variantId, id])
+  @@unique([variantId, position])
   @@map("vocabulary_lesson_stages")
 }
 
 // One localized title/description per stage and locale (for example, "en" or "uk").
 model VocabularyStageTranslation {
-  lessonId    String                @map("lesson_id") @db.Uuid
+  variantId   String                @map("variant_id") @db.Uuid
   stageId     String                @map("stage_id")
   locale      String
   title       String
   description String
-  stage       VocabularyLessonStage @relation(fields: [lessonId, stageId], references: [lessonId, id], onDelete: Cascade)
+  stage       VocabularyLessonStage @relation(fields: [variantId, stageId], references: [variantId, id], onDelete: Cascade)
 
-  @@id([lessonId, stageId, locale])
+  @@id([variantId, stageId, locale])
   @@map("vocabulary_stage_translations")
 }
 
 // Many-to-many link: a stage contains words, and a word can appear in several stages.
 model VocabularyStageWord {
-  lessonId String                @map("lesson_id") @db.Uuid
-  stageId  String                @map("stage_id")
-  wordId   String                @map("word_id")
+  variantId String                @map("variant_id") @db.Uuid
+  stageId   String                @map("stage_id")
+  wordId    String                @map("word_id")
   // Word/card order within this stage: 0 = first word, 1 = second, etc.
-  position Int
-  stage    VocabularyLessonStage @relation(fields: [lessonId, stageId], references: [lessonId, id], onDelete: Cascade)
-  word     VocabularyLessonWord  @relation(fields: [lessonId, wordId], references: [lessonId, id], onDelete: NoAction)
+  position  Int
+  stage     VocabularyLessonStage @relation(fields: [variantId, stageId], references: [variantId, id], onDelete: Cascade)
+  word      VocabularyLessonWord  @relation(fields: [variantId, wordId], references: [variantId, id], onDelete: NoAction)
 
-  @@id([lessonId, stageId, wordId])
-  @@unique([lessonId, stageId, position])
-  @@index([lessonId, wordId])
+  @@id([variantId, stageId, wordId])
+  @@unique([variantId, stageId, position])
+  @@index([variantId, wordId])
   @@map("vocabulary_stage_words")
 }
 
 // One question in a practice stage, with a correct word and answer choices.
 model VocabularyExercise {
-  lessonId              String                     @map("lesson_id") @db.Uuid
+  variantId             String                     @map("variant_id") @db.Uuid
   id                    String
   stageId               String                     @map("stage_id")
   // Question order within its stage: 0 = first question, 1 = second, etc.
@@ -164,29 +234,29 @@ model VocabularyExercise {
   sentenceBefore        String?                    @map("sentence_before")
   sentenceAfter         String?                    @map("sentence_after")
   sentenceTranslationUk String?                    @map("sentence_translation_uk")
-  stage                 VocabularyLessonStage      @relation(fields: [lessonId, stageId], references: [lessonId, id], onDelete: Cascade)
-  correctWord           VocabularyLessonWord       @relation(fields: [lessonId, correctWordId], references: [lessonId, id], onDelete: NoAction)
+  stage                 VocabularyLessonStage      @relation(fields: [variantId, stageId], references: [variantId, id], onDelete: Cascade)
+  correctWord           VocabularyLessonWord       @relation(fields: [variantId, correctWordId], references: [variantId, id], onDelete: NoAction)
   options               VocabularyExerciseOption[]
 
-  @@id([lessonId, id])
-  @@unique([lessonId, stageId, position])
-  @@index([lessonId, correctWordId])
+  @@id([variantId, id])
+  @@unique([variantId, stageId, position])
+  @@index([variantId, correctWordId])
   @@map("vocabulary_exercises")
 }
 
 // Many-to-many link: a question offers words as choices; each word can be reused in other questions.
 model VocabularyExerciseOption {
-  lessonId   String               @map("lesson_id") @db.Uuid
+  variantId  String               @map("variant_id") @db.Uuid
   exerciseId String               @map("exercise_id")
   wordId     String               @map("word_id")
   // Choice display order within this question: 0 = first choice, 1 = second, etc.
   position   Int
-  exercise   VocabularyExercise   @relation(fields: [lessonId, exerciseId], references: [lessonId, id], onDelete: Cascade)
-  word       VocabularyLessonWord @relation(fields: [lessonId, wordId], references: [lessonId, id], onDelete: NoAction)
+  exercise   VocabularyExercise   @relation(fields: [variantId, exerciseId], references: [variantId, id], onDelete: Cascade)
+  word       VocabularyLessonWord @relation(fields: [variantId, wordId], references: [variantId, id], onDelete: NoAction)
 
-  @@id([lessonId, exerciseId, wordId])
-  @@unique([lessonId, exerciseId, position])
-  @@index([lessonId, wordId])
+  @@id([variantId, exerciseId, wordId])
+  @@unique([variantId, exerciseId, position])
+  @@index([variantId, wordId])
   @@map("vocabulary_exercise_options")
 }
 

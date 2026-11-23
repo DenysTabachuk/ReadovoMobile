@@ -5,6 +5,9 @@ import { getStreakProfile } from '@/features/streak';
 import { ProfileStreak } from './components/profileStreak';
 import ProfileScreen from '.';
 
+jest.mock('expo-router', () => ({ router: { push: jest.fn() } }));
+jest.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
+
 jest.mock('react-native', () => ({
   Platform: { select: () => ({}) },
   View: 'div',
@@ -108,7 +111,9 @@ it('keeps streak controls unmounted after an initial query failure and lets the 
   expect(ProfileStreak).not.toHaveBeenCalled();
   expect(getStreakProfile).toHaveBeenCalledTimes(1);
   const retry = renderer?.container.queryAll(
-    (node) => node.type === 'button',
+    (node) =>
+      node.type === 'button' &&
+      node.props.accessibilityLabel !== 'settings.title',
   )[0];
   expect(retry).toBeDefined();
   await act(async () => {

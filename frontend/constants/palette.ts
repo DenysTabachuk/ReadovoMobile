@@ -1,6 +1,7 @@
 // Opaque reference shades. Numeric steps are design scale positions, not measurements.
 export const palette = {
   white: '#ffffff',
+  cream100: '#f6f0e4',
   black: '#000000',
   gray100: '#f5f7fa',
   gray200: '#e6e8eb',

@@ -1,7 +1,7 @@
 import { type DynamicModule, Module } from '@nestjs/common';
 
 import { AchievementsModule } from './achievements/achievements.module';
-import { ArticlesModule } from './articles/articles.module';
+import { WikipediaArticlesModule } from './wikipedia-articles/wikipedia-articles.module';
 import { AuthModule } from './auth/auth.module';
 import { DictionaryModule } from './dictionary/dictionary.module';
 import { MascotModule } from './mascot/mascot.module';
@@ -10,20 +10,20 @@ import { NotificationsDiagnosticsModule } from './notifications/diagnostics/noti
 import { PrismaModule } from './prisma/prisma.module';
 import { StreakModule } from './streak/streak.module';
 import { TranslationsModule } from './translations/translations.module';
-import { VocabularyModule } from './vocabulary/vocabulary.module';
+import { LearningModule } from './learning/learning.module';
 
 @Module({
   imports: [
     PrismaModule,
     AchievementsModule,
     AuthModule,
-    ArticlesModule,
+    WikipediaArticlesModule,
     TranslationsModule,
     DictionaryModule,
     MascotModule,
     NotificationsModule,
     StreakModule,
-    VocabularyModule,
+    LearningModule,
   ],
 })
 export class AppModule {

@@ -3,8 +3,9 @@
 Status: steps 1–3 are implemented as local UI prototypes. The content schema,
 migration and test seed are implemented and applied to the local application
 database. Published lesson overview/card read APIs are implemented. Approved
-production content, media delivery, practice APIs, UI integration and progress
-remain pending.
+production content, media delivery and saved progress remain pending.
+The catalogue, overview, cards and all practice formats now use the normal API;
+answer checking is server-side and attempt state remains temporary.
 The agreed order changed after UI review: build storage before
 expanding the temporary frontend fixtures.
 
@@ -209,7 +210,7 @@ validation unit tests remain in the normal Jest suite.
 ### 5. Populate test data, then prepare real content and media
 
 Seeds are test data by default. The current sample and its import/validation
-code live under `backend/prisma/seeds/vocabulary/`, with the entry point at
+code live under `backend/prisma/seeds/learning/`, with the entry point at
 `backend/prisma/seed.ts`. Do not treat the sample as approved production content.
 The seed and pending migrations were applied to the local application database
 on 2026-11-09. Running the seed twice succeeded with the same lesson ID and no
@@ -237,7 +238,9 @@ small review units.
   requires explicit agreement and a separate workflow.
 - Use stable lesson/word/stage/question IDs; validate choices, correct-answer
   membership, stage kinds, word rosters and required translation locales.
-- Keep drafts unpublished until content and actual media are ready. Confirm
+- Keep real-content drafts unpublished until content and actual media are ready.
+  The explicitly invoked local sample is catalogue-visible for integration testing.
+  Confirm
   pronunciation/IPA, completion rules and the intended content inventory.
 - Create the media bucket and configure development/production delivery. Keep
   write credentials out of the mobile app and repository.
@@ -252,7 +255,8 @@ small review units.
 First read API increment implemented: authenticated catalogue and detail endpoints
 for published lessons, localized lesson/stage copy with English fallback, word
 cards, attribution, ordered stage rosters and counts. Missing and draft slugs share
-the same 404; the unpublished sample remains hidden. Explicit response mapping
+the same 404; the sample was initially hidden until the local seed visibility
+change described below. Explicit response mapping
 omits storage fields and answer keys. Module registration and canonical OpenAPI
 coverage include both routes; generated artifacts accompany the implementation.
 
@@ -267,11 +271,19 @@ against the local application database confirmed an empty published catalogue,
 formatting and `git diff --check` passed. No files were staged; no staged commit
 snapshot was available to validate.
 
-Practice question delivery remains a subsequent API increment. It must respect
-the answer-key boundary before replacing local checking. Local sample preview
-still needs an explicit development boundary; no draft bypass or automatic
-publication was added. Media delivery remains a separate dependency because
-placeholder keys do not resolve to images. UI integration has not started.
+Subsequent agreed direction: serve the local test lesson through the ordinary
+published-content API by making the explicitly invoked seed catalogue-visible,
+rather than adding development-only preview routes. The unfinished preview module
+was removed. The importer now accepts reserved `seed-` slugs, verifies stable
+identity and preserves `publishedAt` across repeat imports. Titles remain visibly
+labelled test data; catalogue visibility is not production content approval.
+
+Practice question delivery and stateless server checking are now implemented as
+an additional contract increment. Unanswered responses omit answer IDs and
+sentence translations; feedback supplies them after a submitted choice. The
+service validates persisted option/roster membership and scopes every read/check
+to the catalogue-visible lesson and practice stage. Media delivery remains a
+separate dependency because placeholder keys do not resolve to images.
 
 - Add the vocabulary backend module and read services using the reviewed schema
   and seed. Keep feature contracts and validation within the owning module.
@@ -280,6 +292,37 @@ placeholder keys do not resolve to images. UI integration has not started.
 - Outcome: database-backed lesson content and verified read contracts.
 
 ### 7. Connect the approved UI to real lesson content
+
+Catalogue/overview/card increment: the normal authenticated API now supplies the
+lesson list, localized overview, ordered stages and both ten-word learning rosters.
+Generated transport types are checked at runtime before caching. Cache keys include
+the current account and interface locale. Screens show loading, empty, missing,
+error and retry states; navigation uses API slugs and explicit stage IDs. Both
+learning blocks can be reviewed without suggesting saved unlocking/progress.
+
+The catalogue/word-card fixture path was removed. Cards use API Ukrainian strings
+and examples directly. Missing illustrations show an explicit placeholder, without
+inventing delivery URLs or substituting unrelated sample artwork. Finishing a
+block now opens the next stored stage. All practice stages, including the mixed
+final stage, read database questions and submit choices to the server. Local
+result state uses checked feedback, locks submitted choices, prevents duplicate
+in-flight requests and supports retry/reset. Screen effects run in per-call mutation
+callbacks so unmounting drops late feedback. The old preview slug and frontend
+practice fixtures/word illustrations have been removed while preserving the
+exercise presentation. Before deployment, review publication eligibility and
+removal of sample content. Production media and saved progress remain pending.
+
+Verification: `npm run ci:backend` passed (99 suites, 836 tests), and
+`npm run ci:frontend` passed (164 suites, 848 tests). `npm run contracts:check`,
+`npm run audit:unused`, documentation formatting and `git diff --check` passed.
+The HTTP contract did not change. A real local HTTP smoke check in both locales
+read the seed through the ordinary authenticated routes and passed those responses
+through the frontend decoder: 20 words, 6 stages, 50 exercise counts and two
+ten-word rosters. Reimport preserved its publication timestamp. Screen tests
+cover loading/error/retry, empty/missing content, API slug navigation, roster order,
+all twenty cards, block switching and unavailable practice. Account/locale query
+cache separation is covered. Emulator visual/audio review remains pending. Current
+changes are unstaged, so there is no staged snapshot to validate for this increment.
 
 - Replace local content fixtures with API requests and data hooks using generated
   transport types, runtime validation and existing session/cache safeguards.
@@ -290,7 +333,130 @@ placeholder keys do not resolve to images. UI integration has not started.
   practices, unlocking and results using database content.
 - Outcome: the approved lesson loads from the backend; progress remains temporary.
 
+Practice integration verification: `npm run ci:backend` passed (101 suites,
+849 tests), and `npm run ci:frontend` passed (168 suites, 869 tests).
+`npm run contracts:generate`, `npm run contracts:check`, `npm run audit:unused`
+and formatting/diff checks passed. The real local HTTP walkthrough exercised all
+50 stored questions and checked 100 correct/incorrect submissions through the
+frontend runtime decoders. No attempts, progress or rewards were written.
+HTTP tests cover serialization, guards, DTO rejection and missing/invalid choices;
+unit tests verify publication/lesson/stage scoping and persisted-content guards.
+Frontend tests cover all formats, mixed transitions, locked choices, duplicate
+taps, failed-check retry, mismatched feedback, scoring, next-stage navigation and
+reset. Existing speech lifecycle/autoplay tests remain. Emulator visual/audio
+review and actual image delivery remain pending. The staged snapshot check was
+run and failed because the user's partial selection omits required parsers/test
+fixtures and retains an obsolete preview import. Staging was preserved; these
+failures do not occur in the complete working tree.
+
+Vocabulary response validation now pilots standalone guards generated from the
+four OpenAPI success schemas. Handwritten transport parsers have been removed;
+request identity and auth/session checks remain. Other features are tracked in
+[a separate TODO](generated-response-validation.md). This does not change the HTTP
+contract or introduce persisted progress.
+
+Validator pilot verification: frontend CI passed (166 suites, 847 tests), including
+schema-driven generation and malformed-response coverage. Contract generation,
+freshness checks and unused-code checks passed. The lower test count reflects
+removal of the handwritten-parser suites and addition of generated-validation
+coverage; the API-backed practice and speech tests remain.
+
+Device review resumed on 2026-11-18 using the existing
+`Medium_Phone_API_36.0` emulator and installed development client. The app retained
+its authenticated session. The local database and services were initially stopped;
+Docker/PostgreSQL, backend and Metro were started without clearing app or database
+data. The catalogue's localized error/retry screen was observed while the API was
+unavailable. The authenticated route now responds with 401 to an unauthenticated
+probe, confirming backend reachability. Recovery via the UI, generated validators
+inside Metro, card blocks and API-backed practice still require the device
+walkthrough. UI automation was paused because the user is actively using the
+computer. Do not count this partial startup as a passed feature walkthrough.
+
+Initial loading now uses the existing shared `FullScreenLoader` in the catalogue,
+overview, word cards and practice instead of a text notice. Obsolete Vocabulary
+loading copy was removed from both locales. Frontend CI passed (166 suites,
+847 tests); device verification remains pending desktop availability. Emulator
+guidance now uses `start:dev`, root `db:up`, a current development-client session
+and emulator-only capture, and stops foreground input while the user is working.
+
+Background-only device verification attempt on 2026-11-18: the existing
+`emulator-5554`, installed app process, PostgreSQL, backend on port 3000 and Metro
+on port 8081 were running. PostgreSQL reported ready, Metro's status endpoint
+reported running, and an unauthenticated vocabulary catalogue request returned 401. Existing ADB reverse mappings for 3000 and 8081 were present. No duplicate
+services were started, and app/database data were preserved. A scoped sample of
+ReactNativeJS/AndroidRuntime error logs was empty; this is not a successful UI check.
+Android activity diagnostics showed the launcher as the resumed activity, so the
+running Readovo process alone does not confirm startup or a current bundle.
+
+The Computer Use API documents window-scoped capture, but input methods activate
+their target window automatically. It therefore does not provide the isolated
+background input required by the user. Window discovery also failed with
+`Computer Use native pipe is unavailable`, including after retry and session reset.
+No desktop screenshots, window activation or UI input were performed. Startup,
+catalogue recovery, overview, both card blocks, all three practice formats, mixed
+practice, answer locking, correct/incorrect feedback, results, retry and generated
+validators in the device bundle were unverified at that point. The subsequently
+approved ADB walkthrough below supersedes this tooling blocker.
+
+The actual staged snapshot check was rerun and failed on existing missing modules
+and obsolete imports in the partial selection. Lint-staged reported successful
+restoration of the original state. Staging was not changed to repair that snapshot.
+
+The user subsequently approved device-scoped ADB screenshots/input and requested
+that the emulator skill be corrected if that approach worked. It worked without
+Windows mouse/keyboard input or window activation. The skill now prefers ADB with
+an explicit device serial, observed coordinates/UI bounds and screenshots after
+actions. Windows computer-use is a foreground-only fallback. The skill also warns
+against running staged checks during a Metro walkthrough because temporarily hidden
+dependencies can leave stale resolution errors.
+
+ADB walkthrough on 2026-11-18 used the installed client and local API in
+Ukrainian/dark mode. Initial startup showed a Metro 500 for an existing unstaged
+module. Restarting only the identified Metro process with `--clear` rebuilt the
+current Android bundle (2436 modules) and removed that error. The login screen
+then appeared. Native modules initially reported an unavailable activity, including
+Google sign-in `NULL_PRESENTER`; sending the app to Android Home and resuming it
+restored ordinary Google sign-in with the authorized existing account. No storage
+was cleared, no app was reinstalled and no authentication bypass was introduced.
+This startup observation does not establish a production Vocabulary regression.
+
+Observed device coverage:
+
+- Catalogue and lesson overview loaded the labelled sample through the real API.
+- Both ten-word card blocks were traversed in order, including all 20 words,
+  translations, examples, placeholder images and final-card stage navigation.
+- All ten questions in each standalone practice format were checked: word to
+  picture, audio to picture and sentence gaps. Each result was 4/10, with the six
+  expected review words (Book, Pencil, Notebook, Ruler, Key and Door).
+- Correct/incorrect feedback and checked-choice locking worked. An attempted
+  change after checking left the first picture answer unchanged. UI hierarchy
+  checks confirmed disabled options after subsequent submissions.
+- Sentence gaps filled with the correct word and revealed the Ukrainian sentence
+  translation after checking. Audio prompts hid the word before checking; the
+  replay control responded. Audible output and audio quality were not assessed.
+- Retry from the first practice result reset to question 1/10 with no selection.
+- The second card block opened mixed practice (20 questions). Its first picture
+  answer, second audio answer and transition into a sentence-gap question were
+  observed. The user requested stopping during question 3, so the remaining mixed
+  questions, mixed result and mixed retry were not verified.
+
+No new ReactNativeJS/AndroidRuntime errors appeared in the scoped log sample after
+successful login and during the standalone practices. Successful device requests
+exercised the generated response guards in the current Metro bundle. No Vocabulary
+implementation fix was needed in this walkthrough. Further theme/locale combinations,
+network-failure retry, actual media delivery and persisted progress are not claimed.
+The temporary QA driver was stopped at the user's request; services and emulator
+were left running, and task-created captures/driver were removed. Skill/document
+formatting and diff checks passed. The skill's Python validator could not run
+because PyYAML is missing; frontmatter was checked with the installed Node YAML
+parser instead. The staged snapshot still has the separately reported existing
+dependency/import failures; staging was preserved.
+
 ### 8. Persist learning and implement answer checking
+
+Server answer checking was brought forward to remove the last frontend mock data
+without exposing answer keys. It currently performs no writes. Saved attempts,
+ownership, completion policy and content-update handling still belong to this step.
 
 - First resolve [content updates with saved progress](vocabulary-content-updates.md).
   Versioning is not part of the initial content schema; do not introduce saved

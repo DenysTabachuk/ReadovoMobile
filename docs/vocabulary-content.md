@@ -1,100 +1,53 @@
 # Vocabulary content storage
 
-Official vocabulary lessons use their own PostgreSQL tables. Personal dictionary
-entries, article quizzes and user statistics remain separate. This first storage
-schema adds content storage. Read endpoints now expose published lesson overviews
-and word cards; progress, rewards and an authoring interface remain pending.
-The separate seed is test data, described below.
+Vocabulary cards and practice exercises belong to the selected
+[thematic lesson variant](topic-based-learning.md). The variant UUID scopes their
+storage. The thematic lesson slug and CEFR level identify the content in the API.
+The variant publication timestamp controls its visibility.
 
 ## Test database population
 
-Seeds default to test/sample data, not approved production lessons.
-`backend/prisma/seed.ts` invokes the vocabulary seed under
-`backend/prisma/seeds/vocabulary/`. Data, import logic, validation and unit tests
-stay there, outside production application source. The sample lesson uses the
-slug `seed-common-things` and a visible test-data label. It remains unpublished;
-image keys are placeholders, not uploaded media.
+`backend/prisma/seed.ts` writes the development Oktoberfest example in one
+transaction. The seed creates or updates the topic, lesson, A1 variant, words,
+exercises and reading questions. The sample uses the reserved thematic lesson
+slug `seed-oktoberfest`. Its image keys are placeholders. Run
+`npm --prefix backend run prisma:seed` explicitly against a development database.
+Production content imports require separate agreement.
 
-Run `npm --prefix backend run prisma:seed` explicitly to populate the configured
-database. Production content imports require separate agreement. This seed is
-not a production catalogue or application startup behaviour.
+## Content and API
 
-## Content and translations
+The thematic lesson response embeds ordered vocabulary cards and unanswered
+questions for the selected level. A vocabulary check uses the same lesson slug
+and level and returns the correct choice, word metadata and any full-sentence
+translation. The backend scopes the exercise to the variant and checks choice
+membership. The app keeps the attempt score and retry state for the current
+screen.
 
-Authenticated reads are available at `GET /vocabulary/lessons` and
-`GET /vocabulary/lessons/:slug`, with optional `locale=en|uk` (default `en`).
-They use only published lessons, so the unpublished seed is absent from the
-catalogue and returns the same 404 as a missing slug. No preview bypass or seed
-publication is included. Missing requested copy falls back to English; missing
-fallback copy is a content error. Detail responses include word cards, media
-attribution and ordered stage word rosters, but no practice questions, answer keys
-or persisted progress. Image object keys do not promise working media URLs.
-
-`VocabularyLesson` represents one lesson. Its UUID is the relational identity;
-its unique slug is a readable identifier such as `common-things`. Child IDs such
-as `backpack` or `learn-first` are unique within that lesson and can be reused in
-another lesson. `level` uses the `VocabularyLevel` PostgreSQL/Prisma enum with
-`A1`, `A2`, `B1`, `B2`, `C1` and `C2` values.
-
-A null `publishedAt` means draft. Versioning is deliberately deferred while there
-are no persisted attempts or progress. Before adding persistence, resolve what
-should happen when words or questions change in an existing lesson; see
-[Content updates with saved progress](tasks/vocabulary-content-updates.md).
-
-Lesson and stage titles/descriptions live in `VocabularyLessonTranslation` and
-`VocabularyStageTranslation`. Each locale has one row per owner, for example
-`(lessonId, "uk", title, description)`. Adding interface translations inserts rows
-without adding database columns. These rows store actual content, not frontend
-translation keys. The future importer must normalize locale identifiers, validate
-required interface locales and define missing-locale fallback before publishing.
-
-Words and example sentences are English, with Ukrainian translations, independently
-of the selected interface language. Adding learner translation languages is a
-separate content decision; existing `translationUk` fields are not interface copy.
-Arbitrary learning languages and user-created lessons remain outside the current
-scope. Pronunciation uses the app's shared US English setting; IPA must match it.
+Words and examples are English with Ukrainian translations. This is independent
+of the interface locale. Pronunciation uses the app's shared US English setting.
 
 ## Structure
 
-`VocabularyLessonTranslation` stores localized lesson copy and
-`VocabularyStageTranslation` stores localized stage copy. Their compound primary
-keys prevent duplicate locales for the same owner; deleting the owner removes
-its translations.
+| Model                        | Responsibility                                                     |
+| ---------------------------- | ------------------------------------------------------------------ |
+| `LearningLessonVariant`      | Owns words and practice at one CEFR level.                         |
+| `VocabularyLessonWord`       | Word or phrase, IPA, examples, translations and image attribution. |
+| `VocabularyLessonStage`      | Orders learning and practice content within a variant.             |
+| `VocabularyStageTranslation` | Localized metadata for an internal stage.                          |
+| `VocabularyStageWord`        | Orders the word roster within a stage.                             |
+| `VocabularyExercise`         | Exercise kind, order and correct-word reference.                   |
+| `VocabularyExerciseOption`   | Ordered, distinct word options for an exercise.                    |
 
-| Model                      | Responsibility                                                                                      |
-| -------------------------- | --------------------------------------------------------------------------------------------------- |
-| `VocabularyLesson`         | Lesson identity, CEFR level, publication timestamp.                                                 |
-| `VocabularyLessonWord`     | Word or phrase, IPA, Ukrainian translation, example and its translation, image key and attribution. |
-| `VocabularyLessonStage`    | Ordered learning or practice step.                                                                  |
-| `VocabularyStageWord`      | Ordered word roster for a stage; the same word can appear in several stages.                        |
-| `VocabularyExercise`       | Ordered question in a stage, exercise kind and server-owned correct word reference.                 |
-| `VocabularyExerciseOption` | Ordered, distinct word choices for a question.                                                      |
+Positions are zero-based. Composite child references restrict stages, words,
+exercises and options to the same variant. The API combines learning-stage cards
+in order and combines practice-stage exercises in order. Supported exercise kinds
+are `word_to_picture`, `audio_to_picture` and `sentence_gap`. Sentence gaps
+store text before and after the gap as well as the completed Ukrainian translation.
 
-Positions are zero-based and unique within their owner. Word, stage and exercise
-references include the lesson UUID so content cannot refer to another lesson's
-words. There is no fixed 10-word or 20-word database limit: the Common Things seed
-will define the two learning blocks and practice rosters. Counts derive from
-those rows rather than duplicate counters on lessons or stages.
-
-Learning stages use their ordered word roster for cards. Practice stages contain
-questions of kind `word_to_picture`, `audio_to_picture` or `sentence_gap`. A final
-mixed stage can contain all three kinds without another question format. Word
-and audio prompts come from the correct word; option images/text come from the
-referenced words. Sentence gaps store text before and after the gap plus the
-completed sentence's Ukrainian translation. No delimiter parsing is required;
-either text part may be empty, but both cannot be blank. Sentence fields are
-required for gaps and forbidden for the other formats.
-
-The correct word and all options must belong to the lesson. The future
-importer must additionally validate that each question has at least two choices,
-includes its correct word, uses words in its stage roster, and belongs to a
-practice stage. It must also validate complete stage content and matching image
-metadata before publication. These cross-row rules are not enforced by this
-initial schema. Draft imports can assemble content in one transaction.
-
-Correct-answer references are storage details. The read API must explicitly map
-public responses and omit answer keys for unanswered questions; Prisma models
-must not be returned directly as HTTP responses.
+The ownership migration turns the previously linked vocabulary UUID into the
+variant UUID, preserving words, stages, exercise IDs and their child relations.
+It preserves effective visibility and aborts if it encounters unlinked vocabulary
+records, so those records can be reviewed before changing the schema.
 
 ## Images
 
@@ -105,9 +58,8 @@ validate the complete key format and permitted delivery/source URLs. Versioned
 keys distinguish asset replacements and avoid stale cached images.
 
 Image source URL, licence and attribution text are required alongside the key.
-The seed must carry actual source/licence information, including attribution for
-the current Twemoji assets if reused. The schema neither uploads images nor
-creates a bucket. Interface illustrations remain bundled in the mobile app.
+Real images require accurate source, licence and attribution metadata. Interface
+illustrations remain bundled in the mobile app.
 
 ## Integrity and deletion
 
@@ -116,9 +68,9 @@ nonblank content, unique ordering, scoped foreign keys and sentence-field shape.
 CHECK constraints and deferrable foreign-key settings live in the SQL migration;
 Prisma does not represent them fully in its schema file.
 
-Deleting a lesson cascades through its content. Word references from
+Deleting a variant cascades through its vocabulary content. Word references from
 rosters, exercises and options use `NO ACTION`, deferred until transaction commit:
-deleting a referenced word alone fails, while deleting the whole lesson succeeds
+deleting a referenced word alone fails, while deleting the whole variant succeeds
 independently of cascade trigger order. Callers must handle errors at commit, not
 only at individual writes. No deletion endpoint is part of this change. Future
 progress/attempt relationships and content-edit policy must be designed together

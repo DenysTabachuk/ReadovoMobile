@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, TextInput, View } from 'react-native';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 
 import { Button } from '@/components/button';
 import { ModalSheet } from '@/components/modalSheet';
@@ -234,11 +234,7 @@ export function VerificationCodeModal({
         <Button
           disabled={isResendDisabled}
           leftAccessory={
-            <MaterialCommunityIcons
-              name="timer-refresh-outline"
-              size={24}
-              color={colors.link}
-            />
+            <Ionicons name="refresh-outline" size={24} color={colors.link} />
           }
           onPress={onResend}
           variant="secondary"

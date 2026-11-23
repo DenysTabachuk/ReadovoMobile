@@ -11,22 +11,8 @@ export const createStyles = (colors: ThemeColors) =>
       borderRadius: 20,
       padding: Spacing.md,
       gap: Spacing.sm,
-      flexGrow: 1,
-      flexBasis: '44%',
+      flexBasis: '48%',
     },
-    selected: {
-      borderColor: colors.selectionBorder,
-      backgroundColor: colors.selection,
-    },
-    correct: {
-      borderColor: colors.successBorder,
-      backgroundColor: colors.successSurface,
-    },
-    incorrect: {
-      borderColor: colors.dangerBorder,
-      backgroundColor: colors.dangerSurface,
-    },
-    pressed: { opacity: 0.8 },
     picture: { alignItems: 'center', justifyContent: 'center' },
     image: { width: '100%', height: 96 },
     label: {

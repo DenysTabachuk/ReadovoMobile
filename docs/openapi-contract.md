@@ -1,9 +1,9 @@
 # OpenAPI contract and frontend transport types
 
-The canonical document covers all 53 application controller operations:
+The canonical document covers all 58 application controller operations:
 translations, achievements, mascot, streak, quiz sessions, notifications,
-auth, dictionary, articles and vocabulary. It includes three development notification
-diagnostics operations. Production registers 50 operations and omits those
+auth, dictionary, articles, vocabulary and thematic learning. It includes three development notification
+diagnostics operations. Production registers 55 operations and omits those
 three diagnostics from its runtime Swagger document. Swagger UI assets and the
 raw document are served separately by `SwaggerModule`.
 The transport-type migration is complete. Backend DTO metadata owns the contract;
@@ -361,28 +361,44 @@ unknown/malformed-response fallback remain in place, as does validation of exter
 translation provider responses. Existing transport tests may intentionally return
 malformed bodies to exercise this boundary. UI must not display diagnostic server
 messages directly. Infrastructure failures can have a different body and need the
-same defensive fallback. Generating runtime validators, clients or hooks is outside
-this migration.
+same defensive fallback. Learning uses generated runtime validators as
+described below. Other features retain their existing decoders; generated clients
+and hooks remain outside this migration.
 
-## Vocabulary reads
+## Thematic learning contracts
 
-Vocabulary catalogue and lesson detail require Bearer authentication and return
-HTTP **200**. Both accept an optional `locale=en|uk` query, defaulting to English;
-missing content translations fall back to English, while missing fallback content
-fails with the shared internal error. Word and example translations remain Ukrainian
-regardless of interface locale. Unsupported/repeated locale values and unknown
-query fields return **400**.
+The authenticated `/learning` routes browse topics, return a unified lesson
+variant and check vocabulary or reading answers. See
+[Topic-based learning](topic-based-learning.md).
 
-`GET /vocabulary/lessons` returns `{ lessons: [] }` when no published content exists.
-Only lessons with non-null `publishedAt` are visible. Direct slug reads use the
-same publication filter; missing and draft lessons both return
-**404 VOCABULARY_LESSON_NOT_FOUND**. There is no draft-preview bypass in this contract.
-The catalogue orders by CEFR level, then slug. Details include word cards and
-attribution, stages ordered by position, ordered stage word IDs and exercise counts.
-Words are listed by ID; stage rosters determine card order. Storage timestamps,
-translation rows, practice questions, answer keys and user progress are omitted.
-Images are object keys with source/licence/attribution metadata; delivery URLs
-remain a separate media integration step.
+- Catalogue entries identify topics and lessons by slug and list available levels.
+  An unpublished ancestor hides its descendants.
+- Lesson reads require a level and return `variant: null` if it has no published
+  content. The variant embeds vocabulary cards, unanswered vocabulary exercises,
+  prepared reading and unanswered comprehension questions.
+- `POST /learning/lessons/{slug}/vocabulary/exercises/{exerciseId}/check` checks
+  a vocabulary answer for a required `level`. Reading checks use
+  `/learning/lessons/{slug}/questions/{questionId}/check`. Both accept
+  `{ optionId }` and return HTTP 200 feedback. Missing content returns 404 and
+  unrelated choices return 400.
+
+Checks are stateless. The backend verifies answer membership within the
+published lesson level. It withholds answer identifiers, sentence translations
+and explanations until an answer is checked. Lesson entries include a required
+nullable `coverImageKey` for the topic artwork.
+
+### Generated Learning response validation
+
+`frontend/scripts/api-validators.mjs` generates standalone guards for catalogue
+reads, lesson reads and both answer checks. The generated
+`frontend/api/generated/learning-validators.js` module and its declarations
+validate successful JSON against OpenAPI before the app uses it. Ajv runs during
+generation. Frontend guards validate response shape. Backend tests verify
+request/response invariants, publication, scoping and serialization.
+
+Run `npm run contracts:generate` to update the OpenAPI document, transport
+declarations and guards. Run `npm run contracts:check` to verify freshness.
+[Further adoption](tasks/generated-response-validation.md) is tracked separately.
 
 ## Separate runtime follow-ups
 

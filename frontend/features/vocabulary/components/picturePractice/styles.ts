@@ -6,20 +6,12 @@ export const createStyles = (colors: ThemeColors) =>
   StyleSheet.create({
     content: { gap: Spacing.lg },
     secondary: { color: colors.textSecondary },
-    options: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md },
-    feedback: {
-      padding: Spacing.lg,
-      borderRadius: 20,
-      gap: Spacing.sm,
-      borderWidth: 1,
-    },
-    correctFeedback: {
-      backgroundColor: colors.successSurface,
-      borderColor: colors.successBorder,
-    },
-    incorrectFeedback: {
-      backgroundColor: colors.dangerSurface,
-      borderColor: colors.dangerBorder,
+    options: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      justifyContent: 'center',
+      columnGap: '3%',
+      rowGap: Spacing.md,
     },
     credit: {
       color: colors.textSecondary,

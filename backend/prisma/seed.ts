@@ -1,10 +1,11 @@
 import 'dotenv/config';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../src/generated/prisma/client';
-import { COMMON_THINGS_SEED } from './seeds/vocabulary/common-things';
-import { importVocabularySeed } from './seeds/vocabulary/import';
+import { OKTOBERFEST_THEMATIC_LESSON_SEED } from './seeds/learning/oktoberfest-thematic-lesson';
+import { OKTOBERFEST_VOCABULARY_SEED } from './seeds/learning/oktoberfest-vocabulary';
+import { seedThematicLesson } from './seeds/learning/seed-thematic-lesson';
 
-// Explicit development/test database population; does not publish real lessons.
+// Explicit development/test database population; visible sample, not approved production content.
 async function main() {
   const connectionString = process.env.DATABASE_URL;
   if (!connectionString) throw new Error('DATABASE_URL is required');
@@ -12,10 +13,12 @@ async function main() {
     adapter: new PrismaPg({ connectionString }),
   });
   try {
-    const lessonId = await importVocabularySeed(prisma, COMMON_THINGS_SEED);
-    console.log(
-      `Imported Common Things TEST DATA as an unpublished draft (${lessonId}).`,
+    await seedThematicLesson(
+      prisma,
+      OKTOBERFEST_THEMATIC_LESSON_SEED,
+      OKTOBERFEST_VOCABULARY_SEED,
     );
+    console.log('Seeded Oktoberfest TEST DATA.');
   } finally {
     await prisma.$disconnect();
   }

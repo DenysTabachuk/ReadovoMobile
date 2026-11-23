@@ -1,5 +1,5 @@
 import { ACHIEVEMENTS_ERRORS } from './achievements/achievements-errors';
-import { ARTICLES_ERRORS } from './articles/articles-errors';
+import { ARTICLES_ERRORS } from './wikipedia-articles/articles-errors';
 import { AUTH_ERRORS } from './auth/auth-errors';
 import { COMMON_ERRORS } from './common/errors/common-errors';
 import { DICTIONARY_ERRORS } from './dictionary/dictionary-errors';
@@ -8,6 +8,7 @@ import { NOTIFICATIONS_ERRORS } from './notifications/diagnostics/notifications-
 import { STREAK_ERRORS } from './streak/streak-errors';
 import { TRANSLATIONS_ERRORS } from './translations/translations-errors';
 import { QUIZ_ERRORS } from './quiz/quiz-errors';
+import { LEARNING_ERRORS } from './learning/learning-errors';
 
 /**
  * Application-level catalogue for contract tooling. Definitions stay in their
@@ -16,6 +17,7 @@ import { QUIZ_ERRORS } from './quiz/quiz-errors';
  * one another during a merge. The catalogue test checks their uniqueness.
  */
 export const API_ERROR_CATALOGUE = [
+  ...Object.values(LEARNING_ERRORS),
   ...Object.values(QUIZ_ERRORS),
   ...Object.values(ACHIEVEMENTS_ERRORS),
   ...Object.values(ARTICLES_ERRORS),

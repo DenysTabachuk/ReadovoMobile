@@ -11,14 +11,18 @@ const featureNames = readdirSync(path.join(__dirname, 'features'), {
   .map((entry) => entry.name);
 
 // Resolve actual files so relative imports cannot bypass the feature boundaries.
-const featureZones = featureNames.map((feature) => ({
-  target: `./features/${feature}`,
-  from: featureNames
-    .filter((other) => other !== feature)
-    .map((other) => `./features/${other}`),
-  except: ['./index.ts', './index.tsx'],
-  message: 'Import another feature through its root index.ts.',
-}));
+const publicFeatureEntries = ['./index.ts', './index.tsx'];
+
+function createFeatureZones(allowedPaths) {
+  return featureNames.map((feature) => ({
+    target: `./features/${feature}`,
+    from: featureNames
+      .filter((other) => other !== feature)
+      .map((other) => `./features/${other}`),
+    except: allowedPaths,
+    message: 'Import another feature through its root index.ts.',
+  }));
+}
 
 const apiZones = featureNames.flatMap((feature) => [
   {
@@ -35,10 +39,43 @@ const apiZones = featureNames.flatMap((feature) => [
   },
 ]);
 
+function restrictedImportPaths(allowedFeaturePaths) {
+  return [
+    'error',
+    {
+      basePath: __dirname,
+      zones: [
+        {
+          target: [
+            './api',
+            './components',
+            './constants',
+            './devtools',
+            './hooks',
+            './providers',
+            './utils',
+            './localization',
+          ],
+          from: './features',
+          message: 'Shared modules must not depend on features.',
+        },
+        ...createFeatureZones(allowedFeaturePaths),
+        ...apiZones,
+      ],
+    },
+  ];
+}
+
 module.exports = defineConfig([
   expoConfig,
   {
-    ignores: ['dist/**', '.expo/**', 'android/**', 'ios/**'],
+    ignores: [
+      'dist/**',
+      '.expo/**',
+      'android/**',
+      'ios/**',
+      'api/generated/learning-validators.js',
+    ],
   },
   {
     files: ['*.js', 'scripts/**/*.js'],
@@ -54,30 +91,20 @@ module.exports = defineConfig([
       },
     },
     rules: {
-      'import/no-restricted-paths': [
-        'error',
-        {
-          basePath: __dirname,
-          zones: [
-            {
-              target: [
-                './api',
-                './components',
-                './constants',
-                './devtools',
-                './hooks',
-                './providers',
-                './utils',
-                './localization',
-              ],
-              from: './features',
-              message: 'Shared modules must not depend on features.',
-            },
-            ...featureZones,
-            ...apiZones,
-          ],
-        },
-      ],
+      'import/no-restricted-paths': restrictedImportPaths(publicFeatureEntries),
+    },
+  },
+  {
+    // Tests may reuse another feature's fixtures without exporting them to app code.
+    files: [
+      'features/**/*.{spec,test}.{ts,tsx,js,jsx}',
+      'features/**/testing/**/*.{ts,tsx,js,jsx}',
+    ],
+    rules: {
+      'import/no-restricted-paths': restrictedImportPaths([
+        ...publicFeatureEntries,
+        './testing',
+      ]),
     },
   },
   {

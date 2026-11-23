@@ -4,7 +4,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { Pressable, View } from 'react-native';
 
-import { IconSymbol } from '@/components/iconSymbol';
 import { ThemedText } from '@/components/themedText';
 import {
   type ArticleAdaptationSummary,
@@ -163,9 +162,9 @@ export function ArticleCard({
           }}
           style={styles.cardBookmarkButton}
         >
-          <IconSymbol
+          <Ionicons
             color={isSaved ? savedAccentColor : iconColor}
-            name={isSaved ? 'bookmark.fill' : 'bookmark'}
+            name={isSaved ? 'bookmark' : 'bookmark-outline'}
             size={22}
           />
         </Pressable>

@@ -1,21 +1,20 @@
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useMemo, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { View } from 'react-native';
 
+import type { CheckVocabularyAnswerResponse } from '@/api/generated/transport';
 import { Button } from '@/components/button';
 import { ThemedText } from '@/components/themedText';
 import { useTheme } from '@/hooks/use-theme';
-import { COMMON_THINGS_LESSON_ID } from '../../fixtures/lessons';
-import type { VocabularyPracticeAnswer } from '../../hooks/useVocabularyPractice';
 import { createStyles } from './styles';
 
 type PracticeResultProps = {
-  answers: VocabularyPracticeAnswer[];
+  answers: CheckVocabularyAnswerResponse[];
   total: number;
   correctCount: number;
   onRestart: () => void;
+  onBackToLesson: () => void;
   children?: ReactNode;
 };
 
@@ -24,6 +23,7 @@ export function PracticeResult({
   total,
   correctCount,
   onRestart,
+  onBackToLesson,
   children,
 }: PracticeResultProps) {
   const { t } = useTranslation();
@@ -34,7 +34,7 @@ export function PracticeResult({
   return (
     <View style={styles.content}>
       <View style={styles.summary}>
-        <MaterialIcons
+        <Ionicons
           name="flag"
           size={48}
           color={colors.interactive}
@@ -62,7 +62,7 @@ export function PracticeResult({
             <View key={answer.questionId} style={styles.word}>
               <ThemedText type="bodyStrong">{answer.word.word}</ThemedText>
               <ThemedText style={styles.secondary}>
-                {t(answer.word.translationKey)}
+                {answer.word.translationUk}
               </ThemedText>
             </View>
           ))}
@@ -70,15 +70,7 @@ export function PracticeResult({
       )}
       {children}
       <Button onPress={onRestart}>{t('vocabulary.practice.tryAgain')}</Button>
-      <Button
-        variant="secondary"
-        onPress={() =>
-          router.dismissTo({
-            pathname: '/(tabs)/(learning)/vocabulary/[lessonId]',
-            params: { lessonId: COMMON_THINGS_LESSON_ID },
-          })
-        }
-      >
+      <Button variant="secondary" onPress={onBackToLesson}>
         {t('vocabulary.cards.backToLesson')}
       </Button>
     </View>

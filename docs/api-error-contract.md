@@ -32,7 +32,7 @@ Backend definitions belong to their owners: shared errors in
 `backend/src/dictionary/dictionary-errors.ts`, achievements errors in
 `backend/src/achievements/achievements-errors.ts`, translations errors in
 `backend/src/translations/translations-errors.ts`, article errors in
-`backend/src/articles/articles-errors.ts`, notifications errors in
+`backend/src/wikipedia-articles/articles-errors.ts`, notifications errors in
 `backend/src/notifications/diagnostics/notifications-errors.ts`, and validation rules in
 `backend/src/common/validation/create-validation-exception.ts`.
 `backend/src/api-error-catalogue.ts` collects module definitions for contract

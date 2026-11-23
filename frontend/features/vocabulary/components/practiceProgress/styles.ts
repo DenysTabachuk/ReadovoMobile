@@ -11,15 +11,4 @@ export const createStyles = (colors: ThemeColors) =>
       gap: Spacing.sm,
     },
     secondary: { color: colors.textSecondary },
-    progressTrack: {
-      height: 8,
-      borderRadius: 4,
-      backgroundColor: colors.border,
-      overflow: 'hidden',
-    },
-    progressFill: {
-      height: '100%',
-      borderRadius: 4,
-      backgroundColor: colors.interactive,
-    },
   });

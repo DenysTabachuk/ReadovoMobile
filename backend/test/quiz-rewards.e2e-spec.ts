@@ -11,7 +11,7 @@ import { PrismaService } from '../src/prisma/prisma.service';
 import { QuizModule } from '../src/quiz/quiz.module';
 import { QuizService } from '../src/quiz/quiz.service';
 import { StreakService } from '../src/streak/streak.service';
-import { randomizeQuizOptions } from '../src/articles/quiz/utils/randomizeQuizOptions';
+import { randomizeQuizOptions } from '../src/wikipedia-articles/quiz/utils/randomizeQuizOptions';
 
 // Opt in with a dedicated database; never run destructive fixture cleanup on the app DB.
 const databaseUrl = process.env.QUIZ_TEST_DATABASE_URL;

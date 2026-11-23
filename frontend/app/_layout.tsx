@@ -186,6 +186,10 @@ function RootLayoutContent() {
                       options={{ headerShown: false }}
                     />
                     <Stack.Screen name="wardrobe" />
+                    <Stack.Screen
+                      name="settings"
+                      options={{ title: t('settings.title') }}
+                    />
                     <Stack.Screen name="dictionary-test" />
                     <Stack.Screen name="article/[id]" />
                     <Stack.Screen name="article-quiz/[id]" />

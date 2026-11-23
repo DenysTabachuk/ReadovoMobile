@@ -9,11 +9,6 @@ export const styles = StyleSheet.create({
     gap: Spacing.xLg,
     paddingBottom: Spacing.xxLg,
   },
-  header: {
-    justifyContent: 'center',
-    minHeight: 92,
-    paddingTop: Spacing.lg,
-  },
   streakSection: {
     gap: Spacing.md,
   },

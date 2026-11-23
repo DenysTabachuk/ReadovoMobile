@@ -57,7 +57,7 @@ describe('Application OpenAPI coverage', () => {
             }
           }
         }
-        expect(operationIds.size).toBe(environment === 'production' ? 50 : 53);
+        expect(operationIds.size).toBe(environment === 'production' ? 52 : 55);
       } finally {
         await app.close();
       }

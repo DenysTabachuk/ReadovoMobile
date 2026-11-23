@@ -35,7 +35,6 @@ jest.mock('react-i18next', () => ({
 }));
 jest.mock('@expo/vector-icons', () => ({
   Ionicons: () => null,
-  MaterialCommunityIcons: () => null,
 }));
 jest.mock('react-native-reanimated', () => ({
   __esModule: true,

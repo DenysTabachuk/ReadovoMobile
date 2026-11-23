@@ -1,9 +1,9 @@
+import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { HapticTab } from '@/components/hapticTab';
-import { IconSymbol } from '@/components/iconSymbol';
 import { useTheme } from '@/hooks/use-theme';
 
 export default function TabLayout() {
@@ -38,9 +38,18 @@ export default function TabLayout() {
       <Tabs.Screen
         name="(learning)"
         options={{
-          title: t('tabs.learning'),
+          title: t('learning.topics.title'),
           tabBarIcon: ({ color }) => (
-            <IconSymbol size={24} name="book.fill" color={color} />
+            <Ionicons size={24} name="book" color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="grammar"
+        options={{
+          title: t('learning.grammar.title'),
+          tabBarIcon: ({ color }) => (
+            <Ionicons size={24} name="text" color={color} />
           ),
         }}
       />
@@ -49,7 +58,7 @@ export default function TabLayout() {
         options={{
           title: t('tabs.dictionary'),
           tabBarIcon: ({ color }) => (
-            <IconSymbol size={24} name="book.closed.fill" color={color} />
+            <Ionicons size={24} name="library" color={color} />
           ),
         }}
       />
@@ -58,20 +67,7 @@ export default function TabLayout() {
         options={{
           title: t('tabs.profile'),
           tabBarIcon: ({ color }) => (
-            <IconSymbol
-              size={24}
-              name="person.crop.circle.fill"
-              color={color}
-            />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="settings"
-        options={{
-          title: t('tabs.settings'),
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={24} name="slider.horizontal.3" color={color} />
+            <Ionicons size={24} name="person-circle" color={color} />
           ),
         }}
       />

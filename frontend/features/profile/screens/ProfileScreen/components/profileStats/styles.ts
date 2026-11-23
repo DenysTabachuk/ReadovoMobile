@@ -18,8 +18,8 @@ export const createStyles = (colors: ThemeColors) => {
     },
     statItem: {
       alignItems: 'center',
-      flex: 1,
-      minWidth: 96,
+      width: '50%',
+      paddingHorizontal: Spacing.xs,
       gap: Spacing.xs,
     },
     statValueRow: {
@@ -42,6 +42,7 @@ export const createStyles = (colors: ThemeColors) => {
     statLabel: {
       fontSize: 13,
       lineHeight: 18,
+      textAlign: 'center',
     },
   });
 };

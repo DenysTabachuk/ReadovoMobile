@@ -9,6 +9,7 @@ import {
   type QuizSessionResult,
   type QuizSubmitResult,
 } from '../../types';
+import { useQuizAttempt } from '../../hooks/useQuizAttempt';
 
 import { AnswerFeedback } from './components/answerFeedback';
 import { QuestionOptions } from './components/questionOptions';
@@ -49,25 +50,21 @@ export function QuizRunner({
   questions,
 }: QuizRunnerProps) {
   const { colors } = useTheme();
-  const [questionIndex, setQuestionIndex] = useState(0);
-  const [selectedOptionIds, setSelectedOptionIds] = useState<string[]>([]);
-  const [isSubmitted, setIsSubmitted] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitResult, setSubmitResult] = useState<QuizSubmitResult | null>(
-    null,
-  );
-  const [correctAnswers, setCorrectAnswers] = useState(0);
+  const {
+    questionIndex,
+    selectedOptionIds,
+    answer: submitResult,
+    correctCount,
+    isSubmitting,
+    selectOption,
+    submitAnswer,
+    advance,
+  } = useQuizAttempt<QuizSubmitResult>();
   const [startedAt] = useState(() => Date.now());
   const currentQuestion = questions[questionIndex];
   const isLastQuestion = questionIndex === questions.length - 1;
+  const isSubmitted = submitResult !== null;
 
-  const isAnswerCorrect = useMemo(() => {
-    if (!currentQuestion || !isSubmitted || !submitResult) {
-      return false;
-    }
-
-    return submitResult.isCorrect;
-  }, [currentQuestion, isSubmitted, submitResult]);
   const resolvedCorrectOptionIds = useMemo(() => {
     if (!currentQuestion) {
       return [];
@@ -82,63 +79,33 @@ export function QuizRunner({
     return null;
   }
 
-  const handleSelectOption = (optionId: string) => {
-    if (isSubmitted || isSubmitting) {
-      return;
-    }
-
-    if (currentQuestion.type === 'multiple_choice') {
-      setSelectedOptionIds((current) =>
-        current.includes(optionId)
-          ? current.filter((id) => id !== optionId)
-          : [...current, optionId],
-      );
-      return;
-    }
-
-    setSelectedOptionIds([optionId]);
+  const reportSubmitError = (error: unknown) => {
+    if (!onSubmitError) throw error;
+    onSubmitError(error);
   };
 
   const handlePrimaryPress = () => {
     if (!isSubmitted) {
-      if (selectedOptionIds.length === 0) {
-        return;
-      }
-
-      setIsSubmitting(true);
-
-      const onSuccess = (result: QuizSubmitResult) => {
-        if (result.isCorrect) setCorrectAnswers((current) => current + 1);
-        setSubmitResult(result);
-        setIsSubmitted(true);
-      };
-      if (onSubmitAnswer) {
-        const callbacks: QuizAnswerCallbacks = {
-          onSuccess,
-          onError: (error) => {
-            if (!onSubmitError) throw error;
-            onSubmitError(error);
-          },
-          onSettled: () => setIsSubmitting(false),
-        };
-        try {
-          onSubmitAnswer(currentQuestion, selectedOptionIds, callbacks);
-        } catch (error) {
-          try {
-            callbacks.onError(error);
-          } finally {
-            callbacks.onSettled();
+      try {
+        submitAnswer((selection, callbacks) => {
+          if (onSubmitAnswer) {
+            onSubmitAnswer(currentQuestion, selection, {
+              ...callbacks,
+              onError: reportSubmitError,
+            });
+            return;
           }
-        }
-      } else {
-        onSuccess({
-          explanation: currentQuestion.explanation,
-          isCorrect: isAnswerSelectionCorrect(
-            selectedOptionIds,
-            currentQuestion.correctOptionIds ?? [],
-          ),
+          callbacks.onSuccess({
+            explanation: currentQuestion.explanation,
+            isCorrect: isAnswerSelectionCorrect(
+              selection,
+              currentQuestion.correctOptionIds ?? [],
+            ),
+          });
+          callbacks.onSettled();
         });
-        setIsSubmitting(false);
+      } catch (error) {
+        reportSubmitError(error);
       }
       return;
     }
@@ -146,7 +113,7 @@ export function QuizRunner({
     if (isLastQuestion) {
       onFinish(
         createQuizSessionResult({
-          correctAnswers,
+          correctAnswers: correctCount,
           finishedAt: Date.now(),
           startedAt,
           totalQuestions: questions.length,
@@ -155,10 +122,7 @@ export function QuizRunner({
       return;
     }
 
-    setQuestionIndex((current) => current + 1);
-    setSelectedOptionIds([]);
-    setIsSubmitted(false);
-    setSubmitResult(null);
+    advance();
   };
 
   return (
@@ -171,7 +135,9 @@ export function QuizRunner({
         <QuestionOptions
           isSubmitted={isSubmitted}
           isSubmitting={isSubmitting}
-          onSelectOption={handleSelectOption}
+          onSelectOption={(optionId) =>
+            selectOption(optionId, currentQuestion.type === 'multiple_choice')
+          }
           question={currentQuestion}
           resolvedCorrectOptionIds={resolvedCorrectOptionIds}
           selectedOptionIds={selectedOptionIds}
@@ -185,7 +151,7 @@ export function QuizRunner({
               submitResult?.explanation ?? currentQuestion.explanation
             }
             feedbackText={submitResult?.feedbackText}
-            isCorrect={isAnswerCorrect}
+            isCorrect={submitResult.isCorrect}
           />
         ) : null}
       </View>

@@ -10,3 +10,4 @@ export type {
 } from './types';
 
 export { useQuizCompletionFeedback } from './hooks/useQuizCompletionFeedback';
+export { useQuizAttempt } from './hooks/useQuizAttempt';

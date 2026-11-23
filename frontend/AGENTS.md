@@ -24,6 +24,10 @@ full requirements, examples, documentation template, and edge cases.
 - Keep transport independent of React/React Query. Data hooks own request
   execution, query keys, cache updates, invalidation, and optimistic rollback.
   UI state, modal visibility, and navigation belong in components or UI hooks.
+- Cover server-owned request/response invariants in backend unit or HTTP tests.
+  Avoid duplicating them in frontend requests, such as comparing a returned slug
+  or submitted option ID with the request. Keep frontend response-shape
+  validation, session safeguards and checks against active UI state.
 - Hooks for the current authenticated user (for example, `/me` operations) obtain
   that user through `useAuthenticatedUser()` inside the data hook. Do not pass
   `userId` through screens or composing hooks solely for cache ownership. Keep
@@ -47,6 +51,13 @@ full requirements, examples, documentation template, and edge cases.
 
 ## Components and utilities
 
+- Use `Ionicons` from `@expo/vector-icons` for interface icons on Android and iOS.
+
+- Reuse `components/fullScreenLoader` for initial screen loading. Do not substitute
+  a plain loading-text notice or create a feature-specific full-screen spinner.
+  Keep inline/button loading indicators local to their interaction; preserve
+  existing content during background refreshes. Apply within touched screens.
+
 - Prefer destructuring hook results when a consumer uses individual actions and
   the object name does not clarify their purpose. Give generic callbacks local
   names describing their effect, such as `onError: showArticleErrorBanner`.
@@ -56,8 +67,12 @@ full requirements, examples, documentation template, and edge cases.
 - Keep component entry files focused on state, effects, event wiring, and rendering.
   Extract meaningful calculations and cohesive UI blocks, not trivial callbacks
   or wrappers merely to reduce line count.
-- Parent-only subcomponents belong in `components/<name>/index.tsx` under their
-  parent. Move the styles, types, and utilities owned by the extracted block with it.
+- Name new React component directories in PascalCase to match their primary
+  component, for example `components/ReadingQuiz/index.tsx`. Rename existing
+  component directories in a dedicated migration.
+- Parent-only subcomponents belong in `components/<SubcomponentName>/index.tsx`
+  under their parent. Move the styles, types, and utilities owned by the
+  extracted block with it.
 - Each independent utility gets `utils/<name>/index.ts` at its closest owner.
   Search for an equivalent before creating one. Keep exclusive implementation
   helpers private; keep shared helpers at their narrowest common owner.

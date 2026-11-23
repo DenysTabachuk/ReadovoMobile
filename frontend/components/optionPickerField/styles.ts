@@ -28,4 +28,15 @@ export const createStyles = (colors: ThemeColors) =>
       flex: 1,
       paddingRight: Spacing.sm,
     },
+    fieldContents: { flex: 1, flexDirection: 'row', alignItems: 'center' },
+    pillButton: { minHeight: 44, minWidth: 44, justifyContent: 'center' },
+    pillSurface: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.xs,
+      backgroundColor: colors.surface,
+      borderRadius: 10,
+      paddingHorizontal: Spacing.sm,
+      paddingVertical: Spacing.xs,
+    },
   });

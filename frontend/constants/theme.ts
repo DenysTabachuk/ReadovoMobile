@@ -58,6 +58,10 @@ const lightColors = {
   onHighlight: palette.gray900,
   backdrop: withOpacity(palette.black, 0.35),
   overlayControlSurface: withOpacity(palette.white, 0.82),
+  imageFadeMid: withOpacity(palette.white, 0.55),
+  readingText: palette.gray900,
+  readingHighlightSurface: withOpacity(palette.yellow500, 0.12),
+  readingHighlightLine: palette.yellow700,
   textHighlight: withOpacity(palette.yellow500, 0.22),
 };
 
@@ -112,6 +116,10 @@ export const themeColors = {
     onHighlight: palette.gray900,
     backdrop: withOpacity(palette.black, 0.35),
     overlayControlSurface: withOpacity(palette.black, 0.48),
+    imageFadeMid: withOpacity(palette.gray900, 0.55),
+    readingText: palette.cream100,
+    readingHighlightSurface: withOpacity(palette.yellow500, 0.12),
+    readingHighlightLine: palette.yellow300,
     textHighlight: withOpacity(palette.yellow500, 0.22),
   },
 } satisfies Record<Theme, ThemeColors>;

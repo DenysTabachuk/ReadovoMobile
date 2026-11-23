@@ -23,6 +23,7 @@ type OptionPickerFieldProps<T extends string> = {
   options: PickerOptionValue<T>[];
   selectedValue: T;
   title: string;
+  variant?: 'field' | 'pill';
 };
 
 const CHEVRON_ANIMATION_DURATION_MS = 180;
@@ -36,6 +37,7 @@ export function OptionPickerField<T extends string>({
   options,
   selectedValue,
   title,
+  variant = 'field',
 }: OptionPickerFieldProps<T>) {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -44,6 +46,9 @@ export function OptionPickerField<T extends string>({
   const selectedOption = options.find(
     (option) => option.value === selectedValue,
   );
+  const isPill = variant === 'pill';
+  const displayLabel =
+    selectedOption?.displayLabel ?? selectedOption?.label ?? selectedValue;
 
   const handleOpen = useCallback(() => {
     setOpen(true);
@@ -82,21 +87,32 @@ export function OptionPickerField<T extends string>({
 
   return (
     <>
-      <View style={[styles.field, containerStyle]}>
-        <ThemedText type="bodyStrong">{label}</ThemedText>
-        <Pressable onPress={handleOpen} style={styles.pickerButton}>
-          <ThemedText style={styles.pickerLabel} type="body">
-            {selectedOption?.displayLabel ??
-              selectedOption?.label ??
-              selectedValue}
-          </ThemedText>
-          <Animated.View style={chevronAnimatedStyle}>
-            <Ionicons
-              color={colors.textSecondary}
-              name="chevron-down"
-              size={CHEVRON_ICON_SIZE}
-            />
-          </Animated.View>
+      <View style={[!isPill && styles.field, containerStyle]}>
+        {!isPill && <ThemedText type="bodyStrong">{label}</ThemedText>}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={label}
+          accessibilityValue={{ text: selectedOption?.label ?? selectedValue }}
+          accessibilityState={{ expanded: open }}
+          onPress={handleOpen}
+          style={isPill ? styles.pillButton : styles.pickerButton}
+        >
+          <View style={isPill ? styles.pillSurface : styles.fieldContents}>
+            <ThemedText
+              style={!isPill && styles.pickerLabel}
+              type={isPill ? 'bodyStrong' : 'body'}
+            >
+              {displayLabel}
+            </ThemedText>
+            <Animated.View style={chevronAnimatedStyle}>
+              <Ionicons
+                accessible={false}
+                color={colors.textSecondary}
+                name="chevron-down"
+                size={isPill ? 14 : CHEVRON_ICON_SIZE}
+              />
+            </Animated.View>
+          </View>
         </Pressable>
       </View>
 

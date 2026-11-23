@@ -20,6 +20,71 @@
     "profile": "Profile"
   },
   "learning": {
+    "topics": {
+      "searchLessons": "Search lessons",
+      "tabs": {
+        "all": "All",
+        "saved": "Saved",
+        "completed": "Completed"
+      },
+      "libraryHeading": {
+        "saved": "Saved lessons",
+        "completed": "Completed lessons"
+      },
+      "emptyTab": {
+        "all": "No published topics or lessons yet.",
+        "saved": "Bookmark a lesson to find it here.",
+        "completed": "Completed lessons will appear here."
+      },
+      "completedStatus": "✓ Completed",
+      "completionHint": "Finish the reading questions to mark this lesson completed.",
+      "repeatLesson": "Repeat",
+      "saveLesson": "Save lesson: {{title}}",
+      "removeBookmark": "Remove bookmark: {{title}}",
+      "libraryLoadError": "Could not load your lesson library.",
+      "libraryWriteError": "Could not save the change. Try again.",
+      "title": "Topics",
+      "description": "Words, stories and practice around your interests.",
+      "search": "Search topics",
+      "clearSearch": "Clear search",
+      "filters": "Filters",
+      "filtersSoon": "Additional filters will appear here.",
+      "closeFilters": "Close",
+      "noResults": "No matching topics or lessons.",
+      "availableLevels": "Levels: {{levels}}",
+      "englishLevel": "English level",
+      "openTopic": "Explore topic",
+      "openLesson": "Open lesson",
+      "levelUnavailable": "Materials for {{level}} are not available yet.",
+      "loadError": "Could not load this topic or lesson.",
+      "empty": "No published topics yet."
+    },
+    "reader": {
+      "label": "STORY · {{level}}",
+      "largeText": "Larger text",
+      "checkTitle": "How well did you understand the story?",
+      "questions_one": "{{count}} question about the story",
+      "questions_other": "{{count}} questions about the story"
+    },
+    "comprehension": {
+      "position": "Question {{current}} of {{total}}",
+      "progress": "Story questions",
+      "chooseOne": "Choose one answer"
+    },
+    "lesson": {
+      "title": "Lesson",
+      "summary": "{{words}} words · {{questions}} questions",
+      "back": "Back to lesson",
+      "availableLevels": "Available levels: {{levels}}",
+      "words": "Learn the words",
+      "wordTest": "Practise the words",
+      "reading": "Read the story",
+      "comprehension": "Check your understanding",
+      "path": "Lesson path",
+      "wordsDescription": "Word cards with translations and examples",
+      "practiceDescription": "Pictures, listening and sentences",
+      "comprehensionDescription": "Questions about the story"
+    },
     "title": "Learning",
     "description": "A little progress, every day.",
     "chooseActivity": "What would you like to practise?",
@@ -34,31 +99,26 @@
     },
     "reading": {
       "title": "Reading",
-      "description": "Discover something interesting"
+      "description": "Discover something interesting",
+      "catalogueDescription": "Read in English about things that interest you."
     }
   },
   "vocabulary": {
     "sentence": {
       "title": "Complete the sentence",
-      "sample": "Missing words · Questions: {{count}}",
       "chooseWord": "Choose the missing word"
-    },
-    "sentences": {
-      "backpack": "Я ношу книжки до школи в рюкзаку.",
-      "book": "Я читаю книжку про тварин.",
-      "pencil": "Я пишу олівцем і стираю помилки гумкою."
     },
     "audio": {
       "title": "Listening practice",
-      "sample": "Listen and choose · Questions: {{count}}",
       "choosePicture": "Listen to the word, then choose its picture",
       "listenAgain": "Listen again",
-      "replayHint": "You can listen as many times as you need.",
       "start": "Practise listening"
     },
     "practice": {
+      "nextStage": "Continue lesson",
+      "questionCount": "Questions: {{count}}",
+      "checkError": "Could not check your answer. Try again.",
       "title": "Quick practice",
-      "sample": "Picture practice · Questions: {{count}}",
       "choosePicture": "Choose the picture for this word",
       "pictureNumber": "Picture {{number}}",
       "check": "Check answer",
@@ -70,39 +130,24 @@
       "resultTitle": "Practice finished",
       "score": "{{correct}} / {{total}}",
       "correctAnswers": "Correct answers",
-      "localResult": "This is sample practice. Your lesson progress has not been saved.",
+      "localResult": "Your lesson progress has not been saved.",
       "reviewWords": "Words to review",
       "tryAgain": "Try again"
     },
     "cards": {
+      "continue": "Continue lesson",
       "title": "Learn words",
-      "sample": "Preview · {{count}} words",
       "position": "{{current}} / {{total}}",
       "progress": "Word cards",
       "previous": "Previous",
       "next": "Next",
       "backToLesson": "Back to lesson",
-      "previewAvailable": "Preview available",
-      "previewHint": "Explore 3 sample cards, then try picture practice.",
       "translationLanguage": "УКР",
       "pronounceWord": "Listen to {{word}}",
       "pronounceExample": "Listen to the example sentence",
       "speechUnavailable": "Could not play pronunciation. Check your device's English voice and try again.",
-      "imageCredit": "Illustrations: Twemoji, Twitter and contributors · CC BY 4.0"
-    },
-    "words": {
-      "backpack": {
-        "translation": "Рюкзак",
-        "exampleTranslation": "Мій рюкзак червоний."
-      },
-      "book": {
-        "translation": "Книга",
-        "exampleTranslation": "Ця книга про тварин."
-      },
-      "pencil": {
-        "translation": "Олівець",
-        "exampleTranslation": "Я пишу олівцем."
-      }
+      "imageUnavailable": "Illustration not available yet",
+      "progressNotSaved": "Progress is not saved yet."
     },
     "chooseLesson": "Choose a lesson",
     "description": "Everyday words, one topic at a time.",
@@ -117,21 +162,10 @@
     "activitiesComingSoon": "Word cards and practice are coming soon.",
     "notFound": "Lesson not found",
     "backToLessons": "Back to lessons",
-    "commonThings": {
-      "title": "Common Things",
-      "description": "Get to know the objects around you, from your school bag to your home."
-    },
-    "stages": {
-      "learnFirst": "Learn {{count}} words",
-      "firstWords": "Backpack, book, pencil and more",
-      "quickPractice": "Quick practice",
-      "matchPictures": "Match words and pictures",
-      "matchAudio": "Listen and choose a picture",
-      "learnMore": "Learn {{count}} more",
-      "moreWords": "Chair, table, umbrella and more",
-      "finalChallenge": "Final challenge",
-      "mixedExercises": "Mixed practice with all {{count}} words"
-    }
+    "loadError": "Could not load lesson content.",
+    "empty": "No lessons are available yet.",
+    "practiceComingSoon": "Practice is not connected yet.",
+    "stageAvailable": "Available"
   },
   "about": {
     "title": "Readovo",
